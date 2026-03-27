@@ -802,15 +802,20 @@ function renderEfficiencyChart(monthData) {
 
 function formatDate(dateStr) {
     if (!dateStr) return '?';
-    const d = new Date(dateStr);
-    return `${d.getDate()}`;
+    // Slice directly from "YYYY-MM-DD" to avoid UTC→local timezone shift
+    return String(parseInt(dateStr.slice(8, 10), 10));
 }
 
 function generateDayColors(n) {
+    // Spread hues from 40° (yellow-green) to 320° (magenta), skipping the
+    // red zone (0–35° and 335–360°) so day lines never clash with limit lines.
+    // Alternate dark / light passes so adjacent days differ in brightness too.
     const colors = [];
     for (let i = 0; i < n; i++) {
-        const hue = (i * 360 / n) % 360;
-        colors.push(`hsl(${hue}, 45%, 55%)`);
+        const hue = Math.round(40 + (i / n) * 280);
+        const sat  = i % 2 === 0 ? 65 : 52;
+        const light = i % 2 === 0 ? 38 : 62;
+        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
     }
     return colors;
 }
