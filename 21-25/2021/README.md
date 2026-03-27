@@ -1,4 +1,4 @@
-# Lab Report Headers - July 2021
+# Lab Report Headers - 2021
 
 This document explains every column header found in `Lab Report JULY-2021.xlsx`.
 
