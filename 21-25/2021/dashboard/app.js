@@ -7,11 +7,9 @@
 
 const MONTHS = ['july', 'august', 'september', 'october', 'november', 'december'];
 
-// Treatment stages for each parameter
 const STAGES_DEFAULT = ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'];
 const STAGES_TSS = ['Inlet', 'Grit', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'];
 
-// Map stage labels to JSON field prefixes
 const STAGE_FIELDS = {
     ph: {
         stages: STAGES_DEFAULT,
@@ -31,9 +29,6 @@ const STAGE_FIELDS = {
     },
 };
 
-// Control limit annotations for daily trend charts
-// Format: { stageIndex, value, label, color }
-// null value means N/A
 const CONTROL_LIMITS_DAILY = {
     ph: [
         { min: 6.0, max: 9.0, stageIdx: 0, label: 'Inlet: 6.0–9.0' },
@@ -53,7 +48,6 @@ const CONTROL_LIMITS_DAILY = {
     ],
 };
 
-// Tracked fields for missing values chart
 const TRACKED_FIELDS = [
     'inlet_ph', 'inlet_bod', 'inlet_cod', 'inlet_tss',
     'grit_tss',
@@ -64,7 +58,6 @@ const TRACKED_FIELDS = [
     'effluent_frc',
 ];
 
-// Compliance parameters and their limits
 const COMPLIANCE_PARAMS = [
     { key: 'effluent_ph', label: 'pH', type: 'range', min: 6.5, max: 8.0 },
     { key: 'effluent_bod', label: 'BOD₅', type: 'max', limit: 10 },
@@ -73,7 +66,39 @@ const COMPLIANCE_PARAMS = [
     { key: 'effluent_og', label: 'O&G', type: 'max', limit: 10 },
 ];
 
-// Colors for multi-line daily charts — muted palette
+// Stage series for monthly parameter trend charts
+const MONTHLY_STAGE_SERIES = {
+    ph: [
+        { key: 'inlet_ph',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'primary_ph',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'secondary_ph', label: 'Secondary', color: '#16a34a' },
+        { key: 'sec_sed_ph',   label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_ph',  label: 'Effluent',  color: '#dc2626' },
+    ],
+    bod: [
+        { key: 'inlet_bod',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'primary_bod',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'secondary_bod', label: 'Secondary', color: '#16a34a' },
+        { key: 'sec_sed_bod',   label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_bod',  label: 'Effluent',  color: '#dc2626' },
+    ],
+    cod: [
+        { key: 'inlet_cod',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'primary_cod',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'secondary_cod', label: 'Secondary', color: '#16a34a' },
+        { key: 'sec_sed_cod',   label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_cod',  label: 'Effluent',  color: '#dc2626' },
+    ],
+    tss: [
+        { key: 'inlet_tss',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'grit_tss',      label: 'Grit',      color: '#0891b2' },
+        { key: 'primary_tss',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'secondary_tss', label: 'Secondary', color: '#16a34a' },
+        { key: 'sec_sed_tss',   label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_tss',  label: 'Effluent',  color: '#dc2626' },
+    ],
+};
+
 const DAY_COLORS = generateDayColors(31);
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -85,6 +110,14 @@ let charts = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllData();
+
+    // Close any open day picker when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.day-picker')) {
+            document.querySelectorAll('details.day-picker').forEach(d => d.open = false);
+        }
+    });
+
     const select = document.getElementById('month-select');
     select.addEventListener('change', () => renderAll(select.value));
     renderAll(select.value);
@@ -99,15 +132,27 @@ function renderAll(month) {
     const data = allData[month];
     if (!data) return;
 
+    // Daily trend charts + day pickers
     renderDailyTrend('chart-ph', 'ph', data, 'pH');
+    initDayPicker('chart-ph', data.days);
     renderDailyTrend('chart-bod', 'bod', data, 'mg/L');
+    initDayPicker('chart-bod', data.days);
     renderDailyTrend('chart-cod', 'cod', data, 'mg/L');
+    initDayPicker('chart-cod', data.days);
     renderDailyTrend('chart-tss', 'tss', data, 'mg/L');
+    initDayPicker('chart-tss', data.days);
 
+    // Monthly overview charts
     renderFlowChart(data);
     renderPowerChart(data);
     renderPowerFlowChart(data);
     renderMissingChart(data);
+
+    // Monthly parameter trend charts (one line per stage, x = days)
+    renderMonthlyParam('chart-monthly-ph', 'ph', 'pH', data);
+    renderMonthlyParam('chart-monthly-bod', 'bod', 'mg/L', data);
+    renderMonthlyParam('chart-monthly-cod', 'cod', 'mg/L', data);
+    renderMonthlyParam('chart-monthly-tss', 'tss', 'mg/L', data);
 
     renderComplianceGrid(data);
     renderEfficiencyChart(data);
@@ -120,10 +165,8 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     const limits = CONTROL_LIMITS_DAILY[paramKey];
     const days = monthData.days;
 
-    // Destroy existing chart
     if (charts[canvasId]) charts[canvasId].destroy();
 
-    // Build datasets: one line per day
     const datasets = days.map((day, i) => {
         const values = config.fields.map(f => day[f]);
         const hasAnyData = values.some(v => v !== null);
@@ -143,7 +186,6 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
         };
     });
 
-    // Build annotations for control limits
     const annotations = {};
     limits.forEach((lim, idx) => {
         if (lim.value !== undefined) {
@@ -196,17 +238,11 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     charts[canvasId] = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: config.stages,
-            datasets,
-        },
+        data: { labels: config.stages, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'nearest',
-                intersect: false,
-            },
+            interaction: { mode: 'nearest', intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -228,7 +264,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
                 },
                 y: {
                     title: { display: true, text: yLabel, font: { size: 11 } },
-                    beginAtZero: paramKey !== 'ph',
+                    grace: '5%',
                     grid: { color: '#f0f0f0' },
                 },
             },
@@ -236,7 +272,97 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     });
 }
 
-// ─── Monthly Trend Charts ────────────────────────────────────────────────────
+// ─── Day Picker ──────────────────────────────────────────────────────────────
+
+function initDayPicker(canvasId, days) {
+    const container = document.getElementById(`picker-${canvasId}`);
+    if (!container) return;
+
+    const picker = document.createElement('details');
+    picker.className = 'day-picker';
+    picker.id = `details-${canvasId}`;
+
+    const summary = document.createElement('summary');
+    summary.id = `summary-${canvasId}`;
+    summary.textContent = `All ${days.length} days ▾`;
+    picker.appendChild(summary);
+
+    const panel = document.createElement('div');
+    panel.className = 'day-picker-panel';
+
+    // Select All / None buttons
+    const actions = document.createElement('div');
+    actions.className = 'day-picker-actions';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.type = 'button';
+    allBtn.addEventListener('click', (e) => { e.stopPropagation(); setAllDays(canvasId, true); });
+    const noneBtn = document.createElement('button');
+    noneBtn.textContent = 'None';
+    noneBtn.type = 'button';
+    noneBtn.addEventListener('click', (e) => { e.stopPropagation(); setAllDays(canvasId, false); });
+    actions.appendChild(allBtn);
+    actions.appendChild(noneBtn);
+    panel.appendChild(actions);
+
+    // Day checkboxes
+    const list = document.createElement('div');
+    list.className = 'day-picker-list';
+    list.id = `day-list-${canvasId}`;
+
+    const chart = charts[canvasId];
+    days.forEach((day, i) => {
+        const isVisible = chart ? chart.isDatasetVisible(i) : true;
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isVisible;
+        cb.addEventListener('change', () => applyDayVisibility(canvasId));
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(` Day ${formatDate(day.date)}`));
+        list.appendChild(label);
+    });
+
+    panel.appendChild(list);
+    picker.appendChild(panel);
+    container.innerHTML = '';
+    container.appendChild(picker);
+}
+
+function setAllDays(canvasId, checked) {
+    const list = document.getElementById(`day-list-${canvasId}`);
+    if (!list) return;
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+    applyDayVisibility(canvasId);
+}
+
+function applyDayVisibility(canvasId) {
+    const chart = charts[canvasId];
+    if (!chart) return;
+    const list = document.getElementById(`day-list-${canvasId}`);
+    if (!list) return;
+    list.querySelectorAll('input[type=checkbox]').forEach((cb, i) => {
+        chart.setDatasetVisibility(i, cb.checked);
+    });
+    chart.update();
+    updatePickerSummary(canvasId);
+}
+
+function updatePickerSummary(canvasId) {
+    const list = document.getElementById(`day-list-${canvasId}`);
+    if (!list) return;
+    const checkboxes = list.querySelectorAll('input[type=checkbox]');
+    const total = checkboxes.length;
+    const checked = [...checkboxes].filter(cb => cb.checked).length;
+    const summary = document.getElementById(`summary-${canvasId}`);
+    if (summary) {
+        summary.textContent = checked === total
+            ? `All ${total} days ▾`
+            : `${checked} of ${total} days ▾`;
+    }
+}
+
+// ─── Monthly Overview Charts ─────────────────────────────────────────────────
 
 function renderFlowChart(monthData) {
     const id = 'chart-flow';
@@ -499,6 +625,67 @@ function renderMissingChart(monthData) {
                     beginAtZero: true,
                     grid: { color: '#f0f0f0' },
                     ticks: { stepSize: 1 },
+                },
+            },
+        },
+    });
+}
+
+// ─── Monthly Parameter Trend Charts ──────────────────────────────────────────
+
+function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
+    if (charts[canvasId]) charts[canvasId].destroy();
+
+    const series = MONTHLY_STAGE_SERIES[paramKey];
+    const days = monthData.days;
+    const labels = days.map(d => formatDate(d.date));
+
+    const datasets = series.map(s => {
+        const values = days.map(d => (d[s.key] === null || d[s.key] === undefined) ? null : d[s.key]);
+        return {
+            label: s.label,
+            data: values,
+            borderColor: s.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: values.map(v => v === null ? 5 : 2),
+            pointStyle: values.map(v => v === null ? 'triangle' : 'circle'),
+            pointBackgroundColor: values.map(v => v === null ? '#d97706' : s.color),
+            pointBorderColor: values.map(v => v === null ? '#d97706' : s.color),
+            tension: 0.3,
+            spanGaps: true,
+        };
+    });
+
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { font: { size: 11 }, usePointStyle: false, boxWidth: 20 },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => {
+                            const val = item.parsed.y;
+                            if (val === null || isNaN(val)) return `${item.dataset.label}: ⚠ No data`;
+                            return `${item.dataset.label}: ${val}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: {
+                    title: { display: true, text: yLabel, font: { size: 11 } },
+                    grace: '5%',
+                    grid: { color: '#f0f0f0' },
                 },
             },
         },

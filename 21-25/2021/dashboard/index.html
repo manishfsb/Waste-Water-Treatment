@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wastewater Treatment Plant Dashboard — 2021</title>
-    <meta name="description" content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends for 2021.">
+    <title>Wastewater Treatment Plant Dashboard - 2021</title>
+    <meta name="description"
+        content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends for 2021.">
     <link rel="stylesheet" href="index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <header id="dashboard-header">
         <div class="header-content">
             <h1>WWTP Lab Report Dashboard</h1>
-            <p class="subtitle">Kathmandu, Nepal — Project 10M170 — 2021</p>
+            <p class="subtitle">Kathmandu, Nepal - Project 10M170 - 2021</p>
         </div>
         <div class="controls">
             <label for="month-select">Month:</label>
@@ -33,24 +37,37 @@
     <main>
         <!-- Daily Trend Charts -->
         <section id="daily-trends">
-            <h2>Daily Trends — Value Across Treatment Stages</h2>
-            <p class="section-desc">Each line represents one day. Values should generally decrease from left to right as water is cleaned. <span class="missing-icon">⚠</span> marks missing data.</p>
+            <h2>Daily Trends - Value Across Treatment Stages</h2>
+            <p class="section-desc">Each line represents one day. Values should generally decrease from left to right as
+                water is cleaned. <span class="missing-icon">⚠</span> marks missing data.</p>
 
             <div class="chart-grid">
                 <div class="chart-card" id="ph-card">
-                    <h3>pH Across Stages</h3>
+                    <div class="chart-card-header">
+                        <h3>pH Across Stages</h3>
+                        <div id="picker-chart-ph"></div>
+                    </div>
                     <div class="chart-wrapper"><canvas id="chart-ph"></canvas></div>
                 </div>
                 <div class="chart-card" id="bod-card">
-                    <h3>BOD₅ Across Stages</h3>
+                    <div class="chart-card-header">
+                        <h3>BOD₅ Across Stages</h3>
+                        <div id="picker-chart-bod"></div>
+                    </div>
                     <div class="chart-wrapper"><canvas id="chart-bod"></canvas></div>
                 </div>
                 <div class="chart-card" id="cod-card">
-                    <h3>COD Across Stages</h3>
+                    <div class="chart-card-header">
+                        <h3>COD Across Stages</h3>
+                        <div id="picker-chart-cod"></div>
+                    </div>
                     <div class="chart-wrapper"><canvas id="chart-cod"></canvas></div>
                 </div>
                 <div class="chart-card" id="tss-card">
-                    <h3>TSS Across Stages</h3>
+                    <div class="chart-card-header">
+                        <h3>TSS Across Stages</h3>
+                        <div id="picker-chart-tss"></div>
+                    </div>
                     <div class="chart-wrapper"><canvas id="chart-tss"></canvas></div>
                 </div>
             </div>
@@ -58,7 +75,7 @@
 
         <!-- Monthly Trend Charts -->
         <section id="monthly-trends">
-            <h2>Monthly Trends — Day-by-Day Over the Month</h2>
+            <h2>Monthly Trends - Day-by-Day Over the Month</h2>
 
             <div class="chart-grid">
                 <div class="chart-card" id="flow-card">
@@ -76,6 +93,22 @@
                 <div class="chart-card" id="missing-card">
                     <h3>Missing Values per Day</h3>
                     <div class="chart-wrapper"><canvas id="chart-missing"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-ph-card">
+                    <h3>pH - Monthly Trend by Stage</h3>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-ph"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-bod-card">
+                    <h3>BOD₅ - Monthly Trend by Stage</h3>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-bod"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-cod-card">
+                    <h3>COD - Monthly Trend by Stage</h3>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-cod"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-tss-card">
+                    <h3>TSS - Monthly Trend by Stage</h3>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-tss"></canvas></div>
                 </div>
             </div>
         </section>
@@ -104,4 +137,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
