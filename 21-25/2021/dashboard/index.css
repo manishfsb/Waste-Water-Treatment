@@ -1,0 +1,227 @@
+/* === Reset & Base === */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #ffffff;
+    --bg-card: #fafafa;
+    --border: #e5e5e5;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --accent: #2563eb;
+    --pass: #16a34a;
+    --fail: #dc2626;
+    --warn: #d97706;
+    --no-data: #d4d4d4;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+}
+
+/* === Header === */
+#dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+}
+
+#dashboard-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controls label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+#month-select {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+#month-select:focus {
+    border-color: var(--accent);
+}
+
+/* === Main === */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+}
+
+section {
+    margin-bottom: 2.5rem;
+}
+
+section h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.01em;
+}
+
+.section-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.missing-icon {
+    color: var(--warn);
+    font-size: 0.85rem;
+}
+
+/* === Chart Grid === */
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* === Chart Card === */
+.chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow);
+}
+
+.chart-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.chart-card-wide {
+    grid-column: 1 / -1;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 320px;
+}
+
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* === Compliance Grid === */
+.compliance-grid-wrapper {
+    overflow-x: auto;
+}
+
+.compliance-table {
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    width: 100%;
+}
+
+.compliance-table th,
+.compliance-table td {
+    padding: 0.3rem 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    min-width: 38px;
+}
+
+.compliance-table th {
+    font-weight: 600;
+    background: var(--bg);
+    color: var(--text-secondary);
+    position: sticky;
+    top: 0;
+}
+
+.compliance-table td.pass {
+    background: #dcfce7;
+    color: var(--pass);
+    font-weight: 600;
+}
+
+.compliance-table td.fail {
+    background: #fef2f2;
+    color: var(--fail);
+    font-weight: 600;
+}
+
+.compliance-table td.no-data {
+    background: #f5f5f5;
+    color: #a3a3a3;
+}
+
+.compliance-table td.row-label {
+    text-align: left;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--text);
+    min-width: 80px;
+}
+
+/* === Legend === */
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-right: 1rem;
+    font-size: 0.8rem;
+}
+
+.legend-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+}
+
+.legend-box.pass { background: #dcfce7; }
+.legend-box.fail { background: #fef2f2; }
+.legend-box.no-data { background: #f5f5f5; }

@@ -1,0 +1,7 @@
+.venv
+
+*.xlsx
+*.csv
+
+
+ideas.txt

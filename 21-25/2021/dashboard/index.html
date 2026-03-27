@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wastewater Treatment Plant Dashboard — 2021</title>
+    <meta name="description" content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends for 2021.">
+    <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header id="dashboard-header">
+        <div class="header-content">
+            <h1>WWTP Lab Report Dashboard</h1>
+            <p class="subtitle">Kathmandu, Nepal — Project 10M170 — 2021</p>
+        </div>
+        <div class="controls">
+            <label for="month-select">Month:</label>
+            <select id="month-select">
+                <option value="july">July</option>
+                <option value="august">August</option>
+                <option value="september">September</option>
+                <option value="october">October</option>
+                <option value="november">November</option>
+                <option value="december">December</option>
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <!-- Daily Trend Charts -->
+        <section id="daily-trends">
+            <h2>Daily Trends — Value Across Treatment Stages</h2>
+            <p class="section-desc">Each line represents one day. Values should generally decrease from left to right as water is cleaned. <span class="missing-icon">⚠</span> marks missing data.</p>
+
+            <div class="chart-grid">
+                <div class="chart-card" id="ph-card">
+                    <h3>pH Across Stages</h3>
+                    <div class="chart-wrapper"><canvas id="chart-ph"></canvas></div>
+                </div>
+                <div class="chart-card" id="bod-card">
+                    <h3>BOD₅ Across Stages</h3>
+                    <div class="chart-wrapper"><canvas id="chart-bod"></canvas></div>
+                </div>
+                <div class="chart-card" id="cod-card">
+                    <h3>COD Across Stages</h3>
+                    <div class="chart-wrapper"><canvas id="chart-cod"></canvas></div>
+                </div>
+                <div class="chart-card" id="tss-card">
+                    <h3>TSS Across Stages</h3>
+                    <div class="chart-wrapper"><canvas id="chart-tss"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Monthly Trend Charts -->
+        <section id="monthly-trends">
+            <h2>Monthly Trends — Day-by-Day Over the Month</h2>
+
+            <div class="chart-grid">
+                <div class="chart-card" id="flow-card">
+                    <h3>Raw Sewage Flow</h3>
+                    <div class="chart-wrapper"><canvas id="chart-flow"></canvas></div>
+                </div>
+                <div class="chart-card" id="power-card">
+                    <h3>Power Consumption</h3>
+                    <div class="chart-wrapper"><canvas id="chart-power"></canvas></div>
+                </div>
+                <div class="chart-card" id="power-flow-card">
+                    <h3>Total Power / Flow</h3>
+                    <div class="chart-wrapper"><canvas id="chart-power-flow"></canvas></div>
+                </div>
+                <div class="chart-card" id="missing-card">
+                    <h3>Missing Values per Day</h3>
+                    <div class="chart-wrapper"><canvas id="chart-missing"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Additional Charts -->
+        <section id="additional-charts">
+            <h2>Compliance & Efficiency</h2>
+
+            <div class="chart-grid">
+                <div class="chart-card chart-card-wide" id="compliance-card">
+                    <h3>Effluent Compliance Scorecard</h3>
+                    <p class="section-desc">
+                        <span class="legend-item"><span class="legend-box pass"></span> Within limit</span>
+                        <span class="legend-item"><span class="legend-box fail"></span> Exceeded</span>
+                        <span class="legend-item"><span class="legend-box no-data"></span> No data</span>
+                    </p>
+                    <div class="compliance-grid-wrapper" id="compliance-grid"></div>
+                </div>
+                <div class="chart-card" id="efficiency-card">
+                    <h3>Removal Efficiency %</h3>
+                    <div class="chart-wrapper"><canvas id="chart-efficiency"></canvas></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
