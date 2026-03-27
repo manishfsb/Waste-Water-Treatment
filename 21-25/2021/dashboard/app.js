@@ -99,6 +99,18 @@ const MONTHLY_STAGE_SERIES = {
     ],
 };
 
+// Limit line colors — amber for inlet, purple for effluent.
+// Both are distinct from the blue-first day palette and from each other.
+const LIMIT_INLET_COLOR    = '#f59e0b'; // amber
+const LIMIT_EFFLUENT_COLOR = '#7c3aed'; // purple
+
+const LIMIT_LINE_DATA = {
+    ph:  { inlet: { value: null, label: 'Inlet pH: 6.0–9.0' },       effluent: { value: null, label: 'Effluent pH: 6.5–8.0' } },
+    bod: { inlet: { value: 300,  label: 'Inlet limit: 300 mg/L' },    effluent: { value: 10,   label: 'Effluent limit: 10 mg/L' } },
+    cod: { inlet: { value: 800,  label: 'Inlet limit: 800 mg/L' },    effluent: { value: 250,  label: 'Effluent limit: 250 mg/L' } },
+    tss: { inlet: { value: 400,  label: 'Inlet limit: 400 mg/L' },    effluent: { value: 10,   label: 'Effluent limit: 10 mg/L' } },
+};
+
 // Blue-first palette — first 8 entries are distinct blue shades, then expands
 // to teals, purples, greens, ambers, and pinks. Red/orange tones are excluded
 // so day lines never clash with limit annotation colors.
@@ -174,11 +186,12 @@ function renderAll(month) {
 
 function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     const config = STAGE_FIELDS[paramKey];
-    const limits = CONTROL_LIMITS_DAILY[paramKey];
     const days = monthData.days;
+    const limitInfo = LIMIT_LINE_DATA[paramKey];
 
     if (charts[canvasId]) charts[canvasId].destroy();
 
+    // Day datasets (one line per day)
     const datasets = days.map((day, i) => {
         const values = config.fields.map(f => day[f]);
         return {
@@ -194,87 +207,106 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
             tension: 0.2,
             spanGaps: false,
             hidden: i !== 0,
+            isLimit: false,
         };
     });
 
+    // Legend-only datasets — empty data so they don't pin the y-axis range,
+    // but they appear in the legend with the correct color and dash style.
+    const limitDatasets = [
+        {
+            label: limitInfo.inlet.label,
+            data: [],
+            borderColor: LIMIT_INLET_COLOR,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            isLimit: true,
+        },
+        {
+            label: limitInfo.effluent.label,
+            data: [],
+            borderColor: LIMIT_EFFLUENT_COLOR,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            isLimit: true,
+        },
+    ];
+
+    // Annotations: colored lines/boxes matching legend colors — no text labels
     const annotations = {};
     if (paramKey === 'ph') {
-        // Inlet band 6.0–9.0: light salmon fill, solid border
         annotations['inlet_band'] = {
             type: 'box',
             yMin: 6.0,
             yMax: 9.0,
-            backgroundColor: 'rgba(252, 165, 165, 0.18)',
-            borderColor: 'rgba(239, 68, 68, 0.45)',
-            borderWidth: 1,
-            label: {
-                display: true,
-                content: 'Inlet: 6.0–9.0',
-                position: { x: 'end', y: 'start' },
-                backgroundColor: 'rgba(255,255,255,0.88)',
-                color: '#ef4444',
-                font: { size: 10, weight: '500' },
-                padding: 3,
-            },
+            backgroundColor: 'rgba(245, 158, 11, 0.08)',
+            borderColor: 'rgba(245, 158, 11, 0.55)',
+            borderWidth: 1.5,
         };
-        // Effluent band 6.5–8.0: slightly deeper red fill, dashed border
-        // Drawn on top — overlap region shows blend of both colors
         annotations['effluent_band'] = {
             type: 'box',
             yMin: 6.5,
             yMax: 8.0,
-            backgroundColor: 'rgba(185, 28, 28, 0.12)',
-            borderColor: 'rgba(153, 27, 27, 0.6)',
+            backgroundColor: 'rgba(124, 58, 237, 0.08)',
+            borderColor: 'rgba(124, 58, 237, 0.6)',
             borderWidth: 1.5,
             borderDash: [5, 3],
-            label: {
-                display: true,
-                content: 'Effluent: 6.5–8.0',
-                position: { x: 'end', y: 'end' },
-                backgroundColor: 'rgba(255,255,255,0.88)',
-                color: '#b91c1c',
-                font: { size: 10, weight: '500' },
-                padding: 3,
-            },
         };
     } else {
-        limits.forEach((lim, idx) => {
-            if (lim.value !== undefined) {
-                annotations[`limit_${idx}`] = {
-                    type: 'line',
-                    yMin: lim.value,
-                    yMax: lim.value,
-                    borderColor: '#dc2626',
-                    borderWidth: 1.5,
-                    borderDash: [6, 4],
-                    label: {
-                        display: true,
-                        content: lim.label,
-                        position: 'end',
-                        backgroundColor: 'rgba(255,255,255,0.9)',
-                        color: '#dc2626',
-                        font: { size: 10, weight: '500' },
-                        padding: 3,
-                    },
-                };
-            }
-        });
+        if (limitInfo.inlet.value !== null) {
+            annotations['inlet_limit'] = {
+                type: 'line',
+                yMin: limitInfo.inlet.value,
+                yMax: limitInfo.inlet.value,
+                borderColor: LIMIT_INLET_COLOR,
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+            };
+        }
+        if (limitInfo.effluent.value !== null) {
+            annotations['effluent_limit'] = {
+                type: 'line',
+                yMin: limitInfo.effluent.value,
+                yMax: limitInfo.effluent.value,
+                borderColor: LIMIT_EFFLUENT_COLOR,
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+            };
+        }
     }
 
     const ctx = document.getElementById(canvasId).getContext('2d');
     charts[canvasId] = new Chart(ctx, {
         type: 'line',
-        data: { labels: config.stages, datasets },
+        data: { labels: config.stages, datasets: [...datasets, ...limitDatasets] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'nearest', intersect: false },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        boxWidth: 28,
+                        boxHeight: 2,
+                        padding: 10,
+                        font: { size: 11 },
+                    },
+                },
                 tooltip: {
                     callbacks: {
-                        title: (items) => items[0]?.dataset.label || '',
+                        title: (items) => {
+                            const ds = items[0]?.dataset;
+                            return ds?.isLimit ? null : (ds?.label || '');
+                        },
                         label: (item) => {
+                            if (item.dataset.isLimit) return null;
                             const val = item.parsed.y;
                             if (val === null || isNaN(val)) return `${config.stages[item.dataIndex]}: ⚠ No data`;
                             return `${config.stages[item.dataIndex]}: ${val}`;
@@ -450,7 +482,7 @@ function renderFlowChart(monthData) {
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 y: {
                     title: { display: true, text: 'MLD', font: { size: 11 } },
-                    beginAtZero: true,
+                    grace: '5%',
                     grid: { color: '#f0f0f0' },
                 },
             },
@@ -528,7 +560,7 @@ function renderPowerChart(monthData) {
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 y: {
                     title: { display: true, text: 'MW', font: { size: 11 } },
-                    beginAtZero: true,
+                    grace: '5%',
                     grid: { color: '#f0f0f0' },
                 },
             },
@@ -646,10 +678,11 @@ function renderMissingChart(monthData) {
                 },
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 16, autoSkip: true } },
                 y: {
                     title: { display: true, text: 'Missing count', font: { size: 11 } },
                     beginAtZero: true,
+                    grace: '10%',
                     grid: { color: '#f0f0f0' },
                     ticks: { stepSize: 1 },
                 },
@@ -816,8 +849,7 @@ function renderEfficiencyChart(monthData) {
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 y: {
                     title: { display: true, text: 'Removal %', font: { size: 11 } },
-                    min: 0,
-                    max: 100,
+                    grace: '5%',
                     grid: { color: '#f0f0f0' },
                 },
             },
