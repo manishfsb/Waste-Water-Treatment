@@ -99,7 +99,19 @@ const MONTHLY_STAGE_SERIES = {
     ],
 };
 
-const DAY_COLORS = generateDayColors(31);
+// Blue-first palette — first 8 entries are distinct blue shades, then expands
+// to teals, purples, greens, ambers, and pinks. Red/orange tones are excluded
+// so day lines never clash with limit annotation colors.
+const DAY_COLORS = [
+    '#1d4ed8', '#2563eb', '#0ea5e9', '#3b82f6',  // deep → sky blue
+    '#1e3a8a', '#0284c7', '#0369a1', '#60a5fa',  // navy → pale blue
+    '#0891b2', '#06b6d4', '#0e7490', '#14b8a6',  // teal / cyan
+    '#0f766e', '#7c3aed', '#6d28d9', '#9333ea',  // teal-green + purples
+    '#4f46e5', '#4338ca', '#a855f7', '#16a34a',  // indigo + green
+    '#059669', '#15803d', '#65a30d', '#ca8a04',  // greens + amber
+    '#b45309', '#d97706', '#db2777', '#be185d',  // amber + pinks
+    '#9d174d', '#ec4899', '#c026d3',             // dark pink + magenta
+];
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -187,53 +199,68 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     });
 
     const annotations = {};
-    limits.forEach((lim, idx) => {
-        if (lim.value !== undefined) {
-            annotations[`limit_${idx}`] = {
-                type: 'line',
-                yMin: lim.value,
-                yMax: lim.value,
-                borderColor: '#dc2626',
-                borderWidth: 1.5,
-                borderDash: [6, 4],
-                label: {
-                    display: true,
-                    content: lim.label,
-                    position: 'start',
-                    backgroundColor: 'rgba(255,255,255,0.9)',
-                    color: '#dc2626',
-                    font: { size: 10, weight: '500' },
-                    padding: 3,
-                },
-            };
-        } else if (lim.min !== undefined && lim.max !== undefined) {
-            annotations[`limit_${idx}_min`] = {
-                type: 'line',
-                yMin: lim.min,
-                yMax: lim.min,
-                borderColor: '#dc2626',
-                borderWidth: 1.5,
-                borderDash: [6, 4],
-                label: {
-                    display: true,
-                    content: lim.label,
-                    position: 'start',
-                    backgroundColor: 'rgba(255,255,255,0.9)',
-                    color: '#dc2626',
-                    font: { size: 10, weight: '500' },
-                    padding: 3,
-                },
-            };
-            annotations[`limit_${idx}_max`] = {
-                type: 'line',
-                yMin: lim.max,
-                yMax: lim.max,
-                borderColor: '#dc2626',
-                borderWidth: 1.5,
-                borderDash: [6, 4],
-            };
-        }
-    });
+    if (paramKey === 'ph') {
+        // Inlet band 6.0–9.0: light salmon fill, solid border
+        annotations['inlet_band'] = {
+            type: 'box',
+            yMin: 6.0,
+            yMax: 9.0,
+            backgroundColor: 'rgba(252, 165, 165, 0.18)',
+            borderColor: 'rgba(239, 68, 68, 0.45)',
+            borderWidth: 1,
+            label: {
+                display: true,
+                content: 'Inlet: 6.0–9.0',
+                position: { x: 'end', y: 'start' },
+                backgroundColor: 'rgba(255,255,255,0.88)',
+                color: '#ef4444',
+                font: { size: 10, weight: '500' },
+                padding: 3,
+            },
+        };
+        // Effluent band 6.5–8.0: slightly deeper red fill, dashed border
+        // Drawn on top — overlap region shows blend of both colors
+        annotations['effluent_band'] = {
+            type: 'box',
+            yMin: 6.5,
+            yMax: 8.0,
+            backgroundColor: 'rgba(185, 28, 28, 0.12)',
+            borderColor: 'rgba(153, 27, 27, 0.6)',
+            borderWidth: 1.5,
+            borderDash: [5, 3],
+            label: {
+                display: true,
+                content: 'Effluent: 6.5–8.0',
+                position: { x: 'end', y: 'end' },
+                backgroundColor: 'rgba(255,255,255,0.88)',
+                color: '#b91c1c',
+                font: { size: 10, weight: '500' },
+                padding: 3,
+            },
+        };
+    } else {
+        limits.forEach((lim, idx) => {
+            if (lim.value !== undefined) {
+                annotations[`limit_${idx}`] = {
+                    type: 'line',
+                    yMin: lim.value,
+                    yMax: lim.value,
+                    borderColor: '#dc2626',
+                    borderWidth: 1.5,
+                    borderDash: [6, 4],
+                    label: {
+                        display: true,
+                        content: lim.label,
+                        position: 'end',
+                        backgroundColor: 'rgba(255,255,255,0.9)',
+                        color: '#dc2626',
+                        font: { size: 10, weight: '500' },
+                        padding: 3,
+                    },
+                };
+            }
+        });
+    }
 
     const ctx = document.getElementById(canvasId).getContext('2d');
     charts[canvasId] = new Chart(ctx, {
@@ -409,7 +436,7 @@ function renderFlowChart(monthData) {
                             label: {
                                 display: true,
                                 content: 'Design capacity: 32.4 MLD',
-                                position: 'start',
+                                position: 'end',
                                 backgroundColor: 'rgba(255,255,255,0.9)',
                                 color: '#dc2626',
                                 font: { size: 10, weight: '500' },
@@ -553,7 +580,7 @@ function renderPowerFlowChart(monthData) {
                             label: {
                                 display: true,
                                 content: 'Baseline: 482.02 KWh/ML',
-                                position: 'start',
+                                position: 'end',
                                 backgroundColor: 'rgba(255,255,255,0.9)',
                                 color: '#dc2626',
                                 font: { size: 10, weight: '500' },
@@ -806,16 +833,3 @@ function formatDate(dateStr) {
     return String(parseInt(dateStr.slice(8, 10), 10));
 }
 
-function generateDayColors(n) {
-    // Spread hues from 40° (yellow-green) to 320° (magenta), skipping the
-    // red zone (0–35° and 335–360°) so day lines never clash with limit lines.
-    // Alternate dark / light passes so adjacent days differ in brightness too.
-    const colors = [];
-    for (let i = 0; i < n; i++) {
-        const hue = Math.round(40 + (i / n) * 280);
-        const sat  = i % 2 === 0 ? 65 : 52;
-        const light = i % 2 === 0 ? 38 : 62;
-        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
-    }
-    return colors;
-}
