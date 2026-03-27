@@ -146,13 +146,13 @@ function renderAll(month) {
 
     // Daily trend charts + day pickers
     renderDailyTrend('chart-ph', 'ph', data, 'pH');
-    initDayPicker('chart-ph', data.days);
+    initDayPicker('chart-ph', data.days, data.month);
     renderDailyTrend('chart-bod', 'bod', data, 'mg/L');
-    initDayPicker('chart-bod', data.days);
+    initDayPicker('chart-bod', data.days, data.month);
     renderDailyTrend('chart-cod', 'cod', data, 'mg/L');
-    initDayPicker('chart-cod', data.days);
+    initDayPicker('chart-cod', data.days, data.month);
     renderDailyTrend('chart-tss', 'tss', data, 'mg/L');
-    initDayPicker('chart-tss', data.days);
+    initDayPicker('chart-tss', data.days, data.month);
 
     // Monthly overview charts
     renderFlowChart(data);
@@ -181,9 +181,8 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
 
     const datasets = days.map((day, i) => {
         const values = config.fields.map(f => day[f]);
-        const hasAnyData = values.some(v => v !== null);
         return {
-            label: formatDate(day.date),
+            label: formatDateLong(day.date, monthData.month),
             data: values,
             borderColor: DAY_COLORS[i % DAY_COLORS.length],
             backgroundColor: 'transparent',
@@ -194,7 +193,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
             pointBorderColor: values.map(v => v === null ? '#d97706' : DAY_COLORS[i % DAY_COLORS.length]),
             tension: 0.2,
             spanGaps: false,
-            hidden: !hasAnyData,
+            hidden: i !== 0,
         };
     });
 
@@ -301,7 +300,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
 
 // ─── Day Picker ──────────────────────────────────────────────────────────────
 
-function initDayPicker(canvasId, days) {
+function initDayPicker(canvasId, days, monthName) {
     const container = document.getElementById(`picker-${canvasId}`);
     if (!container) return;
 
@@ -346,7 +345,7 @@ function initDayPicker(canvasId, days) {
         cb.checked = isVisible;
         cb.addEventListener('change', () => applyDayVisibility(canvasId));
         label.appendChild(cb);
-        label.appendChild(document.createTextNode(` Day ${formatDate(day.date)}`));
+        label.appendChild(document.createTextNode(` ${formatDateLong(day.date, monthName)}`));
         list.appendChild(label);
     });
 
@@ -354,6 +353,7 @@ function initDayPicker(canvasId, days) {
     picker.appendChild(panel);
     container.innerHTML = '';
     container.appendChild(picker);
+    updatePickerSummary(canvasId);
 }
 
 function setAllDays(canvasId, checked) {
@@ -730,7 +730,7 @@ function renderComplianceGrid(monthData) {
     html += '</tr></thead><tbody>';
 
     days.forEach(day => {
-        html += `<tr><td class="row-label">${formatDate(day.date)}</td>`;
+        html += `<tr><td class="row-label">${formatDateLong(day.date, monthData.month)}</td>`;
         COMPLIANCE_PARAMS.forEach(param => {
             const val = day[param.key];
             if (val === null || val === undefined) {
@@ -831,5 +831,10 @@ function formatDate(dateStr) {
     if (!dateStr) return '?';
     // Slice directly from "YYYY-MM-DD" to avoid UTC→local timezone shift
     return String(parseInt(dateStr.slice(8, 10), 10));
+}
+
+function formatDateLong(dateStr, monthName) {
+    if (!dateStr) return '?';
+    return `${monthName} ${parseInt(dateStr.slice(8, 10), 10)}`;
 }
 
