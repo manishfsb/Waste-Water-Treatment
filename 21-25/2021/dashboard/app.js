@@ -58,6 +58,17 @@ const TRACKED_FIELDS = [
     'effluent_frc',
 ];
 
+// Attribute groups for the monthly missing-values breakdown chart
+const MISSING_GROUPS = [
+    { label: 'pH',    color: '#2563eb', fields: ['inlet_ph', 'primary_ph', 'secondary_ph', 'sec_sed_ph', 'effluent_ph'] },
+    { label: 'BOD',   color: '#9333ea', fields: ['inlet_bod', 'primary_bod', 'secondary_bod', 'sec_sed_bod', 'effluent_bod'] },
+    { label: 'COD',   color: '#16a34a', fields: ['inlet_cod', 'primary_cod', 'secondary_cod', 'sec_sed_cod', 'effluent_cod'] },
+    { label: 'TSS',   color: '#d97706', fields: ['inlet_tss', 'grit_tss', 'primary_tss', 'secondary_tss', 'sec_sed_tss', 'effluent_tss'] },
+    { label: 'FRC',   color: '#0891b2', fields: ['effluent_frc'] },
+    { label: 'Flow',  color: '#6b7280', fields: ['flow'] },
+    { label: 'Power', color: '#374151', fields: ['power_nea', 'power_ge', 'power_total'] },
+];
+
 const COMPLIANCE_PARAMS = [
     { key: 'effluent_ph', label: 'pH', type: 'range', min: 6.5, max: 8.0 },
     { key: 'effluent_bod', label: 'BOD₅', type: 'max', limit: 10 },
@@ -171,6 +182,7 @@ function renderAll(month) {
     renderPowerChart(data);
     renderPowerFlowChart(data);
     renderMissingChart(data);
+
 
     // Monthly parameter trend charts (one line per stage, x = days)
     renderMonthlyParam('chart-monthly-ph', 'ph', 'pH', data);
@@ -294,7 +306,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
                     labels: {
                         filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
                         boxWidth: 28,
-                        boxHeight: 2,
+                        boxHeight: 12,
                         padding: 10,
                         font: { size: 11 },
                     },
@@ -640,39 +652,37 @@ function renderMissingChart(monthData) {
 
     const days = monthData.days;
     const labels = days.map(d => formatDate(d.date));
-    const missingCounts = days.map(d => {
-        let count = 0;
-        TRACKED_FIELDS.forEach(f => {
-            if (d[f] === null || d[f] === undefined) count++;
-        });
-        return count;
-    });
+
+    // One dataset per attribute group — grouped (side-by-side) bars per day
+    const datasets = MISSING_GROUPS.map(group => ({
+        label: group.label,
+        data: days.map(day =>
+            group.fields.filter(f => day[f] === null || day[f] === undefined).length
+        ),
+        backgroundColor: group.color,
+        borderRadius: 2,
+        borderSkipped: false,
+    }));
 
     const ctx = document.getElementById(id).getContext('2d');
     charts[id] = new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Missing fields',
-                data: missingCounts,
-                backgroundColor: missingCounts.map(c => c === 0 ? '#dcfce7' : c <= 5 ? '#fef3c7' : '#fef2f2'),
-                borderColor: missingCounts.map(c => c === 0 ? '#16a34a' : c <= 5 ? '#d97706' : '#dc2626'),
-                borderWidth: 1,
-            }],
-        },
+        data: { labels, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { font: { size: 11 }, boxWidth: 12, boxHeight: 12, padding: 10 },
+                },
                 tooltip: {
                     callbacks: {
-                        label: (item) => {
-                            const dayData = days[item.dataIndex];
-                            const missing = TRACKED_FIELDS.filter(f => dayData[f] === null || dayData[f] === undefined);
-                            if (missing.length === 0) return 'No missing fields';
-                            return [`${missing.length} missing:`, ...missing.map(f => `  • ${f}`)];
+                        label: (item) => `${item.dataset.label}: ${item.parsed.y} missing`,
+                        footer: (items) => {
+                            const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                            return total > 0 ? `Total: ${total} missing` : 'No missing values';
                         },
                     },
                 },
@@ -680,7 +690,7 @@ function renderMissingChart(monthData) {
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 16, autoSkip: true } },
                 y: {
-                    title: { display: true, text: 'Missing count', font: { size: 11 } },
+                    title: { display: true, text: 'Missing values', font: { size: 11 } },
                     beginAtZero: true,
                     grace: '10%',
                     grid: { color: '#f0f0f0' },

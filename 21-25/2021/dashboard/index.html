@@ -7,7 +7,7 @@
     <title>Wastewater Treatment Plant Dashboard - 2021</title>
     <meta name="description"
         content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends for 2021.">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="index.css?v=3">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script
         src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
@@ -18,8 +18,12 @@
 <body>
     <header id="dashboard-header">
         <div class="header-content">
-            <h1>WWTP Lab Report Dashboard</h1>
-            <p class="subtitle">Kathmandu, Nepal - Project 10M170 - 2021</p>
+            <img src="KUKL.png" alt="Kathmandu Upatyeka Khanepani Limited" class="header-logo logo-kukl" width="154" height="42">
+            <div class="header-title">
+                <h1>Guheshwori Waste Water Treatment Plant Lab Report Dashboard</h1>
+                <p class="subtitle">Kathmandu, Nepal - Project 10M170 - 2021</p>
+            </div>
+            <img src="WABAC.png" alt="WABAG" class="header-logo" width="120" height="48">
         </div>
         <div class="controls">
             <label for="month-select">Month:</label>
@@ -91,7 +95,7 @@
                     <div class="chart-wrapper"><canvas id="chart-power-flow"></canvas></div>
                 </div>
                 <div class="chart-card" id="missing-card">
-                    <h3>Missing Values per Day</h3>
+                    <h3>Missing Values by Attribute per Month</h3>
                     <div class="chart-wrapper"><canvas id="chart-missing"></canvas></div>
                 </div>
                 <div class="chart-card" id="monthly-ph-card">

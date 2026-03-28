@@ -31,14 +31,49 @@ html {
 /* === Header === */
 #dashboard-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 2rem;
+    gap: 1.5rem;
+    padding: 0.75rem 2rem;
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     background: var(--bg);
     z-index: 10;
+}
+
+/* Logo + title + logo row — takes all remaining space left of the controls */
+.header-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Title block sits between the two logos and is centered */
+.header-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+
+/* Both logos get a fixed box; object-fit keeps aspect ratio intact */
+.header-logo {
+    display: block;
+    width: 120px !important;
+    height: 48px !important;
+    object-fit: contain;
+    object-position: center;
+    flex-shrink: 0;
+}
+
+.header-logo.logo-kukl {
+    width: 154px !important;
+    height: 42px !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 #dashboard-header h1 {
