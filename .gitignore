@@ -3,5 +3,6 @@
 *.xlsx
 *.csv
 
+.claude
 
 ideas.txt

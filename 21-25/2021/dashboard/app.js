@@ -74,7 +74,6 @@ const COMPLIANCE_PARAMS = [
     { key: 'effluent_bod', label: 'BOD₅', type: 'max', limit: 10 },
     { key: 'effluent_cod', label: 'COD', type: 'max', limit: 250 },
     { key: 'effluent_tss', label: 'TSS', type: 'max', limit: 10 },
-    { key: 'effluent_og', label: 'O&G', type: 'max', limit: 10 },
 ];
 
 // Stage series for monthly parameter trend charts
@@ -140,27 +139,42 @@ const DAY_COLORS = [
 
 let allData = {};
 let charts = {};
+let stagePickerMeta = {}; // canvasId -> { paramKey, seriesCount, effluentIdx }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadAllData();
-
-    // Close any open day picker when clicking outside
+    // Close any open picker when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.day-picker')) {
             document.querySelectorAll('details.day-picker').forEach(d => d.open = false);
         }
     });
 
-    const select = document.getElementById('month-select');
-    select.addEventListener('change', () => renderAll(select.value));
-    renderAll(select.value);
+    const yearSelect  = document.getElementById('year-select');
+    const monthSelect = document.getElementById('month-select');
+
+    await loadAllData(yearSelect.value);
+
+    yearSelect.addEventListener('change', async () => {
+        await loadAllData(yearSelect.value);
+        renderAll(monthSelect.value);
+    });
+    monthSelect.addEventListener('change', () => renderAll(monthSelect.value));
+    renderAll(monthSelect.value);
 });
 
-async function loadAllData() {
-    const resp = await fetch('../data/all_months.json');
-    allData = await resp.json();
+async function loadAllData(year) {
+    const path = year == '2021'
+        ? '../data/all_months.json'
+        : `../../${year}/data/all_months.json`;
+    try {
+        const resp = await fetch(path);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        allData = await resp.json();
+    } catch {
+        allData = {};
+    }
 }
 
 function renderAll(month) {
@@ -186,9 +200,13 @@ function renderAll(month) {
 
     // Monthly parameter trend charts (one line per stage, x = days)
     renderMonthlyParam('chart-monthly-ph', 'ph', 'pH', data);
+    initStagePicker('chart-monthly-ph', MONTHLY_STAGE_SERIES['ph'].map(s => s.label), 'ph');
     renderMonthlyParam('chart-monthly-bod', 'bod', 'mg/L', data);
+    initStagePicker('chart-monthly-bod', MONTHLY_STAGE_SERIES['bod'].map(s => s.label), 'bod');
     renderMonthlyParam('chart-monthly-cod', 'cod', 'mg/L', data);
+    initStagePicker('chart-monthly-cod', MONTHLY_STAGE_SERIES['cod'].map(s => s.label), 'cod');
     renderMonthlyParam('chart-monthly-tss', 'tss', 'mg/L', data);
+    initStagePicker('chart-monthly-tss', MONTHLY_STAGE_SERIES['tss'].map(s => s.label), 'tss');
 
     renderComplianceGrid(data);
     renderEfficiencyChart(data);
@@ -448,26 +466,49 @@ function renderFlowChart(monthData) {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: 'Raw Sewage Flow (MLD)',
-                data: values,
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37,99,235,0.08)',
-                fill: true,
-                borderWidth: 2,
-                pointRadius: values.map(v => v === null ? 6 : 2),
-                pointStyle: values.map(v => v === null ? 'triangle' : 'circle'),
-                pointBackgroundColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
-                pointBorderColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
-                tension: 0.3,
-                spanGaps: true,
-            }],
+            datasets: [
+                {
+                    label: 'Raw Sewage Flow (MLD)',
+                    data: values,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.08)',
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: values.map(v => v === null ? 6 : 2),
+                    pointStyle: values.map(v => v === null ? 'triangle' : 'circle'),
+                    pointBackgroundColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
+                    pointBorderColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
+                    tension: 0.3,
+                    spanGaps: true,
+                    isLimit: false,
+                },
+                {
+                    label: 'Design capacity: 32.4 MLD',
+                    data: [],
+                    borderColor: '#dc2626',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    isLimit: true,
+                },
+            ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        boxWidth: 28,
+                        boxHeight: 12,
+                        padding: 10,
+                        font: { size: 11 },
+                    },
+                },
                 annotation: {
                     annotations: {
                         flowLimit: {
@@ -477,15 +518,6 @@ function renderFlowChart(monthData) {
                             borderColor: '#dc2626',
                             borderWidth: 1.5,
                             borderDash: [6, 4],
-                            label: {
-                                display: true,
-                                content: 'Design capacity: 32.4 MLD',
-                                position: 'end',
-                                backgroundColor: 'rgba(255,255,255,0.9)',
-                                color: '#dc2626',
-                                font: { size: 10, weight: '500' },
-                                padding: 3,
-                            },
                         },
                     },
                 },
@@ -593,25 +625,48 @@ function renderPowerFlowChart(monthData) {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: 'KWh / ML',
-                data: values,
-                borderColor: '#2563eb',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: values.map(v => v === null ? 6 : 2),
-                pointStyle: values.map(v => v === null ? 'triangle' : 'circle'),
-                pointBackgroundColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
-                pointBorderColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
-                tension: 0.3,
-                spanGaps: true,
-            }],
+            datasets: [
+                {
+                    label: 'KWh / ML',
+                    data: values,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: values.map(v => v === null ? 6 : 2),
+                    pointStyle: values.map(v => v === null ? 'triangle' : 'circle'),
+                    pointBackgroundColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
+                    pointBorderColor: values.map(v => v === null ? '#d97706' : '#2563eb'),
+                    tension: 0.3,
+                    spanGaps: true,
+                    isLimit: false,
+                },
+                {
+                    label: 'Baseline: 482.02 KWh/ML',
+                    data: [],
+                    borderColor: '#dc2626',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    isLimit: true,
+                },
+            ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        boxWidth: 28,
+                        boxHeight: 12,
+                        padding: 10,
+                        font: { size: 11 },
+                    },
+                },
                 annotation: {
                     annotations: {
                         baseline: {
@@ -621,15 +676,6 @@ function renderPowerFlowChart(monthData) {
                             borderColor: '#dc2626',
                             borderWidth: 1.5,
                             borderDash: [6, 4],
-                            label: {
-                                display: true,
-                                content: 'Baseline: 482.02 KWh/ML',
-                                position: 'end',
-                                backgroundColor: 'rgba(255,255,255,0.9)',
-                                color: '#dc2626',
-                                font: { size: 10, weight: '500' },
-                                padding: 3,
-                            },
                         },
                     },
                 },
@@ -675,7 +721,10 @@ function renderMissingChart(monthData) {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: { font: { size: 11 }, boxWidth: 12, boxHeight: 12, padding: 10 },
+                    labels: {
+                        font: { size: 11 }, boxWidth: 12, boxHeight: 12, padding: 10,
+                        filter: (item, data) => data.datasets[item.datasetIndex].data.some(v => v > 0),
+                    },
                 },
                 tooltip: {
                     callbacks: {
@@ -707,10 +756,12 @@ function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
     if (charts[canvasId]) charts[canvasId].destroy();
 
     const series = MONTHLY_STAGE_SERIES[paramKey];
+    const limitInfo = LIMIT_LINE_DATA[paramKey];
     const days = monthData.days;
     const labels = days.map(d => formatDate(d.date));
 
-    const datasets = series.map(s => {
+    // Stage datasets — default only Effluent visible
+    const stageDatasets = series.map(s => {
         const values = days.map(d => (d[s.key] === null || d[s.key] === undefined) ? null : d[s.key]);
         return {
             label: s.label,
@@ -724,13 +775,86 @@ function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
             pointBorderColor: values.map(v => v === null ? '#d97706' : s.color),
             tension: 0.3,
             spanGaps: true,
+            hidden: s.label !== 'Effluent',
+            isLimit: false,
         };
     });
+
+    // Legend-only limit datasets (empty data → don't affect y-axis scale)
+    // Inlet hidden by default since only Effluent stage is selected on load
+    const limitDatasets = [
+        {
+            label: limitInfo.inlet.label,
+            data: [],
+            borderColor: LIMIT_INLET_COLOR,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            hidden: true,
+            isLimit: true,
+        },
+        {
+            label: limitInfo.effluent.label,
+            data: [],
+            borderColor: LIMIT_EFFLUENT_COLOR,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            hidden: false,
+            isLimit: true,
+        },
+    ];
+
+    // Annotations matching limit colors — no text labels
+    // Inlet annotation hidden by default (Inlet stage not selected on load)
+    const annotations = {};
+    if (paramKey === 'ph') {
+        annotations['inlet_band'] = {
+            type: 'box',
+            yMin: 6.0, yMax: 9.0,
+            backgroundColor: 'rgba(245, 158, 11, 0.08)',
+            borderColor: 'rgba(245, 158, 11, 0.55)',
+            borderWidth: 1.5,
+            display: false,
+        };
+        annotations['effluent_band'] = {
+            type: 'box',
+            yMin: 6.5, yMax: 8.0,
+            backgroundColor: 'rgba(124, 58, 237, 0.08)',
+            borderColor: 'rgba(124, 58, 237, 0.6)',
+            borderWidth: 1.5,
+            borderDash: [5, 3],
+            display: true,
+        };
+    } else {
+        if (limitInfo.inlet.value !== null) {
+            annotations['inlet_limit'] = {
+                type: 'line',
+                yMin: limitInfo.inlet.value, yMax: limitInfo.inlet.value,
+                borderColor: LIMIT_INLET_COLOR,
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                display: false,
+            };
+        }
+        if (limitInfo.effluent.value !== null) {
+            annotations['effluent_limit'] = {
+                type: 'line',
+                yMin: limitInfo.effluent.value, yMax: limitInfo.effluent.value,
+                borderColor: LIMIT_EFFLUENT_COLOR,
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                display: true,
+            };
+        }
+    }
 
     const ctx = document.getElementById(canvasId).getContext('2d');
     charts[canvasId] = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets },
+        data: { labels, datasets: [...stageDatasets, ...limitDatasets] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -738,17 +862,26 @@ function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: { font: { size: 11 }, usePointStyle: false, boxWidth: 20 },
+                    labels: {
+                        // Only show limit entries that are currently visible (not hidden by stage picker)
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true && !item.hidden,
+                        boxWidth: 28,
+                        boxHeight: 12,
+                        padding: 10,
+                        font: { size: 11 },
+                    },
                 },
                 tooltip: {
                     callbacks: {
                         label: (item) => {
+                            if (item.dataset.isLimit) return null;
                             const val = item.parsed.y;
                             if (val === null || isNaN(val)) return `${item.dataset.label}: ⚠ No data`;
                             return `${item.dataset.label}: ${val}`;
                         },
                     },
                 },
+                annotation: { annotations },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -760,6 +893,127 @@ function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
             },
         },
     });
+}
+
+// ─── Stage Picker (for monthly param charts) ──────────────────────────────────
+
+function initStagePicker(canvasId, seriesLabels, paramKey) {
+    const container = document.getElementById(`picker-${canvasId}`);
+    if (!container) return;
+
+    // Store metadata so applyStageVisibility can sync limit lines
+    stagePickerMeta[canvasId] = {
+        paramKey,
+        seriesCount: seriesLabels.length,
+        effluentIdx: seriesLabels.length - 1,
+    };
+
+    const picker = document.createElement('details');
+    picker.className = 'day-picker';
+    picker.id = `stage-details-${canvasId}`;
+
+    const summary = document.createElement('summary');
+    summary.id = `stage-summary-${canvasId}`;
+    picker.appendChild(summary);
+
+    const panel = document.createElement('div');
+    panel.className = 'day-picker-panel';
+
+    const actions = document.createElement('div');
+    actions.className = 'day-picker-actions';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.type = 'button';
+    allBtn.addEventListener('click', (e) => { e.stopPropagation(); setAllStages(canvasId, true); });
+    const noneBtn = document.createElement('button');
+    noneBtn.textContent = 'None';
+    noneBtn.type = 'button';
+    noneBtn.addEventListener('click', (e) => { e.stopPropagation(); setAllStages(canvasId, false); });
+    actions.appendChild(allBtn);
+    actions.appendChild(noneBtn);
+    panel.appendChild(actions);
+
+    const list = document.createElement('div');
+    list.className = 'day-picker-list';
+    list.id = `stage-list-${canvasId}`;
+
+    const chart = charts[canvasId];
+    seriesLabels.forEach((label, i) => {
+        const isVisible = chart ? chart.isDatasetVisible(i) : (label === 'Effluent');
+        const labelEl = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isVisible;
+        cb.addEventListener('change', () => applyStageVisibility(canvasId));
+        labelEl.appendChild(cb);
+        labelEl.appendChild(document.createTextNode(` ${label}`));
+        list.appendChild(labelEl);
+    });
+
+    panel.appendChild(list);
+    picker.appendChild(panel);
+    container.innerHTML = '';
+    container.appendChild(picker);
+    updateStageSummary(canvasId);
+}
+
+function applyStageVisibility(canvasId) {
+    const chart = charts[canvasId];
+    if (!chart) return;
+    const list = document.getElementById(`stage-list-${canvasId}`);
+    if (!list) return;
+    const checkboxes = [...list.querySelectorAll('input[type=checkbox]')];
+
+    // Toggle stage datasets
+    checkboxes.forEach((cb, i) => {
+        chart.setDatasetVisibility(i, cb.checked);
+    });
+
+    // Sync limit lines with inlet / effluent stage selection
+    const meta = stagePickerMeta[canvasId];
+    if (meta) {
+        const { paramKey, seriesCount, effluentIdx } = meta;
+        const inletVisible = checkboxes[0]?.checked || false;
+        const effluentVisible = checkboxes[effluentIdx]?.checked || false;
+
+        // Toggle legend-only limit datasets (inlet = seriesCount, effluent = seriesCount+1)
+        chart.setDatasetVisibility(seriesCount, inletVisible);
+        chart.setDatasetVisibility(seriesCount + 1, effluentVisible);
+
+        // Toggle annotations
+        const annotations = chart.options.plugins.annotation.annotations;
+        if (paramKey === 'ph') {
+            if (annotations.inlet_band)    annotations.inlet_band.display    = inletVisible;
+            if (annotations.effluent_band) annotations.effluent_band.display = effluentVisible;
+        } else {
+            if (annotations.inlet_limit)    annotations.inlet_limit.display    = inletVisible;
+            if (annotations.effluent_limit) annotations.effluent_limit.display = effluentVisible;
+        }
+    }
+
+    chart.update();
+    updateStageSummary(canvasId);
+}
+
+function setAllStages(canvasId, checked) {
+    const list = document.getElementById(`stage-list-${canvasId}`);
+    if (!list) return;
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+    applyStageVisibility(canvasId);
+}
+
+function updateStageSummary(canvasId) {
+    const list = document.getElementById(`stage-list-${canvasId}`);
+    if (!list) return;
+    const checkboxes = list.querySelectorAll('input[type=checkbox]');
+    const total = checkboxes.length;
+    const checked = [...checkboxes].filter(cb => cb.checked).length;
+    const summary = document.getElementById(`stage-summary-${canvasId}`);
+    if (summary) {
+        summary.textContent = checked === total
+            ? `All stages ▾`
+            : `${checked} of ${total} stages ▾`;
+    }
 }
 
 // ─── Compliance Grid ─────────────────────────────────────────────────────────
@@ -793,6 +1047,41 @@ function renderComplianceGrid(monthData) {
 
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    // ── Compliance summary ────────────────────────────────────────────────────
+    const summaryEl = document.getElementById('compliance-summary');
+    if (!summaryEl) return;
+
+    let summaryHtml = '<div class="compliance-summary">';
+    COMPLIANCE_PARAMS.forEach(param => {
+        const results = days.map(day => {
+            const val = day[param.key];
+            if (val === null || val === undefined) return null; // no data
+            if (param.type === 'range') return val >= param.min && val <= param.max;
+            return val <= param.limit;
+        });
+
+        const withData  = results.filter(r => r !== null);
+        const passCount = withData.filter(Boolean).length;
+        const pct = withData.length > 0 ? Math.round(passCount / withData.length * 100) : null;
+
+        const exceeded = days
+            .filter((day, i) => results[i] === false)
+            .map(day => `${formatDateLong(day.date, monthData.month)}, ${monthData.year}`);
+
+        const pctClass = pct === null ? 'cs-nodata' : pct === 100 ? 'cs-pass' : 'cs-fail';
+        const pctStr   = pct !== null ? `${pct}%` : '—';
+
+        summaryHtml += `<div class="compliance-summary-row">`;
+        summaryHtml += `<span class="cs-label">${param.label}</span>`;
+        summaryHtml += `<span class="cs-pct ${pctClass}">${pctStr}</span>`;
+        if (exceeded.length > 0) {
+            summaryHtml += `<span class="cs-exceeded">Exceeded: ${exceeded.join(' · ')}</span>`;
+        }
+        summaryHtml += `</div>`;
+    });
+    summaryHtml += '</div>';
+    summaryEl.innerHTML = summaryHtml;
 }
 
 // ─── Removal Efficiency Chart ────────────────────────────────────────────────

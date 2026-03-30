@@ -7,7 +7,7 @@
     <title>Wastewater Treatment Plant Dashboard - 2021</title>
     <meta name="description"
         content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends for 2021.">
-    <link rel="stylesheet" href="index.css?v=3">
+    <link rel="stylesheet" href="index.css?v=4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script
         src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
@@ -21,11 +21,19 @@
             <img src="KUKL.png" alt="Kathmandu Upatyeka Khanepani Limited" class="header-logo logo-kukl" width="154" height="42">
             <div class="header-title">
                 <h1>Guheshwori Waste Water Treatment Plant Lab Report Dashboard</h1>
-                <p class="subtitle">Kathmandu, Nepal - Project 10M170 - 2021</p>
+                <p class="subtitle">Kathmandu, Nepal &mdash; Project 10M170</p>
             </div>
             <img src="WABAC.png" alt="WABAG" class="header-logo" width="120" height="48">
         </div>
         <div class="controls">
+            <label for="year-select">Year:</label>
+            <select id="year-select">
+                <option value="2021">2021</option>
+                <option value="2022">2022</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+            </select>
             <label for="month-select">Month:</label>
             <select id="month-select">
                 <option value="july">July</option>
@@ -39,6 +47,58 @@
     </header>
 
     <main>
+        <!-- Monthly Trend Charts -->
+        <section id="monthly-trends">
+            <h2>Monthly Trends - Day-by-Day Over the Month</h2>
+
+            <div class="chart-grid">
+                <div class="chart-card" id="flow-card">
+                    <h3>Raw Sewage Flow</h3>
+                    <div class="chart-wrapper"><canvas id="chart-flow"></canvas></div>
+                </div>
+                <div class="chart-card" id="power-card">
+                    <h3>Power Consumption</h3>
+                    <div class="chart-wrapper"><canvas id="chart-power"></canvas></div>
+                </div>
+                <div class="chart-card" id="power-flow-card">
+                    <h3>Total Power / Flow</h3>
+                    <div class="chart-wrapper"><canvas id="chart-power-flow"></canvas></div>
+                </div>
+                <div class="chart-card" id="missing-card">
+                    <h3>Missing Values by Attribute per Month</h3>
+                    <div class="chart-wrapper"><canvas id="chart-missing"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-ph-card">
+                    <div class="chart-card-header">
+                        <h3>pH - Monthly Trend by Stage</h3>
+                        <div id="picker-chart-monthly-ph"></div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-ph"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-bod-card">
+                    <div class="chart-card-header">
+                        <h3>BOD₅ - Monthly Trend by Stage</h3>
+                        <div id="picker-chart-monthly-bod"></div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-bod"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-cod-card">
+                    <div class="chart-card-header">
+                        <h3>COD - Monthly Trend by Stage</h3>
+                        <div id="picker-chart-monthly-cod"></div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-cod"></canvas></div>
+                </div>
+                <div class="chart-card" id="monthly-tss-card">
+                    <div class="chart-card-header">
+                        <h3>TSS - Monthly Trend by Stage</h3>
+                        <div id="picker-chart-monthly-tss"></div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="chart-monthly-tss"></canvas></div>
+                </div>
+            </div>
+        </section>
+
         <!-- Daily Trend Charts -->
         <section id="daily-trends">
             <h2>Daily Trends - Value Across Treatment Stages</h2>
@@ -77,59 +137,22 @@
             </div>
         </section>
 
-        <!-- Monthly Trend Charts -->
-        <section id="monthly-trends">
-            <h2>Monthly Trends - Day-by-Day Over the Month</h2>
-
-            <div class="chart-grid">
-                <div class="chart-card" id="flow-card">
-                    <h3>Raw Sewage Flow</h3>
-                    <div class="chart-wrapper"><canvas id="chart-flow"></canvas></div>
-                </div>
-                <div class="chart-card" id="power-card">
-                    <h3>Power Consumption</h3>
-                    <div class="chart-wrapper"><canvas id="chart-power"></canvas></div>
-                </div>
-                <div class="chart-card" id="power-flow-card">
-                    <h3>Total Power / Flow</h3>
-                    <div class="chart-wrapper"><canvas id="chart-power-flow"></canvas></div>
-                </div>
-                <div class="chart-card" id="missing-card">
-                    <h3>Missing Values by Attribute per Month</h3>
-                    <div class="chart-wrapper"><canvas id="chart-missing"></canvas></div>
-                </div>
-                <div class="chart-card" id="monthly-ph-card">
-                    <h3>pH - Monthly Trend by Stage</h3>
-                    <div class="chart-wrapper"><canvas id="chart-monthly-ph"></canvas></div>
-                </div>
-                <div class="chart-card" id="monthly-bod-card">
-                    <h3>BOD₅ - Monthly Trend by Stage</h3>
-                    <div class="chart-wrapper"><canvas id="chart-monthly-bod"></canvas></div>
-                </div>
-                <div class="chart-card" id="monthly-cod-card">
-                    <h3>COD - Monthly Trend by Stage</h3>
-                    <div class="chart-wrapper"><canvas id="chart-monthly-cod"></canvas></div>
-                </div>
-                <div class="chart-card" id="monthly-tss-card">
-                    <h3>TSS - Monthly Trend by Stage</h3>
-                    <div class="chart-wrapper"><canvas id="chart-monthly-tss"></canvas></div>
-                </div>
-            </div>
-        </section>
-
         <!-- Additional Charts -->
         <section id="additional-charts">
             <h2>Compliance & Efficiency</h2>
 
             <div class="chart-grid">
-                <div class="chart-card chart-card-wide" id="compliance-card">
+                <div class="chart-card" id="compliance-card">
                     <h3>Effluent Compliance Scorecard</h3>
                     <p class="section-desc">
                         <span class="legend-item"><span class="legend-box pass"></span> Within limit</span>
                         <span class="legend-item"><span class="legend-box fail"></span> Exceeded</span>
                         <span class="legend-item"><span class="legend-box no-data"></span> No data</span>
                     </p>
-                    <div class="compliance-grid-wrapper" id="compliance-grid"></div>
+                    <div class="compliance-body">
+                        <div class="compliance-grid-wrapper" id="compliance-grid"></div>
+                        <div id="compliance-summary"></div>
+                    </div>
                 </div>
                 <div class="chart-card" id="efficiency-card">
                     <h3>Removal Efficiency %</h3>
