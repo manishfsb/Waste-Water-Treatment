@@ -4,5 +4,8 @@
 *.csv
 
 .claude
+*.pyc
 
 ideas.txt
+
+**/data/*.json
