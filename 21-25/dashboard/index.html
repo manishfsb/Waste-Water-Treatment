@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +9,17 @@
         content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends 2021–2025.">
     <link rel="stylesheet" href="index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <header id="dashboard-header">
         <div class="header-content">
-            <img src="KUKL.png" alt="Kathmandu Upatyeka Khanepani Limited" class="header-logo logo-kukl" width="154" height="42">
+            <img src="KUKL.png" alt="Kathmandu Upatyeka Khanepani Limited" class="header-logo logo-kukl" width="154"
+                height="42">
             <div class="header-title">
                 <h1>Guheshwori Waste Water Treatment Plant Lab Report Dashboard</h1>
                 <p class="subtitle">Kathmandu, Nepal &mdash; Project 10M170</p>
@@ -49,7 +53,7 @@
             <section class="eda-section">
                 <h2>Data Quality</h2>
                 <div class="chart-grid">
-                    <div class="chart-card chart-card-wide">
+                    <div class="chart-card">
                         <h3>Missing Values by Attribute (2021&ndash;2025)</h3>
                         <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing"></canvas></div>
                         <div class="eda-insight">
@@ -60,6 +64,41 @@
                             <strong>Pre-processing:</strong> Do not impute composite fields for 2021 — treat
                             them as a separate analytical layer. For 2022–2025, impute cautiously or use
                             indicator features.
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Missing Counts by Year (Flow & Power)</h3>
+                        <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing-counts-1"></canvas></div>
+                        <div class="eda-insight">
+                            Tracking the exact number of missing days for operational indicators over the years.
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Missing Counts by Year (pH)</h3>
+                        <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing-ph"></canvas></div>
+                        <div class="eda-insight">
+                            Annual breakdown of absent measurements specifically for pH (grab and composite).
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Missing Counts by Year (BOD)</h3>
+                        <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing-bod"></canvas></div>
+                        <div class="eda-insight">
+                            Annual breakdown of absent measurements specifically for BOD (grab and composite).
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Missing Counts by Year (COD)</h3>
+                        <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing-cod"></canvas></div>
+                        <div class="eda-insight">
+                            Annual breakdown of absent measurements specifically for COD (grab and composite).
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Missing Counts by Year (TSS)</h3>
+                        <div class="chart-wrapper eda-chart-tall"><canvas id="eda-missing-tss"></canvas></div>
+                        <div class="eda-insight">
+                            Annual breakdown of absent measurements specifically for TSS (grab and composite).
                         </div>
                     </div>
                 </div>
@@ -218,7 +257,8 @@
                     <div class="chart-card-header">
                         <h3>pH - Monthly Trend by Stage</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-monthly-ph" title="Show/hide composite sampling lines">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-monthly-ph"
+                                title="Show/hide composite sampling lines">Composite</button>
                             <div id="picker-chart-monthly-ph"></div>
                         </div>
                     </div>
@@ -228,7 +268,8 @@
                     <div class="chart-card-header">
                         <h3>BOD₅ - Monthly Trend by Stage</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-monthly-bod" title="Show/hide composite sampling lines">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-monthly-bod"
+                                title="Show/hide composite sampling lines">Composite</button>
                             <div id="picker-chart-monthly-bod"></div>
                         </div>
                     </div>
@@ -238,7 +279,8 @@
                     <div class="chart-card-header">
                         <h3>COD - Monthly Trend by Stage</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-monthly-cod" title="Show/hide composite sampling lines">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-monthly-cod"
+                                title="Show/hide composite sampling lines">Composite</button>
                             <div id="picker-chart-monthly-cod"></div>
                         </div>
                     </div>
@@ -248,7 +290,8 @@
                     <div class="chart-card-header">
                         <h3>TSS - Monthly Trend by Stage</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-monthly-tss" title="Show/hide composite sampling lines">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-monthly-tss"
+                                title="Show/hide composite sampling lines">Composite</button>
                             <div id="picker-chart-monthly-tss"></div>
                         </div>
                     </div>
@@ -267,7 +310,8 @@
                     <div class="chart-card-header">
                         <h3>pH Across Stages</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-ph" title="Show/hide composite sampling points">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-ph"
+                                title="Show/hide composite sampling points">Composite</button>
                             <div id="picker-chart-ph"></div>
                         </div>
                     </div>
@@ -277,7 +321,8 @@
                     <div class="chart-card-header">
                         <h3>BOD₅ Across Stages</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-bod" title="Show/hide composite sampling points">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-bod"
+                                title="Show/hide composite sampling points">Composite</button>
                             <div id="picker-chart-bod"></div>
                         </div>
                     </div>
@@ -287,7 +332,8 @@
                     <div class="chart-card-header">
                         <h3>COD Across Stages</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-cod" title="Show/hide composite sampling points">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-cod"
+                                title="Show/hide composite sampling points">Composite</button>
                             <div id="picker-chart-cod"></div>
                         </div>
                     </div>
@@ -297,7 +343,8 @@
                     <div class="chart-card-header">
                         <h3>TSS Across Stages</h3>
                         <div class="chart-card-controls">
-                            <button class="comp-toggle" data-canvas="chart-tss" title="Show/hide composite sampling points">Composite</button>
+                            <button class="comp-toggle" data-canvas="chart-tss"
+                                title="Show/hide composite sampling points">Composite</button>
                             <div id="picker-chart-tss"></div>
                         </div>
                     </div>
@@ -332,4 +379,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

@@ -1293,12 +1293,221 @@ function renderEdaMissing(days) {
                 tooltip: { callbacks: { label: i => ` ${i.parsed.x.toFixed(1)}% missing` } },
             },
             scales: {
-                x: { min: 0, max: 100, title: { display: true, text: '% Missing', font: { size: 11 } },
+                x: { min: 0, max: 40, title: { display: true, text: '% Missing', font: { size: 11 } },
                      grid: { color: '#f0f0f0' } },
                 y: { grid: { display: false }, ticks: { font: { size: 10 } } },
             },
         },
     });
+}
+
+const pluginPercentageLabel = {
+    id: 'percentageLabel',
+    afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx, data } = chart;
+        ctx.save();
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#444';
+
+        chart.data.datasets.forEach((dataset, i) => {
+            const meta = chart.getDatasetMeta(i);
+            if (!meta.hidden && dataset.pctData) {
+                meta.data.forEach((element, index) => {
+                    const pct = dataset.pctData[index];
+                    const count = dataset.data[index];
+                    if (count > 0 && pct !== null) {
+                        ctx.save();
+                        ctx.translate(element.x, element.y - 4);
+                        ctx.rotate(-Math.PI / 2);
+                        ctx.fillText(pct.toFixed(1) + ' %', 0, 0);
+                        ctx.restore();
+                    }
+                });
+            }
+        });
+        ctx.restore();
+    }
+};
+
+function createHatchPattern(color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 8;
+    canvas.height = 8;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = color + '33';
+    ctx.fillRect(0, 0, 8, 8);
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(8, 0);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(-1, 1);
+    ctx.lineTo(1, -1);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(7, 9);
+    ctx.lineTo(9, 7);
+    ctx.stroke();
+    
+    return ctx.createPattern(canvas, 'repeat');
+}
+
+function renderEdaMissingCounts1(days) {
+    edaDestroy('eda-missing-counts-1');
+    const years = [2020, 2021, 2022, 2023, 2024, 2025];
+    const fields = [
+        { key: 'flow', label: 'Flow', color: '#2563eb' },
+        { key: 'power_ge', label: 'Power GE', color: '#16a34a' },
+        { key: 'power_nea', label: 'Power NEA', color: '#d97706' },
+        { key: 'power_total', label: 'Power Total', color: '#9333ea' }
+    ];
+
+    const datasets = fields.map(f => {
+        const counts = [];
+        const pcts = [];
+        years.forEach(y => {
+            const subset = days.filter(d => d._year === y);
+            if (!subset.length) {
+                counts.push(0); pcts.push(null);
+            } else {
+                const missing = subset.filter(d => d[f.key] === null || d[f.key] === undefined).length;
+                counts.push(missing);
+                pcts.push((missing / subset.length) * 100);
+            }
+        });
+        return {
+            label: f.label,
+            data: counts,
+            pctData: pcts,
+            backgroundColor: f.color + 'cc',
+            borderColor: f.color,
+            borderWidth: 1,
+            borderRadius: 2
+        };
+    });
+
+    const ctx = document.getElementById('eda-missing-counts-1').getContext('2d');
+    edaCharts['eda-missing-counts-1'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: years.map(String), datasets },
+        plugins: [pluginPercentageLabel],
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const pct = ctx.dataset.pctData[ctx.dataIndex];
+                            if (pct === null) return `${ctx.dataset.label}: No Data for Year`;
+                            return `${ctx.dataset.label}: ${ctx.raw} missing (${pct.toFixed(1)}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                y: { title: { display: true, text: 'Missing Count', font: { size: 11 } }, grace: '10%' }
+            }
+        }
+    });
+}
+
+function renderMissingGroup(days, canvasId, fields) {
+    edaDestroy(canvasId);
+    const years = [2020, 2021, 2022, 2023, 2024, 2025];
+    const datasets = fields.map(f => {
+        const counts = [];
+        const pcts = [];
+        years.forEach(y => {
+            const subset = days.filter(d => d._year === y);
+            if (!subset.length) {
+                counts.push(0); pcts.push(null);
+            } else {
+                const missing = subset.filter(d => d[f.key] === null || d[f.key] === undefined).length;
+                counts.push(missing);
+                pcts.push((missing / subset.length) * 100);
+            }
+        });
+        return {
+            label: f.label,
+            data: counts,
+            pctData: pcts,
+            backgroundColor: f.isComp ? createHatchPattern(f.color) : f.color + 'cc',
+            borderColor: f.color,
+            borderWidth: 1,
+            borderRadius: 2
+        };
+    });
+
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    edaCharts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: years.map(String), datasets },
+        plugins: [pluginPercentageLabel],
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 10, padding: 8 } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const pct = ctx.dataset.pctData[ctx.dataIndex];
+                            if (pct === null) return `${ctx.dataset.label}: No Data for Year`;
+                            return `${ctx.dataset.label}: ${ctx.raw} missing (${pct.toFixed(1)}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: { title: { display: true, text: 'Missing', font: { size: 10 } }, grace: '25%' }
+            }
+        }
+    });
+}
+
+function renderEdaMissingCountsPh(days) {
+    renderMissingGroup(days, 'eda-missing-ph', [
+        { key: 'inlet_ph', label: 'Inlet', color: '#1f77b4' },
+        { key: 'inlet_ph_comp', label: 'Inlet Comp', color: '#1f77b4', isComp: true },
+        { key: 'effluent_ph', label: 'Outlet', color: '#2ca02c' },
+        { key: 'effluent_ph_comp', label: 'Outlet Comp', color: '#2ca02c', isComp: true }
+    ]);
+}
+
+function renderEdaMissingCountsBod(days) {
+    renderMissingGroup(days, 'eda-missing-bod', [
+        { key: 'inlet_bod', label: 'Inlet', color: '#1f77b4' },
+        { key: 'inlet_bod_comp', label: 'Inlet Comp', color: '#1f77b4', isComp: true },
+        { key: 'effluent_bod', label: 'Outlet', color: '#2ca02c' },
+        { key: 'effluent_bod_comp', label: 'Outlet Comp', color: '#2ca02c', isComp: true }
+    ]);
+}
+
+function renderEdaMissingCountsCod(days) {
+    renderMissingGroup(days, 'eda-missing-cod', [
+        { key: 'inlet_cod', label: 'Inlet', color: '#ff7f0e' },
+        { key: 'inlet_cod_comp', label: 'Inlet Comp', color: '#ff7f0e', isComp: true },
+        { key: 'effluent_cod', label: 'Outlet', color: '#d62728' },
+        { key: 'effluent_cod_comp', label: 'Outlet Comp', color: '#d62728', isComp: true }
+    ]);
+}
+
+function renderEdaMissingCountsTss(days) {
+    renderMissingGroup(days, 'eda-missing-tss', [
+        { key: 'inlet_tss', label: 'Inlet', color: '#ff7f0e' },
+        { key: 'inlet_tss_comp', label: 'Inlet Comp', color: '#ff7f0e', isComp: true },
+        { key: 'effluent_tss', label: 'Outlet', color: '#d62728' },
+        { key: 'effluent_tss_comp', label: 'Outlet Comp', color: '#d62728', isComp: true }
+    ]);
 }
 
 // 2. Flow over time (monthly avg)
@@ -1688,6 +1897,11 @@ function renderEdaAnnual(days) {
 async function initEdaView() {
     edaDays = await loadEdaData();
     renderEdaMissing(edaDays);
+    renderEdaMissingCounts1(edaDays);
+    renderEdaMissingCountsPh(edaDays);
+    renderEdaMissingCountsBod(edaDays);
+    renderEdaMissingCountsCod(edaDays);
+    renderEdaMissingCountsTss(edaDays);
     renderEdaFlow(edaDays);
     renderEdaPower(edaDays);
     renderEdaInlet(edaDays);
