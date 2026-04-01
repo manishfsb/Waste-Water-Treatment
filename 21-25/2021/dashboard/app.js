@@ -79,40 +79,40 @@ const COMPLIANCE_PARAMS = [
 // Stage series for monthly parameter trend charts
 const MONTHLY_STAGE_SERIES = {
     ph: [
-        { key: 'inlet_ph',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'inlet_ph',     label: 'Inlet',     color: '#6b7280' },
         { key: 'primary_ph',   label: 'Primary',   color: '#7c3aed' },
         { key: 'secondary_ph', label: 'Secondary', color: '#16a34a' },
         { key: 'sec_sed_ph',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_ph',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'effluent_ph',  label: 'Effluent',  color: '#2563eb' },
     ],
     bod: [
-        { key: 'inlet_bod',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'inlet_bod',     label: 'Inlet',     color: '#6b7280' },
         { key: 'primary_bod',   label: 'Primary',   color: '#7c3aed' },
         { key: 'secondary_bod', label: 'Secondary', color: '#16a34a' },
         { key: 'sec_sed_bod',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_bod',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'effluent_bod',  label: 'Effluent',  color: '#2563eb' },
     ],
     cod: [
-        { key: 'inlet_cod',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'inlet_cod',     label: 'Inlet',     color: '#6b7280' },
         { key: 'primary_cod',   label: 'Primary',   color: '#7c3aed' },
         { key: 'secondary_cod', label: 'Secondary', color: '#16a34a' },
         { key: 'sec_sed_cod',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_cod',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'effluent_cod',  label: 'Effluent',  color: '#2563eb' },
     ],
     tss: [
-        { key: 'inlet_tss',     label: 'Inlet',     color: '#2563eb' },
+        { key: 'inlet_tss',     label: 'Inlet',     color: '#6b7280' },
         { key: 'grit_tss',      label: 'Grit',      color: '#0891b2' },
         { key: 'primary_tss',   label: 'Primary',   color: '#7c3aed' },
         { key: 'secondary_tss', label: 'Secondary', color: '#16a34a' },
         { key: 'sec_sed_tss',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_tss',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'effluent_tss',  label: 'Effluent',  color: '#2563eb' },
     ],
 };
 
 // Limit line colors — amber for inlet, purple for effluent.
 // Both are distinct from the blue-first day palette and from each other.
 const LIMIT_INLET_COLOR    = '#f59e0b'; // amber
-const LIMIT_EFFLUENT_COLOR = '#7c3aed'; // purple
+const LIMIT_EFFLUENT_COLOR = '#ea580c'; // orange
 
 const LIMIT_LINE_DATA = {
     ph:  { inlet: { value: null, label: 'Inlet pH: 6.0–9.0' },       effluent: { value: null, label: 'Effluent pH: 6.5–8.0' } },
@@ -241,6 +241,31 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
         };
     });
 
+    // Calculate Average
+    const avgData = config.fields.map(field => {
+        const validValues = days.map(d => d[field]).filter(v => v !== null && v !== undefined && !isNaN(v));
+        if (validValues.length === 0) return null;
+        const sum = validValues.reduce((a, b) => a + b, 0);
+        return Math.round((sum / validValues.length) * 100) / 100;
+    });
+
+    const avgDataset = {
+        label: 'Monthly Average',
+        data: avgData,
+        borderColor: 'rgba(26, 26, 26, 0.25)',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [5, 4],
+        pointRadius: avgData.map(v => v === null ? 0 : 3),
+        pointBackgroundColor: 'rgba(26, 26, 26, 0.25)',
+        pointBorderColor: 'rgba(26, 26, 26, 0.25)',
+        tension: 0.2,
+        spanGaps: true,
+        hidden: false,
+        isLimit: false,
+        isAverage: true,
+    };
+
     // Legend-only datasets — empty data so they don't pin the y-axis range,
     // but they appear in the legend with the correct color and dash style.
     const limitDatasets = [
@@ -312,7 +337,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     charts[canvasId] = new Chart(ctx, {
         type: 'line',
-        data: { labels: config.stages, datasets: [...datasets, ...limitDatasets] },
+        data: { labels: config.stages, datasets: [avgDataset, ...datasets, ...limitDatasets] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -322,7 +347,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
                     display: true,
                     position: 'top',
                     labels: {
-                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true || data.datasets[item.datasetIndex]?.isAverage === true,
                         boxWidth: 28,
                         boxHeight: 12,
                         padding: 10,
@@ -822,8 +847,8 @@ function renderMonthlyParam(canvasId, paramKey, yLabel, monthData) {
         annotations['effluent_band'] = {
             type: 'box',
             yMin: 6.5, yMax: 8.0,
-            backgroundColor: 'rgba(124, 58, 237, 0.08)',
-            borderColor: 'rgba(124, 58, 237, 0.6)',
+            backgroundColor: 'rgba(234, 88, 12, 0.08)',
+            borderColor: 'rgba(234, 88, 12, 0.6)',
             borderWidth: 1.5,
             borderDash: [5, 3],
             display: true,
@@ -1039,7 +1064,8 @@ function renderComplianceGrid(monthData) {
                 } else {
                     pass = val <= param.limit;
                 }
-                html += `<td class="${pass ? 'pass' : 'fail'}">${typeof val === 'number' ? val.toFixed(1) : val}</td>`;
+                const symbol = pass ? ' <span style="font-size:0.85em; opacity:0.8; margin-left:2px;">✓</span>' : ' <span style="font-size:0.85em; opacity:0.8; margin-left:2px;">✕</span>';
+                html += `<td class="${pass ? 'pass' : 'fail'}">${typeof val === 'number' ? val.toFixed(1) : val}${symbol}</td>`;
             }
         });
         html += '</tr>';

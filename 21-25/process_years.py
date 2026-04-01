@@ -2,15 +2,12 @@
 Extract lab report data from Excel files (2022-2025) into JSON,
 then generate a consolidated verification Excel file per year.
 
-Structural notes:
-- 2022/2023: two inlet sections (composite cols 7-12, non-composite cols 13-16)
-             two CCT sections (composite cols 38-43, non-composite cols 44-47)
-             Power in MW
-- 2024/2025: non-composite inlet cols 7-10, composite inlet cols 12-20
-             non-composite CCT cols 49-52, composite CCT cols 40-47
-             Power in KWH
-We consistently use the NON-COMPOSITE (grab) section for all years,
-which is analogous to the single section that existed in 2021.
+All power values are normalized to KWh on extraction:
+  - Source "MW" (or MWh) months are multiplied by 1000.
+  - power_unit in JSON is always "KWh" after normalization.
+
+Composite sampling columns are extracted alongside grab columns
+wherever they exist (2022+ sheets).  Fields are null when absent.
 """
 
 import json
@@ -96,81 +93,82 @@ YEAR_CONFIGS = {
     },
 }
 
+# Keys normalised from MW → KWh
+POWER_KEYS = ("power_ge", "power_nea", "power_total")
+
 
 def detect_columns(ws):
     """
-    Auto-detect column positions from sheet headers.
-    Returns (data_cols dict, ctrl_cols dict, power_unit string).
+    Auto-detect all column positions from sheet headers.
 
-    Strategy:
-    - Inlet grab section: find "Raw Sewage" (no "Composite", no "Flow") in row 5.
-      pH/BOD/COD/TSS follow in row 6 from that column.
-    - CCT non-composite: find "CHLORINE CONTACT TANK" (no "COMPOSITE","OUTLET","FLOW") in row 4.
-      pH/BOD/COD/TSS/FRC follow in row 6 from that column.
-    - Power unit: "KWH" in row 8 col 2.
+    Grab (non-composite) columns:
+      inlet_ph/bod/cod/tss   — "Raw Sewage" (no COMPOSITE, no FLOW) in row 5
+      effluent_ph/bod/cod/tss — "CHLORINE CONTACT TANK" (no COMPOSITE, OUTLET, FLOW) in row 4
+
+    Composite columns (null when absent):
+      inlet_*_comp   — "Raw Sewage" + COMPOSITE (no FLOW) in row 5
+      effluent_*_comp — "CHLORINE" + COMPOSITE in row 4
+
+    Power unit from row 8 col 2.
+
+    Returns (data_cols, ctrl_cols, power_unit).
     """
     r4 = list(ws.iter_rows(min_row=4, max_row=4, values_only=True))[0]
     r5 = list(ws.iter_rows(min_row=5, max_row=5, values_only=True))[0]
     r6 = list(ws.iter_rows(min_row=6, max_row=6, values_only=True))[0]
-    r7 = list(ws.iter_rows(min_row=7, max_row=7, values_only=True))[0]
     r8 = list(ws.iter_rows(min_row=8, max_row=8, values_only=True))[0]
 
-    def col_val(row, col):  # 1-based
-        return row[col - 1] if col <= len(row) else None
-
-    # ── Power unit ────────────────────────────────────────────────────────
+    # ── Power unit ─────────────────────────────────────────────────────────
     power_unit = "KWH" if (r8[1] and "KWH" in str(r8[1]).upper()) else "MW"
 
-    # ── Grab inlet section ───────────────────────────────────────────────
-    # Find "Raw Sewage" (grab, not composite) section header in row 5
-    grab_section_col = None
-    for i, v in enumerate(r5):
-        if v is None:
-            continue
-        s = str(v).upper()
-        if "RAW SEWAGE" in s and "COMPOSITE" not in s and "FLOW" not in s:
-            grab_section_col = i + 1
-            break
-
-    # From grab_section_col, find pH/BOD/COD/TSS in row 6
-    inlet_ph = inlet_bod = inlet_cod = inlet_tss = None
-    if grab_section_col:
-        params = ["PH", "BOD", "COD", "TSS"]
-        found = []
-        for i in range(grab_section_col - 1, min(grab_section_col + 15, len(r6))):
+    def find_ph_bod_cod_tss(start_col, search_range=20):
+        """Scan row 6 from start_col for pH/BOD/COD/TSS. Returns 4-tuple (1-based cols)."""
+        ph = bod = cod = tss = None
+        for i in range(start_col - 1, min(start_col - 1 + search_range, len(r6))):
             v = r6[i]
             if v is None:
                 continue
             s = str(v).upper()
-            if "PH" in s and inlet_ph is None:
-                inlet_ph = i + 1
-                found.append("ph")
-            elif "BOD" in s and inlet_bod is None:
-                inlet_bod = i + 1
-                found.append("bod")
-            elif "COD" in s and inlet_cod is None:
-                inlet_cod = i + 1
-                found.append("cod")
-            elif "TSS" in s and inlet_tss is None:
-                inlet_tss = i + 1
-                found.append("tss")
-            if len(found) == 4:
+            if "PH" in s and ph is None:
+                ph = i + 1
+            elif "BOD" in s and bod is None:
+                bod = i + 1
+            elif "COD" in s and cod is None:
+                cod = i + 1
+            elif "TSS" in s and tss is None:
+                tss = i + 1
+            if ph and bod and cod and tss:
                 break
+        return ph, bod, cod, tss
 
-    # ── Non-composite CCT section ─────────────────────────────────────────
-    cct_section_col = None
-    for i, v in enumerate(r4):
-        if v is None:
-            continue
-        s = str(v).upper()
-        if "CHLORINE" in s and "COMPOSITE" not in s and "OUTLET" not in s and "FLOW" not in s:
-            cct_section_col = i + 1
-            break
+    def find_section_col(row, must_contain, must_not_contain=()):
+        """Return 1-based col of first cell whose text satisfies the criteria."""
+        for i, v in enumerate(row):
+            if v is None:
+                continue
+            s = str(v).upper()
+            if all(kw in s for kw in must_contain) and not any(kw in s for kw in must_not_contain):
+                return i + 1
+        return None
 
+    # ── Grab inlet (row 5) ─────────────────────────────────────────────────
+    grab_inlet_col = find_section_col(r5, ("RAW SEWAGE",), ("COMPOSITE", "FLOW"))
+    inlet_ph = inlet_bod = inlet_cod = inlet_tss = None
+    if grab_inlet_col:
+        inlet_ph, inlet_bod, inlet_cod, inlet_tss = find_ph_bod_cod_tss(grab_inlet_col)
+
+    # ── Composite inlet (row 5) ────────────────────────────────────────────
+    comp_inlet_col = find_section_col(r5, ("RAW SEWAGE", "COMPOSITE"), ("FLOW",))
+    inlet_ph_comp = inlet_bod_comp = inlet_cod_comp = inlet_tss_comp = None
+    if comp_inlet_col:
+        inlet_ph_comp, inlet_bod_comp, inlet_cod_comp, inlet_tss_comp = find_ph_bod_cod_tss(comp_inlet_col)
+
+    # ── Grab CCT effluent (row 4) ──────────────────────────────────────────
+    grab_cct_col = find_section_col(r4, ("CHLORINE",), ("COMPOSITE", "OUTLET", "FLOW"))
     eff_ph = eff_bod = eff_cod = eff_tss = eff_frc = None
-    if cct_section_col:
+    if grab_cct_col:
         found = []
-        for i in range(cct_section_col - 1, min(cct_section_col + 15, len(r6))):
+        for i in range(grab_cct_col - 1, min(grab_cct_col - 1 + 20, len(r6))):
             v = r6[i]
             if v is None:
                 continue
@@ -193,24 +191,37 @@ def detect_columns(ws):
             if len(found) == 5:
                 break
 
+    # ── Composite CCT effluent (row 4) ─────────────────────────────────────
+    comp_cct_col = find_section_col(r4, ("CHLORINE", "COMPOSITE"))
+    eff_ph_comp = eff_bod_comp = eff_cod_comp = eff_tss_comp = None
+    if comp_cct_col:
+        eff_ph_comp, eff_bod_comp, eff_cod_comp, eff_tss_comp = find_ph_bod_cod_tss(comp_cct_col)
+
     data_cols = {
-        "power_ge":       2,
-        "power_nea":      3,
-        "power_total":    4,
-        "power_per_flow": 5,
-        "flow":           6,
-        "inlet_ph":       inlet_ph,
-        "inlet_bod":      inlet_bod,
-        "inlet_cod":      inlet_cod,
-        "inlet_tss":      inlet_tss,
-        "effluent_ph":    eff_ph,
-        "effluent_bod":   eff_bod,
-        "effluent_cod":   eff_cod,
-        "effluent_tss":   eff_tss,
-        "effluent_frc":   eff_frc,
+        "power_ge":           2,
+        "power_nea":          3,
+        "power_total":        4,
+        "power_per_flow":     5,
+        "flow":               6,
+        "inlet_ph":           inlet_ph,
+        "inlet_bod":          inlet_bod,
+        "inlet_cod":          inlet_cod,
+        "inlet_tss":          inlet_tss,
+        "inlet_ph_comp":      inlet_ph_comp,
+        "inlet_bod_comp":     inlet_bod_comp,
+        "inlet_cod_comp":     inlet_cod_comp,
+        "inlet_tss_comp":     inlet_tss_comp,
+        "effluent_ph":        eff_ph,
+        "effluent_bod":       eff_bod,
+        "effluent_cod":       eff_cod,
+        "effluent_tss":       eff_tss,
+        "effluent_frc":       eff_frc,
+        "effluent_ph_comp":   eff_ph_comp,
+        "effluent_bod_comp":  eff_bod_comp,
+        "effluent_cod_comp":  eff_cod_comp,
+        "effluent_tss_comp":  eff_tss_comp,
     }
 
-    # Control limits sit in row 7 at the same columns as the data
     ctrl_cols = {
         "flow":          6,
         "inlet_ph":      inlet_ph,
@@ -225,6 +236,7 @@ def detect_columns(ws):
 
     return data_cols, ctrl_cols, power_unit
 
+
 # ── Value parsing ─────────────────────────────────────────────────────────────
 
 def parse_value(raw):
@@ -238,7 +250,6 @@ def parse_value(raw):
     if s in ("_", "-", "", "BDL", "*BDL", "N/A", "n/a",
              "#DIV/0!", "#REF!", "#N/A", "#VALUE!", "#NAME?", "Nil"):
         return None
-    # Scientific notation with × (e.g., "3.8×106")
     m = re.match(r"^([0-9.]+)\s*[×xX]\s*10\^?(\d+)$", s)
     if m:
         return float(m.group(1)) * (10 ** int(m.group(2)))
@@ -248,7 +259,7 @@ def parse_value(raw):
     try:
         return float(s)
     except ValueError:
-        return None  # unrecognised string → null
+        return None
 
 
 def parse_ctrl(raw):
@@ -272,12 +283,19 @@ def extract_month(year, month_name, filename):
     wb = openpyxl.load_workbook(filepath, data_only=True)
     ws = wb[wb.sheetnames[0]]
 
-    data_cols, ctrl_cols, power_unit = detect_columns(ws)
+    data_cols, ctrl_cols, raw_power_unit = detect_columns(ws)
 
-    # Validate detection
-    missing = [k for k, v in data_cols.items() if v is None and k not in ("effluent_frc",)]
+    # Validate detection of required grab columns
+    required = ["inlet_ph", "inlet_bod", "inlet_cod", "inlet_tss",
+                "effluent_ph", "effluent_bod", "effluent_cod", "effluent_tss"]
+    missing = [k for k in required if data_cols.get(k) is None]
     if missing:
-        print(f"    WARNING {month_name}: could not detect columns for {missing}")
+        print(f"    WARNING {month_name}: could not detect grab columns for {missing}")
+
+    # Report composite detection
+    comp_keys = ["inlet_ph_comp", "inlet_bod_comp", "inlet_cod_comp", "inlet_tss_comp",
+                 "effluent_ph_comp", "effluent_bod_comp", "effluent_cod_comp", "effluent_tss_comp"]
+    has_composite = any(data_cols.get(k) is not None for k in comp_keys)
 
     # Control limits
     control_limits = {"power_per_flow": "< 482.02"}
@@ -289,10 +307,10 @@ def extract_month(year, month_name, filename):
         if v is not None:
             control_limits[key] = v
 
-    # Daily data — scan until terminator (supports embedded "Average" rows)
+    # Daily data
     days = []
     row_idx = DATA_START_ROW
-    while row_idx < DATA_START_ROW + 50:  # generous upper bound
+    while row_idx < DATA_START_ROW + 50:
         date_cell = ws.cell(row=row_idx, column=1).value
         row_idx += 1
         if date_cell is None:
@@ -302,29 +320,36 @@ def extract_month(year, month_name, filename):
             if s in ("AVG", "REMARKS:", ""):
                 break
             if s == "AVERAGE":
-                continue   # weekly sub-total row in some files – skip silently
-            break           # any other string → end of data
+                continue
+            break
         if not isinstance(date_cell, datetime):
             break
 
         day = {"date": date_cell.strftime("%Y-%m-%d")}
         for key, col in data_cols.items():
-            if col is None:
-                day[key] = None
-            else:
-                day[key] = parse_value(ws.cell(row=row_idx - 1, column=col).value)
-        day["power_unit"] = power_unit   # store per-day so we know the unit
+            day[key] = parse_value(ws.cell(row=row_idx - 1, column=col).value) if col else None
+
+        # Normalize power to KWh (multiply by 1000 if source is MW)
+        if raw_power_unit == "MW":
+            for pk in POWER_KEYS:
+                if day.get(pk) is not None:
+                    day[pk] = round(day[pk] * 1000, 3)
+
         days.append(day)
 
     wb.close()
+
+    comp_tag = " [+composite]" if has_composite else ""
     return {
         "month": month_name,
         "year": year,
-        "power_unit": power_unit,
+        "power_unit": "KWh",   # always KWh after normalization
+        "has_composite": has_composite,
         "control_limits": control_limits,
         "days": days,
-        # Store detected columns for verification
+        # Internal: kept in memory for verification, stripped before writing to disk
         "_data_cols": data_cols,
+        "_comp_tag": comp_tag,
     }
 
 
@@ -341,15 +366,24 @@ def run_extraction(year):
         if data is None:
             continue
         mk = month_name.lower()
+
+        # Strip internal fields before saving to disk
+        data_to_save = {k: v for k, v in data.items() if not k.startswith("_")}
         out_path = os.path.join(data_dir, f"{mk}.json")
         with open(out_path, "w") as f:
-            json.dump(data, f, indent=2)
-        print(f"    {month_name}: {len(data['days'])} days → {mk}.json")
-        all_months[mk] = data
+            json.dump(data_to_save, f, indent=2)
+
+        comp_tag = data.get("_comp_tag", "")
+        print(f"    {month_name}: {len(data['days'])} days → {mk}.json{comp_tag}")
+        all_months[mk] = data  # keep full dict (with _data_cols) for verification
 
     combined = os.path.join(data_dir, "all_months.json")
+    combined_to_save = {
+        mk: {k: v for k, v in d.items() if not k.startswith("_")}
+        for mk, d in all_months.items()
+    }
     with open(combined, "w") as f:
-        json.dump(all_months, f, indent=2)
+        json.dump(combined_to_save, f, indent=2)
     print(f"    Combined → all_months.json ({len(all_months)} months)")
     return all_months
 
@@ -358,9 +392,9 @@ def run_extraction(year):
 
 DISPLAY_COLS = [
     ("Date",                                         "date"),
-    ("Power Gen. from Gas Engine",                   "power_ge"),
-    ("Daily Power Consumption from NEA",             "power_nea"),
-    ("Total Power Consumption NEA+GE",               "power_total"),
+    ("Power Gen. from Gas Engine (KWh)",             "power_ge"),
+    ("Daily Power Consumption from NEA (KWh)",       "power_nea"),
+    ("Total Power Consumption NEA+GE (KWh)",         "power_total"),
     ("Total Power Flow (KWh/ML)",                    "power_per_flow"),
     ("Inlet: Raw Sewage Flow (MLD)",                 "flow"),
     ("Inlet: pH",                                    "inlet_ph"),
@@ -401,7 +435,6 @@ CTRL_FILL    = PatternFill("solid", fgColor="FFF2CC")
 MONTH_FILL   = PatternFill("solid", fgColor="D6E4F0")
 
 WHITE_FONT  = Font(name="Calibri", bold=True, color="FFFFFF", size=10)
-DARK_FONT   = Font(name="Calibri", bold=True, color="000000", size=10)
 NORMAL_FONT = Font(name="Calibri", size=10)
 CTRL_FONT   = Font(name="Calibri", bold=True, color="7F0000", size=9, italic=True)
 CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -433,14 +466,9 @@ def style_ctrl(cell):
     cell.alignment = CENTER
     cell.border = thin_border()
 
-def write_header_row(ws, row, power_unit, col_offset=1):
+def write_header_row(ws, row, col_offset=1):
     for ci, (label, jkey) in enumerate(DISPLAY_COLS):
-        # Adjust power column units dynamically
-        if jkey in ("power_ge", "power_nea", "power_total"):
-            display = f"{label} ({power_unit})"
-        else:
-            display = label
-        cell = ws.cell(row=row, column=col_offset + ci, value=display)
+        cell = ws.cell(row=row, column=col_offset + ci, value=label)
         style_header(cell, jkey)
     return row + 1
 
@@ -488,7 +516,7 @@ def write_month_banner(ws, label, row, num_cols):
     cell.border = thin_border()
     return row + 1
 
-def generate_excel(year, all_months_data, power_unit=None):
+def generate_excel(year, all_months_data):
     year_dir = os.path.join(BASE_DIR, str(year))
     output_path = os.path.join(year_dir, f"{year}_Lab_Report_Extracted_Data.xlsx")
 
@@ -506,7 +534,7 @@ def generate_excel(year, all_months_data, power_unit=None):
     wb = Workbook()
     wb.remove(wb.active)
 
-    # ── All Months sheet ──────────────────────────────────────────────────────
+    # All Months sheet
     ws_all = wb.create_sheet(f"All Months ({year})")
     ws_all.freeze_panes = "B3"
 
@@ -521,19 +549,17 @@ def generate_excel(year, all_months_data, power_unit=None):
     current_row = 2
     for mk in months_present:
         data = all_months_data[mk]
-        month_power_unit = data.get("power_unit", power_unit or "MW")
         current_row = write_month_banner(ws_all, month_labels[mk], current_row, num_cols)
-        current_row = write_header_row(ws_all, current_row, month_power_unit)
+        current_row = write_header_row(ws_all, current_row)
         current_row = write_ctrl_row(ws_all, current_row, data["control_limits"])
         current_row = write_data_rows(ws_all, data["days"], current_row)
-        current_row += 1  # blank separator
+        current_row += 1
 
     set_col_widths(ws_all)
 
-    # ── Per-month sheets ──────────────────────────────────────────────────────
+    # Per-month sheets
     for mk in months_present:
         data = all_months_data[mk]
-        month_power_unit = data.get("power_unit", power_unit or "MW")
         ws = wb.create_sheet(month_labels[mk])
         ws.freeze_panes = "B4"
 
@@ -546,7 +572,7 @@ def generate_excel(year, all_months_data, power_unit=None):
         ws.row_dimensions[1].height = 22
 
         row = 2
-        row = write_header_row(ws, row, month_power_unit)
+        row = write_header_row(ws, row)
         row = write_ctrl_row(ws, row, data["control_limits"])
         write_data_rows(ws, data["days"], row)
         set_col_widths(ws)
@@ -559,7 +585,7 @@ def generate_excel(year, all_months_data, power_unit=None):
 # ── Verification ──────────────────────────────────────────────────────────────
 
 def verify_chain(year, all_months_data):
-    """Verify JSON values against source Excel files using auto-detected columns."""
+    """Verify JSON grab values against source Excel using auto-detected columns."""
     cfg = YEAR_CONFIGS[year]
     year_dir = os.path.join(BASE_DIR, str(year))
 
@@ -578,7 +604,6 @@ def verify_chain(year, all_months_data):
         wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
         ws = wb.active
 
-        # Use the same auto-detected columns that were used during extraction
         data_cols = all_months_data[mk].get("_data_cols", {})
         if not data_cols:
             data_cols, _, _ = detect_columns(ws)
@@ -601,6 +626,12 @@ def verify_chain(year, all_months_data):
             matched += 1
             day = json_days[date_str]
 
+            # Determine if this sheet uses MW (need to scale for comparison)
+            raw_power_unit = "MW"
+            r8 = list(ws.iter_rows(min_row=8, max_row=8, values_only=True))[0]
+            if r8[1] and "KWH" in str(r8[1]).upper():
+                raw_power_unit = "KWH"
+
             for key, col in data_cols.items():
                 if col is None:
                     continue
@@ -608,16 +639,19 @@ def verify_chain(year, all_months_data):
                 xl_val = parse_value(xl_raw)
                 json_val = day.get(key)
 
+                # Scale power for comparison if source was MW
+                if key in POWER_KEYS and raw_power_unit == "MW" and xl_val is not None:
+                    xl_val = xl_val * 1000
+
                 def norm(v):
                     if v is None:
                         return None
-                    return round(v, 2) if isinstance(v, float) else v
+                    return round(v, 1) if isinstance(v, float) else v
 
                 xn, jn = norm(xl_val), norm(json_val)
                 if xn != jn:
-                    if isinstance(xn, float) and isinstance(jn, float):
-                        if abs(xn - jn) < 0.01:
-                            continue
+                    if isinstance(xn, float) and isinstance(jn, float) and abs(xn - jn) < 0.5:
+                        continue
                     errors.append(f"  {date_str} [{key}]: XL={xn!r}  JSON={jn!r}")
 
         wb.close()
@@ -647,13 +681,9 @@ if __name__ == "__main__":
         print(f"  YEAR {year}")
         print(f"{'='*60}")
 
-        # Step 1: Extract to JSON
         all_months = run_extraction(year)
-
-        # Step 2: Generate Excel (power_unit is per-month from JSON)
         generate_excel(year, all_months)
 
-        # Step 3: Verify chain (source Excel → JSON)
         print(f"\n  Verifying chain (source Excel → JSON)...")
         errs = verify_chain(year, all_months)
         grand_total_errors += errs

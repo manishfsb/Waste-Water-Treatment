@@ -42,7 +42,6 @@ html {
     z-index: 10;
 }
 
-/* Logo + title + logo row — takes all remaining space left of the controls */
 .header-content {
     display: flex;
     flex-direction: row;
@@ -53,14 +52,12 @@ html {
     min-width: 0;
 }
 
-/* Title block sits between the two logos and is centered */
 .header-title {
     flex: 1;
     min-width: 0;
     text-align: center;
 }
 
-/* Both logos get a fixed box; object-fit keeps aspect ratio intact */
 .header-logo {
     display: block;
     width: 120px !important;
@@ -109,7 +106,7 @@ html {
     color: var(--text-secondary);
 }
 
-#month-select {
+#year-select, #month-select {
     font-family: inherit;
     font-size: 0.85rem;
     padding: 0.4rem 0.75rem;
@@ -122,7 +119,7 @@ html {
     transition: border-color 0.15s;
 }
 
-#month-select:focus {
+#year-select:focus, #month-select:focus {
     border-color: var(--accent);
 }
 
@@ -192,6 +189,45 @@ section h2 {
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
+}
+
+/* Controls row inside a chart card header (composite toggle + stage picker) */
+.chart-card-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* === Composite Toggle Button === */
+.comp-toggle {
+    font-family: inherit;
+    font-size: 0.73rem;
+    font-weight: 500;
+    padding: 0.28rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+
+.comp-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.comp-toggle.active {
+    background: #eff6ff;
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.comp-toggle:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 /* === Day Picker === */
@@ -432,3 +468,80 @@ section h2 {
 .legend-box.pass { background: #dcfce7; }
 .legend-box.fail { background: #fef2f2; }
 .legend-box.no-data { background: #f5f5f5; }
+
+/* === View Toggle & Controls Additions === */
+.controls-view-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+#op-controls-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controls-flex-space {
+    flex: 1;
+}
+
+.view-toggle {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.38rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.view-toggle:hover { opacity: 0.88; }
+
+/* === EDA View Layout === */
+#eda-view {
+    display: block;
+}
+
+.eda-main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+}
+
+.eda-section {
+    margin-bottom: 2.5rem;
+}
+
+.eda-section > h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+}
+
+/* Taller canvas for the full-width missing chart */
+.eda-chart-tall {
+    height: 420px !important;
+}
+
+/* Insight box below each chart */
+.eda-insight {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.79rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.eda-insight strong {
+    color: var(--text);
+    font-weight: 600;
+}
