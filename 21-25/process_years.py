@@ -109,6 +109,18 @@ def detect_columns(ws):
       inlet_*_comp   — "Raw Sewage" + COMPOSITE (no FLOW) in row 5
       effluent_*_comp — "CHLORINE" + COMPOSITE in row 4
 
+    Intermediate stage columns (row 4 section headers):
+      grit_tss                — "GRIT" section
+      primary_ph/tss/bod/cod/sludge_totalizer — "PRIMARY CLARIFIER" section
+      secondary_ph/tss/bod/cod/ras            — "SECONDARY CLARIFIER" section
+      sec_sed_ph/tss/bod/cod/ras_new          — "SECONDARY SEDIMENTATION" section
+
+    Extended inlet fields (between inlet and grit sections, row 6 scan):
+      inlet_tkn, inlet_og, inlet_po4, inlet_total_coliform, inlet_fecal_coliform
+
+    Extended effluent fields (in CCT region, row 6 scan):
+      effluent_og, effluent_nh3, effluent_total_coliform, effluent_fecal_coliform
+
     Power unit from row 8 col 2.
 
     Returns (data_cols, ctrl_cols, power_unit).
@@ -197,29 +209,128 @@ def detect_columns(ws):
     if comp_cct_col:
         eff_ph_comp, eff_bod_comp, eff_cod_comp, eff_tss_comp = find_ph_bod_cod_tss(comp_cct_col)
 
+    # ── Grit Classifier (row 4) ────────────────────────────────────────────
+    grit_col = find_section_col(r4, ("GRIT",))
+    grit_tss = grit_col  # TSS is at the header column itself in row 6
+
+    # ── Primary Clarifier (row 4) ──────────────────────────────────────────
+    prim_col = find_section_col(r4, ("PRIMARY", "CLARIFIER"))
+    primary_ph = primary_tss = primary_bod = primary_cod = primary_sludge_totalizer = None
+    if prim_col:
+        primary_ph, primary_bod, primary_cod, primary_tss = find_ph_bod_cod_tss(prim_col)
+        if primary_cod:
+            for i in range(primary_cod, min(primary_cod + 3, len(r6))):
+                v = r6[i]
+                if v is not None and ("SLUDGE" in str(v).upper() or "TOTALIZER" in str(v).upper()):
+                    primary_sludge_totalizer = i + 1
+                    break
+
+    # ── Secondary Clarifier (row 4) ───────────────────────────────────────
+    sec_col = find_section_col(r4, ("SECONDARY", "CLARIFIER"), ("SEDIMENTATION",))
+    secondary_ph = secondary_tss = secondary_bod = secondary_cod = secondary_ras = None
+    if sec_col:
+        secondary_ph, secondary_bod, secondary_cod, secondary_tss = find_ph_bod_cod_tss(sec_col)
+        if secondary_cod:
+            secondary_ras = secondary_cod + 1
+
+    # ── Secondary Sedimentation (row 4) ───────────────────────────────────
+    secsed_col = find_section_col(r4, ("SECONDARY", "SEDIMENTATION"))
+    sec_sed_ph = sec_sed_tss = sec_sed_bod = sec_sed_cod = sec_sed_ras_new = None
+    if secsed_col:
+        sec_sed_ph, sec_sed_bod, sec_sed_cod, sec_sed_tss = find_ph_bod_cod_tss(secsed_col)
+        if sec_sed_cod:
+            sec_sed_ras_new = sec_sed_cod + 1
+
+    # ── Extended inlet fields (scan between inlet sections and grit) ───────
+    inlet_tkn = inlet_og = inlet_po4 = inlet_total_coliform = inlet_fecal_coliform = None
+    inlet_cols = [x for x in [grab_inlet_col, comp_inlet_col] if x]
+    if inlet_cols and grit_col:
+        scan_start = min(inlet_cols) + 4
+        for i in range(scan_start - 1, grit_col - 1):
+            if i >= len(r6):
+                break
+            v = r6[i]
+            if v is None:
+                continue
+            s = str(v).upper()
+            if ("TKN" in s or "NH3" in s) and inlet_tkn is None:
+                inlet_tkn = i + 1
+            elif ("O & G" in s or ("OIL" in s and "GREAS" in s)) and inlet_og is None:
+                inlet_og = i + 1
+            elif ("PO4" in s or s.strip() == "TP" or "PHOSPH" in s) and inlet_po4 is None:
+                inlet_po4 = i + 1
+            elif "TOTAL COLIFORM" in s and inlet_total_coliform is None:
+                inlet_total_coliform = i + 1
+            elif "FECAL" in s and inlet_fecal_coliform is None:
+                inlet_fecal_coliform = i + 1
+
+    # ── Extended effluent fields (scan CCT region) ─────────────────────────
+    effluent_og = effluent_nh3 = effluent_total_coliform = effluent_fecal_coliform = None
+    cct_cols = [x for x in [grab_cct_col, comp_cct_col] if x]
+    if cct_cols:
+        cct_scan_start = min(cct_cols)
+        for i in range(cct_scan_start - 1, min(cct_scan_start - 1 + 25, len(r6))):
+            v = r6[i]
+            if v is None:
+                continue
+            s = str(v).upper()
+            if ("O & G" in s or ("OIL" in s and "GREAS" in s)) and effluent_og is None:
+                effluent_og = i + 1
+            elif ("AMMONI" in s or ("NH3" in s and "INLET" not in s)) and effluent_nh3 is None:
+                effluent_nh3 = i + 1
+            elif "TOTAL COLIFORM" in s and effluent_total_coliform is None:
+                effluent_total_coliform = i + 1
+            elif "FECAL" in s and effluent_fecal_coliform is None:
+                effluent_fecal_coliform = i + 1
+
     data_cols = {
-        "power_ge":           2,
-        "power_nea":          3,
-        "power_total":        4,
-        "power_per_flow":     5,
-        "flow":               6,
-        "inlet_ph":           inlet_ph,
-        "inlet_bod":          inlet_bod,
-        "inlet_cod":          inlet_cod,
-        "inlet_tss":          inlet_tss,
-        "inlet_ph_comp":      inlet_ph_comp,
-        "inlet_bod_comp":     inlet_bod_comp,
-        "inlet_cod_comp":     inlet_cod_comp,
-        "inlet_tss_comp":     inlet_tss_comp,
-        "effluent_ph":        eff_ph,
-        "effluent_bod":       eff_bod,
-        "effluent_cod":       eff_cod,
-        "effluent_tss":       eff_tss,
-        "effluent_frc":       eff_frc,
-        "effluent_ph_comp":   eff_ph_comp,
-        "effluent_bod_comp":  eff_bod_comp,
-        "effluent_cod_comp":  eff_cod_comp,
-        "effluent_tss_comp":  eff_tss_comp,
+        "power_ge":                   2,
+        "power_nea":                  3,
+        "power_total":                4,
+        "power_per_flow":             5,
+        "flow":                       6,
+        "inlet_ph":                   inlet_ph,
+        "inlet_bod":                  inlet_bod,
+        "inlet_cod":                  inlet_cod,
+        "inlet_tss":                  inlet_tss,
+        "inlet_tkn":                  inlet_tkn,
+        "inlet_og":                   inlet_og,
+        "inlet_po4":                  inlet_po4,
+        "inlet_total_coliform":       inlet_total_coliform,
+        "inlet_fecal_coliform":       inlet_fecal_coliform,
+        "inlet_ph_comp":              inlet_ph_comp,
+        "inlet_bod_comp":             inlet_bod_comp,
+        "inlet_cod_comp":             inlet_cod_comp,
+        "inlet_tss_comp":             inlet_tss_comp,
+        "grit_tss":                   grit_tss,
+        "primary_ph":                 primary_ph,
+        "primary_tss":                primary_tss,
+        "primary_bod":                primary_bod,
+        "primary_cod":                primary_cod,
+        "primary_sludge_totalizer":   primary_sludge_totalizer,
+        "secondary_ph":               secondary_ph,
+        "secondary_tss":              secondary_tss,
+        "secondary_bod":              secondary_bod,
+        "secondary_cod":              secondary_cod,
+        "secondary_ras":              secondary_ras,
+        "sec_sed_ph":                 sec_sed_ph,
+        "sec_sed_tss":                sec_sed_tss,
+        "sec_sed_bod":                sec_sed_bod,
+        "sec_sed_cod":                sec_sed_cod,
+        "sec_sed_ras_new":            sec_sed_ras_new,
+        "effluent_ph":                eff_ph,
+        "effluent_bod":               eff_bod,
+        "effluent_cod":               eff_cod,
+        "effluent_tss":               eff_tss,
+        "effluent_frc":               eff_frc,
+        "effluent_og":                effluent_og,
+        "effluent_nh3":               effluent_nh3,
+        "effluent_total_coliform":    effluent_total_coliform,
+        "effluent_fecal_coliform":    effluent_fecal_coliform,
+        "effluent_ph_comp":           eff_ph_comp,
+        "effluent_bod_comp":          eff_bod_comp,
+        "effluent_cod_comp":          eff_cod_comp,
+        "effluent_tss_comp":          eff_tss_comp,
     }
 
     ctrl_cols = {
