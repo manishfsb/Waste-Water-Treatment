@@ -1150,7 +1150,7 @@ async function switchToOperational() {
 // ─── Data loading ──────────────────────────────────────────────────────────────
 
 async function loadEdaData() {
-    const years = [2021, 2022, 2023, 2024, 2025];
+    const years = [2020, 2021, 2022, 2023, 2024, 2025];
     const all = [];
     await Promise.all(years.map(async (year) => {
         try {
@@ -1400,6 +1400,7 @@ function renderEdaMissingCounts1(days) {
         plugins: [pluginPercentageLabel],
         options: {
             responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 15 } },
             plugins: {
                 legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
                 tooltip: {
@@ -1414,7 +1415,7 @@ function renderEdaMissingCounts1(days) {
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                y: { title: { display: true, text: 'Missing Count', font: { size: 11 } }, grace: '10%' }
+                y: { title: { display: true, text: 'Missing Count', font: { size: 11 } }, grace: '40%' }
             }
         }
     });
@@ -1454,6 +1455,7 @@ function renderMissingGroup(days, canvasId, fields) {
         plugins: [pluginPercentageLabel],
         options: {
             responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 15 } },
             plugins: {
                 legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 10, padding: 8 } },
                 tooltip: {
@@ -1468,7 +1470,7 @@ function renderMissingGroup(days, canvasId, fields) {
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                y: { title: { display: true, text: 'Missing', font: { size: 10 } }, grace: '25%' }
+                y: { title: { display: true, text: 'Missing', font: { size: 10 } }, grace: '40%' }
             }
         }
     });
@@ -1750,7 +1752,7 @@ function renderEdaRemoval(days) {
 // 7. Compliance rate by year (grouped bar)
 function renderEdaCompliance(days) {
     edaDestroy('eda-compliance');
-    const years = [2021, 2022, 2023, 2024, 2025];
+    const years = [2020, 2021, 2022, 2023, 2024, 2025];
     const ctx = document.getElementById('eda-compliance').getContext('2d');
     const paramColors = ['#2563eb', '#16a34a', '#9333ea', '#d97706'];
 
@@ -1840,7 +1842,7 @@ function renderEdaSeasonal(days) {
 // 9. Annual averages as % of control limit
 function renderEdaAnnual(days) {
     edaDestroy('eda-annual');
-    const years = [2021, 2022, 2023, 2024, 2025];
+    const years = [2020, 2021, 2022, 2023, 2024, 2025];
     const params = [
         { key: 'inlet_bod',    label: 'Inlet BOD',    limit: 300  },
         { key: 'inlet_tss',    label: 'Inlet TSS',    limit: 400  },

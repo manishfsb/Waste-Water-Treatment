@@ -13,7 +13,7 @@ Changes applied to each month file and all_months.json:
 import json
 import os
 
-BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "2021", "data")
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 POWER_KEYS = ("power_ge", "power_nea", "power_total")
 COMP_FIELDS = [
     "inlet_ph_comp", "inlet_bod_comp", "inlet_cod_comp", "inlet_tss_comp",
