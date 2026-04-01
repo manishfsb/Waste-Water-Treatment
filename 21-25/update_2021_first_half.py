@@ -1,13 +1,11 @@
 import os
 import json
 import csv
-from collections import defaultdict
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_PATH = os.path.join(BASE_DIR, "RAW.csv")
-OUT_DIR = os.path.join(BASE_DIR, "data")
-OUT_FILE = os.path.join(OUT_DIR, "all_months.json")
+CSV_PATH = os.path.join(BASE_DIR, "2020", "RAW.csv")
+JSON_2021_PATH = os.path.join(BASE_DIR, "2021", "data", "all_months.json")
 
 def load_csv(csv_path):
     rows = []
@@ -31,7 +29,7 @@ def load_csv(csv_path):
                 date_fmt = date_str
 
             pc_mwh = v("PC")
-            pc_kw  = pc_mwh * 1000 if pc_mwh is not None else None   # MWh → KW
+            pc_kw  = pc_mwh * 1000 if pc_mwh is not None else None
 
             row = {
                 "date":              date_fmt,
@@ -64,25 +62,37 @@ def load_csv(csv_path):
 def main():
     rows = load_csv(CSV_PATH)
     
-    # Filter for year 2020 only
-    year_data = {}
+    # Load existing 2021 JSON
+    if os.path.exists(JSON_2021_PATH):
+        with open(JSON_2021_PATH, "r", encoding="utf-8") as f:
+            year_data = json.load(f)
+    else:
+        year_data = {}
+
+    count = 0
     for r in rows:
-        if r["date"].startswith("2020-"):
+        if r["date"].startswith("2021-"):
             m = r["date"].split("-")[1]
-            month_key = datetime.strptime(m, "%m").strftime("%B").lower()
-            if month_key not in year_data:
-                year_data[month_key] = {
-                    "month": month_key.capitalize(),
-                    "year": 2020,
-                    "control_limits": {},
-                    "days": []
-                }
-            year_data[month_key]["days"].append(r)
+            month_num = int(m)
+            # Only process Jan-June (1-6) from CSV
+            if month_num <= 6:
+                month_key = datetime.strptime(m, "%m").strftime("%B").lower()
+                if month_key not in year_data:
+                    year_data[month_key] = {
+                        "month": month_key.capitalize(),
+                        "year": 2021,
+                        "control_limits": {},
+                        "days": []
+                    }
+                # Check if date already exists to avoid duplicates
+                existing_dates = [d["date"] for d in year_data[month_key]["days"]]
+                if r["date"] not in existing_dates:
+                    year_data[month_key]["days"].append(r)
+                    count += 1
             
-    os.makedirs(OUT_DIR, exist_ok=True)
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
+    with open(JSON_2021_PATH, "w", encoding="utf-8") as f:
         json.dump(year_data, f, indent=4)
-        print(f"Wrote {sum(len(v['days']) for v in year_data.values())} days for 2020 into {OUT_FILE}")
+        print(f"Added {count} new days for Jan-June 2021 into {JSON_2021_PATH}")
 
 if __name__ == "__main__":
     main()

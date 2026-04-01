@@ -1272,6 +1272,8 @@ function renderEdaMissing(days) {
         return '#16a34a';
     });
 
+    const dynamicMax = Math.min(100, Math.ceil(Math.max(...sortedPcts) / 5) * 5);
+
     const ctx = document.getElementById('eda-missing').getContext('2d');
     edaCharts['eda-missing'] = new Chart(ctx, {
         type: 'bar',
@@ -1293,7 +1295,7 @@ function renderEdaMissing(days) {
                 tooltip: { callbacks: { label: i => ` ${i.parsed.x.toFixed(1)}% missing` } },
             },
             scales: {
-                x: { min: 0, max: 40, title: { display: true, text: '% Missing', font: { size: 11 } },
+                x: { min: 0, max: dynamicMax, title: { display: true, text: '% Missing', font: { size: 11 } },
                      grid: { color: '#f0f0f0' } },
                 y: { grid: { display: false }, ticks: { font: { size: 10 } } },
             },
