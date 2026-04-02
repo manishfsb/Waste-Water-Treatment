@@ -102,6 +102,39 @@
                             Annual breakdown of absent measurements specifically for TSS (grab and composite).
                         </div>
                     </div>
+
+                    <!-- Effluent distribution charts -->
+                    <div class="chart-card chart-card-wide">
+                        <h3>Effluent Distributions — Grab Samples (BOD, COD, TSS, pH)</h3>
+                        <div class="chart-wrapper eda-chart-img">
+                            <img src="../eda_plots/04b_effluent_distributions_grab.png"
+                                 alt="Effluent grab sample distributions by year"
+                                 class="eda-dist-img">
+                        </div>
+                        <div class="eda-insight">
+                            BOD and TSS are tightly clustered well below their 10 mg/L limits on most days,
+                            confirming good treatment performance. COD shows a wider spread with a heavier right tail.
+                            Year-on-year shifts in violin width or median position indicate changes in treatment quality or load.
+                            2020 data covers only part of the year (92 days).
+                        </div>
+                    </div>
+
+                    <div class="chart-card chart-card-wide">
+                        <h3>Effluent Distributions — Composite Samples (BOD, COD, TSS, pH)</h3>
+                        <div class="chart-wrapper eda-chart-img">
+                            <img src="../eda_plots/04b_effluent_distributions_comp.png"
+                                 alt="Effluent composite sample distributions by year"
+                                 class="eda-dist-img">
+                        </div>
+                        <div class="eda-insight">
+                            <strong>Composite sampling started in 2022</strong>, so 2020 and 2021 are absent from these panels — this is expected, not missing data.
+                            Composite samples are 24-hour pooled averages, which tend to show narrower distributions than grab samples
+                            because short-duration spikes are averaged out over the day.
+                            Where composite and grab medians diverge, it suggests intra-day variability in treatment performance.
+                            This mismatch is one reason composite effluent targets are harder to predict from point-in-time secondary clarifier readings.
+                        </div>
+                    </div>
+
                 </div>
             </section>
 

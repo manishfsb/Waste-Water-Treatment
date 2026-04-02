@@ -531,6 +531,19 @@ section h2 {
     height: 420px !important;
 }
 
+/* Wrapper for static PNG distribution images */
+.eda-chart-img {
+    height: auto !important;
+    overflow: hidden;
+}
+
+.eda-dist-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+
 /* Insight box below each chart */
 .eda-insight {
     margin-top: 1rem;

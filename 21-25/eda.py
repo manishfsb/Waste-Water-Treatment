@@ -91,8 +91,8 @@ PARAM_LABELS = {
 }
 
 sns.set_theme(style="whitegrid", palette="tab10", font_scale=0.9)
-YEAR_PALETTE = {2021: "#e41a1c", 2022: "#377eb8", 2023: "#4daf4a",
-                2024: "#984ea3", 2025: "#ff7f00"}
+YEAR_PALETTE = {2020: "#a65628", 2021: "#e41a1c", 2022: "#377eb8",
+                2023: "#4daf4a", 2024: "#984ea3", 2025: "#ff7f00"}
 
 
 # ── Load data ──────────────────────────────────────────────────────────────────
@@ -272,6 +272,180 @@ def plot_distributions(df):
     fig.suptitle("Distributions of All Attributes (2021–2025)", fontsize=13, fontweight="bold")
     fig.tight_layout()
     save(fig, "04_distributions")
+
+
+# ── 4b. Effluent distributions (dedicated) ────────────────────────────────────
+
+EFFLUENT_GRAB_PARAMS = [
+    # (col, short_label, compliance_type, limit_lo, limit_hi)
+    ("effluent_bod", "BOD (mg/L)",  "max",   None, 10),
+    ("effluent_cod", "COD (mg/L)",  "max",   None, 250),
+    ("effluent_tss", "TSS (mg/L)",  "max",   None, 10),
+    ("effluent_ph",  "pH",          "range",  6.5,  8.0),
+]
+EFFLUENT_COMP_PARAMS = [
+    ("effluent_bod_comp", "BOD (mg/L)",  "max",   None, 10),
+    ("effluent_cod_comp", "COD (mg/L)",  "max",   None, 250),
+    ("effluent_tss_comp", "TSS (mg/L)",  "max",   None, 10),
+    ("effluent_ph_comp",  "pH",          "range",  6.5,  8.0),
+]
+LOG_SCALE_COLS = {"effluent_bod", "effluent_cod", "effluent_tss",
+                  "effluent_bod_comp", "effluent_cod_comp", "effluent_tss_comp"}
+
+
+def _draw_effluent_dist_panel(df, params, ax_v, ax_h, col, label,
+                               ctype, lo, hi):
+    """Draw one violin (ax_v) + histogram/KDE (ax_h) row for a single parameter."""
+    use_log  = col in LOG_SCALE_COLS
+    data_all = df[[col, "year"]].dropna().copy()
+    data_all["year"] = data_all["year"].astype(int)
+
+    all_years   = sorted(data_all["year"].unique())
+    valid_years = [y for y in all_years
+                   if len(data_all.loc[data_all["year"] == y, col]) > 1]
+    groups      = [data_all.loc[data_all["year"] == y, col].values
+                   for y in valid_years]
+
+    # ── Violin ────────────────────────────────────────────────────────────────
+    parts = ax_v.violinplot(groups, positions=range(len(valid_years)),
+                            showmedians=True, showextrema=True)
+    for body, yr in zip(parts["bodies"], valid_years):
+        body.set_facecolor(YEAR_PALETTE.get(yr, "#999"))
+        body.set_alpha(0.65)
+        body.set_edgecolor("white")
+    parts["cmedians"].set_color("black")
+    parts["cmedians"].set_linewidth(1.8)
+    for key in ("cmaxes", "cmins", "cbars"):
+        parts[key].set_color("#555")
+        parts[key].set_linewidth(1)
+
+    ax_v.set_xticks(range(len(valid_years)))
+    ax_v.set_xticklabels([str(y) for y in valid_years], fontsize=9)
+    ax_v.set_ylabel(label, fontsize=9)
+    ax_v.set_title(f"{label} — by year", fontsize=10)
+
+    if use_log:
+        ax_v.set_yscale("log")
+        ax_v.yaxis.set_major_formatter(mticker.ScalarFormatter())
+
+    if ctype == "max" and hi is not None:
+        ax_v.axhline(hi, color="red", lw=1.2, linestyle="--",
+                     label=f"Limit {hi}", zorder=5)
+        ax_v.legend(fontsize=8)
+    elif ctype == "range":
+        ax_v.axhline(lo, color="orange", lw=1.2, linestyle="--",
+                     label=f"Min {lo}", zorder=5)
+        ax_v.axhline(hi, color="red",    lw=1.2, linestyle="--",
+                     label=f"Max {hi}", zorder=5)
+        ax_v.legend(fontsize=8)
+
+    n_obs = len(data_all)
+    med   = data_all[col].median()
+    ax_v.annotate(f"n={n_obs}  median={med:.2f}",
+                  xy=(0.01, 0.97), xycoords="axes fraction",
+                  va="top", fontsize=8, color="#444")
+
+    # ── Histogram + KDE ───────────────────────────────────────────────────────
+    vals = data_all[col].values
+    if use_log:
+        vals_pos  = vals[vals > 0]
+        vals_plot = np.log10(vals_pos)
+        ax_h.hist(vals_plot, bins=35, density=True,
+                  color="steelblue", alpha=0.55, edgecolor="none")
+        try:
+            pd.Series(vals_plot).plot.kde(ax=ax_h, color="darkblue", lw=1.6)
+        except Exception:
+            pass
+        if ctype == "max" and hi is not None:
+            ax_h.axvline(np.log10(hi), color="red", lw=1.2, linestyle="--",
+                         label=f"Limit {hi}")
+        tick_vals = [v for v in [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 300]
+                     if len(vals_pos) and
+                     np.log10(vals_pos.max()) >= np.log10(v) >=
+                     np.log10(max(0.1, vals_pos.min()))]
+        ax_h.set_xticks([np.log10(v) for v in tick_vals])
+        ax_h.set_xticklabels([str(v) for v in tick_vals], fontsize=7)
+        ax_h.set_xlabel(f"log scale  ({label})", fontsize=8)
+    else:
+        ax_h.hist(vals, bins=35, density=True,
+                  color="steelblue", alpha=0.55, edgecolor="none")
+        try:
+            pd.Series(vals).plot.kde(ax=ax_h, color="darkblue", lw=1.6)
+        except Exception:
+            pass
+        if ctype == "max" and hi is not None:
+            ax_h.axvline(hi, color="red", lw=1.2, linestyle="--",
+                         label=f"Limit {hi}")
+        elif ctype == "range":
+            ax_h.axvline(lo, color="orange", lw=1.2, linestyle="--")
+            ax_h.axvline(hi, color="red",    lw=1.2, linestyle="--")
+        ax_h.set_xlabel(label, fontsize=8)
+
+    ax_h.set_ylabel("Density", fontsize=8)
+    ax_h.set_title("All years" + (" (log₁₀ x-axis)" if use_log else ""), fontsize=9)
+    ax_h.tick_params(labelsize=7)
+    if ax_h.get_legend_handles_labels()[0]:
+        ax_h.legend(fontsize=7)
+
+
+def _plot_effluent_dist_group(df, params, sample_type, filename):
+    """
+    Generate violin + histogram panels for one group of effluent parameters.
+    Adds a shared legend and a how-to-read annotation block.
+    """
+    avail = [(c, lbl, ct, lo, hi) for c, lbl, ct, lo, hi in params
+             if c in df.columns and df[c].notna().sum() > 20]
+    if not avail:
+        return
+
+    n   = len(avail)
+    fig = plt.figure(figsize=(14, 4.5 * n + 1.4))
+
+    # Top row: how-to-read box; remaining rows: one per parameter
+    gs  = fig.add_gridspec(n + 1, 2,
+                           height_ratios=[0.30] + [1.0] * n,
+                           width_ratios=[2, 1],
+                           hspace=0.52, wspace=0.3,
+                           top=0.97, bottom=0.03)
+
+    # ── How-to-read annotation ─────────────────────────────────────────────────
+    ax_note = fig.add_subplot(gs[0, :])
+    ax_note.axis("off")
+    how_to = (
+        "HOW TO READ THESE CHARTS\n"
+        "Left panel (violin by year)  — Each coloured shape shows the full spread of daily values "
+        "for one year. Wider = more days at that concentration. The horizontal black bar is the "
+        "median. Whiskers extend to the min/max. The red dashed line is the compliance limit.\n"
+        "Right panel (histogram + curve)  — Bars show how often each value range occurred across "
+        "all years combined. The smooth curve (KDE) is a fitted density. "
+        "BOD, COD and TSS use a log₁₀ x-axis so the long right tail (rare high-pollution days) "
+        "is visible — tick labels show original mg/L values. pH uses a linear axis."
+    )
+    ax_note.text(0.0, 1.0, how_to, transform=ax_note.transAxes,
+                 va="top", ha="left", fontsize=8.5,
+                 bbox=dict(boxstyle="round,pad=0.5", facecolor="#F0F4F8",
+                           edgecolor="#BBBBBB", linewidth=0.8),
+                 wrap=True, linespacing=1.55)
+
+    # ── Parameter rows ─────────────────────────────────────────────────────────
+    for row, (col, label, ctype, lo, hi) in enumerate(avail):
+        ax_v = fig.add_subplot(gs[row + 1, 0])
+        ax_h = fig.add_subplot(gs[row + 1, 1])
+        _draw_effluent_dist_panel(df, params, ax_v, ax_h, col, label, ctype, lo, hi)
+
+    fig.savefig(os.path.join(PLOTS_DIR, f"{filename}.png"),
+                dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {filename}.png")
+
+
+def plot_effluent_distributions(df):
+    _plot_effluent_dist_group(df, EFFLUENT_GRAB_PARAMS,
+                              "Grab Samples",
+                              "04b_effluent_distributions_grab")
+    _plot_effluent_dist_group(df, EFFLUENT_COMP_PARAMS,
+                              "Composite Samples",
+                              "04b_effluent_distributions_comp")
 
 
 # ── 5. Box plots by year ───────────────────────────────────────────────────────
@@ -588,6 +762,9 @@ if __name__ == "__main__":
 
     print("[4/12] Distributions...")
     plot_distributions(df)
+
+    print("[4b/12] Effluent distributions — grab & composite (violin + histogram)...")
+    plot_effluent_distributions(df)
 
     print("[5/12] Box plots by year...")
     plot_boxplot_by_year(df)
