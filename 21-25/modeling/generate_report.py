@@ -25,8 +25,8 @@ DATA_DIR     = os.path.join(BASE_DIR, "data")
 MODELS_DIR   = os.path.join(BASE_DIR, "models")
 RESULTS_FILE = os.path.join(BASE_DIR, "results.xlsx")
 
-TRAIN_YEARS = [2020, 2021, 2022, 2023]
-TEST_YEAR   = 2024
+TRAIN_YEARS = [2020, 2021, 2022, 2023, 2024]
+TEST_YEAR   = 2025
 
 YEAR_COLOURS = {
     2020: "#6BAED6", 2021: "#2171B5", 2022: "#74C476",

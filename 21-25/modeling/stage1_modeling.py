@@ -41,8 +41,8 @@ PLOTS_DIR    = os.path.join(BASE_DIR, "plots")
 RESULTS_FILE = os.path.join(BASE_DIR, "results.xlsx")
 
 # ── Constants ──────────────────────────────────────────────────────────────────
-TRAIN_YEARS = [2020, 2021, 2022, 2023]
-TEST_YEAR   = 2024
+TRAIN_YEARS = [2020, 2021, 2022, 2023, 2024]
+TEST_YEAR   = 2025
 RF_PARAMS   = dict(n_estimators=200, random_state=42, n_jobs=-1)
 
 # ── Feature sets ───────────────────────────────────────────────────────────────
@@ -343,7 +343,7 @@ def main():
         print(f"\n{'─'*60}")
         print(f"Model: {name}")
         print(f"  Target : {target}")
-        print(f"  Years  : {min_year}–2025 (train ≤2023, test 2024)")
+        print(f"  Years  : {min_year}–2025 (train ≤{max(TRAIN_YEARS)}, test {TEST_YEAR})")
 
         # Determine run number from this model's subset file
         subset_path = os.path.join(DATA_DIR, f"{name}.xlsx")
