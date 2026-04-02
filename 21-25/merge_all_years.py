@@ -39,6 +39,19 @@ COLUMNS = [
     ("Inlet BOD (mg/L, Composite)",            "inlet_bod_comp"),
     ("Inlet COD (mg/L, Composite)",            "inlet_cod_comp"),
     ("Inlet TSS (mg/L, Composite)",            "inlet_tss_comp"),
+    ("Primary TSS (mg/L)",                     "primary_tss"),
+    ("Primary BOD (mg/L)",                     "primary_bod"),
+    ("Primary COD (mg/L)",                     "primary_cod"),
+    ("Sec Clarifier pH",                       "secondary_ph"),
+    ("Sec Clarifier TSS (mg/L)",               "secondary_tss"),
+    ("Sec Clarifier BOD (mg/L)",               "secondary_bod"),
+    ("Sec Clarifier COD (mg/L)",               "secondary_cod"),
+    ("Sec Clarifier RAS",                      "secondary_ras"),
+    ("Sec Sed pH",                             "sec_sed_ph"),
+    ("Sec Sed TSS (mg/L)",                     "sec_sed_tss"),
+    ("Sec Sed BOD (mg/L)",                     "sec_sed_bod"),
+    ("Sec Sed COD (mg/L)",                     "sec_sed_cod"),
+    ("Sec Sed RAS (New)",                      "sec_sed_ras_new"),
     ("Effluent pH (Grab)",                     "effluent_ph"),
     ("Effluent BOD (mg/L, Grab)",              "effluent_bod"),
     ("Effluent COD (mg/L, Grab)",              "effluent_cod"),
@@ -63,10 +76,13 @@ def thin_border():
     s = _side()
     return Border(left=s, right=s, top=s, bottom=s)
 
-HDR_MAIN  = PatternFill("solid", fgColor="1F4E79")
-HDR_POWER = PatternFill("solid", fgColor="2E75B6")
-HDR_INLET = PatternFill("solid", fgColor="375623")
-HDR_EFFL  = PatternFill("solid", fgColor="833C00")
+HDR_MAIN      = PatternFill("solid", fgColor="1F4E79")
+HDR_POWER     = PatternFill("solid", fgColor="2E75B6")
+HDR_INLET     = PatternFill("solid", fgColor="375623")
+HDR_EFFL      = PatternFill("solid", fgColor="833C00")
+HDR_PRIMARY   = PatternFill("solid", fgColor="7030A0")
+HDR_SECONDARY = PatternFill("solid", fgColor="006B6B")
+HDR_SECSED    = PatternFill("solid", fgColor="2E4057")
 
 WHITE_BOLD  = Font(name="Calibri", bold=True, color="FFFFFF", size=10)
 NORMAL_FONT = Font(name="Calibri", size=10)
@@ -78,6 +94,12 @@ def col_fill(jkey):
         return HDR_POWER
     if jkey.startswith("inlet") or jkey == "flow":
         return HDR_INLET
+    if jkey.startswith("primary"):
+        return HDR_PRIMARY
+    if jkey.startswith("secondary"):
+        return HDR_SECONDARY
+    if jkey.startswith("sec_sed"):
+        return HDR_SECSED
     if jkey.startswith("effluent"):
         return HDR_EFFL
     return HDR_MAIN
@@ -246,7 +268,16 @@ def write_excel(rows, output_path):
                 cell.number_format = fmt
 
     # Column widths
-    widths = [13, 12, 12, 12, 14, 9, 10, 14, 14, 14, 14, 18, 18, 18, 13, 17, 17, 17, 12, 17, 21, 21, 21]
+    widths = [
+        13, 12, 12, 12, 14, 9,          # Date, Power x4, Flow
+        10, 14, 14, 14,                  # Inlet grab (pH, BOD, COD, TSS)
+        14, 18, 18, 18,                  # Inlet composite (pH, BOD, COD, TSS)
+        14, 14, 14,                      # Primary (TSS, BOD, COD)
+        14, 16, 16, 16, 14,              # Sec Clarifier (pH, TSS, BOD, COD, RAS)
+        12, 16, 16, 16, 14,              # Sec Sed (pH, TSS, BOD, COD, RAS)
+        13, 17, 17, 17, 12,              # Effluent grab (pH, BOD, COD, TSS, FRC)
+        17, 21, 21, 21,                  # Effluent composite (pH, BOD, COD, TSS)
+    ]
     for i, w in enumerate(widths[:num_cols], start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
