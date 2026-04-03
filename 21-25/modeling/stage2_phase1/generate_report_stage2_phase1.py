@@ -235,6 +235,11 @@ def results_table_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
         cv   = f"{row['RF_CV_RMSE']:.3f}"   if 'RF_CV_RMSE'   in row.index and pd.notna(row.get('RF_CV_RMSE'))   else "—"
         mae  = f"{row['RF_MAE_test']:.3f}"   if 'RF_MAE_test'  in row.index and pd.notna(row.get('RF_MAE_test'))  else "—"
         mape = f"{row['RF_MAPE_test']:.1f}%" if 'RF_MAPE_test' in row.index and pd.notna(row.get('RF_MAPE_test')) else "—"
+
+        ridge_rmse = f"{row['Ridge_RMSE_test']:.3f}" if 'Ridge_RMSE_test' in row.index and pd.notna(row.get('Ridge_RMSE_test')) else "—"
+        ridge_r2_v = row['Ridge_R2_test'] if 'Ridge_R2_test' in row.index and pd.notna(row.get('Ridge_R2_test')) else None
+        ridge_r2   = cell_r2(ridge_r2_v) if ridge_r2_v is not None else 'style="text-align:center;color:#aaa"'
+        ridge_r2_s = f"{ridge_r2_v:.3f}" if ridge_r2_v is not None else "—"
         rows_html += f"""
         <tr>
           <td>{row['model']}</td>
@@ -248,6 +253,8 @@ def results_table_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
           {delta_cell(row['RF_R2_test'], s1_r2)}
           <td style="text-align:center">{row['LR_RMSE_test']:.3f}</td>
           <td {cell_r2(row['LR_R2_test'])}>{row['LR_R2_test']:.3f}</td>
+          <td style="text-align:center">{ridge_rmse}</td>
+          <td {ridge_r2}>{ridge_r2_s}</td>
         </tr>"""
 
     return f"""
@@ -258,10 +265,12 @@ def results_table_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
           <th colspan="3" style="background:#1F4E79">RF — Train</th>
           <th colspan="5" style="background:#006B6B">RF — Test (Stage 2 P1)</th>
           <th colspan="2" style="background:#375623">LR Baseline — Test</th>
+          <th colspan="2" style="background:#4292C6">Ridge — Test</th>
         </tr>
         <tr>
           <th>RMSE</th><th>CV RMSE</th><th>R²</th>
           <th>RMSE</th><th>MAE</th><th>MAPE</th><th>R²</th><th>ΔR² vs Stage 1</th>
+          <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
         </tr>
       </thead>
@@ -282,7 +291,8 @@ def observations_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
     run_data  = df_s2[df_s2["run"] == run]
     best      = run_data.loc[run_data["RF_R2_test"].idxmax()]
     worst     = run_data.loc[run_data["RF_R2_test"].idxmin()]
-    rf_beats  = (run_data["RF_RMSE_test"] < run_data["LR_RMSE_test"]).sum()
+    rf_beats_lr     = (run_data["RF_RMSE_test"] < run_data["LR_RMSE_test"]).sum()
+    rf_beats_ridge  = (run_data["RF_RMSE_test"] < run_data["Ridge_RMSE_test"]).sum() if "Ridge_RMSE_test" in run_data.columns else None
 
     improvement = ""
     if df_s1 is not None:
@@ -307,7 +317,8 @@ def observations_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
       <li>Worst R² on test set: <b>{worst['model']}</b>
           (RF R² = {worst['RF_R2_test']:.3f})</li>
       <li>RF outperforms LR baseline in
-          <b>{rf_beats} of {len(run_data)}</b> models.</li>
+          <b>{rf_beats_lr} of {len(run_data)}</b> models.</li>
+      {f"<li>RF outperforms Ridge (regularised linear) in <b>{rf_beats_ridge} of {len(run_data)}</b> models.</li>" if rf_beats_ridge is not None else ""}
     </ul>"""
 
 
@@ -409,9 +420,11 @@ def build_report(run: int) -> str:
                     )
                     break
 
-            cv_rmse  = f"{row['RF_CV_RMSE']:.3f}"   if 'RF_CV_RMSE'   in row.index and pd.notna(row.get('RF_CV_RMSE'))   else "—"
-            mae_test = f"{row['RF_MAE_test']:.3f}"   if 'RF_MAE_test'  in row.index and pd.notna(row.get('RF_MAE_test'))  else "—"
-            mape_test= f"{row['RF_MAPE_test']:.1f}%" if 'RF_MAPE_test' in row.index and pd.notna(row.get('RF_MAPE_test')) else "—"
+            cv_rmse    = f"{row['RF_CV_RMSE']:.3f}"    if 'RF_CV_RMSE'     in row.index and pd.notna(row.get('RF_CV_RMSE'))     else "—"
+            mae_test   = f"{row['RF_MAE_test']:.3f}"   if 'RF_MAE_test'    in row.index and pd.notna(row.get('RF_MAE_test'))    else "—"
+            mape_test  = f"{row['RF_MAPE_test']:.1f}%" if 'RF_MAPE_test'   in row.index and pd.notna(row.get('RF_MAPE_test'))   else "—"
+            ridge_rmse = f"{row['Ridge_RMSE_test']:.3f}" if 'Ridge_RMSE_test' in row.index and pd.notna(row.get('Ridge_RMSE_test')) else "—"
+            ridge_r2   = f"{row['Ridge_R2_test']:.3f}"   if 'Ridge_R2_test'   in row.index and pd.notna(row.get('Ridge_R2_test'))   else "—"
             sections_html += f"""
             <div class="card">
               <h3>{sample_type} model
@@ -429,6 +442,7 @@ def build_report(run: int) -> str:
                 MAPE: {mape_test} &nbsp;|&nbsp;
                 RF test R²: <b>{row['RF_R2_test']:.3f}</b>
                 {s1_note}
+                &nbsp;|&nbsp; Ridge test RMSE: {ridge_rmse} &nbsp;|&nbsp; Ridge test R²: {ridge_r2}
                 {'<br><span style="color:#555">RF params: ' + rf_params_str + '</span>' if rf_params_str else ''}
               </p>
               <div class="grid-2">

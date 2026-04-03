@@ -33,7 +33,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
@@ -60,7 +61,8 @@ RF_PARAM_DIST = {
     "min_samples_split": [2, 5, 10],
     "max_features":      ["sqrt", 0.5, 0.7],
 }
-RF_TUNE_ITER = 40
+RF_TUNE_ITER  = 40
+RIDGE_ALPHAS  = [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
 
 YEAR_COLOURS = {
     2021: "#2171B5", 2022: "#74C476",
@@ -159,6 +161,22 @@ def tune_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     return search.best_estimator_, float(-search.best_score_)
 
 
+# ── Ridge tuning ──────────────────────────────────────────────────────────────
+
+def tune_ridge(X_train: np.ndarray, y_train: np.ndarray):
+    """GridSearchCV over alpha with TimeSeriesSplit. Returns (scaler, model, cv_rmse, alpha)."""
+    scaler   = StandardScaler()
+    X_scaled = scaler.fit_transform(X_train)
+    tscv     = TimeSeriesSplit(n_splits=3)
+    search   = GridSearchCV(
+        Ridge(), {"alpha": RIDGE_ALPHAS},
+        scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
+    )
+    search.fit(X_scaled, y_train)
+    cv_rmse = float(-search.best_score_)
+    return scaler, search.best_estimator_, cv_rmse, search.best_params_["alpha"]
+
+
 # ── Training ───────────────────────────────────────────────────────────────────
 
 def train_model(name: str, df_sub: pd.DataFrame, target: str):
@@ -180,11 +198,16 @@ def train_model(name: str, df_sub: pd.DataFrame, target: str):
     rf_test_pred   = rf.predict(X_test)
 
     # Linear Regression baseline
-    scaler      = StandardScaler()
-    lr          = LinearRegression()
-    lr.fit(scaler.fit_transform(X_train), y_train)
-    lr_train_pred = lr.predict(scaler.transform(X_train))
-    lr_test_pred  = lr.predict(scaler.transform(X_test))
+    lr_scaler     = StandardScaler()
+    lr            = LinearRegression()
+    lr.fit(lr_scaler.fit_transform(X_train), y_train)
+    lr_train_pred = lr.predict(lr_scaler.transform(X_train))
+    lr_test_pred  = lr.predict(lr_scaler.transform(X_test))
+
+    # Ridge (tuned)
+    ridge_scaler, ridge, ridge_cv_rmse, ridge_alpha = tune_ridge(X_train, y_train)
+    ridge_train_pred = ridge.predict(ridge_scaler.transform(X_train))
+    ridge_test_pred  = ridge.predict(ridge_scaler.transform(X_test))
 
     results = {
         "model":                name,
@@ -205,6 +228,15 @@ def train_model(name: str, df_sub: pd.DataFrame, target: str):
         "LR_R2_train":          r2_score(y_train, lr_train_pred),
         "LR_RMSE_test":         rmse(y_test,  lr_test_pred),
         "LR_R2_test":           r2_score(y_test,  lr_test_pred),
+        "Ridge_RMSE_train":     rmse(y_train, ridge_train_pred),
+        "Ridge_MAE_train":      mae(y_train,  ridge_train_pred),
+        "Ridge_R2_train":       r2_score(y_train, ridge_train_pred),
+        "Ridge_CV_RMSE":        ridge_cv_rmse,
+        "Ridge_RMSE_test":      rmse(y_test,  ridge_test_pred),
+        "Ridge_MAE_test":       mae(y_test,   ridge_test_pred),
+        "Ridge_MAPE_test":      mape(y_test,  ridge_test_pred),
+        "Ridge_R2_test":        r2_score(y_test,  ridge_test_pred),
+        "Ridge_alpha":          ridge_alpha,
     }
     return results, rf, (test, rf_test_pred, lr_test_pred)
 

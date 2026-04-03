@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RF vs ElasticNet Comparison Report — Run 1</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+  body { font-family:Calibri,Arial,sans-serif; margin:0; background:#F5F5F5; color:#222; }
+  .container { max-width:1200px; margin:0 auto; padding:30px 24px; }
+  h1 { color:#333; border-bottom:3px solid #333; padding-bottom:10px; }
+  h2 { color:#333; margin-top:48px; border-left:5px solid #555; padding-left:12px; }
+  .card { background:white; border-radius:8px; padding:20px;
+          box-shadow:0 1px 4px rgba(0,0,0,0.12); margin-bottom:24px; }
+  .summary-table { border-collapse:collapse; width:100%; font-size:13px; }
+  .summary-table th, .summary-table td { border:1px solid #ddd; padding:6px 10px; }
+  .summary-table thead th { background:#333; color:white; text-align:center; }
+  .summary-table tbody tr:nth-child(even) { background:#F9F9F9; }
+  .table-note { font-size:12px; color:#555; margin-top:8px; }
+  .obs-card { background:#F0F4F8; border-left:5px solid #555;
+              border-radius:4px; padding:14px 20px; margin-bottom:20px; }
+  .obs-card ul { margin:0; padding-left:20px; line-height:1.9; }
+  .meta { font-size:12px; color:#888; margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>RF vs ElasticNet Regression — Comparison Report</h1>
+  <p class="meta">
+    All stages (Stage 1, Stage 2 P1, Stage 2 P2) &nbsp;|&nbsp;
+    Test year: 2025 &nbsp;|&nbsp; ElasticNet run: <b>1</b>
+  </p>
+
+  <h2>Overview Heatmap</h2>
+  <div class="card"><div>                            <div id="0e38d89f-e93c-4a95-8421-db52b58dfb4b" class="plotly-graph-div" style="height:520px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("0e38d89f-e93c-4a95-8421-db52b58dfb4b")) {                    Plotly.newPlot(                        "0e38d89f-e93c-4a95-8421-db52b58dfb4b",                        [{"colorbar":{"thickness":14,"title":{"text":"R\u00b2"}},"colorscale":[[0.0,"#9C0006"],[0.35,"#FFC7CE"],[0.5,"#FFEB9C"],[0.65,"#C6EFCE"],[1.0,"#276221"]],"hovertemplate":"Model: %{y}\u003cbr\u003eConfig: %{x}\u003cbr\u003eR\u00b2: %{z:.3f}\u003cextra\u003e\u003c\u002fextra\u003e","text":[["0.18","-0.00","0.57","0.41","0.54","0.41"],["-0.14","-0.11","0.40","-0.00","0.31","-0.29"],["-0.23","-0.18","0.53","0.33","0.49","0.33"],["-0.29","-0.50","-0.17","-0.27","-0.28","-0.37"],["0.02","0.01","0.25","0.59","0.24","0.60"],["-0.39","-0.22","0.19","-1.35","0.03","0.29"],["-0.64","-0.76","0.24","0.31","0.24","0.31"],["-1.69","-1.41","-0.23","-0.23","-0.17","-0.24"]],"texttemplate":"%{text}","x":["Stage 1\u003cbr\u003eRF","Stage 1\u003cbr\u003eElNet","Stage 2 P1\u003cbr\u003eRF","Stage 2 P1\u003cbr\u003eElNet","Stage 2 P2\u003cbr\u003eRF","Stage 2 P2\u003cbr\u003eElNet"],"y":["grab_BOD","comp_BOD","grab_COD","comp_COD","grab_TSS","comp_TSS","grab_pH","comp_pH"],"z":{"dtype":"f8","bdata":"G55eKcsQxz+Sy39Iv31dv8ZtNIC3QOI\u002fRwN4CyQo2j\u002fMXUvIBz3hP4ofY+5aQto\u002fTKYKRiV1wr9Cz2bV52q7vy0hH\u002fRsVtk\u002fLUMc6+I2Or9ApN++DpzTP1kXt9EA3tK\u002fgQTFjzF3zb93LSEf9GzGv8uhRbbz\u002feA\u002fFYxK6gQ01T87AU2EDU\u002ffP9BE2PD0StU\u002fzTtO0ZFc0r\u002fImLuWkA\u002fgvzY8vVKWIca\u002fBcWPMXct0b\u002fx9EpZhjjSv0dy+Q\u002fpt9e\u002fMCqpE9BEmD\u002fA7J48LNSKP2WqYFRSJ9A\u002fgnNGlPYG4z9YyjLEsS7OP5M6AU2EDeM\u002fZMxdS8gH2b+z6nO1FfvLvzSAt0CC4sc\u002fPZtVn6ut9b\u002fmP6Tfvg6cP4EmwoanV9I\u002fO99PjZdu5L+BJsKGp1fov7x0kxgEVs4\u002fvw6cM6K00z9N845TdCTPP78OnDOitNM\u002fBOeMKO0N+7++MJkqGJX2v96Th4Va08y\u002ftFn1udqKzb8tIR\u002f0bFbFv1yPwvUoXM+\u002f","shape":"8, 6"},"zmid":0,"type":"heatmap"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"side":"top","tickangle":-30},"yaxis":{"autorange":"reversed"},"margin":{"l":140,"r":20,"t":100,"b":20},"title":{"text":"R\u00b2 Test Set \u2014 All Models, All Stages, RF vs ElasticNet"},"height":520},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div></div>
+
+  <h2>ΔR² — Where ElasticNet beats RF (and where it doesn't)</h2>
+  <div class="card"><div>                            <div id="deadd775-7792-407e-b835-f2614ab25ede" class="plotly-graph-div" style="height:650px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("deadd775-7792-407e-b835-f2614ab25ede")) {                    Plotly.newPlot(                        "deadd775-7792-407e-b835-f2614ab25ede",                        [{"hovertemplate":"%{y}\u003cbr\u003e\u0394R\u00b2 (ElNet\u2212RF): %{x:+.3f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#CB181D","#238B45","#238B45","#238B45","#238B45","#238B45","#238B45","#238B45","#238B45","#238B45"]},"orientation":"h","x":[-1.5415,-0.6012,-0.3963,-0.21500000000000002,-0.19970000000000004,-0.182,-0.1617,-0.15650000000000003,-0.12839999999999996,-0.12220000000000009,-0.09550000000000003,-0.08589999999999998,-0.07830000000000001,-0.010599999999999998,-0.005599999999999994,0.037099999999999994,0.05499999999999999,0.06460000000000002,0.07090000000000002,0.17250000000000001,0.25920000000000004,0.2795000000000001,0.3422,0.35960000000000003],"y":["Stage 2 P1 \u00b7 comp_TSS","Stage 2 P2 \u00b7 comp_BOD","Stage 2 P1 \u00b7 comp_BOD","Stage 1 \u00b7 comp_COD","Stage 2 P1 \u00b7 grab_COD","Stage 1 \u00b7 grab_BOD","Stage 2 P1 \u00b7 grab_BOD","Stage 2 P2 \u00b7 grab_COD","Stage 2 P2 \u00b7 grab_BOD","Stage 1 \u00b7 grab_pH","Stage 2 P1 \u00b7 comp_COD","Stage 2 P2 \u00b7 comp_COD","Stage 2 P2 \u00b7 comp_pH","Stage 1 \u00b7 grab_TSS","Stage 2 P1 \u00b7 comp_pH","Stage 1 \u00b7 comp_BOD","Stage 1 \u00b7 grab_COD","Stage 2 P2 \u00b7 grab_pH","Stage 2 P1 \u00b7 grab_pH","Stage 1 \u00b7 comp_TSS","Stage 2 P2 \u00b7 comp_TSS","Stage 1 \u00b7 comp_pH","Stage 2 P1 \u00b7 grab_TSS","Stage 2 P2 \u00b7 grab_TSS"],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"shapes":[{"line":{"color":"black","dash":"dash","width":1},"type":"line","x0":0,"x1":0,"xref":"x","y0":0,"y1":1,"yref":"y domain"}],"margin":{"l":200,"r":20,"t":50,"b":40},"title":{"text":"\u0394R\u00b2 = ElasticNet minus RF  (positive = ElasticNet better)"},"height":650,"xaxis":{"title":{"text":"\u0394R\u00b2"}},"plot_bgcolor":"#FAFAFA"},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div></div>
+
+  <h2>Full Summary Table</h2>
+  <div class="card">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Stage</th><th>Model</th>
+          <th colspan="2" style="background:#1F4E79">RF (train)</th>
+          <th colspan="2" style="background:#2171B5">RF (test)</th>
+          <th colspan="2" style="background:#08519C">ElNet (train)</th>
+          <th colspan="2" style="background:#2171B5">ElNet (test)</th>
+          <th style="background:#555">Winner</th>
+        </tr>
+        <tr>
+          <th></th><th></th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+                <tr>
+                  <td rowspan="8" style="font-weight:bold;vertical-align:middle;text-align:center;background:#F0F4F8">Stage 1</td>
+                  <td>grab_BOD</td>
+                  <td style="text-align:center">11.608</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.329</td>
+                  <td style="text-align:center">3.459</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.180</td>
+                  <td style="text-align:center">14.170</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.000</td>
+                  <td style="text-align:center">3.823</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.002</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_COD</td>
+                  <td style="text-align:center">37.068</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.195</td>
+                  <td style="text-align:center">23.737</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.230</td>
+                  <td style="text-align:center">41.325</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.000</td>
+                  <td style="text-align:center">23.200</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.175</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_TSS</td>
+                  <td style="text-align:center">41.270</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.159</td>
+                  <td style="text-align:center">9.484</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.024</td>
+                  <td style="text-align:center">44.975</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.002</td>
+                  <td style="text-align:center">9.534</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.013</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_pH</td>
+                  <td style="text-align:center">0.227</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.374</td>
+                  <td style="text-align:center">0.279</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.638</td>
+                  <td style="text-align:center">0.286</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.004</td>
+                  <td style="text-align:center">0.289</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.761</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_BOD</td>
+                  <td style="text-align:center">13.910</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.423</td>
+                  <td style="text-align:center">3.469</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.144</td>
+                  <td style="text-align:center">18.081</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.025</td>
+                  <td style="text-align:center">3.413</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.107</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_COD</td>
+                  <td style="text-align:center">48.312</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.268</td>
+                  <td style="text-align:center">22.393</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.287</td>
+                  <td style="text-align:center">56.052</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.015</td>
+                  <td style="text-align:center">24.191</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.502</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_TSS</td>
+                  <td style="text-align:center">32.334</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.322</td>
+                  <td style="text-align:center">6.636</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.391</td>
+                  <td style="text-align:center">38.944</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.017</td>
+                  <td style="text-align:center">6.211</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.219</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_pH</td>
+                  <td style="text-align:center">0.226</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.359</td>
+                  <td style="text-align:center">0.328</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-1.691</td>
+                  <td style="text-align:center">0.270</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.082</td>
+                  <td style="text-align:center">0.310</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-1.411</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  <td rowspan="8" style="font-weight:bold;vertical-align:middle;text-align:center;background:#F0F4F8">Stage 2 P1</td>
+                  <td>grab_BOD</td>
+                  <td style="text-align:center">8.313</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.709</td>
+                  <td style="text-align:center">2.491</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.570</td>
+                  <td style="text-align:center">12.603</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.332</td>
+                  <td style="text-align:center">2.922</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.409</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_COD</td>
+                  <td style="text-align:center">30.845</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.540</td>
+                  <td style="text-align:center">14.378</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.531</td>
+                  <td style="text-align:center">27.328</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.639</td>
+                  <td style="text-align:center">17.169</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.331</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_TSS</td>
+                  <td style="text-align:center">38.447</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.387</td>
+                  <td style="text-align:center">8.294</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.252</td>
+                  <td style="text-align:center">36.341</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.452</td>
+                  <td style="text-align:center">6.108</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.595</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_pH</td>
+                  <td style="text-align:center">0.103</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.870</td>
+                  <td style="text-align:center">0.191</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.237</td>
+                  <td style="text-align:center">0.189</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.558</td>
+                  <td style="text-align:center">0.182</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.308</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_BOD</td>
+                  <td style="text-align:center">4.385</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.944</td>
+                  <td style="text-align:center">2.488</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.396</td>
+                  <td style="text-align:center">14.157</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.420</td>
+                  <td style="text-align:center">3.202</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.000</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_COD</td>
+                  <td style="text-align:center">42.783</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.436</td>
+                  <td style="text-align:center">20.763</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.173</td>
+                  <td style="text-align:center">32.698</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.670</td>
+                  <td style="text-align:center">21.592</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.268</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_TSS</td>
+                  <td style="text-align:center">29.774</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.432</td>
+                  <td style="text-align:center">5.125</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.187</td>
+                  <td style="text-align:center">20.459</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.732</td>
+                  <td style="text-align:center">8.721</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-1.355</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_pH</td>
+                  <td style="text-align:center">0.207</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.477</td>
+                  <td style="text-align:center">0.222</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.225</td>
+                  <td style="text-align:center">0.247</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.252</td>
+                  <td style="text-align:center">0.222</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.231</td>
+                  <td style="text-align:center;color:#888">≈ Tie</td>
+                </tr>
+                <tr>
+                  <td rowspan="8" style="font-weight:bold;vertical-align:middle;text-align:center;background:#F0F4F8">Stage 2 P2</td>
+                  <td>grab_BOD</td>
+                  <td style="text-align:center">8.286</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.712</td>
+                  <td style="text-align:center">2.582</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.539</td>
+                  <td style="text-align:center">12.613</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.333</td>
+                  <td style="text-align:center">2.918</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.410</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_COD</td>
+                  <td style="text-align:center">22.215</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.762</td>
+                  <td style="text-align:center">15.005</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.489</td>
+                  <td style="text-align:center">27.366</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.639</td>
+                  <td style="text-align:center">17.150</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.333</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_TSS</td>
+                  <td style="text-align:center">38.233</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.398</td>
+                  <td style="text-align:center">8.386</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.236</td>
+                  <td style="text-align:center">36.434</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.453</td>
+                  <td style="text-align:center">6.102</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.595</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>grab_pH</td>
+                  <td style="text-align:center">0.117</td><td style="background:#C6EFCE;color:#276221;font-weight:bold;text-align:center">0.832</td>
+                  <td style="text-align:center">0.190</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.243</td>
+                  <td style="text-align:center">0.189</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.558</td>
+                  <td style="text-align:center">0.182</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.308</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_BOD</td>
+                  <td style="text-align:center">11.472</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.623</td>
+                  <td style="text-align:center">2.600</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.306</td>
+                  <td style="text-align:center">12.746</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.534</td>
+                  <td style="text-align:center">3.553</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.295</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_COD</td>
+                  <td style="text-align:center">43.628</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.431</td>
+                  <td style="text-align:center">21.506</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.285</td>
+                  <td style="text-align:center">36.789</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.596</td>
+                  <td style="text-align:center">22.214</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.371</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_TSS</td>
+                  <td style="text-align:center">30.388</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.409</td>
+                  <td style="text-align:center">5.537</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.027</td>
+                  <td style="text-align:center">27.552</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.514</td>
+                  <td style="text-align:center">4.742</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.287</td>
+                  <td style="text-align:center;color:#238B45;font-weight:bold">ElNet ▲</td>
+                </tr>
+                <tr>
+                  
+                  <td>comp_pH</td>
+                  <td style="text-align:center">0.198</td><td style="background:#FFEB9C;color:#9C5700;font-weight:bold;text-align:center">0.507</td>
+                  <td style="text-align:center">0.220</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.167</td>
+                  <td style="text-align:center">0.243</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">0.261</td>
+                  <td style="text-align:center">0.227</td><td style="background:#FFC7CE;color:#9C0006;font-weight:bold;text-align:center">-0.245</td>
+                  <td style="text-align:center;color:#2171B5;font-weight:bold">RF ▲</td>
+                </tr></tbody>
+    </table>
+    <p class="table-note">
+      ▲ = meaningfully better (ΔR² > 0.01).
+      R²: <span style="background:#C6EFCE;color:#276221;padding:2px 6px;border-radius:3px">≥0.70</span>
+      <span style="background:#FFEB9C;color:#9C5700;padding:2px 6px;border-radius:3px;margin:0 4px">0.40–0.70</span>
+      <span style="background:#FFC7CE;color:#9C0006;padding:2px 6px;border-radius:3px">&lt;0.40</span>
+    </p></div>
+
+  <h2>Key Observations</h2>
+  <div class="obs-card">
+    <ul>
+      <li>ElasticNet outperforms RF in <b>9</b> models,
+          RF outperforms ElasticNet in <b>14</b>,
+          approximately tied in <b>1</b>.</li>
+      <li>Best overall ElasticNet model: <b>stage2_p2_grab_TSS</b>
+          [Stage 2 P2] — R² = 0.595</li>
+      <li>Best overall RF model: <b>stage2_p1_grab_BOD</b>
+          [Stage 2 P1] — R² = 0.570</li>
+    </ul></div>
+</div>
+</body>
+</html>
