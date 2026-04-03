@@ -286,12 +286,18 @@ def summary_table_html(df_rf, df_gb, df_xgb) -> str:
         for st in ["grab", "comp"]:
             for t in TARGETS:
                 suffix = f"{st}_{t}"
-                rf_rmse  = _lookup(df_rf,  stage, suffix, "RF_RMSE_test")
-                rf_r2    = _lookup(df_rf,  stage, suffix, "RF_R2_test")
-                gb_rmse  = _lookup(df_gb,  stage, suffix, "GB_RMSE_test")
-                gb_r2    = _lookup(df_gb,  stage, suffix, "GB_R2_test")
-                xgb_rmse = _lookup(df_xgb, stage, suffix, "XGB_RMSE_test")
-                xgb_r2   = _lookup(df_xgb, stage, suffix, "XGB_R2_test")
+                rf_rmse_tr  = _lookup(df_rf,  stage, suffix, "RF_RMSE_train")
+                rf_r2_tr    = _lookup(df_rf,  stage, suffix, "RF_R2_train")
+                rf_rmse     = _lookup(df_rf,  stage, suffix, "RF_RMSE_test")
+                rf_r2       = _lookup(df_rf,  stage, suffix, "RF_R2_test")
+                gb_rmse_tr  = _lookup(df_gb,  stage, suffix, "GB_RMSE_train")
+                gb_r2_tr    = _lookup(df_gb,  stage, suffix, "GB_R2_train")
+                gb_rmse     = _lookup(df_gb,  stage, suffix, "GB_RMSE_test")
+                gb_r2       = _lookup(df_gb,  stage, suffix, "GB_R2_test")
+                xgb_rmse_tr = _lookup(df_xgb, stage, suffix, "XGB_RMSE_train")
+                xgb_r2_tr   = _lookup(df_xgb, stage, suffix, "XGB_R2_train")
+                xgb_rmse    = _lookup(df_xgb, stage, suffix, "XGB_RMSE_test")
+                xgb_r2      = _lookup(df_xgb, stage, suffix, "XGB_R2_test")
 
                 stage_cell = (f'<td rowspan="8" style="font-weight:bold;'
                               f'vertical-align:middle;text-align:center;'
@@ -302,8 +308,11 @@ def summary_table_html(df_rf, df_gb, df_xgb) -> str:
                 <tr>
                   {stage_cell}
                   <td>{st}_{t}</td>
+                  {cell(rf_rmse_tr)}{cell(rf_r2_tr, True)}
                   {cell(rf_rmse)}{cell(rf_r2, True)}
+                  {cell(gb_rmse_tr)}{cell(gb_r2_tr, True)}
                   {cell(gb_rmse)}{cell(gb_r2, True)}
+                  {cell(xgb_rmse_tr)}{cell(xgb_r2_tr, True)}
                   {cell(xgb_rmse)}{cell(xgb_r2, True)}
                   {winner(rf_r2, gb_r2, xgb_r2)}
                 </tr>"""
@@ -313,13 +322,19 @@ def summary_table_html(df_rf, df_gb, df_xgb) -> str:
       <thead>
         <tr>
           <th>Stage</th><th>Model</th>
+          <th colspan="2" style="background:#1F4E79;color:white">RF (train)</th>
           <th colspan="2" style="background:#2171B5;color:white">RF (test)</th>
+          <th colspan="2" style="background:#833C00;color:white">GB (train)</th>
           <th colspan="2" style="background:#D94801;color:white">GB (test)</th>
+          <th colspan="2" style="background:#1A5C2A;color:white">XGB (train)</th>
           <th colspan="2" style="background:#238B45;color:white">XGB (test)</th>
           <th style="background:#555;color:white">Winner</th>
         </tr>
         <tr>
           <th></th><th></th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>

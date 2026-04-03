@@ -255,6 +255,8 @@ def results_table_html(df_p2, df_s1, df_p1, run) -> str:
         rows_html += f"""
         <tr>
           <td>{row['model']}</td>
+          <td style="text-align:center">{row['RF_RMSE_train']:.3f}</td>
+          <td {cell_r2(row['RF_R2_train'])}>{row['RF_R2_train']:.3f}</td>
           <td style="text-align:center">{row['RF_RMSE_test']:.3f}</td>
           <td {cell_r2(row['RF_R2_test'])}>{row['RF_R2_test']:.3f}</td>
           {delta_cell(row['RF_R2_test'], s1_r2)}
@@ -268,10 +270,12 @@ def results_table_html(df_p2, df_s1, df_p1, run) -> str:
       <thead>
         <tr>
           <th rowspan="2">Model</th>
+          <th colspan="2" style="background:#1F4E79">RF — Train</th>
           <th colspan="4" style="background:#2E4057">RF — Test (Stage 2 P2)</th>
           <th colspan="2" style="background:#375623">LR Baseline — Test</th>
         </tr>
         <tr>
+          <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
           <th>ΔR² vs Stage 1</th><th>ΔR² vs Stage 2 P1</th>
           <th>RMSE</th><th>R²</th>
@@ -403,6 +407,8 @@ def build_report(run: int) -> str:
           <p class="meta">
             Train rows: {int(df_sub['year'].isin(TRAIN_YEARS).sum())} &nbsp;|&nbsp;
             Test rows: {int((df_sub['year'] == TEST_YEAR).sum())} &nbsp;|&nbsp;
+            RF train RMSE: {row['RF_RMSE_train']:.3f} &nbsp;|&nbsp;
+            RF train R²: {row['RF_R2_train']:.3f} &nbsp;|&nbsp;
             RF test RMSE: <b>{row['RF_RMSE_test']:.3f}</b> &nbsp;|&nbsp;
             RF test R²: <b>{row['RF_R2_test']:.3f}</b>{p1_note}
           </p>

@@ -271,8 +271,12 @@ def summary_table_html(df_rf: pd.DataFrame, df_gb: pd.DataFrame) -> str:
                 gb_row = df_gb[(df_gb["stage"] == stage) &
                                (df_gb["model"].str.endswith(suffix))]
 
+                rf_rmse_tr = float(rf_row["RF_RMSE_train"].values[0]) if len(rf_row) else None
+                rf_r2_tr   = float(rf_row["RF_R2_train"].values[0])   if len(rf_row) else None
                 rf_rmse = float(rf_row["RF_RMSE_test"].values[0]) if len(rf_row) else None
                 rf_r2   = float(rf_row["RF_R2_test"].values[0])   if len(rf_row) else None
+                gb_rmse_tr = float(gb_row["GB_RMSE_train"].values[0]) if len(gb_row) else None
+                gb_r2_tr   = float(gb_row["GB_R2_train"].values[0])   if len(gb_row) else None
                 gb_rmse = float(gb_row["GB_RMSE_test"].values[0]) if len(gb_row) else None
                 gb_r2   = float(gb_row["GB_R2_test"].values[0])   if len(gb_row) else None
 
@@ -285,7 +289,9 @@ def summary_table_html(df_rf: pd.DataFrame, df_gb: pd.DataFrame) -> str:
                 <tr>
                   {stage_cell}
                   <td>{st}_{t}</td>
+                  {cell(rf_rmse_tr)}{cell(rf_r2_tr, True)}
                   {cell(rf_rmse)}{cell(rf_r2, True)}
+                  {cell(gb_rmse_tr)}{cell(gb_r2_tr, True)}
                   {cell(gb_rmse)}{cell(gb_r2, True)}
                   {winner(rf_r2, gb_r2)}
                 </tr>"""
@@ -295,12 +301,16 @@ def summary_table_html(df_rf: pd.DataFrame, df_gb: pd.DataFrame) -> str:
       <thead>
         <tr>
           <th>Stage</th><th>Model</th>
+          <th colspan="2" style="background:#1F4E79">RF (train)</th>
           <th colspan="2" style="background:#2171B5">RF (test)</th>
+          <th colspan="2" style="background:#833C00">GB (train)</th>
           <th colspan="2" style="background:#D94801">GB (test)</th>
           <th style="background:#555">Winner</th>
         </tr>
         <tr>
           <th></th><th></th>
+          <th>RMSE</th><th>R²</th>
+          <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
           <th>RMSE</th><th>R²</th>
           <th></th>
