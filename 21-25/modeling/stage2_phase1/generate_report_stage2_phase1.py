@@ -232,12 +232,18 @@ def results_table_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
             match = df_s1[df_s1["model"] == equiv]["RF_R2_test"].values
             s1_r2 = float(match[0]) if len(match) else None
 
+        cv   = f"{row['RF_CV_RMSE']:.3f}"   if 'RF_CV_RMSE'   in row.index and pd.notna(row.get('RF_CV_RMSE'))   else "—"
+        mae  = f"{row['RF_MAE_test']:.3f}"   if 'RF_MAE_test'  in row.index and pd.notna(row.get('RF_MAE_test'))  else "—"
+        mape = f"{row['RF_MAPE_test']:.1f}%" if 'RF_MAPE_test' in row.index and pd.notna(row.get('RF_MAPE_test')) else "—"
         rows_html += f"""
         <tr>
           <td>{row['model']}</td>
           <td style="text-align:center">{row['RF_RMSE_train']:.3f}</td>
+          <td style="text-align:center">{cv}</td>
           <td {cell_r2(row['RF_R2_train'])}>{row['RF_R2_train']:.3f}</td>
           <td style="text-align:center">{row['RF_RMSE_test']:.3f}</td>
+          <td style="text-align:center">{mae}</td>
+          <td style="text-align:center">{mape}</td>
           <td {cell_r2(row['RF_R2_test'])}>{row['RF_R2_test']:.3f}</td>
           {delta_cell(row['RF_R2_test'], s1_r2)}
           <td style="text-align:center">{row['LR_RMSE_test']:.3f}</td>
@@ -249,13 +255,13 @@ def results_table_html(df_s2: pd.DataFrame, df_s1: pd.DataFrame | None,
       <thead>
         <tr>
           <th rowspan="2">Model</th>
-          <th colspan="2" style="background:#1F4E79">RF — Train</th>
-          <th colspan="3" style="background:#006B6B">RF — Test (Stage 2 P1)</th>
+          <th colspan="3" style="background:#1F4E79">RF — Train</th>
+          <th colspan="5" style="background:#006B6B">RF — Test (Stage 2 P1)</th>
           <th colspan="2" style="background:#375623">LR Baseline — Test</th>
         </tr>
         <tr>
-          <th>RMSE</th><th>R²</th>
-          <th>RMSE</th><th>R²</th><th>ΔR² vs Stage 1</th>
+          <th>RMSE</th><th>CV RMSE</th><th>R²</th>
+          <th>RMSE</th><th>MAE</th><th>MAPE</th><th>R²</th><th>ΔR² vs Stage 1</th>
           <th>RMSE</th><th>R²</th>
         </tr>
       </thead>
@@ -403,6 +409,9 @@ def build_report(run: int) -> str:
                     )
                     break
 
+            cv_rmse  = f"{row['RF_CV_RMSE']:.3f}"   if 'RF_CV_RMSE'   in row.index and pd.notna(row.get('RF_CV_RMSE'))   else "—"
+            mae_test = f"{row['RF_MAE_test']:.3f}"   if 'RF_MAE_test'  in row.index and pd.notna(row.get('RF_MAE_test'))  else "—"
+            mape_test= f"{row['RF_MAPE_test']:.1f}%" if 'RF_MAPE_test' in row.index and pd.notna(row.get('RF_MAPE_test')) else "—"
             sections_html += f"""
             <div class="card">
               <h3>{sample_type} model
@@ -413,8 +422,11 @@ def build_report(run: int) -> str:
                 Train rows: {int(df_sub['year'].isin(TRAIN_YEARS).sum())} &nbsp;|&nbsp;
                 Test rows: {int((df_sub['year'] == TEST_YEAR).sum())} &nbsp;|&nbsp;
                 RF train RMSE: {row['RF_RMSE_train']:.3f} &nbsp;|&nbsp;
+                CV RMSE: {cv_rmse} &nbsp;|&nbsp;
                 RF train R²: {row['RF_R2_train']:.3f} &nbsp;|&nbsp;
                 RF test RMSE: <b>{row['RF_RMSE_test']:.3f}</b> &nbsp;|&nbsp;
+                MAE: {mae_test} &nbsp;|&nbsp;
+                MAPE: {mape_test} &nbsp;|&nbsp;
                 RF test R²: <b>{row['RF_R2_test']:.3f}</b>
                 {s1_note}
                 {'<br><span style="color:#555">RF params: ' + rf_params_str + '</span>' if rf_params_str else ''}

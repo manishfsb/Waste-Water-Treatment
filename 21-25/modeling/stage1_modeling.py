@@ -28,7 +28,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
 import joblib
@@ -145,6 +145,13 @@ def get_run_number(subset_path: str) -> int:
 def rmse(y_true, y_pred) -> float:
     return float(np.sqrt(mean_squared_error(y_true, y_pred)))
 
+def mae(y_true, y_pred) -> float:
+    return float(mean_absolute_error(y_true, y_pred))
+
+def mape(y_true, y_pred) -> float:
+    mask = y_true != 0
+    return float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100)
+
 
 # ── Hyperparameter tuning ──────────────────────────────────────────────────────
 
@@ -164,7 +171,7 @@ def tune_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
     search.fit(X_train, y_train)
     print(f"    Best params : {search.best_params_}")
     print(f"    Best CV RMSE: {-search.best_score_:.3f}")
-    return search.best_estimator_
+    return search.best_estimator_, float(-search.best_score_)
 
 
 # ── Core training function ─────────────────────────────────────────────────────
@@ -188,14 +195,18 @@ def train_model(name: str, df_sub: pd.DataFrame, features: list,
     print(f"    Train: {len(train)} rows | Test: {len(test)} rows")
 
     # ── Random Forest (tuned) ──────────────────────────────────────────────────
-    rf = tune_rf(X_train, y_train)
-    rf_train_pred = rf.predict(X_train)
-    rf_test_pred  = rf.predict(X_test)
+    rf, rf_cv_rmse = tune_rf(X_train, y_train)
+    rf_train_pred  = rf.predict(X_train)
+    rf_test_pred   = rf.predict(X_test)
 
     rf_metrics = {
         "RF_RMSE_train":        rmse(y_train, rf_train_pred),
+        "RF_MAE_train":         mae(y_train,  rf_train_pred),
         "RF_R2_train":          r2_score(y_train, rf_train_pred),
+        "RF_CV_RMSE":           rf_cv_rmse,
         "RF_RMSE_test":         rmse(y_test,  rf_test_pred),
+        "RF_MAE_test":          mae(y_test,   rf_test_pred),
+        "RF_MAPE_test":         mape(y_test,  rf_test_pred),
         "RF_R2_test":           r2_score(y_test,  rf_test_pred),
         "RF_n_estimators":      rf.n_estimators,
         "RF_max_depth":         rf.max_depth if rf.max_depth is not None else "None",
