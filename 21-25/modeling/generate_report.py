@@ -322,6 +322,19 @@ def build_report(run: int) -> str:
                 f"Feature Importances — {target_name} {sample_type}"
             )
 
+            rf_params_str = ""
+            for col in ["RF_n_estimators", "RF_max_depth", "RF_min_samples_leaf",
+                        "RF_min_samples_split", "RF_max_features"]:
+                if col in row.index:
+                    rf_params_str += (
+                        f"n_est={row['RF_n_estimators']} &nbsp;|&nbsp; "
+                        f"depth={row['RF_max_depth']} &nbsp;|&nbsp; "
+                        f"leaf={row['RF_min_samples_leaf']} &nbsp;|&nbsp; "
+                        f"split={row['RF_min_samples_split']} &nbsp;|&nbsp; "
+                        f"features={row['RF_max_features']}"
+                    )
+                    break
+
             sections_html += f"""
             <div class="card">
               <h3>{sample_type} model
@@ -330,10 +343,13 @@ def build_report(run: int) -> str:
               <p class="meta">
                 Train rows: {int((df_sub['year'].isin(TRAIN_YEARS)).sum())} &nbsp;|&nbsp;
                 Test rows: {int((df_sub['year'] == TEST_YEAR).sum())} &nbsp;|&nbsp;
+                RF train RMSE: {row['RF_RMSE_train']:.3f} &nbsp;|&nbsp;
+                RF train R²: {row['RF_R2_train']:.3f} &nbsp;|&nbsp;
                 RF test RMSE: <b>{row['RF_RMSE_test']:.3f}</b> &nbsp;|&nbsp;
                 RF test R²: <b>{row['RF_R2_test']:.3f}</b> &nbsp;|&nbsp;
                 LR test RMSE: {row['LR_RMSE_test']:.3f} &nbsp;|&nbsp;
                 LR test R²: {row['LR_R2_test']:.3f}
+                {'<br><span style="color:#555">RF params: ' + rf_params_str + '</span>' if rf_params_str else ''}
               </p>
               <div class="grid-2">
                 <div>{chart_div(fig_scatter)}</div>

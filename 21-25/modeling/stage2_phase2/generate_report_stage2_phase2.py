@@ -398,6 +398,19 @@ def build_report(run: int) -> str:
             p1_note = (f'&nbsp;|&nbsp; ΔR² vs P1: '
                        f'<b style="color:{c}">{s}{d:.3f}</b>')
 
+        rf_params_str = ""
+        for col in ["RF_n_estimators", "RF_max_depth", "RF_min_samples_leaf",
+                    "RF_min_samples_split", "RF_max_features"]:
+            if col in row.index:
+                rf_params_str = (
+                    f"n_est={row['RF_n_estimators']} &nbsp;|&nbsp; "
+                    f"depth={row['RF_max_depth']} &nbsp;|&nbsp; "
+                    f"leaf={row['RF_min_samples_leaf']} &nbsp;|&nbsp; "
+                    f"split={row['RF_min_samples_split']} &nbsp;|&nbsp; "
+                    f"features={row['RF_max_features']}"
+                )
+                break
+
         sections_html += f"""
         <div class="card">
           <h3>{tgt_name} — {sample_type}
@@ -411,6 +424,7 @@ def build_report(run: int) -> str:
             RF train R²: {row['RF_R2_train']:.3f} &nbsp;|&nbsp;
             RF test RMSE: <b>{row['RF_RMSE_test']:.3f}</b> &nbsp;|&nbsp;
             RF test R²: <b>{row['RF_R2_test']:.3f}</b>{p1_note}
+            {'<br><span style="color:#555">RF params: ' + rf_params_str + '</span>' if rf_params_str else ''}
           </p>
           <div class="grid-2">
             <div>{chart_div(scatter_chart(df_sub, target_col, pred_col,

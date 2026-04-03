@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
 import joblib
 
@@ -43,7 +44,16 @@ RESULTS_FILE = os.path.join(BASE_DIR, "results.xlsx")
 # ── Constants ──────────────────────────────────────────────────────────────────
 TRAIN_YEARS = [2020, 2021, 2022, 2023, 2024]
 TEST_YEAR   = 2025
-RF_PARAMS   = dict(n_estimators=200, random_state=42, n_jobs=-1)
+RF_PARAMS   = dict(n_estimators=200, random_state=42, n_jobs=-1)  # kept for reference
+
+RF_PARAM_DIST = {
+    "n_estimators":      [100, 200, 300, 500],
+    "max_depth":         [4, 6, 8, 10, 12, None],
+    "min_samples_leaf":  [2, 5, 10, 15, 20],
+    "min_samples_split": [2, 5, 10],
+    "max_features":      ["sqrt", 0.5, 0.7],
+}
+RF_TUNE_ITER = 40
 
 # ── Feature sets ───────────────────────────────────────────────────────────────
 GRAB_FEATURES = [
@@ -136,6 +146,27 @@ def rmse(y_true, y_pred) -> float:
     return float(np.sqrt(mean_squared_error(y_true, y_pred)))
 
 
+# ── Hyperparameter tuning ──────────────────────────────────────────────────────
+
+def tune_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
+    """RandomizedSearchCV with TimeSeriesSplit to find best RF hyperparameters."""
+    tscv   = TimeSeriesSplit(n_splits=3)
+    search = RandomizedSearchCV(
+        RandomForestRegressor(random_state=42, n_jobs=-1),
+        RF_PARAM_DIST,
+        n_iter=RF_TUNE_ITER,
+        scoring="neg_root_mean_squared_error",
+        cv=tscv,
+        random_state=42,
+        n_jobs=1,   # avoid nested parallelism; estimator already uses n_jobs=-1
+        refit=True,
+    )
+    search.fit(X_train, y_train)
+    print(f"    Best params : {search.best_params_}")
+    print(f"    Best CV RMSE: {-search.best_score_:.3f}")
+    return search.best_estimator_
+
+
 # ── Core training function ─────────────────────────────────────────────────────
 
 def train_model(name: str, df_sub: pd.DataFrame, features: list,
@@ -144,7 +175,7 @@ def train_model(name: str, df_sub: pd.DataFrame, features: list,
     Train RF + LR on TRAIN_YEARS, evaluate on TEST_YEAR.
     Returns a results dict and the fitted RF model.
     """
-    train = df_sub[df_sub["year"].isin(TRAIN_YEARS)]
+    train = df_sub[df_sub["year"].isin(TRAIN_YEARS)].sort_values("Date")
     test  = df_sub[df_sub["year"] == TEST_YEAR]
 
     if len(test) == 0:
@@ -156,17 +187,21 @@ def train_model(name: str, df_sub: pd.DataFrame, features: list,
 
     print(f"    Train: {len(train)} rows | Test: {len(test)} rows")
 
-    # ── Random Forest ──────────────────────────────────────────────────────────
-    rf = RandomForestRegressor(**RF_PARAMS)
-    rf.fit(X_train, y_train)
+    # ── Random Forest (tuned) ──────────────────────────────────────────────────
+    rf = tune_rf(X_train, y_train)
     rf_train_pred = rf.predict(X_train)
     rf_test_pred  = rf.predict(X_test)
 
     rf_metrics = {
-        "RF_RMSE_train": rmse(y_train, rf_train_pred),
-        "RF_R2_train":   r2_score(y_train, rf_train_pred),
-        "RF_RMSE_test":  rmse(y_test,  rf_test_pred),
-        "RF_R2_test":    r2_score(y_test,  rf_test_pred),
+        "RF_RMSE_train":        rmse(y_train, rf_train_pred),
+        "RF_R2_train":          r2_score(y_train, rf_train_pred),
+        "RF_RMSE_test":         rmse(y_test,  rf_test_pred),
+        "RF_R2_test":           r2_score(y_test,  rf_test_pred),
+        "RF_n_estimators":      rf.n_estimators,
+        "RF_max_depth":         rf.max_depth if rf.max_depth is not None else "None",
+        "RF_min_samples_leaf":  rf.min_samples_leaf,
+        "RF_min_samples_split": rf.min_samples_split,
+        "RF_max_features":      rf.max_features,
     }
 
     # ── Linear Regression baseline ─────────────────────────────────────────────
