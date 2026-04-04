@@ -757,26 +757,30 @@ def plot_svi_mlss_vs_tss(df):
 # ── Chart 10: Ridge residuals (linearity diagnostic) ─────────────────────────
 
 def plot_linearity_residuals(df):
+    """Return {"grab": {target: path}, "comp": {target: path}} — one 1×3 figure per target."""
     print("10. Linearity residuals (Ridge)...")
     feats = feature_cols(df)
+    usable_feats = [f for f in feats if f in df.columns]
     train_df = df[df["Date"].dt.year.isin([2021, 2022, 2023, 2024])]
     test_df  = df[df["Date"].dt.year == 2025]
 
-    all_targets = GRAB_TARGETS + COMP_TARGETS
-    fig, big_axes = plt.subplots(len(all_targets), 3, figsize=(20, len(all_targets) * 5))
-    fig.suptitle("Ridge regression residuals — linearity diagnostic\n"
-                 "(random scatter = linear relationship; patterns = non-linearity)\n"
-                 "Top block: Grab effluent targets  |  Bottom block: Composite effluent targets",
-                 fontsize=13, fontweight="bold")
+    results = {"grab": {}, "comp": {}}
 
-    for row_ax, target in zip(big_axes, all_targets):
-        usable_feats = [f for f in feats if f in df.columns]
+    for target in GRAB_TARGETS + COMP_TARGETS:
+        group = "grab" if target in GRAB_TARGETS else "comp"
+        slug  = target.replace("/", "_").replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
         tr = train_df[usable_feats + [target]].dropna()
-        te = test_df[usable_feats + [target]].dropna()
+        te = test_df[usable_feats  + [target]].dropna()
+
+        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+        fig.suptitle(f"Ridge residuals — {s(target)}\n"
+                     "(random scatter = linear relationship; patterns = non-linearity)",
+                     fontsize=11, fontweight="bold")
 
         if len(tr) < 20:
-            for ax in row_ax:
+            for ax in axes:
                 ax.set_visible(False)
+            results[group][target] = save(fig, f"10_resid_{slug}")
             continue
 
         X_tr = tr[usable_feats].values
@@ -791,45 +795,47 @@ def plot_linearity_residuals(df):
         ridge = Ridge(alpha=1.0)
         ridge.fit(X_tr_s, y_tr)
 
-        yhat_tr = ridge.predict(X_tr_s)
+        yhat_tr  = ridge.predict(X_tr_s)
         resid_tr = y_tr - yhat_tr
 
         # Panel A: residuals vs fitted (train)
-        ax = row_ax[0]
+        ax = axes[0]
         ax.scatter(yhat_tr, resid_tr, color="#2171B5", alpha=0.3, s=12)
         ax.axhline(0, color="red", linewidth=1)
-        ax.set_xlabel("Fitted values (train)")
-        ax.set_ylabel("Residuals")
-        ax.set_title(f"{s(target)}\nResid vs Fitted", fontsize=9, fontweight="bold")
+        ax.set_xlabel("Fitted values — Ridge predictions on training set")
+        ax.set_ylabel("Residuals (actual − predicted)")
+        ax.set_title("Residuals vs Fitted", fontsize=10, fontweight="bold")
         ax.grid(alpha=0.3)
 
-        # Panel B: residuals over time (train)
-        ax = row_ax[1]
-        ax.scatter(tr.index, resid_tr, color="#2171B5", alpha=0.3, s=8)
+        # Panel B: residuals over time
+        ax = axes[1]
+        ax.scatter(tr.index, resid_tr, color="#2171B5", alpha=0.3, s=8, label="Train 2021–2024")
         if len(te) > 0:
-            yhat_te = ridge.predict(X_te_s)
+            yhat_te  = ridge.predict(X_te_s)
             resid_te = y_te - yhat_te
             ax.scatter(te.index, resid_te, color="#D94801", alpha=0.4, s=8, label="Test 2025")
         ax.axhline(0, color="red", linewidth=1)
         ax.set_xlabel("Row index (time)")
-        ax.set_ylabel("Residuals")
-        ax.set_title("Resid vs Time", fontsize=9, fontweight="bold")
-        ax.legend(fontsize=7)
+        ax.set_ylabel("Residuals (actual − predicted)")
+        ax.set_title("Residuals vs Time", fontsize=10, fontweight="bold")
+        ax.legend(fontsize=8)
         ax.grid(alpha=0.3)
 
         # Panel C: residuals vs top feature by |coefficient|
-        coef = pd.Series(np.abs(ridge.coef_), index=usable_feats)
+        coef     = pd.Series(np.abs(ridge.coef_), index=usable_feats)
         top_feat = coef.idxmax()
-        ax = row_ax[2]
+        ax = axes[2]
         ax.scatter(tr[top_feat].values, resid_tr, color="#2171B5", alpha=0.3, s=12)
         ax.axhline(0, color="red", linewidth=1)
         ax.set_xlabel(s(top_feat))
-        ax.set_ylabel("Residuals")
-        ax.set_title(f"Resid vs {s(top_feat)}\n(highest |coef|)", fontsize=9, fontweight="bold")
+        ax.set_ylabel("Residuals (actual − predicted)")
+        ax.set_title(f"Residuals vs {s(top_feat)}\n(highest |coef| feature)", fontsize=10, fontweight="bold")
         ax.grid(alpha=0.3)
 
-    plt.tight_layout()
-    return save(fig, "10_linearity_residuals")
+        plt.tight_layout()
+        results[group][target] = save(fig, f"10_resid_{slug}")
+
+    return results
 
 
 # ── Data-driven observations ──────────────────────────────────────────────────
@@ -847,8 +853,9 @@ def build_observations(df):
     tstdf  = df[df["Date"].dt.year == 2025]
     obs    = {}
 
-    # ── S1: Ridge metrics per grab and composite target ──────────────────────
-    def _ridge_row(tgt, group_label):
+    # ── S1: Ridge metrics — one observation block per target ─────────────────
+    def _ridge_metrics(tgt):
+        """Fit Ridge, return a dict of metrics for one target."""
         tr = trndf[usable + [tgt]].dropna()
         te = tstdf[usable + [tgt]].dropna()
         if len(tr) < 20:
@@ -858,117 +865,83 @@ def build_observations(df):
         sc    = StandardScaler()
         ridge = Ridge(alpha=1.0)
         ridge.fit(sc.fit_transform(Xtr), ytr)
-        yhat_tr   = ridge.predict(sc.transform(Xtr))
-        r2_tr     = r2_score(ytr, yhat_tr)
-        rmse_tr   = np.sqrt(mse(ytr, yhat_tr))
-        resid_tr  = ytr - yhat_tr
+        yhat_tr    = ridge.predict(sc.transform(Xtr))
+        resid_tr   = ytr - yhat_tr
         funnel_r, _ = stats.spearmanr(yhat_tr, np.abs(resid_tr))
-        top_feat  = pd.Series(np.abs(ridge.coef_), index=usable).idxmax()
-        row = {"tgt": s(tgt), "group": group_label, "r2_tr": r2_tr, "rmse_tr": rmse_tr,
-               "top": s(top_feat), "funnel": funnel_r}
+        top_feat   = pd.Series(np.abs(ridge.coef_), index=usable).idxmax()
+        m = {
+            "tgt":      s(tgt),
+            "r2_tr":    r2_score(ytr, yhat_tr),
+            "rmse_tr":  np.sqrt(mse(ytr, yhat_tr)),
+            "top":      s(top_feat),
+            "funnel":   funnel_r,
+        }
         if len(te) >= 5:
-            yhat_te      = ridge.predict(sc.transform(Xte))
-            row["r2_te"]   = r2_score(yte, yhat_te)
-            row["rmse_te"] = np.sqrt(mse(yte, yhat_te))
-            row["gap"]     = r2_tr - row["r2_te"]
-        return row
+            yhat_te     = ridge.predict(sc.transform(Xte))
+            m["r2_te"]  = r2_score(yte, yhat_te)
+            m["rmse_te"] = np.sqrt(mse(yte, yhat_te))
+            m["gap"]    = m["r2_tr"] - m["r2_te"]
+        return m
 
-    rows_s1 = []
-    for tgt in GRAB_TARGETS:
-        row = _ridge_row(tgt, "Grab")
-        if row:
-            rows_s1.append(row)
-    for tgt in COMP_TARGETS:
-        row = _ridge_row(tgt, "Composite")
-        if row:
-            rows_s1.append(row)
+    def _s1_obs_for(m):
+        """Build observation HTML for a single target's Ridge metrics dict."""
+        r2_te_s   = f"{m['r2_te']:.3f}"   if "r2_te"   in m else "—"
+        rmse_te_s = f"{m['rmse_te']:.2f}" if "rmse_te" in m else "—"
+        gap_s     = f"{m['gap']:.3f}"     if "gap"     in m else "—"
+        r2_color  = "#C0392B" if m.get("r2_te", 1) < 0 else "#27AE60"
+        gap_color = ("#C0392B" if m.get("gap", 0) > 0.15
+                     else "#27AE60" if m.get("gap", 0) < 0.05
+                     else "inherit")
 
-    def _tbl_rows(rows):
-        html = ""
-        prev_group = None
-        for r in rows:
-            r2_te_s   = f"{r['r2_te']:.3f}"   if "r2_te"   in r else "—"
-            rmse_te_s = f"{r['rmse_te']:.2f}" if "rmse_te" in r else "—"
-            gap_s     = f"{r['gap']:.3f}"     if "gap"     in r else "—"
-            r2_color  = "#C0392B" if r.get("r2_te", 1) < 0 else "#27AE60"
-            gap_color = ("#C0392B" if r.get("gap", 0) > 0.15
-                         else "#27AE60" if r.get("gap", 0) < 0.05
-                         else "inherit")
-            group_cell = ""
-            if r["group"] != prev_group:
-                group_count = sum(1 for x in rows if x["group"] == r["group"])
-                group_cell = (f"<td rowspan='{group_count}' "
-                              f"style='font-weight:bold;vertical-align:middle;"
-                              f"text-align:center;background:#EEF2F7'>{r['group']}</td>")
-                prev_group = r["group"]
-            html += (
-                f"<tr>{group_cell}"
-                f"<td>{r['tgt']}</td>"
-                f"<td style='text-align:center'>{r['r2_tr']:.3f}</td>"
-                f"<td style='text-align:center;color:{r2_color};font-weight:bold'>{r2_te_s}</td>"
-                f"<td style='text-align:center;color:{gap_color}'>{gap_s}</td>"
-                f"<td style='text-align:center'>{r['rmse_tr']:.2f}</td>"
-                f"<td style='text-align:center'>{rmse_te_s}</td>"
-                f"<td style='font-size:0.85em'>{r['top']}</td></tr>\n"
-            )
-        return html
-
-    tbl_s1 = _tbl_rows(rows_s1)
-    n_neg = sum(1 for r in rows_s1 if r.get("r2_te", 0) < 0)
-    funnel_targets = [r["tgt"] for r in rows_s1 if abs(r.get("funnel", 0)) > 0.20]
-
-    if n_neg == len(rows_s1) and len(rows_s1) > 0:
-        neg_note = ("<li><strong>Negative test R² for all targets:</strong> A negative R² means "
-                    "the Ridge model performs <em>worse</em> than predicting the mean — the model "
-                    "adds no predictive value on 2025 data.</li>")
-    elif n_neg > 0:
-        neg_note = (f"<li><strong>Negative test R² for {n_neg} target(s):</strong> Negative R² "
-                    "means Ridge is worse than predicting the mean. Combined with a reasonable "
-                    "train R², this suggests the linear structure learned from 2021–2024 does not "
-                    "transfer to 2025 operating conditions.</li>")
-    else:
-        neg_note = ("<li><strong>Degraded test R²:</strong> A notable drop from train to test R² "
-                    "suggests the model may not generalise well to 2025 conditions.</li>")
-
-    funnel_note = ""
-    if funnel_targets:
-        tgts_str = ", ".join(funnel_targets)
-        vals_str = ", ".join(
-            f"{r['funnel']:.2f}" for r in rows_s1 if abs(r.get("funnel", 0)) > 0.20
-        )
-        funnel_note = (
-            f"<li><strong>Potential heteroscedasticity for: {tgts_str}.</strong> "
-            "The Spearman correlation between absolute residuals and fitted values "
-            f"(the model's training-set predictions) is {vals_str}. "
-            "This is a standalone statistical test on the training residuals — it is not derived "
-            "from the Pearson/Spearman feature correlations shown in Section 2. A positive "
-            "correlation means larger predictions tend to have larger errors; a negative one means "
-            "errors shrink as predictions rise. Inspect the Resid vs Fitted panels directly to "
-            "confirm whether this is visually apparent.</li>"
+        tbl = (
+            "<table style='width:100%;margin:10px 0'>"
+            "<thead><tr>"
+            "<th>Train R²</th><th>Test R²</th><th>R² Gap (train − test)</th>"
+            "<th>Train RMSE</th><th>Test RMSE</th>"
+            "<th>Top feature (|coef|)</th>"
+            "</tr></thead><tbody><tr>"
+            f"<td>{m['r2_tr']:.3f}</td>"
+            f"<td style='color:{r2_color};font-weight:bold'>{r2_te_s}</td>"
+            f"<td style='color:{gap_color}'>{gap_s}</td>"
+            f"<td>{m['rmse_tr']:.2f}</td>"
+            f"<td>{rmse_te_s}</td>"
+            f"<td style='font-size:0.9em'>{m['top']}</td>"
+            "</tr></tbody></table>"
         )
 
-    obs["s1"] = (
-        "<p>Ridge regression (α = 1, StandardScaler) trained on 2021–2024, tested on 2025. "
-        "Columns are ordered to make the train R², test R², and R² gap easy to compare:</p>"
-        "<table class='obs-table' style='width:100%;margin:10px 0'>"
-        "<thead><tr>"
-        "<th>Sample type</th><th>Target</th>"
-        "<th>Train R²</th><th>Test R²</th><th>R² Gap</th>"
-        "<th>Train RMSE</th><th>Test RMSE</th>"
-        "<th>Top feature (|coef|)</th>"
-        "</tr></thead>"
-        f"<tbody>{tbl_s1}</tbody></table>"
-        f"<ul>{neg_note}"
-        "<li><strong>R² gap:</strong> A gap between train and test R² indicates the model may "
-        "be overfitting to the training period. Whether that gap is meaningful depends on its "
-        "size relative to the test R² — a small gap on a poor test R² is still a poor model.</li>"
-        f"{funnel_note}"
-        "<li><strong>Top relied-on feature:</strong> The feature with the largest Ridge coefficient "
-        "magnitude is what the linear model leans on most heavily. If that feature has a curved "
-        "relationship with the target (visible in Section 4 scatter plots), the model will "
-        "systematically under- or over-predict at extreme concentrations.</li>"
-        "</ul>"
-    )
+        bullets = []
+        if m.get("r2_te", 1) < 0:
+            bullets.append(
+                "<li><strong>Negative test R²:</strong> Ridge performs worse than predicting "
+                "the training mean — it adds no predictive value on 2025 data.</li>")
+        elif m.get("gap", 0) > 0.15:
+            bullets.append(
+                "<li><strong>Notable R² gap:</strong> Train and test R² diverge significantly, "
+                "suggesting the linear pattern learned from 2021–2024 does not fully transfer "
+                "to 2025 conditions.</li>")
+
+        if abs(m.get("funnel", 0)) > 0.20:
+            direction = "grows" if m["funnel"] > 0 else "shrinks"
+            bullets.append(
+                f"<li><strong>Potential heteroscedasticity</strong> (Spearman r = {m['funnel']:.2f} "
+                f"between |residuals| and fitted values): error {direction} with the predicted value. "
+                "This is a standalone statistical test on the training residuals — unrelated to the "
+                "feature correlations in Section 2. Inspect the Residuals vs Fitted panel above "
+                "to judge whether this is visually apparent.</li>")
+
+        bullets.append(
+            f"<li><strong>Top relied-on feature:</strong> <em>{m['top']}</em> carries the largest "
+            "Ridge coefficient magnitude. If this feature has a curved relationship with the target "
+            "(Section 4 scatter plots), the model will systematically err at extreme values.</li>")
+
+        ul = "<ul>" + "".join(bullets) + "</ul>" if bullets else ""
+        return tbl + ul
+
+    obs["s1"] = {}
+    for tgt in GRAB_TARGETS + COMP_TARGETS:
+        m = _ridge_metrics(tgt)
+        if m:
+            obs["s1"][tgt] = _s1_obs_for(m)
 
     # ── S2: Pearson vs Spearman ────────────────────────────────────────────────
     ps_blocks = []
@@ -1560,16 +1533,17 @@ def build_html(data):
     .obs-card h4 { margin: 0 0 10px 0; color: #1F4E79; font-size: 1.05em;
                    letter-spacing: 0.02em; }
     .obs-card p, .obs-card ul, .obs-card ol { max-width: 1060px; }
-    .obs-table { border-collapse: collapse; width: 100%; font-size: 13px;
-                 margin: 10px 0; }
-    .obs-table th { background: #4A6FA5; color: white; font-weight: 600;
-                    padding: 7px 12px; text-align: center; border: 1px solid #3a5a8a; }
-    .obs-table th:first-child, .obs-table th:nth-child(2) { text-align: left; }
-    .obs-table td { border: 1px solid #d0d9e8; padding: 6px 12px;
-                    vertical-align: middle; }
-    .obs-table td:first-child { font-weight: 600; background: #EEF2F7; }
-    .obs-table tbody tr:nth-child(even) { background: #F7F9FC; }
-    .obs-table tbody tr:nth-child(odd)  { background: #FFFFFF; }
+    .obs-card table { border-collapse: collapse; width: 100%; font-size: 13px;
+                      margin: 10px 0; }
+    .obs-card table th { background: #4A6FA5; color: white; font-weight: 600;
+                         padding: 7px 14px; text-align: center;
+                         border: 1px solid #3a5a8a; white-space: nowrap; }
+    .obs-card table th:first-child { text-align: left; }
+    .obs-card table td { border: 1px solid #d0d9e8; padding: 6px 14px;
+                         vertical-align: middle; text-align: center; }
+    .obs-card table td:first-child { text-align: left; font-weight: 600; }
+    .obs-card table tbody tr:nth-child(even) { background: #F4F7FB; }
+    .obs-card table tbody tr:nth-child(odd)  { background: #FFFFFF; }
     hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
     """)
 
@@ -1696,8 +1670,21 @@ Three residual plots are shown per effluent target:</p>
       feature most relied upon by Ridge, the relationship is non-linear.</li>
 </ul>
 """)
-    parts.append(img_tag(data.get("residuals")))
-    parts.append(_obs(obs.get("s1", "")))
+    resid_data = data.get("residuals", {})
+    s1_obs     = obs.get("s1", {})
+
+    def _resid_fold(targets, key, label, open_by_default=False):
+        content = ""
+        for tgt in targets:
+            plot_path  = resid_data.get(key, {}).get(tgt)
+            tgt_obs    = s1_obs.get(tgt, "")
+            content   += img_tag(plot_path)
+            if tgt_obs:
+                content += _obs(tgt_obs)
+        return _fold(f"▶ {label} (click to expand)", content, open_by_default=open_by_default)
+
+    parts.append(_resid_fold(GRAB_TARGETS, "grab", "Grab effluent targets", open_by_default=True))
+    parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets"))
     parts.append("</div>\n")
 
     # ── Section 2: Pearson vs Spearman ─────────────────────────────────────────
