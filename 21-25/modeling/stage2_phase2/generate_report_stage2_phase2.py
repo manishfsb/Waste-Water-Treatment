@@ -16,6 +16,9 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from report_theme import dark_mode_css, DARK_MODE_JS
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -339,7 +342,7 @@ def observations_html(df_p2, df_s1, df_p1, run) -> str:
 
 # ── HTML template ──────────────────────────────────────────────────────────────
 
-CSS = """
+CSS = dark_mode_css("""
   body { font-family:Calibri,Arial,sans-serif; margin:0; background:#F5F5F5; color:#222; }
   .container { max-width:1200px; margin:0 auto; padding:30px 24px; }
   h1 { color:#2E4057; border-bottom:3px solid #2E4057; padding-bottom:10px; }
@@ -466,6 +469,7 @@ def build_report(run: int) -> str:
   <title>Stage 2 Phase 2 Report — Run {run}</title>
   {plotly_cdn}
   <style>{CSS}</style>
+  {DARK_MODE_JS}
 </head>
 <body>
 <div class="container">
