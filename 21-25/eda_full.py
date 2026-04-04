@@ -1475,10 +1475,23 @@ def img_tag(path):
 
 
 def _fold(summary, content_html, open_by_default=False):
-    """Return a <details> foldable block."""
+    """Return a <details> foldable block.
+    The ▶ icon is wrapped in .fold-icon so CSS can rotate it when open.
+    JS (added at end of body) dynamically swaps the hint text.
+    Strip any caller-supplied hint like '(click to expand)' — it's added automatically.
+    """
+    import re as _re
+    label = _re.sub(r"\s*\(click to expand\)", "", summary, flags=_re.IGNORECASE).strip()
+    # Move leading arrow into its own span; if caller passes ▶ prefix, extract it
+    if label.startswith("▶"):
+        icon  = '<span class="fold-icon">▶</span>'
+        label = label[1:].strip()
+    else:
+        icon  = '<span class="fold-icon">▶</span>'
     open_attr = " open" if open_by_default else ""
     return (f'<details{open_attr}>\n'
-            f'  <summary>{summary}</summary>\n'
+            f'  <summary>{icon} <span class="fold-label">{label}</span>'
+            f'<span class="fold-hint"></span></summary>\n'
             f'  <div class="fold-inner">{content_html}</div>\n'
             f'</details>\n')
 
@@ -1522,7 +1535,12 @@ def build_html(data):
     details > summary { cursor: pointer; font-weight: bold; font-size: 1em;
                         color: #2E75B6; padding: 10px 16px; list-style: none;
                         user-select: none; border-radius: 6px; }
+    details > summary .fold-icon { display: inline-block;
+                                   transition: transform 0.2s ease; }
+    details[open] > summary .fold-icon { transform: rotate(90deg); }
     details[open] > summary { border-radius: 6px 6px 0 0; }
+    .fold-hint { font-weight: normal; font-size: 0.82em;
+                 opacity: 0.7; margin-left: 8px; }
     .fold-inner { padding: 12px 16px; }
     .interp { border-radius: 6px; padding: 14px 18px; margin: 14px 0;
               max-width: 950px; }
@@ -1818,7 +1836,22 @@ candidates for the feature selection pool.</p>
 </div>
 """)
 
-    parts.append("</body>\n</html>")
+    parts.append("""
+<script>
+(function() {
+  function updateHint(details) {
+    var hint = details.querySelector('summary .fold-hint');
+    if (!hint) return;
+    hint.textContent = details.open ? '(click to minimize)' : '(click to expand)';
+  }
+  document.querySelectorAll('details').forEach(function(d) {
+    updateHint(d);  // set correct text for elements open by default
+    d.addEventListener('toggle', function() { updateHint(d); });
+  });
+})();
+</script>
+</body>
+</html>""")
     html = "\n".join(parts)
     with open(REPORT, "w") as f:
         f.write(html)
