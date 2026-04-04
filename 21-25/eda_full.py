@@ -94,67 +94,78 @@ NEW_COLUMNS = [
     "Effluent Fecal Coliform (CFU/100ml)",
 ]
 
-# Short labels for axes
+# Short labels for axes — written to be self-explanatory without domain knowledge
 SHORT = {
-    "Power GE (KW)":                         "Power GE",
-    "Power NEA (KW)":                        "Power NEA",
-    "Power Total (KW)":                      "Power Total",
-    "Power / Flow (KW/ML)":                  "Power/Flow",
-    "Flow (MLD)":                            "Flow",
-    "Inlet pH (Grab)":                       "In pH (G)",
-    "Inlet BOD (mg/L, Grab)":               "In BOD (G)",
-    "Inlet COD (mg/L, Grab)":               "In COD (G)",
-    "Inlet TSS (mg/L, Grab)":               "In TSS (G)",
-    "Inlet TKN/NH3-N (mg/L, Grab)":         "In TKN (G)",
-    "Inlet O&G (mg/L, Grab)":               "In O&G (G)",
-    "Inlet PO4/TP (mg/L, Grab)":            "In PO4 (G)",
-    "Inlet Total Coliform (CFU/100ml, Grab)":"In T.Coli (G)",
-    "Inlet Fecal Coliform (CFU/100ml, Grab)":"In F.Coli (G)",
-    "Inlet pH (Composite)":                  "In pH (C)",
-    "Inlet BOD (mg/L, Composite)":          "In BOD (C)",
-    "Inlet COD (mg/L, Composite)":          "In COD (C)",
-    "Inlet TSS (mg/L, Composite)":          "In TSS (C)",
-    "Grit Classifier TSS (mg/L)":           "Grit TSS",
-    "Primary Clarifier pH":                  "Prim pH",
-    "Primary TSS (mg/L)":                    "Prim TSS",
-    "Primary BOD (mg/L)":                    "Prim BOD",
-    "Primary COD (mg/L)":                    "Prim COD",
-    "Primary Sludge Totalizer (m3)":         "Prim Sludge",
-    "Sec Clarifier pH":                      "SecC pH",
-    "Sec Clarifier TSS (mg/L)":             "SecC TSS",
-    "Sec Clarifier BOD (mg/L)":             "SecC BOD",
-    "Sec Clarifier COD (mg/L)":             "SecC COD",
-    "Sec Clarifier RAS":                     "SecC RAS",
-    "Sec Sed pH":                            "SecS pH",
-    "Sec Sed TSS (mg/L)":                   "SecS TSS",
-    "Sec Sed BOD (mg/L)":                   "SecS BOD",
-    "Sec Sed COD (mg/L)":                   "SecS COD",
-    "Sec Sed RAS (New)":                    "SecS RAS",
-    "Aeration pH (Existing)":               "Aer pH (E)",
-    "Aeration DO (mg/L, Existing)":         "Aer DO (E)",
-    "Aeration MLSS (mg/L, Existing)":       "Aer MLSS (E)",
-    "Aeration MLVSS (mg/L, Existing)":      "Aer MLVSS (E)",
-    "Aeration SV30 (ml/L, Existing)":       "Aer SV30 (E)",
-    "Aeration SVI (Existing)":              "Aer SVI (E)",
-    "Aeration pH (New)":                    "Aer pH (N)",
-    "Aeration DO (mg/L, New)":              "Aer DO (N)",
-    "Aeration MLSS (mg/L, New)":            "Aer MLSS (N)",
-    "Aeration MLVSS (mg/L, New)":           "Aer MLVSS (N)",
-    "Aeration SV30 (ml/L, New)":            "Aer SV30 (N)",
-    "Aeration SVI (New)":                   "Aer SVI (N)",
-    "Effluent pH (Grab)":                   "Eff pH (G)",
-    "Effluent BOD (mg/L, Grab)":            "Eff BOD (G)",
-    "Effluent COD (mg/L, Grab)":            "Eff COD (G)",
-    "Effluent TSS (mg/L, Grab)":            "Eff TSS (G)",
-    "Effluent FRC (mg/L)":                  "Eff FRC",
-    "Effluent O&G (mg/L)":                  "Eff O&G",
-    "Effluent NH3-N (mg/L)":               "Eff NH3",
-    "Effluent Total Coliform (CFU/100ml)":  "Eff T.Coli",
-    "Effluent Fecal Coliform (CFU/100ml)":  "Eff F.Coli",
-    "Effluent pH (Composite)":              "Eff pH (C)",
-    "Effluent BOD (mg/L, Composite)":       "Eff BOD (C)",
-    "Effluent COD (mg/L, Composite)":       "Eff COD (C)",
-    "Effluent TSS (mg/L, Composite)":       "Eff TSS (C)",
+    # Power / Operational
+    "Power GE (KW)":                          "Power — Gas Engine (KW)",
+    "Power NEA (KW)":                         "Power — NEA Grid (KW)",
+    "Power Total (KW)":                       "Power — Total (KW)",
+    "Power / Flow (KW/ML)":                   "Power per Flow (KW/ML)",
+    "Flow (MLD)":                             "Flow (MLD)",
+    # Inlet — grab
+    "Inlet pH (Grab)":                        "Inlet pH (Grab)",
+    "Inlet BOD (mg/L, Grab)":                "Inlet BOD (Grab)",
+    "Inlet COD (mg/L, Grab)":                "Inlet COD (Grab)",
+    "Inlet TSS (mg/L, Grab)":                "Inlet TSS (Grab)",
+    "Inlet TKN/NH3-N (mg/L, Grab)":          "Inlet TKN/NH3 (Grab)",
+    "Inlet O&G (mg/L, Grab)":                "Inlet Oil & Grease (Grab)",
+    "Inlet PO4/TP (mg/L, Grab)":             "Inlet PO4/TP (Grab)",
+    "Inlet Total Coliform (CFU/100ml, Grab)": "Inlet Total Coliform (Grab)",
+    "Inlet Fecal Coliform (CFU/100ml, Grab)": "Inlet Fecal Coliform (Grab)",
+    # Inlet — composite
+    "Inlet pH (Composite)":                   "Inlet pH (Composite)",
+    "Inlet BOD (mg/L, Composite)":           "Inlet BOD (Composite)",
+    "Inlet COD (mg/L, Composite)":           "Inlet COD (Composite)",
+    "Inlet TSS (mg/L, Composite)":           "Inlet TSS (Composite)",
+    # Grit
+    "Grit Classifier TSS (mg/L)":            "Grit Classifier TSS",
+    # Primary Clarifier
+    "Primary Clarifier pH":                   "Primary Clarifier pH",
+    "Primary TSS (mg/L)":                     "Primary Clarifier TSS",
+    "Primary BOD (mg/L)":                     "Primary Clarifier BOD",
+    "Primary COD (mg/L)":                     "Primary Clarifier COD",
+    "Primary Sludge Totalizer (m3)":          "Primary Sludge Volume (m3)",
+    # Secondary Clarifier
+    "Sec Clarifier pH":                       "Sec Clarifier pH",
+    "Sec Clarifier TSS (mg/L)":              "Sec Clarifier TSS",
+    "Sec Clarifier BOD (mg/L)":              "Sec Clarifier BOD",
+    "Sec Clarifier COD (mg/L)":              "Sec Clarifier COD",
+    "Sec Clarifier RAS":                      "Sec Clarifier RAS",
+    # Secondary Sedimentation
+    "Sec Sed pH":                             "Sec Sedimentation pH",
+    "Sec Sed TSS (mg/L)":                    "Sec Sedimentation TSS",
+    "Sec Sed BOD (mg/L)":                    "Sec Sedimentation BOD",
+    "Sec Sed COD (mg/L)":                    "Sec Sedimentation COD",
+    "Sec Sed RAS (New)":                     "Sec Sedimentation RAS",
+    # Aeration — existing tank
+    "Aeration pH (Existing)":                "Aeration pH (Existing Tank)",
+    "Aeration DO (mg/L, Existing)":          "Aeration DO (Existing Tank)",
+    "Aeration MLSS (mg/L, Existing)":        "Aeration MLSS (Existing Tank)",
+    "Aeration MLVSS (mg/L, Existing)":       "Aeration MLVSS (Existing Tank)",
+    "Aeration SV30 (ml/L, Existing)":        "Aeration SV30 (Existing Tank)",
+    "Aeration SVI (Existing)":               "Aeration SVI (Existing Tank)",
+    # Aeration — new tank
+    "Aeration pH (New)":                     "Aeration pH (New Tank)",
+    "Aeration DO (mg/L, New)":               "Aeration DO (New Tank)",
+    "Aeration MLSS (mg/L, New)":             "Aeration MLSS (New Tank)",
+    "Aeration MLVSS (mg/L, New)":            "Aeration MLVSS (New Tank)",
+    "Aeration SV30 (ml/L, New)":             "Aeration SV30 (New Tank)",
+    "Aeration SVI (New)":                    "Aeration SVI (New Tank)",
+    # Effluent — grab
+    "Effluent pH (Grab)":                    "Effluent pH (Grab)",
+    "Effluent BOD (mg/L, Grab)":             "Effluent BOD (Grab)",
+    "Effluent COD (mg/L, Grab)":             "Effluent COD (Grab)",
+    "Effluent TSS (mg/L, Grab)":             "Effluent TSS (Grab)",
+    "Effluent FRC (mg/L)":                   "Effluent Free Residual Chlorine",
+    "Effluent O&G (mg/L)":                   "Effluent Oil & Grease",
+    "Effluent NH3-N (mg/L)":                "Effluent NH3-N",
+    "Effluent Total Coliform (CFU/100ml)":   "Effluent Total Coliform",
+    "Effluent Fecal Coliform (CFU/100ml)":   "Effluent Fecal Coliform",
+    # Effluent — composite
+    "Effluent pH (Composite)":               "Effluent pH (Composite)",
+    "Effluent BOD (mg/L, Composite)":        "Effluent BOD (Composite)",
+    "Effluent COD (mg/L, Composite)":        "Effluent COD (Composite)",
+    "Effluent TSS (mg/L, Composite)":        "Effluent TSS (Composite)",
 }
 
 def s(col):
@@ -197,113 +208,250 @@ def pearson_spearman(df, features, target):
     return pd.DataFrame(rows).set_index("feature")
 
 
-# ── Chart 1: Missing data for new columns ─────────────────────────────────────
+# ── Chart 1: Missing data — all columns ───────────────────────────────────────
 
-def plot_missing_new(df):
-    print("1. Missing data — new columns...")
-    # Monthly coverage % per new column
-    tmp = df[["Date"] + [c for c in NEW_COLUMNS if c in df.columns]].copy()
+# Ordered column groups for the missing-data heatmap rows
+_COL_SECTIONS = [
+    ("Power & Operational", [
+        "Power — Gas Engine (KW)", "Power — NEA Grid (KW)", "Power — Total (KW)",
+        "Power per Flow (KW/ML)", "Flow (MLD)",
+    ]),
+    ("Inlet (Grab)", [
+        "Inlet pH (Grab)", "Inlet BOD (Grab)", "Inlet COD (Grab)", "Inlet TSS (Grab)",
+        "Inlet TKN/NH3 (Grab)", "Inlet Oil & Grease (Grab)", "Inlet PO4/TP (Grab)",
+        "Inlet Total Coliform (Grab)", "Inlet Fecal Coliform (Grab)",
+    ]),
+    ("Inlet (Composite)", [
+        "Inlet pH (Composite)", "Inlet BOD (Composite)",
+        "Inlet COD (Composite)", "Inlet TSS (Composite)",
+    ]),
+    ("Grit & Primary", [
+        "Grit Classifier TSS", "Primary Clarifier pH", "Primary Clarifier TSS",
+        "Primary Clarifier BOD", "Primary Clarifier COD", "Primary Sludge Volume (m3)",
+    ]),
+    ("Sec Clarifier", [
+        "Sec Clarifier pH", "Sec Clarifier TSS", "Sec Clarifier BOD",
+        "Sec Clarifier COD", "Sec Clarifier RAS",
+    ]),
+    ("Sec Sedimentation", [
+        "Sec Sedimentation pH", "Sec Sedimentation TSS", "Sec Sedimentation BOD",
+        "Sec Sedimentation COD", "Sec Sedimentation RAS",
+    ]),
+    ("Aeration — Existing Tank", [
+        "Aeration pH (Existing Tank)", "Aeration DO (Existing Tank)",
+        "Aeration MLSS (Existing Tank)", "Aeration MLVSS (Existing Tank)",
+        "Aeration SV30 (Existing Tank)", "Aeration SVI (Existing Tank)",
+    ]),
+    ("Aeration — New Tank", [
+        "Aeration pH (New Tank)", "Aeration DO (New Tank)",
+        "Aeration MLSS (New Tank)", "Aeration MLVSS (New Tank)",
+        "Aeration SV30 (New Tank)", "Aeration SVI (New Tank)",
+    ]),
+    ("Effluent (Grab)", [
+        "Effluent pH (Grab)", "Effluent BOD (Grab)", "Effluent COD (Grab)",
+        "Effluent TSS (Grab)", "Effluent Free Residual Chlorine",
+        "Effluent Oil & Grease", "Effluent NH3-N",
+        "Effluent Total Coliform", "Effluent Fecal Coliform",
+    ]),
+    ("Effluent (Composite)", [
+        "Effluent pH (Composite)", "Effluent BOD (Composite)",
+        "Effluent COD (Composite)", "Effluent TSS (Composite)",
+    ]),
+]
+
+
+def plot_missing_all(df):
+    print("1. Missing data — all columns...")
+
+    # Build short-name → original-name reverse map
+    rev = {v: k for k, v in SHORT.items()}
+
+    # Monthly coverage for every numeric column
+    num_cols = df.select_dtypes(include="number").columns.tolist()
+    tmp = df[["Date"] + num_cols].copy()
     tmp["YearMonth"] = tmp["Date"].dt.to_period("M")
-    monthly = tmp.groupby("YearMonth")[[c for c in NEW_COLUMNS if c in df.columns]].apply(
+    monthly = tmp.groupby("YearMonth")[num_cols].apply(
         lambda g: g.notna().mean() * 100
     )
     monthly.index = monthly.index.astype(str)
-    short_cols = [s(c) for c in monthly.columns]
 
-    fig, ax = plt.subplots(figsize=(20, 7))
+    # Build ordered row list: short_name → original_col
+    ordered_rows = []   # (display_label, original_col)
+    section_boundaries = []   # (y_position, section_name)
+    pos = 0
+    for sec_name, short_names in _COL_SECTIONS:
+        section_boundaries.append((pos, sec_name))
+        for sn in short_names:
+            orig = rev.get(sn)
+            if orig and orig in monthly.columns:
+                ordered_rows.append((sn, orig))
+                pos += 1
+
+    labels  = [r[0] for r in ordered_rows]
+    orig_cols = [r[1] for r in ordered_rows]
+    data = monthly[orig_cols].T   # shape: features × months
+    data.index = labels
+
+    n_rows = len(labels)
+    fig, ax = plt.subplots(figsize=(22, max(10, n_rows * 0.32)))
     sns.heatmap(
-        monthly.T,
-        ax=ax, cmap="YlGn", vmin=0, vmax=100,
-        linewidths=0.3, linecolor="white",
-        cbar_kws={"label": "% coverage", "shrink": 0.6},
-        yticklabels=short_cols,
+        data, ax=ax, cmap="YlGn", vmin=0, vmax=100,
+        linewidths=0.25, linecolor="#e8e8e8",
+        cbar_kws={"label": "% days with data", "shrink": 0.5},
+        yticklabels=labels,
     )
-    ax.set_title("Coverage (%) of new columns by month", fontsize=14, fontweight="bold", pad=10)
-    ax.set_xlabel("Month")
+    ax.set_title("Data coverage (%) — all columns, by month  (darker green = more complete)",
+                 fontsize=13, fontweight="bold", pad=10)
+    ax.set_xlabel("Month", fontsize=10)
     ax.set_ylabel("")
-    # Thin x-axis tick labels — show every 6 months
-    xticks = ax.get_xticks()
-    xlabels = [l.get_text() for l in ax.get_xticklabels()]
-    ax.set_xticks(xticks[::6])
-    ax.set_xticklabels(xlabels[::6], rotation=45, ha="right", fontsize=8)
+
+    # Draw section dividers
+    for y_pos, sec_name in section_boundaries:
+        if y_pos > 0:
+            ax.axhline(y_pos, color="white", linewidth=2.5)
+        ax.text(-0.5, y_pos + 0.5, sec_name,
+                ha="right", va="top", fontsize=7.5, color="#444",
+                fontweight="bold", transform=ax.get_yaxis_transform())
+
+    # Sparse x-axis labels — every 6 months
+    xlabels = [t.get_text() for t in ax.get_xticklabels()]
+    step = max(1, len(xlabels) // 12)
+    ax.set_xticks(np.arange(0, len(xlabels), step) + 0.5)
+    ax.set_xticklabels(xlabels[::step], rotation=45, ha="right", fontsize=8)
+    ax.tick_params(axis="y", labelsize=8)
+
     plt.tight_layout()
-    return save(fig, "01_missing_new_columns")
+    return save(fig, "01_missing_all_columns")
 
 
-# ── Chart 2: Pearson vs Spearman ──────────────────────────────────────────────
+# ── Chart 2: Pearson vs Spearman (one figure per target) ─────────────────────
+
+def _pearson_spearman_one(df, target, feats, filename):
+    """Single horizontal bar chart for one target. Returns saved path."""
+    corr = pearson_spearman(df, feats, target).dropna()
+    corr["abs_sp"] = corr["spearman"].abs()
+    corr = corr.sort_values("abs_sp", ascending=True)
+    short_feats = [s(f) for f in corr.index]
+
+    n = len(corr)
+    bar_h = 0.38
+    fig, ax = plt.subplots(figsize=(15, max(7, n * 0.30)))
+
+    y = np.arange(n)
+    ax.barh(y + bar_h / 2, corr["pearson"],  bar_h, color="#2171B5",
+            alpha=0.85, label="Pearson r  (linear correlation)")
+    ax.barh(y - bar_h / 2, corr["spearman"], bar_h, color="#FD8D3C",
+            alpha=0.85, label="Spearman r  (rank / monotonic correlation)")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(short_feats, fontsize=8)
+    ax.axvline(0, color="black", linewidth=0.8)
+    ax.set_xlim(-1, 1)
+    ax.set_xlabel("Correlation coefficient  (−1 = perfect negative, +1 = perfect positive)",
+                  fontsize=9)
+    ax.set_title(f"Pearson vs Spearman — {s(target)}\n"
+                 "Features ranked by |Spearman r| (strongest at top)",
+                 fontsize=11, fontweight="bold")
+    ax.legend(fontsize=9, loc="lower right")
+    ax.grid(axis="x", alpha=0.3)
+
+    # Annotate top-5 Spearman values
+    top5_thresh = corr["abs_sp"].nlargest(5).min()
+    for i, (pr, sr, abs_sp) in enumerate(
+            zip(corr["pearson"], corr["spearman"], corr["abs_sp"])):
+        if abs_sp >= top5_thresh:
+            xp = pr + 0.02 if pr >= 0 else pr - 0.02
+            xs = sr + 0.02 if sr >= 0 else sr - 0.02
+            ha_p = "left" if pr >= 0 else "right"
+            ha_s = "left" if sr >= 0 else "right"
+            ax.text(xp, i + bar_h / 2, f"{pr:.2f}", va="center",
+                    fontsize=7, ha=ha_p, color="#1a3a6e")
+            ax.text(xs, i - bar_h / 2, f"{sr:.2f}", va="center",
+                    fontsize=7, ha=ha_s, color="#7a3000")
+
+    plt.tight_layout()
+    return save(fig, filename)
+
 
 def plot_pearson_vs_spearman(df):
     print("2. Pearson vs Spearman...")
     feats = feature_cols(df)
-    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
-    fig.suptitle("Pearson vs Spearman correlation — features vs effluent targets\n"
-                 "(gap between bars = non-linearity / non-monotonicity)",
-                 fontsize=13, fontweight="bold")
+    grab_paths, comp_paths = [], []
 
-    for ax, target in zip(axes.flat, GRAB_TARGETS):
-        corr = pearson_spearman(df, feats, target).dropna()
-        # Sort by |Spearman|
-        corr["abs_sp"] = corr["spearman"].abs()
-        corr = corr.sort_values("abs_sp", ascending=True)
-        short_feats = [s(f) for f in corr.index]
+    for target in GRAB_TARGETS:
+        slug = (target.replace(" ", "_").replace("/", "").replace("(", "")
+                      .replace(")", "").replace(",", ""))[:30]
+        grab_paths.append(_pearson_spearman_one(df, target, feats,
+                                                f"02_pearson_spearman_{slug}"))
+    for target in COMP_TARGETS:
+        slug = (target.replace(" ", "_").replace("/", "").replace("(", "")
+                      .replace(")", "").replace(",", ""))[:30]
+        comp_paths.append(_pearson_spearman_one(df, target, feats,
+                                                f"02_pearson_spearman_comp_{slug}"))
+    return {"grab": grab_paths, "comp": comp_paths}
 
-        y = np.arange(len(corr))
-        bar_h = 0.35
-        ax.barh(y + bar_h/2, corr["pearson"], bar_h, color="#2171B5",
-                alpha=0.8, label="Pearson")
-        ax.barh(y - bar_h/2, corr["spearman"], bar_h, color="#FD8D3C",
-                alpha=0.8, label="Spearman")
-        ax.set_yticks(y)
-        ax.set_yticklabels(short_feats, fontsize=7)
-        ax.axvline(0, color="black", linewidth=0.8)
-        ax.set_xlim(-1, 1)
-        ax.set_title(s(target), fontsize=11, fontweight="bold")
-        ax.set_xlabel("Correlation coefficient")
-        ax.legend(fontsize=8, loc="lower right")
-        ax.grid(axis="x", alpha=0.3)
+
+# ── Chart 3: Mutual Information (one figure per target) ───────────────────────
+
+def _mi_one(df, target, feats, filename):
+    """Single MI bar chart for one target. Returns (path, mi_series)."""
+    sub = df[feats + [target]].dropna()
+    if len(sub) < 20:
+        return None, None
+    X = sub[feats].values
+    y = sub[target].values
+    mi = mutual_info_regression(X, y, random_state=42)
+    mi_series = pd.Series(mi, index=feats).sort_values(ascending=True)
+
+    short_feats = [s(f) for f in mi_series.index]
+    q75 = mi_series.quantile(0.75)
+    colors = ["#D94801" if v >= q75 else "#2171B5" for v in mi_series.values]
+
+    n = len(mi_series)
+    fig, ax = plt.subplots(figsize=(15, max(7, n * 0.30)))
+    ax.barh(range(n), mi_series.values, color=colors, alpha=0.85)
+    ax.set_yticks(range(n))
+    ax.set_yticklabels(short_feats, fontsize=8)
+    ax.set_title(f"Mutual Information scores — {s(target)}\n"
+                 "Features ranked by MI score  (red bars = top 25%)",
+                 fontsize=11, fontweight="bold")
+    ax.set_xlabel("Mutual Information score  (higher = more predictive, regardless of relationship shape)",
+                  fontsize=9)
+    ax.grid(axis="x", alpha=0.3)
+
+    # Annotate top-5
+    top5_thresh = mi_series.nlargest(5).min()
+    for i, v in enumerate(mi_series.values):
+        if v >= top5_thresh:
+            ax.text(v + 0.003, i, f"{v:.3f}", va="center", fontsize=7.5, color="#6B0000")
 
     plt.tight_layout()
-    return save(fig, "02_pearson_vs_spearman")
+    return save(fig, filename), mi_series
 
-
-# ── Chart 3: Mutual Information ────────────────────────────────────────────────
 
 def plot_mutual_information(df):
     print("3. Mutual information...")
     feats = feature_cols(df)
-    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
-    fig.suptitle("Mutual Information scores — features vs effluent targets\n"
-                 "(captures non-linear and non-monotonic relationships)",
-                 fontsize=13, fontweight="bold")
-
+    grab_paths, comp_paths = [], []
     all_mi = {}
-    for ax, target in zip(axes.flat, GRAB_TARGETS):
-        sub = df[feats + [target]].dropna()
-        if len(sub) < 20:
-            ax.set_visible(False)
-            continue
-        X = sub[feats].values
-        y = sub[target].values
-        mi = mutual_info_regression(X, y, random_state=42)
-        mi_series = pd.Series(mi, index=feats).sort_values(ascending=True)
-        all_mi[target] = mi_series
 
-        short_feats = [s(f) for f in mi_series.index]
-        colors = ["#D94801" if v > mi_series.quantile(0.75) else "#2171B5"
-                  for v in mi_series.values]
-        ax.barh(range(len(mi_series)), mi_series.values, color=colors, alpha=0.85)
-        ax.set_yticks(range(len(mi_series)))
-        ax.set_yticklabels(short_feats, fontsize=7)
-        ax.set_title(s(target), fontsize=11, fontweight="bold")
-        ax.set_xlabel("Mutual Information score")
-        ax.grid(axis="x", alpha=0.3)
-        # Annotate top 5
-        for i, (v, feat) in enumerate(zip(mi_series.values, mi_series.index)):
-            if v > mi_series.quantile(0.80):
-                ax.text(v + 0.002, i, f"{v:.3f}", va="center", fontsize=7, color="#8B0000")
+    for target in GRAB_TARGETS:
+        slug = (target.replace(" ", "_").replace("/", "").replace("(", "")
+                      .replace(")", "").replace(",", ""))[:30]
+        path, mi_s = _mi_one(df, target, feats, f"03_mi_{slug}")
+        grab_paths.append(path)
+        if mi_s is not None:
+            all_mi[target] = mi_s
 
-    plt.tight_layout()
-    return save(fig, "03_mutual_information"), all_mi
+    for target in COMP_TARGETS:
+        slug = (target.replace(" ", "_").replace("/", "").replace("(", "")
+                      .replace(")", "").replace(",", ""))[:30]
+        path, mi_s = _mi_one(df, target, feats, f"03_mi_comp_{slug}")
+        comp_paths.append(path)
+        if mi_s is not None:
+            all_mi[target] = mi_s
+
+    return {"grab": grab_paths, "comp": comp_paths, "mi_data": all_mi}
 
 
 # ── Chart 4: Feature vs target scatter grids ──────────────────────────────────
@@ -681,93 +829,313 @@ def plot_linearity_residuals(df):
 # ── HTML report generator ─────────────────────────────────────────────────────
 
 def img_tag(path):
+    if path is None or not os.path.exists(path):
+        return ""
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
-    return f'<img src="data:image/png;base64,{b64}" style="max-width:100%;margin:12px 0;">'
+    return f'<img src="data:image/png;base64,{b64}" style="max-width:100%;margin:12px 0;display:block;">'
 
 
-CHART_META = [
-    ("01_missing_new_columns",   "1. Missing data — new columns",
-     "Coverage (%) of each new column by calendar month. "
-     "White = no data; darker green = more complete. Identifies which months/years "
-     "introduced new parameters and where gaps remain."),
-    ("02_pearson_vs_spearman",   "2. Pearson vs Spearman correlation",
-     "For each effluent target, features are ranked by |Spearman r|. "
-     "A large gap between the two bars for a feature signals a non-linear but "
-     "monotonic relationship — direct justification for using RF over linear models."),
-    ("03_mutual_information",    "3. Mutual Information scores",
-     "MI captures non-monotonic and interaction-based relationships that both Pearson "
-     "and Spearman miss. High MI + low Pearson = strongly non-linear feature. "
-     "Red bars = top quartile."),
-    ("04_scatter_Effluent_BOD_mgL_Grab",   "4a. Feature scatter grid — Effluent BOD",
-     "Top 15 features vs Effluent BOD (Grab). Dashed line = linear regression fit. "
-     "Colour = year. Curvature or fan shapes indicate non-linearity."),
-    ("04_scatter_Effluent_COD_mgL_Grab",   "4b. Feature scatter grid — Effluent COD", ""),
-    ("04_scatter_Effluent_TSS_mgL_Grab",   "4c. Feature scatter grid — Effluent TSS", ""),
-    ("04_scatter_Effluent_pH_Grab",         "4d. Feature scatter grid — Effluent pH", ""),
-    ("05_aeration_timeseries",   "5. Aeration tank time series",
-     "Existing (blue) and New (orange) aeration tank DO, MLSS, and SVI over the full "
-     "study period. The dashed red line on DO marks the 0.5 mg/L minimum threshold. "
-     "Extended periods below threshold correlate with degraded effluent quality."),
-    ("06_cross_stage_heatmap",   "6. Cross-stage correlation heatmap",
-     "All process features vs all effluent targets. Left = Pearson, Right = Spearman. "
-     "Rows sorted by mean |Pearson| across the four grab targets. "
-     "Large Pearson–Spearman differences highlight non-linear relationships."),
-    ("07_stage_removal",         "7. Stage removal efficiency",
-     "Median concentration ± IQR (shaded band) at each treatment stage for BOD, COD, TSS. "
-     "Log y-axis. Overall removal % annotated at the effluent stage."),
-    ("08_do_vs_effluent",        "8. Aeration DO vs effluent quality",
-     "Scatter of DO (existing tank) against effluent BOD, COD, and TSS. "
-     "If a threshold effect exists near DO = 0.5 mg/L, effluent quality degrades "
-     "sharply — evidence for non-linearity that RF can capture but Ridge cannot."),
-    ("09_svi_mlss_vs_tss",       "9. Settleability / biomass vs effluent TSS",
-     "SVI, MLSS, and SV30 (existing and new tanks) vs effluent TSS. "
-     "Poor settling (high SVI) is expected to drive high effluent TSS. "
-     "Correlation coefficient r shown in each title."),
-    ("10_linearity_residuals",   "10. Ridge residuals — linearity diagnostic",
-     "Ridge (alpha=1, StandardScaler) trained on 2021–2024 process features, tested on 2025. "
-     "Panels per target: residuals vs fitted values; vs time (blue=train, red=test); "
-     "vs highest-coefficient feature. Systematic patterns confirm non-linearity."),
-]
+def _fold(summary, content_html, open_by_default=False):
+    """Return a <details> foldable block."""
+    open_attr = " open" if open_by_default else ""
+    return (f'<details{open_attr}>\n'
+            f'  <summary>{summary}</summary>\n'
+            f'  <div class="fold-inner">{content_html}</div>\n'
+            f'</details>\n')
 
-def build_html(plot_paths):
+
+def build_html(data):
+    """
+    data keys:
+      residuals, pearson (dict grab/comp), mi (dict grab/comp/mi_data),
+      scatter (list), aeration_ts, cross_heatmap, stage_removal,
+      do_effluent, svi_tss, missing_all
+    """
     title = "EDA Full Report — All_Years_Full.xlsx"
+
+    CSS = """
+    body  { font-family: Calibri, Arial, sans-serif; max-width: 1500px;
+            margin: 0 auto; padding: 24px; background: #f0f2f5; color: #222; }
+    h1    { color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 8px;
+            font-size: 1.8em; }
+    h2    { color: #1F4E79; margin-top: 48px; font-size: 1.25em;
+            border-left: 6px solid #2E75B6; padding-left: 12px; }
+    p, ul, ol { max-width: 950px; line-height: 1.7; }
+    li    { margin-bottom: 4px; }
+    .card { background: white; padding: 24px 28px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10); margin-bottom: 28px; }
+    .toc  { background: #e8f0fe; border-left: 5px solid #2E75B6; border-radius: 6px;
+            padding: 16px 24px; margin-bottom: 36px; }
+    .toc a { color: #1a4e8a; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .badge { display: inline-block; background: #2E75B6; color: white;
+             font-size: 0.75em; padding: 2px 8px; border-radius: 10px;
+             vertical-align: middle; margin-right: 6px; }
+    .badge-decision { background: #C0392B; }
+    img   { border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+    details { border: 1px solid #d0d7e3; border-radius: 6px; margin: 10px 0;
+              background: #fafbfd; }
+    details > summary { cursor: pointer; font-weight: bold; font-size: 1em;
+                        color: #2E75B6; padding: 10px 16px; list-style: none;
+                        user-select: none; }
+    details > summary:hover { color: #1F4E79; background: #eef3fa;
+                               border-radius: 6px; }
+    details[open] > summary { border-bottom: 1px solid #d0d7e3;
+                               border-radius: 6px 6px 0 0; }
+    .fold-inner { padding: 12px 16px; }
+    .interp { background: #fffbf0; border: 1px solid #f0d080; border-radius: 6px;
+              padding: 14px 18px; margin: 14px 0; max-width: 950px; }
+    .interp h4 { margin: 0 0 8px 0; color: #7a5800; }
+    hr { border: none; border-top: 1px solid #dde3ed; margin: 32px 0; }
+    """
+
+    TARGET_LABELS = {
+        "Effluent BOD (mg/L, Grab)":        "Effluent BOD — Grab sample",
+        "Effluent COD (mg/L, Grab)":        "Effluent COD — Grab sample",
+        "Effluent TSS (mg/L, Grab)":        "Effluent TSS — Grab sample",
+        "Effluent pH (Grab)":               "Effluent pH — Grab sample",
+        "Effluent BOD (mg/L, Composite)":   "Effluent BOD — Composite sample",
+        "Effluent COD (mg/L, Composite)":   "Effluent COD — Composite sample",
+        "Effluent TSS (mg/L, Composite)":   "Effluent TSS — Composite sample",
+        "Effluent pH (Composite)":          "Effluent pH — Composite sample",
+    }
+
+    SCATTER_LABELS = {
+        "Effluent BOD (mg/L, Grab)":  "4a — Effluent BOD (Grab)",
+        "Effluent COD (mg/L, Grab)":  "4b — Effluent COD (Grab)",
+        "Effluent TSS (mg/L, Grab)":  "4c — Effluent TSS (Grab)",
+        "Effluent pH (Grab)":         "4d — Effluent pH (Grab)",
+    }
+
+    PEARSON_INTERP = """
+    <div class="interp">
+    <h4>How to read this chart</h4>
+    <p>Each feature has two horizontal bars:</p>
+    <ul>
+      <li><strong style="color:#2171B5">Blue — Pearson r</strong>: measures the
+          <em>linear</em> relationship. It assumes that as the feature increases by one
+          unit, the target increases by a fixed amount.</li>
+      <li><strong style="color:#FD8D3C">Orange — Spearman r</strong>: measures the
+          <em>rank / monotonic</em> relationship. It only asks whether the two variables
+          move in the same direction, regardless of whether the relationship is a straight
+          line or a curve.</li>
+    </ul>
+    <p><strong>What the gap between the two bars tells you:</strong></p>
+    <ul>
+      <li><strong>Blue ≈ Orange, both sizable</strong> — the relationship is
+          approximately linear. A linear model handles this well.</li>
+      <li><strong>Orange noticeably longer than Blue</strong> — the relationship is
+          monotonic but <em>curved</em> (e.g., logarithmic, exponential, or step-like).
+          As one variable increases the other consistently rises or falls, but not
+          proportionally. Linear models will underestimate the strength of this feature;
+          non-linear models (RF) capture it naturally.</li>
+      <li><strong>Blue noticeably longer than Orange</strong> — a few extreme outliers
+          are boosting the linear correlation. Spearman is more robust to outliers.
+          Investigate whether those points are genuine or measurement errors.</li>
+      <li><strong>Both bars small</strong> — this feature has little direct predictive
+          power for this target, or the relationship is complex and non-monotonic.
+          Check the Mutual Information chart, which can detect non-monotonic patterns.</li>
+    </ul>
+    <p><strong>Model selection rule of thumb:</strong> if the top-ranked features
+       consistently show Orange &gt; Blue by a wide margin, non-linear models are
+       justified. If Pearson ≈ Spearman throughout, linear models are worth trying first.</p>
+    </div>"""
+
+    MI_INTERP = """
+    <div class="interp">
+    <h4>How to read this chart</h4>
+    <p><strong>Mutual Information (MI)</strong> measures how much knowing a feature
+       reduces uncertainty about the target. Unlike Pearson or Spearman, it is
+       completely model-agnostic — it detects linear, curved, step-function, and even
+       fully non-monotonic dependencies.</p>
+    <ul>
+      <li><strong>High MI + high Spearman</strong> — strong, monotonic relationship.
+          Both linear and non-linear models benefit from this feature.</li>
+      <li><strong>High MI + low Spearman</strong> — the relationship is important but
+          non-monotonic (e.g., there is an optimal range). Only non-linear models can
+          exploit this. This is the clearest signal that RF is needed.</li>
+      <li><strong>Low MI</strong> — the feature contributes little to predicting this
+          target and is a candidate for exclusion in feature selection.</li>
+    </ul>
+    <p>Red bars mark the top 25% of features by MI score for this target.</p>
+    </div>"""
+
     parts = [f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>{title}</title>
-<style>
-  body {{ font-family: Calibri, Arial, sans-serif; max-width: 1400px;
-          margin: 0 auto; padding: 20px; background: #f5f5f5; color: #222; }}
-  h1   {{ color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 8px; }}
-  h2   {{ color: #2E75B6; margin-top: 40px; border-left: 5px solid #2E75B6;
-          padding-left: 10px; }}
-  p    {{ max-width: 900px; line-height: 1.6; }}
-  .card {{ background: white; padding: 20px; border-radius: 8px;
-           box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }}
-  img  {{ border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
-</style>
+<style>{CSS}</style>
 </head>
 <body>
 <h1>{title}</h1>
-<p>Full exploratory data analysis using the enriched 60-column dataset
-(<code>All_Years_Full.xlsx</code>). Charts include correlation analysis,
-mutual information, aeration diagnostics, and Ridge residual checks for
-linearity. These inform feature selection and model choice.</p>
+<p>Full exploratory data analysis on the enriched 60-column dataset
+(<code>All_Years_Full.xlsx</code>, 1918 daily rows, 2020–2025).
+Sections are ordered by relevance to the key question:
+<strong>are non-linear models (Random Forest) justified over linear ones?</strong></p>
+
+<div class="toc">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#s1">Ridge residuals — linearity diagnostic</a>
+      <span class="badge badge-decision">Model selection</span></li>
+  <li><a href="#s2">Pearson vs Spearman correlation</a>
+      <span class="badge badge-decision">Model selection</span></li>
+  <li><a href="#s3">Mutual Information scores</a>
+      <span class="badge badge-decision">Model selection</span></li>
+  <li><a href="#s4">Feature vs target scatter grids</a>
+      <span class="badge badge-decision">Model selection</span></li>
+  <li><a href="#s5">Cross-stage correlation heatmap</a></li>
+  <li><a href="#s6">Data coverage — all columns</a></li>
+  <li><a href="#s7">Aeration tank time series</a></li>
+  <li><a href="#s8">Stage removal efficiency</a></li>
+  <li><a href="#s9">Aeration DO vs effluent quality</a></li>
+  <li><a href="#s10">Settleability &amp; biomass vs effluent TSS</a></li>
+</ol>
+</div>
 """]
 
-    path_map = {os.path.splitext(os.path.basename(p))[0]: p
-                for p in plot_paths}
+    # ── Section 1: Ridge residuals ──────────────────────────────────────────────
+    parts.append("""<div class="card" id="s1">
+<h2><span class="badge badge-decision">Model selection</span>
+1. Ridge residuals — linearity diagnostic</h2>
+<p>A Ridge regression model (α = 1, StandardScaler) is trained on process features
+(2021–2024) and tested on 2025.
+Three residual plots are shown per effluent target:</p>
+<ul>
+  <li><strong>Residuals vs Fitted</strong> — a random horizontal band around zero
+      means linear assumptions hold; any curve, funnel, or pattern means they do not.</li>
+  <li><strong>Residuals vs Time</strong> — systematic drift or seasonality that the
+      linear model cannot capture (blue = train, red = 2025 test).</li>
+  <li><strong>Residuals vs Top Feature</strong> — if residuals correlate with the
+      feature most relied upon by Ridge, the relationship is non-linear.</li>
+</ul>
+""")
+    parts.append(img_tag(data.get("residuals")))
+    parts.append("</div>\n")
 
-    for slug, heading, desc in CHART_META:
-        if slug not in path_map:
-            continue
-        parts.append(f'<div class="card">\n<h2>{heading}</h2>\n')
-        if desc:
-            parts.append(f"<p>{desc}</p>\n")
-        parts.append(img_tag(path_map[slug]))
-        parts.append("\n</div>\n")
+    # ── Section 2: Pearson vs Spearman ─────────────────────────────────────────
+    ps = data.get("pearson", {})
+    grab_paths_ps = ps.get("grab", [])
+    comp_paths_ps = ps.get("comp", [])
+
+    grab_imgs_ps = "".join(img_tag(p) for p in grab_paths_ps)
+    comp_imgs_ps = "".join(img_tag(p) for p in comp_paths_ps)
+
+    parts.append(f"""<div class="card" id="s2">
+<h2><span class="badge badge-decision">Model selection</span>
+2. Pearson vs Spearman correlation</h2>
+{PEARSON_INTERP}
+{_fold("▶ Grab effluent targets (click to expand)", grab_imgs_ps, open_by_default=True)}
+{_fold("▶ Composite effluent targets (click to expand)", comp_imgs_ps)}
+</div>
+""")
+
+    # ── Section 3: Mutual Information ──────────────────────────────────────────
+    mi = data.get("mi", {})
+    grab_paths_mi = [p for p in mi.get("grab", []) if p]
+    comp_paths_mi = [p for p in mi.get("comp", []) if p]
+
+    grab_imgs_mi = "".join(img_tag(p) for p in grab_paths_mi)
+    comp_imgs_mi = "".join(img_tag(p) for p in comp_paths_mi)
+
+    parts.append(f"""<div class="card" id="s3">
+<h2><span class="badge badge-decision">Model selection</span>
+3. Mutual Information scores</h2>
+{MI_INTERP}
+{_fold("▶ Grab effluent targets (click to expand)", grab_imgs_mi, open_by_default=True)}
+{_fold("▶ Composite effluent targets (click to expand)", comp_imgs_mi)}
+</div>
+""")
+
+    # ── Section 4: Scatter grids ───────────────────────────────────────────────
+    scatter_paths = data.get("scatter", [])
+    scatter_labels = list(SCATTER_LABELS.values())
+
+    scatter_folds = ""
+    for path, label in zip(scatter_paths, scatter_labels):
+        scatter_folds += _fold(f"▶ {label}", img_tag(path))
+
+    parts.append(f"""<div class="card" id="s4">
+<h2><span class="badge badge-decision">Model selection</span>
+4. Feature vs target scatter grids</h2>
+<p>Top 15 features (ranked by Mutual Information) plotted against each effluent
+target. Points are coloured by year. The dashed black line is the linear regression fit.
+Look for curvature, fan shapes (heteroscedasticity), or clusters — all indicate that
+a linear model will leave systematic error on the table.</p>
+{scatter_folds}
+</div>
+""")
+
+    # ── Section 5: Cross-stage heatmap ─────────────────────────────────────────
+    parts.append(f"""<div class="card" id="s5">
+<h2>5. Cross-stage correlation heatmap</h2>
+<p>All process features vs all eight effluent targets.
+Left panel = Pearson, right panel = Spearman. Rows are sorted by mean |Pearson r|
+across the four grab targets. This gives a single-view summary of which process
+stages and parameters are most associated with effluent quality.</p>
+{img_tag(data.get("cross_heatmap"))}
+</div>
+""")
+
+    # ── Section 6: Missing data ────────────────────────────────────────────────
+    parts.append(f"""<div class="card" id="s6">
+<h2>6. Data coverage — all columns</h2>
+<p>Monthly data coverage (% of days with a recorded value) for every column in
+the dataset, grouped by treatment stage. White = no data; darker green = complete.
+Use this to understand where gaps fall before modelling — columns with very low
+coverage may need imputation or exclusion depending on the missing-data pattern.</p>
+{img_tag(data.get("missing_all"))}
+</div>
+""")
+
+    # ── Section 7: Aeration time series ───────────────────────────────────────
+    parts.append(f"""<div class="card" id="s7">
+<h2>7. Aeration tank time series</h2>
+<p>Dissolved Oxygen (DO), Mixed Liquor Suspended Solids (MLSS), and Sludge Volume
+Index (SVI) for the Existing (blue) and New (orange) aeration tanks over 2021–2025.
+The dashed red line on DO marks the 0.5 mg/L minimum required for aerobic treatment.
+Extended periods below this threshold are expected to correspond to poorer effluent
+quality — visible in the scatter charts of Section 9.</p>
+{img_tag(data.get("aeration_ts"))}
+</div>
+""")
+
+    # ── Section 8: Stage removal ───────────────────────────────────────────────
+    parts.append(f"""<div class="card" id="s8">
+<h2>8. Stage removal efficiency</h2>
+<p>Median concentration ± IQR (shaded band) at each treatment stage for BOD, COD, and TSS.
+Y-axis is logarithmic. The annotation shows overall % removal from inlet to final effluent.
+This chart answers <em>where</em> in the process most removal occurs and how much
+variability exists at each stage.</p>
+{img_tag(data.get("stage_removal"))}
+</div>
+""")
+
+    # ── Section 9: DO vs effluent ──────────────────────────────────────────────
+    parts.append(f"""<div class="card" id="s9">
+<h2>9. Aeration DO vs effluent quality</h2>
+<p>Scatter plots of Aeration DO (Existing Tank) against effluent BOD, COD, and TSS.
+The dashed red line marks the DO = 0.5 mg/L minimum threshold.
+A sharp degradation in effluent quality <em>below</em> the threshold — rather than a
+smooth linear decline — would be strong evidence for a threshold / step non-linearity
+that RF can capture but a linear model cannot.</p>
+{img_tag(data.get("do_effluent"))}
+</div>
+""")
+
+    # ── Section 10: SVI/MLSS vs TSS ───────────────────────────────────────────
+    parts.append(f"""<div class="card" id="s10">
+<h2>10. Settleability &amp; biomass vs effluent TSS</h2>
+<p>SVI (Sludge Volume Index), MLSS, and SV30 for both aeration tanks plotted against
+effluent TSS. Poor settling (high SVI) should produce high effluent TSS because
+particles fail to settle out of the final effluent. Pearson r is shown in each panel
+title. If the relationship is present but non-linear, SVI and SV30 are strong
+candidates for the feature selection pool.</p>
+{img_tag(data.get("svi_tss"))}
+</div>
+""")
 
     parts.append("</body>\n</html>")
     html = "\n".join(parts)
@@ -783,24 +1151,38 @@ def main():
     df = pd.read_excel(EXCEL_IN, parse_dates=["Date"])
     print(f"  {df.shape[0]} rows × {df.shape[1]} columns\n")
 
-    all_paths = []
-
     print("Generating charts...")
-    all_paths.append(plot_missing_new(df))
-    all_paths.append(plot_pearson_vs_spearman(df))
-    mi_path, all_mi = plot_mutual_information(df)
-    all_paths.append(mi_path)
-    all_paths += plot_scatter_grids(df, all_mi)
-    all_paths.append(plot_aeration_timeseries(df))
-    all_paths.append(plot_cross_stage_heatmap(df))
-    all_paths.append(plot_stage_removal(df))
-    all_paths.append(plot_do_vs_effluent(df))
-    all_paths.append(plot_svi_mlss_vs_tss(df))
-    all_paths.append(plot_linearity_residuals(df))
+    missing_all   = plot_missing_all(df)
+    pearson_data  = plot_pearson_vs_spearman(df)
+    mi_result     = plot_mutual_information(df)
+    all_mi        = mi_result["mi_data"]
+    scatter_paths = plot_scatter_grids(df, all_mi)
+    aeration_ts   = plot_aeration_timeseries(df)
+    cross_heatmap = plot_cross_stage_heatmap(df)
+    stage_removal = plot_stage_removal(df)
+    do_effluent   = plot_do_vs_effluent(df)
+    svi_tss       = plot_svi_mlss_vs_tss(df)
+    residuals     = plot_linearity_residuals(df)
+
+    n_charts = (1 + len(pearson_data["grab"]) + len(pearson_data["comp"])
+                + len([p for p in mi_result["grab"] if p])
+                + len([p for p in mi_result["comp"] if p])
+                + len(scatter_paths) + 5 + 1)
 
     print("\nBuilding HTML report...")
-    build_html(all_paths)
-    print(f"\nDone. {len(all_paths)} charts → {PLOTS_DIR}/")
+    build_html({
+        "residuals":    residuals,
+        "pearson":      pearson_data,
+        "mi":           mi_result,
+        "scatter":      scatter_paths,
+        "aeration_ts":  aeration_ts,
+        "cross_heatmap":cross_heatmap,
+        "stage_removal":stage_removal,
+        "do_effluent":  do_effluent,
+        "svi_tss":      svi_tss,
+        "missing_all":  missing_all,
+    })
+    print(f"\nDone. ~{n_charts} chart files → {PLOTS_DIR}/")
     print(f"Report: {REPORT}")
 
 
