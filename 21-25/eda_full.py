@@ -460,7 +460,25 @@ def plot_mutual_information(df):
 
 # ── Chart 4: Feature vs target scatter grids ──────────────────────────────────
 
-def plot_scatter_grids(df, all_mi):
+def compute_top_ridge_features(df):
+    """Return {target: feature_name} — the feature with the largest Ridge |coef| per target."""
+    feats    = feature_cols(df)
+    usable   = [f for f in feats if f in df.columns]
+    train_df = df[df["Date"].dt.year.isin([2021, 2022, 2023, 2024])]
+    top = {}
+    for tgt in GRAB_TARGETS + COMP_TARGETS:
+        tr = train_df[usable + [tgt]].dropna()
+        if len(tr) < 20:
+            continue
+        sc    = StandardScaler()
+        ridge = Ridge(alpha=1.0)
+        ridge.fit(sc.fit_transform(tr[usable].values), tr[tgt].values)
+        top[tgt] = pd.Series(np.abs(ridge.coef_), index=usable).idxmax()
+    return top
+
+
+def plot_scatter_grids(df, all_mi, top_ridge_feats=None):
+    """top_ridge_feats: dict {target: feature_name} — subplot for that feature gets an orange border."""
     print("4. Feature scatter grids...")
     paths = []
     feats = feature_cols(df)
@@ -473,7 +491,8 @@ def plot_scatter_grids(df, all_mi):
             corr = pearson_spearman(df, feats, target).dropna()
             ranked = corr["spearman"].abs().sort_values(ascending=False)
 
-        top_feats = [f for f in ranked.index if f in df.columns][:15]
+        top_feats   = [f for f in ranked.index if f in df.columns][:15]
+        highlight   = (top_ridge_feats or {}).get(target)
 
         ncols = 5
         nrows = int(np.ceil(len(top_feats) / ncols))
@@ -494,9 +513,22 @@ def plot_scatter_grids(df, all_mi):
                 m, b, r, _, _ = stats.linregress(sub[feat], sub[target])
                 xr = np.array([sub[feat].min(), sub[feat].max()])
                 ax.plot(xr, m * xr + b, color="black", linewidth=1.2, linestyle="--")
-                ax.set_title(f"{s(feat)}\n(r={r:.2f})", fontsize=8, pad=2)
+                title_txt = f"{s(feat)}\n(r={r:.2f})"
             else:
-                ax.set_title(s(feat), fontsize=8, pad=2)
+                title_txt = s(feat)
+
+            is_top_ridge = (highlight is not None and feat == highlight)
+            if is_top_ridge:
+                # Orange border + subtle background to flag the top Ridge coefficient feature
+                for spine in ax.spines.values():
+                    spine.set_edgecolor("#E07B20")
+                    spine.set_linewidth(2.5)
+                ax.set_facecolor("#FFF8F0")
+                ax.set_title(f"{title_txt}\n★ top Ridge coef", fontsize=8, pad=2,
+                             color="#E07B20", fontweight="bold")
+            else:
+                ax.set_title(title_txt, fontsize=8, pad=2)
+
             ax.set_xlabel(s(feat), fontsize=7)
             ax.set_ylabel(s(target), fontsize=7)
             ax.tick_params(labelsize=6)
@@ -509,8 +541,12 @@ def plot_scatter_grids(df, all_mi):
         handles = [plt.Line2D([0], [0], marker="o", color="w",
                                markerfacecolor=YEAR_COLOURS[yr], markersize=6)
                    for yr in sorted(YEAR_COLOURS)]
-        fig.legend(handles, [str(y) for y in sorted(YEAR_COLOURS)],
-                   title="Year", loc="lower right", ncol=5, fontsize=8)
+        if highlight:
+            handles.append(plt.Line2D([0], [0], color="#E07B20", linewidth=3))
+            labels = [str(y) for y in sorted(YEAR_COLOURS)] + ["★ top Ridge coef"]
+        else:
+            labels = [str(y) for y in sorted(YEAR_COLOURS)]
+        fig.legend(handles, labels, title="Year", loc="lower right", ncol=6, fontsize=8)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.96])
         slug = target.replace(" ", "_").replace("/", "").replace("(", "").replace(")", "").replace(",", "")
@@ -932,7 +968,8 @@ def build_observations(df):
         bullets.append(
             f"<li><strong>Top relied-on feature:</strong> <em>{m['top']}</em> carries the largest "
             "Ridge coefficient magnitude. If this feature has a curved relationship with the target "
-            "(Section 4 scatter plots), the model will systematically err at extreme values.</li>")
+            "Its scatter panel is highlighted with an orange border in Section 2 — check it "
+            "for curvature or fan shapes.</li>")
 
         ul = "<ul>" + "".join(bullets) + "</ul>" if bullets else ""
         return tbl + ul
@@ -943,131 +980,112 @@ def build_observations(df):
         if m:
             obs["s1"][tgt] = _s1_obs_for(m)
 
-    # ── S2: Pearson vs Spearman ────────────────────────────────────────────────
-    ps_blocks = []
-    for tgt in GRAB_TARGETS:
+    # ── S2: Pearson vs Spearman — per-target blocks ───────────────────────────
+    def _ps_block(tgt):
         sub = df[usable + [tgt]].dropna()
         if len(sub) < 20:
-            continue
-        X, y = sub[usable], sub[tgt]
-        p_r = X.apply(lambda c: stats.pearsonr(c, y)[0])
-        sp_r = X.apply(lambda c: stats.spearmanr(c, y)[0])
-        gap  = sp_r.abs() - p_r.abs()
-        top5 = sp_r.abs().nlargest(5).index
+            return None
+        X, y  = sub[usable], sub[tgt]
+        p_r   = X.apply(lambda c: stats.pearsonr(c,  y)[0])
+        sp_r  = X.apply(lambda c: stats.spearmanr(c, y)[0])
+        gap   = sp_r.abs() - p_r.abs()
+        top5  = sp_r.abs().nlargest(5).index
         pct_nl = (gap > 0.10).mean() * 100
-
         tbl = ""
         for f in top5:
-            gap_color = "#C0392B" if gap[f] > 0.10 else "var(--text)"
-            tbl += (
-                f"<tr><td>{s(f)}</td>"
-                f"<td style='color:#2171B5'>{p_r[f]:+.3f}</td>"
-                f"<td style='color:#FD8D3C'>{sp_r[f]:+.3f}</td>"
-                f"<td style='color:{gap_color}'>{gap[f]:+.3f}</td></tr>"
-            )
-        ps_blocks.append(
-            f"<h5 style='margin:16px 0 6px 0;color:var(--text)'>{s(tgt)}</h5>"
-            "<table class='summary-table' style='width:auto;min-width:500px;font-size:0.88em'>"
+            gc = "#C0392B" if gap[f] > 0.10 else "var(--text)"
+            tbl += (f"<tr><td>{s(f)}</td>"
+                    f"<td style='color:#2171B5'>{p_r[f]:+.3f}</td>"
+                    f"<td style='color:#FD8D3C'>{sp_r[f]:+.3f}</td>"
+                    f"<td style='color:{gc}'>{gap[f]:+.3f}</td></tr>")
+        return (
+            "<table style='width:auto;min-width:500px;font-size:0.88em'>"
             "<thead><tr><th>Feature</th><th>Pearson r</th><th>Spearman r</th>"
             "<th>Gap (|Spear|−|Pear|)</th></tr></thead>"
             f"<tbody>{tbl}</tbody></table>"
-            f"<p style='font-size:0.87em;color:var(--text-muted);margin:4px 0 0 0'>"
-            f"{pct_nl:.0f}% of all {len(usable)} features show |Spearman| &gt; |Pearson| by "
-            f"more than 0.10 for this target — indicating predominantly curved or non-monotonic "
-            f"relationships.</p>"
+            f"<p style='font-size:0.87em;margin:4px 0 0 0'>"
+            f"{pct_nl:.0f}% of all {len(usable)} features show |Spearman| &gt; |Pearson| "
+            f"by more than 0.10 — suggesting predominantly curved or non-monotonic "
+            f"relationships for this target.</p>"
         )
 
-    obs["s2"] = (
-        "".join(ps_blocks)
-        + "<ul style='margin-top:18px'>"
-        "<li><strong>Positive Gap (red):</strong> Spearman exceeds Pearson — the feature moves "
-        "with the target but not proportionally. The relationship is curved (e.g., logarithmic, "
-        "exponential, or step-like). Linear models undervalue these features; Random Forest "
-        "naturally handles curvature by splitting across ranges of the feature space.</li>"
-        "<li><strong>Negative Gap:</strong> A few extreme outlier observations are inflating the "
-        "Pearson correlation. Spearman (rank-based) is unaffected. These features may appear "
-        "deceptively important in a linear model but be unreliable predictors. Investigate the "
-        "outlier days — they may represent instrument errors or genuine process upsets.</li>"
+    s2_general = (
+        "<ul style='margin-top:4px'>"
+        "<li><strong>Positive Gap (red):</strong> Spearman exceeds Pearson — the relationship "
+        "is curved (logarithmic, exponential, or step-like). A linear model undervalues these "
+        "features.</li>"
+        "<li><strong>Negative Gap:</strong> Extreme outliers inflate Pearson while Spearman is "
+        "unaffected. These features may appear deceptively important in a linear model.</li>"
         "<li><strong>Both magnitudes small:</strong> Low Pearson AND Spearman does not mean "
-        "the feature is uninformative — it may have a non-monotonic relationship (e.g., an optimal "
-        "aeration DO range with an inverted-U effect). Check Mutual Information in Section 3, "
-        "which detects non-monotonic patterns that rank correlation misses entirely.</li>"
-        "<li><strong>Model selection take-away:</strong> When the majority of top-ranked features "
-        "show positive gaps, a linear model systematically mis-specifies their contributions. "
-        "The prevalence of non-zero gaps across all four grab targets is consistent with the "
-        "Ridge failure observed in Section 1.</li>"
+        "uninformative — check Mutual Information in Section 4, which detects non-monotonic "
+        "patterns that rank correlation misses entirely.</li>"
+        "<li><strong>Ridge failure context:</strong> When most top-ranked features show positive "
+        "gaps, a linear model systematically mis-specifies their contributions — consistent with "
+        "the Ridge residual patterns in Section 1.</li>"
         "</ul>"
     )
 
-    # ── S3: Mutual Information ─────────────────────────────────────────────────
-    mi_blocks = []
-    for tgt in GRAB_TARGETS:
+    obs["s2"] = {
+        "grab":    {tgt: _ps_block(tgt) for tgt in GRAB_TARGETS},
+        "comp":    {tgt: _ps_block(tgt) for tgt in COMP_TARGETS},
+        "general": s2_general,
+    }
+
+    # ── S3: Mutual Information — per-target blocks ────────────────────────────
+    def _mi_block(tgt):
         sub = df[usable + [tgt]].dropna()
         if len(sub) < 20:
-            continue
+            return None
         X_vals, y_vals = sub[usable].values, sub[tgt].values
         mi_scores = mutual_info_regression(X_vals, y_vals, random_state=42)
-        mi_s = pd.Series(mi_scores, index=usable)
-        sp_r = pd.Series(
+        mi_s  = pd.Series(mi_scores, index=usable)
+        sp_r  = pd.Series(
             [stats.spearmanr(sub[f], sub[tgt])[0] for f in usable], index=usable
         )
-        top5_mi  = mi_s.nlargest(5)
-        mi_thr   = mi_s.quantile(0.75)
-        nonlin   = mi_s[(mi_s >= mi_thr) & (sp_r.abs() < 0.30)].nlargest(3)
-
+        top5_mi = mi_s.nlargest(5)
+        mi_thr  = mi_s.quantile(0.75)
+        nonlin  = mi_s[(mi_s >= mi_thr) & (sp_r.abs() < 0.30)].nlargest(3)
         tbl = ""
         for f in top5_mi.index:
-            is_nl = (mi_s[f] >= mi_thr) and (abs(sp_r[f]) < 0.30)
+            is_nl    = (mi_s[f] >= mi_thr) and (abs(sp_r[f]) < 0.30)
             nl_color = "#C0392B" if is_nl else "var(--text)"
             nl_label = "⚠ Non-monotonic" if is_nl else "Monotonic"
-            tbl += (
-                f"<tr><td>{s(f)}</td>"
-                f"<td>{mi_s[f]:.4f}</td>"
-                f"<td style='color:#FD8D3C'>{sp_r[f]:+.3f}</td>"
-                f"<td style='color:{nl_color}'>{nl_label}</td></tr>"
-            )
-
+            tbl += (f"<tr><td>{s(f)}</td>"
+                    f"<td>{mi_s[f]:.4f}</td>"
+                    f"<td style='color:#FD8D3C'>{sp_r[f]:+.3f}</td>"
+                    f"<td style='color:{nl_color}'>{nl_label}</td></tr>")
         nonlin_note = ""
         if len(nonlin) > 0:
             names = ", ".join(s(f) for f in nonlin.index)
             nonlin_note = (
                 f"<p style='font-size:0.87em;color:#C0392B;margin:6px 0'>"
-                f"⚠ <strong>Non-monotonic features (top-quartile MI, |Spearman| &lt; 0.30):</strong> "
-                f"{names}. These carry real predictive information but in a pattern that only "
-                f"non-linear models can exploit — they will be ignored or penalised by Ridge.</p>"
+                f"⚠ <strong>Non-monotonic (top-quartile MI, |Spearman| &lt; 0.30):</strong> "
+                f"{names} — real predictive signal, but only exploitable by non-linear models.</p>"
             )
-
-        mi_blocks.append(
-            f"<h5 style='margin:16px 0 6px 0;color:var(--text)'>{s(tgt)}</h5>"
-            "<table class='summary-table' style='width:auto;min-width:500px;font-size:0.88em'>"
+        return (
+            "<table style='width:auto;min-width:500px;font-size:0.88em'>"
             "<thead><tr><th>Feature</th><th>MI score</th><th>Spearman r</th>"
             "<th>Relationship type</th></tr></thead>"
-            f"<tbody>{tbl}</tbody></table>"
-            f"{nonlin_note}"
+            f"<tbody>{tbl}</tbody></table>{nonlin_note}"
         )
 
-    obs["s3"] = (
-        "".join(mi_blocks)
-        + "<ul style='margin-top:18px'>"
-        "<li><strong>MI vs Spearman together:</strong> When MI is high but Spearman is near zero, "
-        "the feature and target are statistically dependent but not monotonically so — there is a "
-        "real relationship (e.g., an optimal operating range, a threshold, a seasonal interaction) "
-        "that purely rank-based methods miss entirely. Random Forest detects these patterns through "
-        "axis-aligned splits.</li>"
-        "<li><strong>Features to prioritise for model training:</strong> Features with both high MI "
-        "and high |Spearman| are the most reliable predictors — they carry a strong, consistent "
-        "signal regardless of the model family. Features with high MI but low Spearman are "
-        "specifically valuable for Random Forest and should be retained during feature selection "
-        "(RFECV/SFS) even if linear-model-based selectors would drop them.</li>"
-        "<li><strong>Low MI features:</strong> Features with near-zero MI scores carry essentially "
-        "no information about the target (linear, monotonic, or otherwise) and are strong candidates "
-        "for exclusion during feature selection, reducing noise and improving generalisation.</li>"
-        "<li><strong>Model selection take-away:</strong> The presence of non-monotonic features "
-        "(high MI, low Spearman) confirms that a model capable of detecting arbitrary feature–target "
-        "interactions — such as Random Forest — is better suited than Ridge regression for this "
-        "prediction task.</li>"
+    s3_general = (
+        "<ul style='margin-top:4px'>"
+        "<li><strong>High MI, low |Spearman|:</strong> The feature has a real but non-monotonic "
+        "relationship with the target — an optimal range, a threshold, or seasonal interaction "
+        "that rank correlation misses entirely.</li>"
+        "<li><strong>High MI and high |Spearman|:</strong> The most reliable predictors — strong "
+        "signal regardless of model family.</li>"
+        "<li><strong>Near-zero MI:</strong> Strong candidates for exclusion — they add noise "
+        "without information.</li>"
         "</ul>"
     )
+
+    obs["s3"] = {
+        "grab":    {tgt: _mi_block(tgt) for tgt in GRAB_TARGETS},
+        "comp":    {tgt: _mi_block(tgt) for tgt in COMP_TARGETS},
+        "general": s3_general,
+    }
 
     # ── S4: Scatter grids ─────────────────────────────────────────────────────
     obs["s4"] = (
@@ -1090,8 +1108,8 @@ def build_observations(df):
         "measurement errors, equipment failures, or genuine process upsets. They inflate Pearson "
         "correlation while leaving Spearman unaffected — one reason to cross-check both metrics. "
         "Investigate high-leverage days before finalising the feature set.</li>"
-        "<li><strong>Cross-reference with Sections 2 and 3:</strong> The scatter plots show the "
-        "top 15 features by Mutual Information. Features identified as non-monotonic in Section 3 "
+        "<li><strong>Cross-reference with Sections 3 and 4:</strong> The scatter plots show the "
+        "top 15 features by Mutual Information. Features identified as non-monotonic in Section 4 "
         "(high MI, low Spearman) may show no obvious pattern in a simple scatter but still carry "
         "information — look for cluster-based structure or threshold behaviour rather than a "
         "clean monotonic trend.</li>"
@@ -1656,11 +1674,11 @@ Sections are ordered by relevance to the key question:
 <ol>
   <li><a href="#s1">Ridge residuals — linearity diagnostic</a>
       <span class="badge badge-decision">Model selection</span></li>
+  <li><a href="#s4">Feature vs target scatter grids</a>
+      <span class="badge badge-decision">Model selection</span></li>
   <li><a href="#s2">Pearson vs Spearman correlation</a>
       <span class="badge badge-decision">Model selection</span></li>
   <li><a href="#s3">Mutual Information scores</a>
-      <span class="badge badge-decision">Model selection</span></li>
-  <li><a href="#s4">Feature vs target scatter grids</a>
       <span class="badge badge-decision">Model selection</span></li>
   <li><a href="#s5">Cross-stage correlation heatmap</a></li>
   <li><a href="#s6">Data coverage — all columns</a></li>
@@ -1705,45 +1723,21 @@ Three residual plots are shown per effluent target:</p>
     parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets"))
     parts.append("</div>\n")
 
-    # ── Section 2: Pearson vs Spearman ─────────────────────────────────────────
-    ps = data.get("pearson", {})
-    grab_paths_ps = ps.get("grab", [])
-    comp_paths_ps = ps.get("comp", [])
+    # helper: build a fold whose content interleaves one image per target with its obs
+    def _per_target_fold(targets, img_paths, obs_dict, label, open_by_default=False):
+        content = ""
+        for tgt, path in zip(targets, img_paths):
+            content += img_tag(path)
+            tgt_obs = (obs_dict or {}).get(tgt)
+            if tgt_obs:
+                content += _obs(tgt_obs)
+        return _fold(f"▶ {label} (click to expand)", content,
+                     open_by_default=open_by_default)
 
-    grab_imgs_ps = "".join(img_tag(p) for p in grab_paths_ps)
-    comp_imgs_ps = "".join(img_tag(p) for p in comp_paths_ps)
-
-    parts.append(f"""<div class="card" id="s2">
-<h2><span class="badge badge-decision">Model selection</span>
-2. Pearson vs Spearman correlation</h2>
-{PEARSON_INTERP}
-{_fold("▶ Grab effluent targets (click to expand)", grab_imgs_ps, open_by_default=True)}
-{_fold("▶ Composite effluent targets (click to expand)", comp_imgs_ps)}
-{_obs(obs.get("s2", ""))}
-</div>
-""")
-
-    # ── Section 3: Mutual Information ──────────────────────────────────────────
-    mi = data.get("mi", {})
-    grab_paths_mi = [p for p in mi.get("grab", []) if p]
-    comp_paths_mi = [p for p in mi.get("comp", []) if p]
-
-    grab_imgs_mi = "".join(img_tag(p) for p in grab_paths_mi)
-    comp_imgs_mi = "".join(img_tag(p) for p in comp_paths_mi)
-
-    parts.append(f"""<div class="card" id="s3">
-<h2><span class="badge badge-decision">Model selection</span>
-3. Mutual Information scores</h2>
-{MI_INTERP}
-{_fold("▶ Grab effluent targets (click to expand)", grab_imgs_mi, open_by_default=True)}
-{_fold("▶ Composite effluent targets (click to expand)", comp_imgs_mi)}
-{_obs(obs.get("s3", ""))}
-</div>
-""")
-
-    # ── Section 4: Scatter grids ───────────────────────────────────────────────
-    scatter_paths = data.get("scatter", [])
+    # ── Section 2 (display): Scatter grids ────────────────────────────────────
+    scatter_paths  = data.get("scatter", [])
     scatter_labels = list(SCATTER_LABELS.values())
+    s4_obs         = obs.get("s4", "")   # general how-to-read guidance
 
     scatter_folds = ""
     for path, label in zip(scatter_paths, scatter_labels):
@@ -1751,13 +1745,60 @@ Three residual plots are shown per effluent target:</p>
 
     parts.append(f"""<div class="card" id="s4">
 <h2><span class="badge badge-decision">Model selection</span>
-4. Feature vs target scatter grids</h2>
-<p>Top 15 features (ranked by Mutual Information) plotted against each effluent
-target. Points are coloured by year. The dashed black line is the linear regression fit.
-Look for curvature, fan shapes (heteroscedasticity), or clusters — all indicate that
-a linear model will leave systematic error on the table.</p>
+2. Feature vs target scatter grids</h2>
+<p>Top 15 features (ranked by Mutual Information) plotted against each effluent target.
+Points are coloured by year. The dashed black line is the linear regression fit.
+The subplot highlighted in <strong style="color:#E07B20">orange</strong> is the feature
+with the highest Ridge coefficient magnitude — the variable Section 1 residuals rely on most.
+Look for curvature, fan shapes, or year-cluster separation in that panel first.</p>
+{_obs(s4_obs)}
 {scatter_folds}
-{_obs(obs.get("s4", ""))}
+</div>
+""")
+
+    # ── Section 3 (display): Pearson vs Spearman ──────────────────────────────
+    ps            = data.get("pearson", {})
+    grab_paths_ps = ps.get("grab", [])
+    comp_paths_ps = ps.get("comp", [])
+    s2_obs        = obs.get("s2", {})
+
+    grab_ps_fold = _per_target_fold(
+        GRAB_TARGETS, grab_paths_ps, s2_obs.get("grab", {}),
+        "Grab effluent targets", open_by_default=True)
+    comp_ps_fold = _per_target_fold(
+        COMP_TARGETS, comp_paths_ps, s2_obs.get("comp", {}),
+        "Composite effluent targets")
+
+    parts.append(f"""<div class="card" id="s2">
+<h2><span class="badge badge-decision">Model selection</span>
+3. Pearson vs Spearman correlation</h2>
+{PEARSON_INTERP}
+{grab_ps_fold}
+{comp_ps_fold}
+{_obs(s2_obs.get("general", ""))}
+</div>
+""")
+
+    # ── Section 4 (display): Mutual Information ────────────────────────────────
+    mi            = data.get("mi", {})
+    grab_paths_mi = [p for p in mi.get("grab", []) if p]
+    comp_paths_mi = [p for p in mi.get("comp", []) if p]
+    s3_obs        = obs.get("s3", {})
+
+    grab_mi_fold = _per_target_fold(
+        GRAB_TARGETS, grab_paths_mi, s3_obs.get("grab", {}),
+        "Grab effluent targets", open_by_default=True)
+    comp_mi_fold = _per_target_fold(
+        COMP_TARGETS, comp_paths_mi, s3_obs.get("comp", {}),
+        "Composite effluent targets")
+
+    parts.append(f"""<div class="card" id="s3">
+<h2><span class="badge badge-decision">Model selection</span>
+4. Mutual Information scores</h2>
+{MI_INTERP}
+{grab_mi_fold}
+{comp_mi_fold}
+{_obs(s3_obs.get("general", ""))}
 </div>
 """)
 
@@ -1868,9 +1909,10 @@ def main():
     print("Generating charts...")
     missing_all   = plot_missing_all(df)
     pearson_data  = plot_pearson_vs_spearman(df)
-    mi_result     = plot_mutual_information(df)
-    all_mi        = mi_result["mi_data"]
-    scatter_paths = plot_scatter_grids(df, all_mi)
+    mi_result       = plot_mutual_information(df)
+    all_mi          = mi_result["mi_data"]
+    top_ridge_feats = compute_top_ridge_features(df)
+    scatter_paths   = plot_scatter_grids(df, all_mi, top_ridge_feats)
     aeration_ts   = plot_aeration_timeseries(df)
     cross_heatmap = plot_cross_stage_heatmap(df)
     stage_removal = plot_stage_removal(df)
