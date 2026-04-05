@@ -477,6 +477,64 @@ def compute_top_ridge_features(df):
     return top
 
 
+def plot_ridge_coefficients(df):
+    """
+    For each target, fit Ridge on training data and plot the top 10 features by |coefficient|
+    as a signed horizontal bar chart.  Returns {"grab": {tgt: path}, "comp": {tgt: path}}.
+    Bars are coloured by sign (blue = positive relationship, red = inverse).
+    X-axis shows signed coefficients on the StandardScaler scale.
+    """
+    print("10b. Ridge coefficient charts...")
+    feats    = feature_cols(df)
+    usable   = [f for f in feats if f in df.columns]
+    train_df = df[df["Date"].dt.year.isin([2021, 2022, 2023, 2024])]
+    results  = {"grab": {}, "comp": {}}
+
+    for tgt in GRAB_TARGETS + COMP_TARGETS:
+        group = "grab" if tgt in GRAB_TARGETS else "comp"
+        slug  = (tgt.replace("/", "_").replace(" ", "_")
+                    .replace("(", "").replace(")", "").replace(",", ""))
+
+        tr = train_df[usable + [tgt]].dropna()
+        if len(tr) < 20:
+            results[group][tgt] = None
+            continue
+
+        sc    = StandardScaler()
+        ridge = Ridge(alpha=1.0)
+        ridge.fit(sc.fit_transform(tr[usable].values), tr[tgt].values)
+
+        coef_s   = pd.Series(ridge.coef_, index=usable)
+        top10    = coef_s.abs().nlargest(10).index
+        top10_s  = coef_s[top10].sort_values()          # ascending so largest |coef| is at top
+        colours  = ["#D94801" if v < 0 else "#2171B5" for v in top10_s]
+
+        fig, ax = plt.subplots(figsize=(11, 4))
+        bars = ax.barh(range(len(top10_s)), top10_s.values, color=colours, height=0.6)
+        ax.set_yticks(range(len(top10_s)))
+        ax.set_yticklabels([s(f) for f in top10_s.index], fontsize=9)
+        ax.axvline(0, color="black", linewidth=0.8, linestyle="-")
+        ax.set_xlabel("Ridge coefficient (StandardScaler scale)", fontsize=9)
+        ax.set_title(
+            f"Ridge coefficient weights — {s(tgt)}\n"
+            "Top 10 features by |coefficient|  •  "
+            "Blue = positive relationship  •  Red = inverse",
+            fontsize=10, fontweight="bold"
+        )
+        ax.grid(axis="x", alpha=0.3)
+        # Dim note about multicollinearity
+        fig.text(
+            0.01, 0.01,
+            "⚠  Correlated features share weight — individual bars understate importance of "
+            "collinear groups.  These weights reflect what Ridge relied on, not general feature importance.",
+            fontsize=7.5, color="#666", style="italic"
+        )
+        plt.tight_layout(rect=[0, 0.05, 1, 1])
+        results[group][tgt] = save(fig, f"10b_coef_{slug}")
+
+    return results
+
+
 def plot_scatter_grids(df, all_mi, top_ridge_feats=None):
     """top_ridge_feats: dict {target: feature_name} — subplot for that feature gets an orange border."""
     print("4. Feature scatter grids...")
@@ -1706,18 +1764,41 @@ Three residual plots are shown per effluent target:</p>
       feature most relied upon by Ridge, the relationship is non-linear.</li>
 </ul>
 """)
-    resid_data = data.get("residuals", {})
+    resid_data = data.get("residuals",   {})
+    coef_data  = data.get("ridge_coefs", {})
     s1_obs     = obs.get("s1", {})
 
     def _resid_fold(targets, key, label, open_by_default=False):
         content = ""
         for tgt in targets:
-            plot_path  = resid_data.get(key, {}).get(tgt)
+            resid_path = resid_data.get(key, {}).get(tgt)
+            coef_path  = coef_data.get(key,  {}).get(tgt)
             tgt_obs    = s1_obs.get(tgt, "")
-            content   += img_tag(plot_path)
+
+            # 1 — residual diagnostic plots
+            content += img_tag(resid_path)
+
+            # 2 — coefficient bar chart (foldable, collapsed by default)
+            if coef_path:
+                coef_note = (
+                    "<p style='font-size:0.82em;color:#666;margin:4px 0 0 0;font-style:italic'>"
+                    "Coefficients are on the StandardScaler scale (unit-free). "
+                    "Correlated features split weight between them — individual bars "
+                    "understate the importance of collinear groups. "
+                    "Use Mutual Information (Section 4) for model-agnostic feature ranking."
+                    "</p>"
+                )
+                content += _fold(
+                    "▶ Coefficient weights — what Ridge relied on (top 10)",
+                    img_tag(coef_path) + coef_note
+                )
+
+            # 3 — per-target observations
             if tgt_obs:
                 content += _obs(tgt_obs)
-        return _fold(f"▶ {label} (click to expand)", content, open_by_default=open_by_default)
+
+        return _fold(f"▶ {label} (click to expand)", content,
+                     open_by_default=open_by_default)
 
     parts.append(_resid_fold(GRAB_TARGETS, "grab", "Grab effluent targets", open_by_default=True))
     parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets"))
@@ -1919,6 +2000,7 @@ def main():
     do_effluent   = plot_do_vs_effluent(df)
     svi_tss       = plot_svi_mlss_vs_tss(df)
     residuals     = plot_linearity_residuals(df)
+    ridge_coefs   = plot_ridge_coefficients(df)
 
     n_charts = (1 + len(pearson_data["grab"]) + len(pearson_data["comp"])
                 + len([p for p in mi_result["grab"] if p])
@@ -1931,6 +2013,7 @@ def main():
     print("Building HTML report...")
     build_html({
         "residuals":    residuals,
+        "ridge_coefs":  ridge_coefs,
         "pearson":      pearson_data,
         "mi":           mi_result,
         "scatter":      scatter_paths,
