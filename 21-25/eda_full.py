@@ -359,6 +359,22 @@ def _pearson_spearman_one(df, target, feats, filename):
     ax.legend(fontsize=9, loc="lower right")
     ax.grid(axis="x", alpha=0.3)
 
+    # ── Interpretation threshold lines ────────────────────────────────────
+    _thresholds = [
+        (0.20, "Weak",     "#999999", ":"),
+        (0.40, "Moderate", "#E07B20", "--"),
+        (0.60, "Strong",   "#C0392B", "--"),
+    ]
+    for val, lbl, col, ls in _thresholds:
+        for sign in (1, -1):
+            ax.axvline(sign * val, color=col, linestyle=ls,
+                       linewidth=0.9, alpha=0.70, zorder=0)
+        # label at top of the positive line only
+        ax.text(val + 0.012, 0.995, lbl,
+                transform=ax.get_xaxis_transform(),
+                fontsize=6.5, color=col, va="top", ha="left",
+                alpha=0.90, rotation=90)
+
     # Annotate top-5 Spearman values
     top5_thresh = corr["abs_sp"].nlargest(5).min()
     for i, (pr, sr, abs_sp) in enumerate(
@@ -422,6 +438,20 @@ def _mi_one(df, target, feats, filename):
     ax.set_xlabel("Mutual Information score  (higher = more predictive, regardless of relationship shape)",
                   fontsize=9)
     ax.grid(axis="x", alpha=0.3)
+
+    # ── Interpretation threshold lines ────────────────────────────────────
+    _mi_thresholds = [
+        (0.05, "Weak",     "#999999", ":"),
+        (0.15, "Moderate", "#E07B20", "--"),
+        (0.30, "Strong",   "#C0392B", "--"),
+    ]
+    for val, lbl, col, ls in _mi_thresholds:
+        ax.axvline(val, color=col, linestyle=ls,
+                   linewidth=0.9, alpha=0.70, zorder=0)
+        ax.text(val + 0.004, 0.995, lbl,
+                transform=ax.get_xaxis_transform(),
+                fontsize=6.5, color=col, va="top", ha="left",
+                alpha=0.90, rotation=90)
 
     # Annotate top-5
     top5_thresh = mi_series.nlargest(5).min()
