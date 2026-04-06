@@ -950,10 +950,22 @@ def build_observations(df):
     # ── S1: Ridge metrics — one observation block per target ─────────────────
     def _ridge_metrics(tgt):
         """Fit Ridge, return a dict of metrics for one target."""
+        # ── Row count accounting ─────────────────────────────────────────────
+        n_total        = len(df)
+        n_train_tgt    = int(trndf[tgt].notna().sum())   # rows with target in 2021–2024
+        n_test_tgt     = int(tstdf[tgt].notna().sum())   # rows with target in 2025
+        n_feats        = len(usable)
+
         tr = trndf[usable + [tgt]].dropna()
         te = tstdf[usable + [tgt]].dropna()
         if len(tr) < 20:
             return None
+
+        n_train_used    = len(tr)
+        n_test_used     = len(te)
+        n_dropped_train = n_train_tgt - n_train_used
+        pct_dropped     = (n_dropped_train / n_train_tgt * 100) if n_train_tgt > 0 else 0.0
+
         Xtr, ytr = tr[usable].values, tr[tgt].values
         Xte, yte = te[usable].values, te[tgt].values
         sc    = StandardScaler()
@@ -964,11 +976,19 @@ def build_observations(df):
         funnel_r, _ = stats.spearmanr(yhat_tr, np.abs(resid_tr))
         top_feat   = pd.Series(np.abs(ridge.coef_), index=usable).idxmax()
         m = {
-            "tgt":      s(tgt),
-            "r2_tr":    r2_score(ytr, yhat_tr),
-            "rmse_tr":  np.sqrt(mse(ytr, yhat_tr)),
-            "top":      s(top_feat),
-            "funnel":   funnel_r,
+            "tgt":            s(tgt),
+            "r2_tr":          r2_score(ytr, yhat_tr),
+            "rmse_tr":        np.sqrt(mse(ytr, yhat_tr)),
+            "top":            s(top_feat),
+            "funnel":         funnel_r,
+            # row accounting
+            "n_total":        n_total,
+            "n_train_tgt":    n_train_tgt,
+            "n_train_used":   n_train_used,
+            "n_test_used":    n_test_used,
+            "n_dropped_train": n_dropped_train,
+            "pct_dropped":    pct_dropped,
+            "n_feats":        n_feats,
         }
         if len(te) >= 5:
             yhat_te     = ridge.predict(sc.transform(Xte))
@@ -986,6 +1006,20 @@ def build_observations(df):
         gap_color = ("#C0392B" if m.get("gap", 0) > 0.15
                      else "#27AE60" if m.get("gap", 0) < 0.05
                      else "inherit")
+
+        row_info = (
+            f"<p style='font-size:0.86em;margin:0 0 10px 0;border-left:3px solid #4A6FA5;"
+            f"padding-left:10px;color:var(--text)'>"
+            f"<strong>Rows used for this model:</strong>&nbsp; "
+            f"{m['n_total']:,} total rows in dataset &nbsp;→&nbsp; "
+            f"{m['n_train_tgt']:,} rows with target present in 2021–2024 &nbsp;→&nbsp; "
+            f"<strong>{m['n_train_used']:,} rows used for Ridge training</strong> "
+            f"({m['n_dropped_train']:,} dropped, {m['pct_dropped']:.1f}%). "
+            f"&nbsp; Test (2025): {m['n_test_used']:,} rows."
+            f"<br><em style='color:#888'>Criteria: any row missing a value in any of the "
+            f"{m['n_feats']} feature columns is excluded from that target's model.</em>"
+            f"</p>"
+        )
 
         tbl = (
             "<table style='width:100%;margin:10px 0'>"
@@ -1030,7 +1064,7 @@ def build_observations(df):
             "for curvature or fan shapes.</li>")
 
         ul = "<ul>" + "".join(bullets) + "</ul>" if bullets else ""
-        return tbl + ul
+        return row_info + tbl + ul
 
     obs["s1"] = {}
     for tgt in GRAB_TARGETS + COMP_TARGETS:
@@ -1590,8 +1624,8 @@ def build_html(data):
     title = "EDA Full Report — All_Years_Full.xlsx"
 
     CSS = dark_mode_css("""
-    body  { font-family: Calibri, Arial, sans-serif; max-width: 1500px;
-            margin: 0 auto; padding: 24px; }
+    body  { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 0; }
+    #main-content { margin-left: 265px; max-width: 1500px; padding: 24px 28px; }
     h1    { color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 8px;
             font-size: 1.8em; }
     h2    { color: #1F4E79; margin-top: 48px; font-size: 1.25em;
@@ -1599,22 +1633,20 @@ def build_html(data):
     p, ul, ol { max-width: 950px; line-height: 1.7; }
     li    { margin-bottom: 4px; }
     .card { padding: 24px 28px; border-radius: 10px; margin-bottom: 28px; }
-    .toc  { border-left: 5px solid #2E75B6; border-radius: 6px;
-            padding: 16px 24px; margin-bottom: 36px; }
-    .toc a { color: #4a90d9; text-decoration: none; }
-    .toc a:hover { text-decoration: underline; }
     .badge { display: inline-block; background: #2E75B6; color: white;
              font-size: 0.75em; padding: 2px 8px; border-radius: 10px;
              vertical-align: middle; margin-right: 6px; }
     .badge-decision { background: #C0392B; }
     img   { border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
-    details > summary { cursor: pointer; font-weight: bold; font-size: 1em;
-                        color: #2E75B6; padding: 10px 16px; list-style: none;
-                        user-select: none; border-radius: 6px; }
-    details > summary .fold-icon { display: inline-block;
-                                   transition: transform 0.2s ease; }
-    details[open] > summary .fold-icon { transform: rotate(90deg); }
-    details[open] > summary { border-radius: 6px 6px 0 0; }
+    /* ── Main-content fold styles (scoped away from sidenav) ── */
+    #main-content details > summary {
+        cursor: pointer; font-weight: bold; font-size: 1em;
+        color: #2E75B6; padding: 10px 16px; list-style: none;
+        user-select: none; border-radius: 6px; }
+    #main-content details > summary .fold-icon {
+        display: inline-block; transition: transform 0.2s ease; }
+    #main-content details[open] > summary .fold-icon { transform: rotate(90deg); }
+    #main-content details[open] > summary { border-radius: 6px 6px 0 0; }
     .fold-hint { font-weight: normal; font-size: 0.82em;
                  opacity: 0.7; margin-left: 8px; }
     .fold-inner { padding: 12px 16px; }
@@ -1639,6 +1671,44 @@ def build_html(data):
     .obs-card table tbody tr:nth-child(even) { background: #F4F7FB; }
     .obs-card table tbody tr:nth-child(odd)  { background: #FFFFFF; }
     hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+    /* ── Left sidebar navigation ── */
+    #sidenav {
+        position: fixed; top: 0; left: 0; width: 255px; height: 100vh;
+        overflow-y: auto; overflow-x: hidden;
+        background: var(--bg); border-right: 2px solid var(--border);
+        z-index: 500; font-size: 0.79em; line-height: 1.4;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.08); }
+    #sidenav .nav-header {
+        font-weight: 700; font-size: 1.0em; color: #1F4E79;
+        padding: 14px 14px 10px; border-bottom: 2px solid #2E75B6;
+        letter-spacing: 0.04em; }
+    #sidenav ul { list-style: none; margin: 0; padding: 0; }
+    #sidenav li { margin: 0; }
+    #sidenav a { display: block; color: #3a7bbf; text-decoration: none;
+                 padding: 3px 14px 3px 14px;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #sidenav a:hover { background: var(--hover-bg, rgba(46,117,182,0.10));
+                       color: #1F4E79; }
+    /* top-level section entries */
+    #sidenav .nav-s > a {
+        font-weight: 600; font-size: 1.0em; color: var(--text);
+        padding: 6px 14px 2px; border-top: 1px solid var(--border); }
+    /* group level (Grab / Composite) */
+    #sidenav .nav-g > a {
+        font-size: 0.95em; font-style: italic; color: #555;
+        padding: 3px 14px 3px 22px; }
+    /* target level (BOD / COD / TSS / pH) */
+    #sidenav .nav-t > a { padding: 2px 14px 2px 34px; font-size: 0.92em; }
+    /* collapsible toggle button in nav */
+    #sidenav .nav-toggle {
+        cursor: pointer; user-select: none;
+        display: flex; align-items: center; justify-content: space-between; }
+    #sidenav .nav-toggle::after { content: "▸"; font-size: 0.75em;
+        margin-right: 10px; transition: transform 0.15s ease;
+        flex-shrink: 0; }
+    #sidenav .nav-toggle.open::after { transform: rotate(90deg); }
+    #sidenav .nav-children { display: none; }
+    #sidenav .nav-children.open { display: block; }
     """)
 
     TARGET_LABELS = {
@@ -1650,6 +1720,18 @@ def build_html(data):
         "Effluent COD (mg/L, Composite)":   "Effluent COD — Composite sample",
         "Effluent TSS (mg/L, Composite)":   "Effluent TSS — Composite sample",
         "Effluent pH (Composite)":          "Effluent pH — Composite sample",
+    }
+
+    # Stable anchor slugs for each effluent target (used in sidebar nav + section folds)
+    _TGT_SLUG = {
+        "Effluent BOD (mg/L, Grab)":       "bod-grab",
+        "Effluent COD (mg/L, Grab)":       "cod-grab",
+        "Effluent TSS (mg/L, Grab)":       "tss-grab",
+        "Effluent pH (Grab)":              "ph-grab",
+        "Effluent BOD (mg/L, Composite)":  "bod-comp",
+        "Effluent COD (mg/L, Composite)":  "cod-comp",
+        "Effluent TSS (mg/L, Composite)":  "tss-comp",
+        "Effluent pH (Composite)":         "ph-comp",
     }
 
     SCATTER_LABELS = {
@@ -1712,6 +1794,61 @@ def build_html(data):
     <p>Red bars mark the top 25% of features by MI score for this target.</p>
     </div>"""
 
+    # ── sidebar nav HTML ──────────────────────────────────────────────────────
+    def _nav_targets(section, targets):
+        """Return <li> entries for individual target links."""
+        items = ""
+        for tgt in targets:
+            slug  = _TGT_SLUG.get(tgt, "")
+            label = tgt.replace("Effluent ", "").split(" (")[0]   # "BOD", "COD", etc.
+            items += f'<li class="nav-t"><a href="#{section}-{slug}">{label}</a></li>\n'
+        return items
+
+    def _nav_group(section, group_id, group_label, targets):
+        """Return a collapsible group entry (Grab / Composite)."""
+        tgt_items = _nav_targets(section, targets)
+        return (
+            f'<li class="nav-g">'
+            f'<a class="nav-toggle" href="#{group_id}">{group_label}</a>'
+            f'<ul class="nav-children">{tgt_items}</ul>'
+            f'</li>\n'
+        )
+
+    SIDENAV = f"""<nav id="sidenav">
+  <div class="nav-header">Navigation</div>
+  <ul>
+    <li class="nav-s"><a class="nav-toggle" href="#s1">1. Ridge Residuals</a>
+      <ul class="nav-children">
+        {_nav_group("s1", "s1-grab", "Grab Effluent", GRAB_TARGETS)}
+        {_nav_group("s1", "s1-comp", "Composite Effluent", COMP_TARGETS)}
+      </ul>
+    </li>
+    <li class="nav-s"><a class="nav-toggle" href="#s4">2. Scatter Grids</a>
+      <ul class="nav-children">
+        {_nav_targets("s4", GRAB_TARGETS)}
+      </ul>
+    </li>
+    <li class="nav-s"><a class="nav-toggle" href="#s2">3. Pearson vs Spearman</a>
+      <ul class="nav-children">
+        {_nav_group("s2", "s2-grab", "Grab Effluent", GRAB_TARGETS)}
+        {_nav_group("s2", "s2-comp", "Composite Effluent", COMP_TARGETS)}
+      </ul>
+    </li>
+    <li class="nav-s"><a class="nav-toggle" href="#s3">4. Mutual Information</a>
+      <ul class="nav-children">
+        {_nav_group("s3", "s3-grab", "Grab Effluent", GRAB_TARGETS)}
+        {_nav_group("s3", "s3-comp", "Composite Effluent", COMP_TARGETS)}
+      </ul>
+    </li>
+    <li class="nav-s"><a href="#s5">5. Cross-stage Heatmap</a></li>
+    <li class="nav-s"><a href="#s6">6. Data Coverage</a></li>
+    <li class="nav-s"><a href="#s7">7. Aeration Time Series</a></li>
+    <li class="nav-s"><a href="#s8">8. Stage Removal</a></li>
+    <li class="nav-s"><a href="#s9">9. DO vs Effluent</a></li>
+    <li class="nav-s"><a href="#s10">10. Settleability vs TSS</a></li>
+  </ul>
+</nav>"""
+
     parts = [f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1721,31 +1858,14 @@ def build_html(data):
   {DARK_MODE_JS}
 </head>
 <body>
+{SIDENAV}
+<div id="main-content">
 <h1>{title}</h1>
 <p>Full exploratory data analysis on the enriched 60-column dataset
 (<code>All_Years_Full.xlsx</code>, 1918 daily rows, 2020–2025).
 Sections are ordered by relevance to the key question:
-<strong>are non-linear models (Random Forest) justified over linear ones?</strong></p>
-
-<div class="toc">
-<strong>Contents</strong>
-<ol>
-  <li><a href="#s1">Ridge residuals — linearity diagnostic</a>
-      <span class="badge badge-decision">Model selection</span></li>
-  <li><a href="#s4">Feature vs target scatter grids</a>
-      <span class="badge badge-decision">Model selection</span></li>
-  <li><a href="#s2">Pearson vs Spearman correlation</a>
-      <span class="badge badge-decision">Model selection</span></li>
-  <li><a href="#s3">Mutual Information scores</a>
-      <span class="badge badge-decision">Model selection</span></li>
-  <li><a href="#s5">Cross-stage correlation heatmap</a></li>
-  <li><a href="#s6">Data coverage — all columns</a></li>
-  <li><a href="#s7">Aeration tank time series</a></li>
-  <li><a href="#s8">Stage removal efficiency</a></li>
-  <li><a href="#s9">Aeration DO vs effluent quality</a></li>
-  <li><a href="#s10">Settleability &amp; biomass vs effluent TSS</a></li>
-</ol>
-</div>
+<strong>are non-linear models (Random Forest) justified over linear ones?</strong>
+Use the navigation panel on the left to jump to any section or individual target.</p>
 """]
 
     # ── Section 1: Ridge residuals ──────────────────────────────────────────────
@@ -1768,12 +1888,18 @@ Three residual plots are shown per effluent target:</p>
     coef_data  = data.get("ridge_coefs", {})
     s1_obs     = obs.get("s1", {})
 
-    def _resid_fold(targets, key, label, open_by_default=False):
+    def _resid_fold(targets, key, label, open_by_default=False,
+                    section_id="s1", group_id=""):
         content = ""
         for tgt in targets:
+            slug       = _TGT_SLUG.get(tgt, "")
             resid_path = resid_data.get(key, {}).get(tgt)
             coef_path  = coef_data.get(key,  {}).get(tgt)
             tgt_obs    = s1_obs.get(tgt, "")
+
+            # per-target anchor so sidebar nav can scroll directly here
+            if slug:
+                content += f'<a id="{section_id}-{slug}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n'
 
             # 1 — residual diagnostic plots
             content += img_tag(resid_path)
@@ -1797,23 +1923,36 @@ Three residual plots are shown per effluent target:</p>
             if tgt_obs:
                 content += _obs(tgt_obs)
 
-        return _fold(f"▶ {label} (click to expand)", content,
+        fold = _fold(f"▶ {label} (click to expand)", content,
                      open_by_default=open_by_default)
+        # prepend group anchor so sidebar can also link to the whole group fold
+        if group_id:
+            return f'<a id="{group_id}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n' + fold
+        return fold
 
-    parts.append(_resid_fold(GRAB_TARGETS, "grab", "Grab effluent targets", open_by_default=True))
-    parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets"))
+    parts.append(_resid_fold(GRAB_TARGETS, "grab", "Grab effluent targets",
+                             open_by_default=True, section_id="s1", group_id="s1-grab"))
+    parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets",
+                             section_id="s1", group_id="s1-comp"))
     parts.append("</div>\n")
 
     # helper: build a fold whose content interleaves one image per target with its obs
-    def _per_target_fold(targets, img_paths, obs_dict, label, open_by_default=False):
+    def _per_target_fold(targets, img_paths, obs_dict, label, open_by_default=False,
+                         section_id="", group_id=""):
         content = ""
         for tgt, path in zip(targets, img_paths):
+            slug = _TGT_SLUG.get(tgt, "")
+            if slug and section_id:
+                content += f'<a id="{section_id}-{slug}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n'
             content += img_tag(path)
             tgt_obs = (obs_dict or {}).get(tgt)
             if tgt_obs:
                 content += _obs(tgt_obs)
-        return _fold(f"▶ {label} (click to expand)", content,
+        fold = _fold(f"▶ {label} (click to expand)", content,
                      open_by_default=open_by_default)
+        if group_id:
+            return f'<a id="{group_id}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n' + fold
+        return fold
 
     # ── Section 2 (display): Scatter grids ────────────────────────────────────
     scatter_paths  = data.get("scatter", [])
@@ -1821,8 +1960,10 @@ Three residual plots are shown per effluent target:</p>
     s4_obs         = obs.get("s4", "")   # general how-to-read guidance
 
     scatter_folds = ""
-    for path, label in zip(scatter_paths, scatter_labels):
-        scatter_folds += _fold(f"▶ {label}", img_tag(path))
+    for tgt, path, lbl in zip(GRAB_TARGETS, scatter_paths, scatter_labels):
+        slug   = _TGT_SLUG.get(tgt, "")
+        anchor = f'<a id="s4-{slug}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n' if slug else ""
+        scatter_folds += anchor + _fold(f"▶ {lbl}", img_tag(path))
 
     parts.append(f"""<div class="card" id="s4">
 <h2><span class="badge badge-decision">Model selection</span>
@@ -1845,10 +1986,12 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
 
     grab_ps_fold = _per_target_fold(
         GRAB_TARGETS, grab_paths_ps, s2_obs.get("grab", {}),
-        "Grab effluent targets", open_by_default=True)
+        "Grab effluent targets", open_by_default=True,
+        section_id="s2", group_id="s2-grab")
     comp_ps_fold = _per_target_fold(
         COMP_TARGETS, comp_paths_ps, s2_obs.get("comp", {}),
-        "Composite effluent targets")
+        "Composite effluent targets",
+        section_id="s2", group_id="s2-comp")
 
     parts.append(f"""<div class="card" id="s2">
 <h2><span class="badge badge-decision">Model selection</span>
@@ -1868,10 +2011,12 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
 
     grab_mi_fold = _per_target_fold(
         GRAB_TARGETS, grab_paths_mi, s3_obs.get("grab", {}),
-        "Grab effluent targets", open_by_default=True)
+        "Grab effluent targets", open_by_default=True,
+        section_id="s3", group_id="s3-grab")
     comp_mi_fold = _per_target_fold(
         COMP_TARGETS, comp_paths_mi, s3_obs.get("comp", {}),
-        "Composite effluent targets")
+        "Composite effluent targets",
+        section_id="s3", group_id="s3-comp")
 
     parts.append(f"""<div class="card" id="s3">
 <h2><span class="badge badge-decision">Model selection</span>
@@ -1959,17 +2104,71 @@ candidates for the feature selection pool.</p>
 """)
 
     parts.append("""
+</div><!-- /#main-content -->
 <script>
 (function() {
+  // ── fold-hint text ───────────────────────────────────────────────────────
   function updateHint(details) {
-    var hint = details.querySelector('summary .fold-hint');
+    var hint = details.querySelector(':scope > summary .fold-hint');
     if (!hint) return;
     hint.textContent = details.open ? '(click to minimize)' : '(click to expand)';
   }
-  document.querySelectorAll('details').forEach(function(d) {
-    updateHint(d);  // set correct text for elements open by default
+  document.querySelectorAll('#main-content details').forEach(function(d) {
+    updateHint(d);
     d.addEventListener('toggle', function() { updateHint(d); });
   });
+
+  // ── sidebar: open-ancestor-details + smooth scroll on hash nav ──────────
+  function openAncestors(el) {
+    var p = el.parentElement;
+    while (p) {
+      if (p.tagName === 'DETAILS') { p.open = true; }
+      p = p.parentElement;
+    }
+  }
+  function goToHash(hash) {
+    if (!hash) return;
+    var id  = hash.replace('#', '');
+    var el  = document.getElementById(id);
+    if (!el) return;
+    openAncestors(el);
+    setTimeout(function() {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }
+  if (window.location.hash) { goToHash(window.location.hash); }
+  window.addEventListener('hashchange', function() { goToHash(window.location.hash); });
+
+  // ── sidebar: collapsible toggle (▸ icon rotates) ─────────────────────────
+  document.querySelectorAll('#sidenav .nav-toggle').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      // Allow navigation via href, but also toggle children
+      var li       = a.closest('li');
+      var children = li ? li.querySelector('.nav-children') : null;
+      if (children) {
+        var isOpen = children.classList.toggle('open');
+        a.classList.toggle('open', isOpen);
+      }
+    });
+  });
+
+  // ── sidebar: highlight currently visible section ─────────────────────────
+  var navLinks = Array.from(document.querySelectorAll('#sidenav a[href^="#"]'));
+  function setActive() {
+    var scrollY = window.scrollY + 120;
+    var best = null;
+    navLinks.forEach(function(link) {
+      var id  = link.getAttribute('href').replace('#', '');
+      var el  = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top + window.scrollY <= scrollY) {
+        best = link;
+      }
+    });
+    navLinks.forEach(function(l) { l.style.fontWeight = ''; l.style.color = ''; });
+    if (best) { best.style.fontWeight = '700'; best.style.color = '#1F4E79'; }
+  }
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
 })();
 </script>
 </body>
