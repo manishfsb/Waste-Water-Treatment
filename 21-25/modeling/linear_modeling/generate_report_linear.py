@@ -251,21 +251,24 @@ REPORT_CSS = dark_mode_css("""
 
   /* ── Summary section ── */
   .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
     margin: 14px 0 24px;
+    overflow-x: auto;
   }
   .stat-card {
     background: var(--card);
     border-radius: 8px;
-    padding: 16px 18px;
+    padding: 13px 14px;
     box-shadow: 0 1px 6px var(--card-shadow);
     border-top: 3px solid #3A7BD5;
+    flex: 1 1 0;
+    min-width: 130px;
   }
-  .stat-card .label { font-size: 0.78rem; color: var(--text-meta); margin-bottom: 4px; }
-  .stat-card .value { font-size: 1.4rem; font-weight: 700; color: var(--text); }
-  .stat-card .sub   { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  .stat-card .label { font-size: 0.72rem; color: var(--text-meta); margin-bottom: 4px; line-height: 1.3; }
+  .stat-card .value { font-size: 1.25rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .stat-card .sub   { font-size: 0.70rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35; }
 
   details {
     border: 1px solid var(--border);
@@ -538,17 +541,51 @@ def _exp_section_html(sub: pd.DataFrame, exp: str, run: int) -> str:
     """
 
 
-def _top_summary_cards(df: pd.DataFrame) -> str:
-    """Aggregate stat cards across all experiments."""
-    n_ds       = len(df)
-    avg_ridge  = df["Ridge_test_R2"].mean()
-    avg_elnet  = df["ElNet_test_R2"].mean()
-    avg_ols    = df["OLS_test_R2"].mean()
-    best_model = max({"OLS": avg_ols, "Ridge": avg_ridge, "ElNet": avg_elnet},
-                     key=lambda k: {"OLS": avg_ols, "Ridge": avg_ridge, "ElNet": avg_elnet}[k])
+def _win_counts(subset: pd.DataFrame) -> dict:
+    """Count how many datasets each model achieves the highest Test R²."""
+    wins = {"OLS": 0, "Ridge": 0, "ElNet": 0}
+    for _, row in subset.iterrows():
+        r2s = {
+            "OLS":   row.get("OLS_test_R2",   -9999),
+            "Ridge": row.get("Ridge_test_R2", -9999),
+            "ElNet": row.get("ElNet_test_R2", -9999),
+        }
+        wins[max(r2s, key=r2s.get)] += 1
+    return wins
 
-    best_r2_val = df[["OLS_test_R2","Ridge_test_R2","ElNet_test_R2"]].max(axis=1).max()
-    best_r2_row = df.loc[df[["OLS_test_R2","Ridge_test_R2","ElNet_test_R2"]].max(axis=1).idxmax()]
+
+def _best_by_wins(subset: pd.DataFrame) -> tuple:
+    """Return (winner_name, wins_dict) for the given subset."""
+    wins = _win_counts(subset)
+    return max(wins, key=wins.get), wins
+
+
+def _top_summary_cards(df: pd.DataFrame) -> str:
+    """Aggregate stat cards across all experiments — single scrollable row."""
+    n_ds = len(df)
+
+    # ── Average Test R² (shown per model, not used for selection) ──────────────
+    avg_ols   = df["OLS_test_R2"].mean()
+    avg_ridge = df["Ridge_test_R2"].mean()
+    avg_elnet = df["ElNet_test_R2"].mean()
+
+    # ── Overall winner: win-count across all 24 datasets ───────────────────────
+    overall_best, overall_wins = _best_by_wins(df)
+    overall_sub = f"{overall_wins['OLS']}W OLS · {overall_wins['Ridge']}W Ridge · {overall_wins['ElNet']}W ElNet"
+
+    # ── Grab vs Composite best: win-count, filtered by target type ─────────────
+    grab_df = df[df["dataset"].str.contains("Grab")]
+    comp_df = df[df["dataset"].str.contains("Comp")]
+
+    grab_best, grab_wins = _best_by_wins(grab_df)
+    comp_best, comp_wins = _best_by_wins(comp_df)
+
+    grab_sub = f"{grab_wins['OLS']}W OLS · {grab_wins['Ridge']}W Ridge · {grab_wins['ElNet']}W ElNet  ({len(grab_df)} datasets)"
+    comp_sub = f"{comp_wins['OLS']}W OLS · {comp_wins['Ridge']}W Ridge · {comp_wins['ElNet']}W ElNet  ({len(comp_df)} datasets)"
+
+    # ── Best single result ─────────────────────────────────────────────────────
+    best_r2_val = df[["OLS_test_R2", "Ridge_test_R2", "ElNet_test_R2"]].max(axis=1).max()
+    best_r2_row = df.loc[df[["OLS_test_R2", "Ridge_test_R2", "ElNet_test_R2"]].max(axis=1).idxmax()]
 
     return f"""
     <div class="summary-grid">
@@ -557,15 +594,25 @@ def _top_summary_cards(df: pd.DataFrame) -> str:
         <div class="value">{n_ds}</div>
         <div class="sub">3 experiments × 8 targets</div>
       </div>
+      <div class="stat-card" style="border-top-color:#F0B849">
+        <div class="label">Best on Grab Effluents <span style="font-weight:400;opacity:0.7">(wins)</span></div>
+        <div class="value">{grab_best}</div>
+        <div class="sub">{grab_sub}</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#B07FD4">
+        <div class="label">Best on Composite Effluents <span style="font-weight:400;opacity:0.7">(wins)</span></div>
+        <div class="value">{comp_best}</div>
+        <div class="sub">{comp_sub}</div>
+      </div>
       <div class="stat-card">
-        <div class="label">Overall best model (avg Test R²)</div>
-        <div class="value">{best_model}</div>
-        <div class="sub">OLS {avg_ols:+.3f} / Ridge {avg_ridge:+.3f} / ElNet {avg_elnet:+.3f}</div>
+        <div class="label">Overall best model <span style="font-weight:400;opacity:0.7">(wins)</span></div>
+        <div class="value">{overall_best}</div>
+        <div class="sub">{overall_sub}</div>
       </div>
       <div class="stat-card" style="border-top-color:{OLS_COLOR}">
         <div class="label">OLS avg Test R²</div>
         <div class="value">{avg_ols:+.3f}</div>
-        <div class="sub">Unregularised — baseline only</div>
+        <div class="sub">Unregularised baseline</div>
       </div>
       <div class="stat-card" style="border-top-color:{RIDGE_COLOR}">
         <div class="label">Ridge avg Test R²</div>
@@ -580,7 +627,7 @@ def _top_summary_cards(df: pd.DataFrame) -> str:
       <div class="stat-card">
         <div class="label">Best single result</div>
         <div class="value">{best_r2_val:+.3f}</div>
-        <div class="sub">{best_r2_row['dataset']} — highest Test R² across all models</div>
+        <div class="sub">{best_r2_row['dataset']}</div>
       </div>
     </div>
     """
@@ -664,7 +711,13 @@ def build_html(df: pd.DataFrame, run: int) -> str:
     deliberately to demonstrate where regularisation provides meaningful value and where
     collinearity or overfitting degradation becomes apparent. All feature sets use
     <code>StandardScaler</code>. Ridge α and ElasticNet α/l1_ratio are tuned via
-    <code>GridSearchCV + TimeSeriesSplit(n_splits=3)</code>.
+    <code>GridSearchCV + TimeSeriesSplit(n_splits=3)</code>.<br>
+    <strong style="color:var(--text)">Selection criterion for &ldquo;best model&rdquo; cards:</strong>
+    <strong>Win count</strong> — the number of individual datasets on which a model achieves
+    the highest Test R² (ties go to the first model that reaches the maximum). Average Test R²
+    is shown separately but <em>not</em> used for selection, because OLS produces
+    catastrophically negative R² values on some datasets (e.g. −13.5 for Comp TSS) that
+    would unfairly distort its mean without reflecting its typical performance.
   </div>
 
   {legend}
