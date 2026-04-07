@@ -764,9 +764,11 @@ def build_html(df: pd.DataFrame, run: int) -> str:
       <strong>Phase 4 — Model Comparison:</strong> Head-to-head comparison of three linear
       models (OLS, Ridge, ElasticNet) against three tree ensembles (RF, GB, XGB) across
       Experiments 1 and 2. All models trained on 2020–2024 data (2020 rows included where
-      available), tested on 2025. Linear models use <code>StandardScaler</code> +
-      <code>GridSearchCV</code> for regularisation tuning. Tree ensembles use fixed
-      hyperparameters (no tuning) for a fair architectural comparison.<br><br>
+      available), tested on 2025. <strong>All six models are hyperparameter-tuned</strong>
+      using identical CV protocol: <code>GridSearchCV</code> (RF, GB) and
+      <code>RandomizedSearchCV</code> (XGB) with <code>TimeSeriesSplit(n_splits=3)</code>,
+      scored on <code>neg_root_mean_squared_error</code>. Linear models additionally use
+      <code>StandardScaler</code>.<br><br>
       <strong>Highlighted cell</strong> = best Test R² in that row (across all 6 models).
       <strong>R² Gap</strong> = Train R² − Test R² (lower = less overfitting).
       Bar charts use <em>hatched bars for linear</em> and <em>solid bars for tree models</em>.

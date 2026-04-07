@@ -274,7 +274,7 @@
   <h1>Phase 4 — Linear vs Tree Ensemble Comparison
     <span class="run-badge">Run 1</span>
   </h1>
-  <div class="ts">Generated 2026-04-07 13:32 &nbsp;|&nbsp; Train: 2020–2024 &nbsp;|&nbsp; Test: 2025</div>
+  <div class="ts">Generated 2026-04-07 13:46 &nbsp;|&nbsp; Train: 2020–2024 &nbsp;|&nbsp; Test: 2025</div>
 
   
     <div style="margin:10px 0 20px;padding:12px 16px;background:var(--obs-bg);
@@ -282,9 +282,11 @@
       <strong>Phase 4 — Model Comparison:</strong> Head-to-head comparison of three linear
       models (OLS, Ridge, ElasticNet) against three tree ensembles (RF, GB, XGB) across
       Experiments 1 and 2. All models trained on 2020–2024 data (2020 rows included where
-      available), tested on 2025. Linear models use <code>StandardScaler</code> +
-      <code>GridSearchCV</code> for regularisation tuning. Tree ensembles use fixed
-      hyperparameters (no tuning) for a fair architectural comparison.<br><br>
+      available), tested on 2025. <strong>All six models are hyperparameter-tuned</strong>
+      using identical CV protocol: <code>GridSearchCV</code> (RF, GB) and
+      <code>RandomizedSearchCV</code> (XGB) with <code>TimeSeriesSplit(n_splits=3)</code>,
+      scored on <code>neg_root_mean_squared_error</code>. Linear models additionally use
+      <code>StandardScaler</code>.<br><br>
       <strong>Highlighted cell</strong> = best Test R² in that row (across all 6 models).
       <strong>R² Gap</strong> = Train R² − Test R² (lower = less overfitting).
       Bar charts use <em>hatched bars for linear</em> and <em>solid bars for tree models</em>.
