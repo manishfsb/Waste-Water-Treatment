@@ -793,18 +793,128 @@ def plot_cross_stage_heatmap(df):
     TD_R = f"{TD};text-align:right;font-variant-numeric:tabular-nums"
     TD_ARROW = "padding:6px 4px;border-bottom:1px solid #2e3d52;color:#4a5a70;text-align:center"
 
-    rows_html = ""
-    for i, (ca, cb, pr, sr, _) in enumerate(pairs):
-        row_bg = "#141e2d" if i % 2 == 0 else "#192336"
-        rows_html += (
-            f"<tr style='background:{row_bg}'>"
-            f"<td style='{TD}'>{ca}</td>"
-            f"<td style='{TD_ARROW}'>↔</td>"
-            f"<td style='{TD}'>{cb}</td>"
-            f"<td style='{TD_R}'>{_rfmt(pr)}</td>"
-            f"<td style='{TD_R}'>{_rfmt(sr)}</td>"
-            f"</tr>"
-        )
+    # ── Classify pairs into sub-sections ────────────────────────────────────────
+    GRAB_TGT_SHORT = {s(t) for t in GRAB_TARGETS}
+    COMP_TGT_SHORT = {s(t) for t in COMP_TARGETS}
+    ALL_TGT_SHORT  = GRAB_TGT_SHORT | COMP_TGT_SHORT
+
+    feat_feat   = []
+    feat_grab   = []
+    feat_comp   = []
+    tgt_gc      = []   # grab vs composite
+    tgt_gg      = []   # grab vs grab
+    tgt_cc      = []   # composite vs composite
+
+    for pair in pairs:
+        ca, cb = pair[0], pair[1]
+        a_tgt = ca in ALL_TGT_SHORT
+        b_tgt = cb in ALL_TGT_SHORT
+        if not a_tgt and not b_tgt:
+            feat_feat.append(pair)
+        elif a_tgt and b_tgt:
+            a_grab = ca in GRAB_TGT_SHORT
+            b_grab = cb in GRAB_TGT_SHORT
+            if a_grab != b_grab:
+                tgt_gc.append(pair)
+            elif a_grab:
+                tgt_gg.append(pair)
+            else:
+                tgt_cc.append(pair)
+        else:
+            # one is a target — normalise so the target is always cb for label purposes
+            tgt_col = ca if a_tgt else cb
+            if tgt_col in GRAB_TGT_SHORT:
+                feat_grab.append(pair)
+            else:
+                feat_comp.append(pair)
+
+    TH = "padding:8px 12px;text-align:left;color:#8aa8cc;font-weight:600;letter-spacing:0.03em"
+    TH_R = "padding:8px 12px;text-align:right;color:#8aa8cc;font-weight:600;letter-spacing:0.03em"
+
+    def _sub_table(sub_pairs, heading, open_by_default=False):
+        if not sub_pairs:
+            return ""
+        rows = ""
+        for i, (ca, cb, pr, sr, _) in enumerate(sub_pairs):
+            row_bg = "#141e2d" if i % 2 == 0 else "#192336"
+            rows += (
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{TD}'>{ca}</td>"
+                f"<td style='{TD_ARROW}'>↔</td>"
+                f"<td style='{TD}'>{cb}</td>"
+                f"<td style='{TD_R}'>{_rfmt(pr)}</td>"
+                f"<td style='{TD_R}'>{_rfmt(sr)}</td>"
+                f"</tr>"
+            )
+        open_attr = " open" if open_by_default else ""
+        n = len(sub_pairs)
+        return f"""
+      <details{open_attr} style='margin:8px 0 8px 16px'>
+        <summary style='font-weight:600;font-size:0.88rem;cursor:pointer;padding:4px 0;
+                        color:#7a98bc;letter-spacing:0.01em'>
+          {heading} &mdash; {n} pair{'s' if n != 1 else ''}
+        </summary>
+        <div style='overflow-x:auto;margin-top:8px;border-radius:6px;
+                    border:1px solid #2e3d52;overflow:hidden'>
+        <table style='border-collapse:collapse;font-size:0.84rem;width:100%;
+                      max-width:760px;background:#111929'>
+          <thead>
+            <tr style='background:#1d2f45;border-bottom:2px solid #3a5070'>
+              <th style='{TH}'>Column A</th>
+              <th style='padding:8px 4px'></th>
+              <th style='{TH}'>Column B</th>
+              <th style='{TH_R}'>Pearson r</th>
+              <th style='{TH_R}'>Spearman r</th>
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+        </div>
+      </details>"""
+
+    feat_feat_block = _sub_table(feat_feat, "Features vs Features", open_by_default=True)
+
+    feat_tgt_subs = (
+        _sub_table(feat_grab, "Features vs Grab Targets", open_by_default=True)
+        + _sub_table(feat_comp, "Features vs Composite Targets", open_by_default=True)
+    )
+    n_feat_tgt = len(feat_grab) + len(feat_comp)
+    feat_tgt_block = f"""
+      <details open style='margin:8px 0'>
+        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
+                        color:#8aa8cc;letter-spacing:0.01em'>
+          Features vs Targets &mdash; {n_feat_tgt} pair{'s' if n_feat_tgt != 1 else ''}
+        </summary>
+        {feat_tgt_subs}
+      </details>""" if n_feat_tgt else ""
+
+    tgt_tgt_subs = (
+        _sub_table(tgt_gg, "Grab vs Grab")
+        + _sub_table(tgt_cc, "Composite vs Composite")
+        + _sub_table(tgt_gc, "Grab vs Composite")
+    )
+    n_tgt_tgt = len(tgt_gg) + len(tgt_cc) + len(tgt_gc)
+    tgt_tgt_block = f"""
+      <details style='margin:8px 0'>
+        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
+                        color:#8aa8cc;letter-spacing:0.01em'>
+          Targets vs Targets &mdash; {n_tgt_tgt} pair{'s' if n_tgt_tgt != 1 else ''}
+          &nbsp;<span style='font-size:0.78rem;color:#556070;font-weight:400'>
+            (grab and composite targets never appear in the same model dataset)</span>
+        </summary>
+        {tgt_tgt_subs}
+      </details>""" if n_tgt_tgt else ""
+
+    feat_feat_outer = f"""
+      <details open style='margin:8px 0'>
+        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
+                        color:#8aa8cc;letter-spacing:0.01em'>
+          Features vs Features &mdash; {len(feat_feat)} pair{'s' if len(feat_feat) != 1 else ''}
+          &nbsp;<span style='font-size:0.78rem;color:#556070;font-weight:400'>
+            (collinearity — check these before linear modelling)</span>
+        </summary>
+        {feat_feat_block}
+      </details>""" if feat_feat else ""
 
     table_html = f"""
     <details open style='margin:16px 0'>
@@ -812,35 +922,16 @@ def plot_cross_stage_heatmap(df):
                       color:#8aa8cc;letter-spacing:0.01em'>
         Correlated pairs &mdash; {len(pairs)} pair{'s' if len(pairs)!=1 else ''}
         with |Pearson| or |Spearman| &ge; {THRESHOLD}
-        &nbsp;&middot;&nbsp; sorted by strongest correlation
+        &nbsp;&middot;&nbsp; sorted by strongest correlation within each group
       </summary>
-      <div style='overflow-x:auto;margin-top:10px;border-radius:6px;
-                  border:1px solid #2e3d52;overflow:hidden'>
-      <table style='border-collapse:collapse;font-size:0.84rem;width:100%;
-                    max-width:760px;background:#111929'>
-        <thead>
-          <tr style='background:#1d2f45;border-bottom:2px solid #3a5070'>
-            <th style='padding:8px 12px;text-align:left;color:#8aa8cc;
-                       font-weight:600;letter-spacing:0.03em'>Feature / Target A</th>
-            <th style='padding:8px 4px'></th>
-            <th style='padding:8px 12px;text-align:left;color:#8aa8cc;
-                       font-weight:600;letter-spacing:0.03em'>Feature / Target B</th>
-            <th style='padding:8px 12px;text-align:right;color:#8aa8cc;
-                       font-weight:600;letter-spacing:0.03em'>Pearson r</th>
-            <th style='padding:8px 12px;text-align:right;color:#8aa8cc;
-                       font-weight:600;letter-spacing:0.03em'>Spearman r</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows_html}
-        </tbody>
-      </table>
-      </div>
-      <p style='font-size:0.77rem;color:#556070;margin:6px 0 0'>
+      <p style='font-size:0.77rem;color:#556070;margin:8px 0 4px'>
         <span style='color:#C0392B;font-weight:600'>Red</span> = |r| &ge; 0.75 (strong)
         &nbsp;&middot;&nbsp;
         <span style='color:#E07B20;font-weight:600'>Orange</span> = |r| 0.50&ndash;0.74 (moderate)
       </p>
+      {feat_feat_outer}
+      {feat_tgt_block}
+      {tgt_tgt_block}
     </details>
     """
 
@@ -1753,6 +1844,479 @@ def _obs(html):
     return f'<div class="obs-card"><h4>Observations</h4>{html}</div>\n'
 
 
+# ── Section 11: Feature suggestions for Experiment 3 ──────────────────────────
+
+def build_suggestions(df):
+    """
+    Per grab-effluent target, apply the 4-question framework to every candidate
+    feature not already in Experiment 2 Sub-2 and return an HTML string for
+    Section 11 of the report.
+
+    Framework:
+      Q1 — Is there any signal?  → MI score
+      Q2 — What kind of signal?  → Pearson + Spearman pattern
+      Q3 — What does it cost?    → missingness %
+      Q4 — Is it redundant?      → known collinear pairs
+    """
+    print("11. Feature suggestions (Experiment 3)...")
+
+    # ── Feature sets ──────────────────────────────────────────────────────────
+    EXP2_FEATS = {
+        "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)", "Inlet COD (mg/L, Grab)",
+        "Inlet TSS (mg/L, Grab)",
+        "Sec Clarifier pH", "Sec Clarifier TSS (mg/L)", "Sec Clarifier BOD (mg/L)",
+        "Sec Clarifier COD (mg/L)", "Sec Clarifier RAS",
+        "Sec Sed pH", "Sec Sed TSS (mg/L)", "Sec Sed BOD (mg/L)",
+        "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
+        "Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year",
+    }
+    ALL_EFFLUENT = {
+        "Effluent BOD (mg/L, Grab)", "Effluent COD (mg/L, Grab)",
+        "Effluent TSS (mg/L, Grab)", "Effluent pH (Grab)",
+        "Effluent BOD (mg/L, Composite)", "Effluent COD (mg/L, Composite)",
+        "Effluent TSS (mg/L, Composite)", "Effluent pH (Composite)",
+        "Effluent FRC (mg/L)", "Effluent O&G (mg/L)", "Effluent NH3-N (mg/L)",
+        "Effluent Total Coliform (CFU/100ml)", "Effluent Fecal Coliform (CFU/100ml)",
+    }
+
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    candidates = [c for c in numeric_cols if c not in EXP2_FEATS and c not in ALL_EFFLUENT]
+
+    # ── Redundancy register ────────────────────────────────────────────────────
+    # (feature_to_drop → (preferred_alternative, explanation))
+    REDUNDANT = {
+        "Power NEA (KW)": (
+            "Power Total (KW)",
+            "Near-perfect collinearity (Pearson = 0.975, Spearman = 0.940). "
+            "Power Total already incorporates NEA's contribution and is in every experiment."
+        ),
+        "Aeration MLVSS (mg/L, Existing)": (
+            "Aeration MLSS (mg/L, Existing)",
+            "High collinearity with MLSS (Pearson = 0.882, Spearman = 0.911). "
+            "MLSS is more widely measured; keep MLVSS only if volatile fraction "
+            "is specifically hypothesised to add independent signal."
+        ),
+        "Aeration MLVSS (mg/L, New)": (
+            "Aeration MLSS (mg/L, New)",
+            "High collinearity with MLSS (Pearson = 0.871, Spearman = 0.892). Same logic as Existing tank."
+        ),
+    }
+    # Note: Power GE is NOT redundant with Power Total (P=0.159) — separate pump system.
+    # Aeration pH Existing / New are correlated (P=0.839) but kept separately as
+    # the two tanks can operate at different set-points.
+    # Aeration DO Existing / New are correlated (P=0.769) but tank-level DO differences
+    # are operationally meaningful; flagged in narrative rather than hard-dropped.
+
+    # ── Ordered feature groups for table layout ────────────────────────────────
+    GROUPS = [
+        ("Power &amp; Flow", [
+            "Power GE (KW)", "Power NEA (KW)", "Power / Flow (KW/ML)",
+        ]),
+        ("Inlet — Composite", [
+            "Inlet pH (Composite)", "Inlet BOD (mg/L, Composite)",
+            "Inlet COD (mg/L, Composite)", "Inlet TSS (mg/L, Composite)",
+        ]),
+        ("Inlet — Specialty", [
+            "Inlet TKN/NH3-N (mg/L, Grab)", "Inlet O&G (mg/L, Grab)",
+            "Inlet PO4/TP (mg/L, Grab)",
+            "Inlet Total Coliform (CFU/100ml, Grab)",
+            "Inlet Fecal Coliform (CFU/100ml, Grab)",
+        ]),
+        ("Primary Treatment", [
+            "Grit Classifier TSS (mg/L)", "Primary Clarifier pH",
+            "Primary TSS (mg/L)", "Primary BOD (mg/L)",
+            "Primary COD (mg/L)", "Primary Sludge Totalizer (m3)",
+        ]),
+        ("Aeration — DO", [
+            "Aeration DO (mg/L, Existing)", "Aeration DO (mg/L, New)",
+        ]),
+        ("Aeration — Biomass &amp; Settling", [
+            "Aeration MLSS (mg/L, Existing)", "Aeration MLVSS (mg/L, Existing)",
+            "Aeration SV30 (ml/L, Existing)", "Aeration SVI (Existing)",
+            "Aeration MLSS (mg/L, New)", "Aeration MLVSS (mg/L, New)",
+            "Aeration SV30 (ml/L, New)", "Aeration SVI (New)",
+        ]),
+        ("Aeration — pH", [
+            "Aeration pH (Existing)", "Aeration pH (New)",
+        ]),
+    ]
+
+    # ── Classification helpers ─────────────────────────────────────────────────
+    def _signal_type(p, sp):
+        """Classify relationship type from Pearson + Spearman."""
+        if p is None or sp is None:
+            return "—"
+        ap, asp = abs(p), abs(sp)
+        if ap >= 0.6 and asp >= 0.6:
+            return "Linear &amp; monotonic"
+        if ap >= 0.6 and asp < 0.35:
+            return "Outlier-driven (P&gg;S)"
+        if ap < 0.35 and asp >= 0.6:
+            return "Non-linear monotonic (S&gg;P)"
+        if ap >= 0.35 and asp >= 0.35:
+            return "Moderate — linear + monotonic"
+        if asp >= 0.30:
+            return "Weakly monotonic"
+        if ap >= 0.30:
+            return "Weak linear only"
+        return "Weak / non-monotonic"
+
+    def _tier(feat, mi, miss_pct):
+        """Four-level recommendation tier."""
+        if feat in REDUNDANT:
+            return "REDUNDANT"
+        if mi is None:
+            return "—"
+        if mi >= 0.20 and miss_pct <= 35:
+            return "ADD"
+        if (mi >= 0.15 and miss_pct <= 35) or (mi >= 0.25 and miss_pct <= 55):
+            return "CONSIDER"
+        if mi >= 0.05:
+            return "LOW"
+        return "SKIP"
+
+    TIER_LABEL = {
+        "ADD":       "Add",
+        "CONSIDER":  "Consider",
+        "LOW":       "Low priority",
+        "SKIP":      "Skip",
+        "REDUNDANT": "Redundant — drop",
+        "—":         "—",
+    }
+    TIER_CLR = {
+        "ADD":       ("#0d3b1f", "#2ecc71"),
+        "CONSIDER":  ("#2e2800", "#f0c040"),
+        "LOW":       ("#2e1800", "#d08030"),
+        "SKIP":      ("#2e0f0f", "#c04040"),
+        "REDUNDANT": ("#1a1a1a", "#666666"),
+        "—":         ("#1a1a1a", "#555555"),
+    }
+
+    # ── Grab targets ──────────────────────────────────────────────────────────
+    GRAB_TGTS = [
+        ("Effluent BOD (mg/L, Grab)",  "bod-grab",  "Effluent BOD (Grab)"),
+        ("Effluent COD (mg/L, Grab)",  "cod-grab",  "Effluent COD (Grab)"),
+        ("Effluent TSS (mg/L, Grab)",  "tss-grab",  "Effluent TSS (Grab)"),
+        ("Effluent pH (Grab)",         "ph-grab",   "Effluent pH (Grab)"),
+    ]
+
+    # ── Compute stats per target × candidate ──────────────────────────────────
+    all_stats = {}
+    for tgt, slug, label in GRAB_TGTS:
+        tgt_rows = df[df[tgt].notna()].copy()
+        n_total  = len(tgt_rows)
+        feat_stats = {}
+        for feat in candidates:
+            pair     = tgt_rows[[feat, tgt]].dropna()
+            n        = len(pair)
+            miss_pct = round((1 - n / n_total) * 100, 1)
+            if n < 20:
+                feat_stats[feat] = dict(n=n, miss_pct=miss_pct, p=None, sp=None,
+                                        mi=None, tier="—", signal="—")
+                continue
+            pr, _  = stats.pearsonr(pair[feat], pair[tgt])
+            sr, _  = stats.spearmanr(pair[feat], pair[tgt])
+            mi_val = mutual_info_regression(pair[[feat]], pair[tgt], random_state=42)[0]
+            pr, sr, mi_val = round(pr, 3), round(sr, 3), round(mi_val, 3)
+            t   = _tier(feat, mi_val, miss_pct)
+            sig = _signal_type(pr, sr)
+            feat_stats[feat] = dict(n=n, miss_pct=miss_pct, p=pr, sp=sr,
+                                    mi=mi_val, tier=t, signal=sig)
+        all_stats[tgt] = feat_stats
+
+    # ── HTML helpers ──────────────────────────────────────────────────────────
+    # Light-theme table styles (white/grey/black — sits inside dark report card)
+    TH    = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem"
+    TH_C  = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem"
+    TD_BASE = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+
+    TIER_SORT = {"ADD": 0, "CONSIDER": 1, "LOW": 2, "SKIP": 3, "REDUNDANT": 4, "—": 5}
+
+    def _val(v, is_pct=False):
+        if v is None:
+            return "<span style='color:#999'>—</span>"
+        if is_pct:
+            clr = "#721c24" if v > 40 else ("#7a3800" if v > 20 else "#1a1a1a")
+            return f"<span style='color:{clr}'>{v:.1f}%</span>"
+        return f"{v:.3f}"
+
+    def _mi_fmt(v):
+        if v is None:
+            return "<span style='color:#999'>—</span>"
+        clr = ("#155724" if v >= 0.30 else
+               "#7d5400" if v >= 0.15 else
+               "#7a3800" if v >= 0.05 else "#721c24")
+        return f"<span style='color:{clr};font-weight:600'>{v:.3f}</span>"
+
+    def _corr_fmt(v):
+        """Plain dark text — no colour coding; let MI carry the signal story."""
+        if v is None:
+            return "<span style='color:#999'>—</span>"
+        sign = "+" if v > 0 else ""
+        return f"{sign}{v:.3f}"
+
+    def _tier_badge(t):
+        # Bootstrap-style light-background badge colours
+        styles = {
+            "ADD":       ("background:#d4edda;color:#155724;border:1px solid #c3e6cb"),
+            "CONSIDER":  ("background:#fff3cd;color:#7d5400;border:1px solid #ffeeba"),
+            "LOW":       ("background:#fde8d0;color:#7a3800;border:1px solid #f5c6a0"),
+            "SKIP":      ("background:#f8d7da;color:#721c24;border:1px solid #f5c6cb"),
+            "REDUNDANT": ("background:#e2e3e5;color:#3a3a3a;border:1px solid #d3d3d3"),
+            "—":         ("background:#f0f0f0;color:#888;border:1px solid #ddd"),
+        }
+        label = TIER_LABEL.get(t, t)
+        st    = styles.get(t, styles["—"])
+        return (f"<span style='{st};padding:2px 7px;border-radius:3px;"
+                f"font-size:0.75rem;font-weight:600;white-space:nowrap'>{label}</span>")
+
+    def _group_rows(group_feats, feat_stats):
+        # Sort within group by tier order, then by MI desc within same tier
+        ordered = [f for f in group_feats if f in feat_stats]
+        ordered.sort(key=lambda f: (
+            TIER_SORT.get(feat_stats[f]["tier"], 99),
+            -(feat_stats[f]["mi"] or 0)
+        ))
+        rows = ""
+        for i, feat in enumerate(ordered):
+            v  = feat_stats[feat]
+            t  = v["tier"]
+            bg = "#ffffff" if i % 2 == 0 else "#f7f7f7"
+            if t == "REDUNDANT":
+                alt, reason = REDUNDANT[feat]
+                reason_cell = (f"<td colspan='5' style='{TD_BASE};color:#888;"
+                               f"font-style:italic;background:{bg}'>"
+                               f"Redundant with <em>{alt}</em>. {reason}</td>")
+            else:
+                reason_cell = None
+
+            row  = f"<tr style='background:{bg}'>"
+            row += f"<td style='{TD_BASE}'>{feat}</td>"
+            row += f"<td style='{TD_BASE};text-align:center'>{_tier_badge(t)}</td>"
+            if reason_cell:
+                row += reason_cell
+            else:
+                row += f"<td style='{TD_BASE};text-align:center'>{_mi_fmt(v['mi'])}</td>"
+                row += f"<td style='{TD_BASE};text-align:center'>{_corr_fmt(v['p'])}</td>"
+                row += f"<td style='{TD_BASE};text-align:center'>{_corr_fmt(v['sp'])}</td>"
+                row += f"<td style='{TD_BASE};text-align:center'>{_val(v['miss_pct'], is_pct=True)}</td>"
+                row += f"<td style='{TD_BASE};color:#555;font-size:0.78rem'>{v['signal']}</td>"
+            row += "</tr>"
+            rows += row
+        return rows
+
+    def _narrative(tgt, feat_stats):
+        """Generate evidence-backed bullet points for the narrative callout box."""
+        bullets = []
+
+        # Collect features by tier, sorted by MI desc
+        add_feats = sorted(
+            [(f, v) for f, v in feat_stats.items() if v["tier"] == "ADD" and f not in REDUNDANT],
+            key=lambda x: (x[1]["mi"] or 0), reverse=True
+        )
+        consider_feats = sorted(
+            [(f, v) for f, v in feat_stats.items() if v["tier"] == "CONSIDER" and f not in REDUNDANT],
+            key=lambda x: (x[1]["mi"] or 0), reverse=True
+        )
+        low_feats = sorted(
+            [(f, v) for f, v in feat_stats.items() if v["tier"] == "LOW"],
+            key=lambda x: (x[1]["mi"] or 0), reverse=True
+        )
+        skip_feats = [f for f, v in feat_stats.items() if v["tier"] == "SKIP"]
+        redundant_feats = [f for f in REDUNDANT if f in feat_stats]
+
+        # ADD bullets — grouped by signal type where patterns emerge
+        if add_feats:
+            # Check for DO threshold pattern
+            do_feats = [(f, v) for f, v in add_feats
+                        if "DO" in f and v["p"] is not None and abs(v["p"]) < 0.30]
+            non_do_add = [(f, v) for f, v in add_feats if f not in dict(do_feats)]
+
+            for feat, v in non_do_add:
+                sig_note = ""
+                if v["signal"] == "Linear &amp; monotonic":
+                    sig_note = "strong linear and monotonic signal — reliable for both linear and non-linear models"
+                elif "Non-linear" in v["signal"] or "S&gg;P" in v["signal"]:
+                    sig_note = "monotonic but curved (Spearman > Pearson) — benefits non-linear models more than linear"
+                elif "Moderate" in v["signal"]:
+                    sig_note = "moderate linear + monotonic signal"
+                else:
+                    sig_note = v["signal"].lower()
+                bullets.append(
+                    f"<li><strong>{feat}</strong>: MI = {v['mi']:.3f}, "
+                    f"Pearson = {v['p']:+.3f}, Spearman = {v['sp']:+.3f}, "
+                    f"missingness = {v['miss_pct']:.1f}%. {sig_note.capitalize()}. "
+                    f"Worth the imputation effort.</li>"
+                )
+
+            if do_feats:
+                do_feat_names = ", ".join(f"<em>{f}</em>" for f, _ in do_feats)
+                do_mis = [f"{v['mi']:.3f}" for _, v in do_feats]
+                do_miss = [f"{v['miss_pct']:.1f}%" for _, v in do_feats]
+                bullets.append(
+                    f"<li><strong>Aeration DO (Existing &amp; New)</strong>: "
+                    f"MI = {'/'.join(do_mis)} but Pearson and Spearman are both weak "
+                    f"(&lt; 0.20). This is the hallmark of a <em>threshold / non-monotonic</em> "
+                    f"relationship — Section 9 confirms that BOD and TSS spike disproportionately "
+                    f"when DO falls below ~0.5&nbsp;mg/L. A linear model will miss this entirely; "
+                    f"a tree model will find the split automatically. "
+                    f"Missingness: {'/'.join(do_miss)}. Strongly recommended for Experiment 3 "
+                    f"with non-linear models.</li>"
+                )
+
+        # CONSIDER bullets — highlight only those with non-trivial MI
+        for feat, v in consider_feats[:5]:  # cap at 5 to keep narrative concise
+            miss_note = (f"high missingness ({v['miss_pct']:.1f}%) means imputation is required "
+                         f"and should be validated" if v["miss_pct"] > 40
+                         else f"missingness ({v['miss_pct']:.1f}%) is manageable")
+            bullets.append(
+                f"<li><strong>{feat}</strong>: MI = {v['mi']:.3f}, "
+                f"Pearson = {v['p']:+.3f}, Spearman = {v['sp']:+.3f}. "
+                f"{miss_note.capitalize()}. Include if imputation quality is acceptable.</li>"
+            )
+
+        # LOW-priority features — single grouped bullet
+        if low_feats:
+            lf_names = ", ".join(f"<em>{f}</em>" for f, _ in low_feats[:8])
+            bullets.append(
+                f"<li><strong>Low priority</strong>: {lf_names}"
+                + (f" and {len(low_feats)-8} more" if len(low_feats) > 8 else "")
+                + ". MI scores between 0.05 and 0.15. Marginal signal — include only "
+                  "if they are already imputed cheaply alongside stronger features.</li>"
+            )
+
+        # SKIP grouped bullet
+        if skip_feats:
+            sk_names = ", ".join(f"<em>{f}</em>" for f in skip_feats)
+            bullets.append(
+                f"<li><strong>Skip</strong>: {sk_names}. "
+                f"MI ≈ 0 — no detectable statistical relationship with this target. "
+                f"Adding them only increases noise and imputation burden.</li>"
+            )
+
+        # Redundancy bullets
+        for feat in redundant_feats:
+            alt, reason = REDUNDANT[feat]
+            bullets.append(
+                f"<li><strong>Drop <em>{feat}</em></strong>: {reason} "
+                f"Use <em>{alt}</em> instead.</li>"
+            )
+
+        return "<ul style='margin:0;padding-left:1.2em'>" + "".join(bullets) + "</ul>"
+
+    # ── Build per-target blocks ────────────────────────────────────────────────
+    target_blocks = ""
+    for tgt, slug, label in GRAB_TGTS:
+        feat_stats = all_stats[tgt]
+        tgt_rows   = df[df[tgt].notna()]
+        n_total    = len(tgt_rows)
+
+        table_head = f"""
+        <table style='border-collapse:collapse;width:100%;background:#ffffff;
+                      font-size:0.82rem;table-layout:auto;color:#1a1a1a'>
+          <thead>
+            <tr style='background:#eeeeee;border-bottom:2px solid #cccccc'>
+              <th style='{TH}'>Feature</th>
+              <th style='{TH_C}'>Recommendation</th>
+              <th style='{TH_C}'>MI</th>
+              <th style='{TH_C}'>Pearson r</th>
+              <th style='{TH_C}'>Spearman r</th>
+              <th style='{TH_C}'>Miss%</th>
+              <th style='{TH}'>Signal type</th>
+            </tr>
+          </thead>
+          <tbody>"""
+
+        table_body = ""
+        for grp_label, grp_feats in GROUPS:
+            visible = [f for f in grp_feats if f in feat_stats]
+            if not visible:
+                continue
+            table_body += (
+                f"<tr style='background:#e8e8e8'>"
+                f"<td colspan='7' style='padding:5px 10px;font-size:0.75rem;"
+                f"font-weight:700;color:#555555;letter-spacing:0.06em;"
+                f"text-transform:uppercase;border-bottom:1px solid #d0d0d0'>"
+                f"{grp_label}</td></tr>"
+            )
+            table_body += _group_rows(visible, feat_stats)
+
+        table_foot = """
+          </tbody>
+        </table>"""
+
+        # MI legend
+        legend = """
+        <p style='font-size:0.76rem;color:#666;margin:6px 0 0'>
+          MI: <span style='color:#155724;font-weight:600'>green ≥ 0.30</span>
+          &nbsp;·&nbsp; <span style='color:#7d5400;font-weight:600'>amber 0.15–0.29</span>
+          &nbsp;·&nbsp; <span style='color:#7a3800;font-weight:600'>orange 0.05–0.14</span>
+          &nbsp;·&nbsp; <span style='color:#721c24;font-weight:600'>red &lt; 0.05</span>
+          &nbsp;·&nbsp; Pearson and Spearman r shown as plain values (no colour coding).
+          Miss% in <span style='color:#721c24;font-weight:600'>red</span> &gt; 40%,
+          <span style='color:#7a3800;font-weight:600'>orange</span> 21–40%.
+        </p>"""
+
+        narrative_html = _narrative(tgt, feat_stats)
+
+        target_blocks += f"""
+<details id="s11-{slug}" style='margin:12px 0;border:1px solid #2e3d52;
+           border-radius:6px;overflow:hidden'>
+  <summary style='padding:10px 14px;cursor:pointer;background:#1a2d42;
+                  font-weight:700;font-size:0.95rem;color:#b8d0f0;
+                  list-style:none;display:flex;align-items:center;gap:8px'>
+    <span class='fold-icon' style='display:inline-block;transition:transform 0.2s'>&#9654;</span>
+    {label}
+    <span style='font-size:0.78rem;font-weight:400;color:#5a7a9a;margin-left:4px'>
+      — {n_total} rows with target present (training + test combined)
+    </span>
+  </summary>
+  <div style='padding:14px'>
+    <div style='overflow-x:auto;border-radius:4px;border:1px solid #2e3d52'>
+      {table_head}{table_body}{table_foot}
+    </div>
+    {legend}
+    <div class='obs-card' style='margin-top:14px'>
+      <h4>Evidence-backed suggestions</h4>
+      {narrative_html}
+    </div>
+  </div>
+</details>"""
+
+    # ── Assemble section ───────────────────────────────────────────────────────
+    intro = """
+<p>For each grab-sample effluent target, the table below lists every candidate feature
+<em>not already included in Experiment&nbsp;2 Sub&#8209;2</em> (which uses inlet grab +
+secondary clarifier/sedimentation columns + COMMON). Each feature is evaluated against
+four questions:</p>
+<ol style='margin:6px 0 10px;padding-left:1.4em;font-size:0.92rem'>
+  <li><strong>Is there any signal?</strong> — Mutual Information (MI) score, computed on rows
+      where both the feature and target are present.</li>
+  <li><strong>What kind of signal?</strong> — Pearson (linear) vs Spearman (monotonic) pattern,
+      classified into relationship types that indicate which model class will benefit.</li>
+  <li><strong>What does it cost?</strong> — Missingness % after filtering to rows where the
+      target is present. High missingness means imputation is required before this feature
+      can be used.</li>
+  <li><strong>Is it redundant?</strong> — Known collinear pairs identified from the
+      Section&nbsp;5 Features&#8209;vs&#8209;Features table.</li>
+</ol>
+<p style='font-size:0.87rem;color:#7a9ab8'>
+  Recommendation tiers:
+  <strong style='color:#2ecc71'>Add</strong> (MI &ge; 0.20, miss &le; 35%) &nbsp;&middot;&nbsp;
+  <strong style='color:#f0c040'>Consider</strong> (MI &ge; 0.15 or MI &ge; 0.25 with miss &le; 55%) &nbsp;&middot;&nbsp;
+  <strong style='color:#d08030'>Low priority</strong> (MI 0.05&ndash;0.15) &nbsp;&middot;&nbsp;
+  <strong style='color:#c04040'>Skip</strong> (MI &lt; 0.05) &nbsp;&middot;&nbsp;
+  <strong style='color:#666'>Redundant&nbsp;&mdash;&nbsp;drop</strong>
+</p>"""
+
+    return f"""<div class="card" id="s11">
+<h2>11. Feature Suggestions &mdash; Experiment&nbsp;3 (Grab Effluents)</h2>
+{intro}
+{target_blocks}
+</div>
+"""
+
+
 def build_html(data):
     """
     data keys:
@@ -1986,6 +2550,7 @@ def build_html(data):
     <li class="nav-s"><a href="#s8">8. Stage Removal</a></li>
     <li class="nav-s"><a href="#s9">9. DO vs Effluent</a></li>
     <li class="nav-s"><a href="#s10">10. Settleability vs TSS</a></li>
+    <li class="nav-s"><a href="#s11">11. Feature Suggestions — Exp 3</a></li>
   </ul>
 </nav>"""
 
@@ -2251,6 +2816,8 @@ candidates for the feature selection pool.</p>
 </div>
 """)
 
+    parts.append(data.get("suggestions", ""))
+
     parts.append("""
 </div><!-- /#main-content -->
 <script>
@@ -2355,7 +2922,8 @@ def main():
                 + len(scatter_paths) + 5 + 1)
 
     print("\nComputing observations...")
-    section_obs = build_observations(df)
+    section_obs  = build_observations(df)
+    suggestions_html = build_suggestions(df)
 
     print("Building HTML report...")
     build_html({
@@ -2371,6 +2939,7 @@ def main():
         "svi_tss":      svi_tss,
         "missing_all":  missing_all,
         "obs":          section_obs,
+        "suggestions":  suggestions_html,
     })
     print(f"\nDone. ~{n_charts} chart files → {PLOTS_DIR}/")
     print(f"Report: {REPORT}")
