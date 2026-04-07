@@ -8,7 +8,7 @@ hyperparameters across all three experiments and eight targets.
   Experiment 2 Sub-1    — Secondary features only       (grab + composite)
   Experiment 2 Sub-2    — Inlet + Secondary features    (grab + composite)
 
-Train = 2021–2024  |  Test = 2025
+Train = 2020–2024 (2020 rows included where available)  |  Test = 2025
 
 Outputs per model (rf / gb / xgb):
   non_linear_modeling/{model}/results.xlsx
@@ -45,7 +45,7 @@ def _sub(stage_dir, name):
     return os.path.join(MODELING_DIR, stage_dir, "data", f"{name}.xlsx")
 
 # ── Splits ─────────────────────────────────────────────────────────────────────
-TRAIN_YEARS = [2021, 2022, 2023, 2024]
+TRAIN_YEARS = [2021, 2022, 2023, 2024]   # base years; 2020 rows appended where present
 TEST_YEAR   = 2025
 
 # ── Hyperparameters — fixed for all three models (fair comparison) ─────────────
@@ -229,7 +229,11 @@ def train_one(experiment, name, subset_path, features, target,
     """Train one (model, dataset) combination. Return metrics dict + plot paths."""
     df = pd.read_excel(subset_path, parse_dates=["Date"])
 
-    train = df[df["year"].isin(TRAIN_YEARS)]
+    train = df[df["year"].isin(TRAIN_YEARS)].copy()
+    extra = df[df["year"] == 2020]
+    if len(extra) > 0:
+        train = pd.concat([extra, train]).drop_duplicates()
+
     test  = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
         print(f"    SKIP — no test rows for {TEST_YEAR}")
