@@ -684,58 +684,168 @@ def plot_aeration_timeseries(df):
 # ── Chart 6: Cross-stage correlation heatmap ──────────────────────────────────
 
 def plot_cross_stage_heatmap(df):
-    print("6. Cross-stage correlation heatmap...")
-    feats = feature_cols(df)
+    """
+    Full square correlation matrix: all features + all targets × themselves.
+    Returns (path, table_html) where table_html is an HTML string listing
+    every pair with max(|Pearson|, |Spearman|) >= THRESHOLD.
+    """
+    print("6. Cross-stage correlation heatmap (full matrix)...")
+    feats   = feature_cols(df)
     targets = GRAB_TARGETS + COMP_TARGETS
+    all_cols = feats + [t for t in targets if t not in feats]
 
-    # Build Pearson and Spearman matrices
-    pears = pd.DataFrame(index=feats, columns=[s(t) for t in targets], dtype=float)
-    spear = pd.DataFrame(index=feats, columns=[s(t) for t in targets], dtype=float)
+    # ── Build full Pearson and Spearman matrices ────────────────────────────────
+    n = len(all_cols)
+    pears_arr = np.full((n, n), np.nan)
+    spear_arr = np.full((n, n), np.nan)
 
-    for target in targets:
-        for feat in feats:
-            sub = df[[feat, target]].dropna()
+    for i, ci in enumerate(all_cols):
+        for j, cj in enumerate(all_cols):
+            if i == j:          # keep diagonal as NaN (self-correlation)
+                continue
+            sub = df[[ci, cj]].dropna()
             if len(sub) < 10:
-                pears.loc[feat, s(target)] = np.nan
-                spear.loc[feat, s(target)] = np.nan
-            else:
-                pr, _ = stats.pearsonr(sub[feat], sub[target])
-                sr, _ = stats.spearmanr(sub[feat], sub[target])
-                pears.loc[feat, s(target)] = pr
-                spear.loc[feat, s(target)] = sr
+                continue
+            pears_arr[i, j], _ = stats.pearsonr(sub[ci],  sub[cj])
+            spear_arr[i, j], _ = stats.spearmanr(sub[ci], sub[cj])
 
-    pears = pears.astype(float)
-    spear = spear.astype(float)
+    short = [s(c) for c in all_cols]
+    pears_df = pd.DataFrame(pears_arr, index=short, columns=short)
+    spear_df = pd.DataFrame(spear_arr, index=short, columns=short)
 
-    # Sort rows by mean absolute Pearson across grab targets
-    grab_cols = [s(t) for t in GRAB_TARGETS]
-    row_order = pears[grab_cols].abs().mean(axis=1).sort_values(ascending=False).index
-    pears = pears.loc[row_order]
-    spear = spear.loc[row_order]
-    short_rows = [s(f) for f in pears.index]
+    # ── Threshold filter: keep rows AND columns where any |r| > 0.5 ─────────────
+    THRESHOLD = 0.5
+    max_abs = pears_df.abs().combine(spear_df.abs(), np.fmax)   # NaN-safe element-wise max
+    active  = max_abs.max(axis=1) > THRESHOLD                   # rows with signal
 
-    fig, axes = plt.subplots(1, 2, figsize=(22, 16))
-    kws = dict(cmap="RdBu_r", vmin=-1, vmax=1,
-               linewidths=0.3, linecolor="white",
-               cbar_kws={"shrink": 0.7, "label": "r"},
-               annot=True, fmt=".2f", annot_kws={"size": 6})
+    n_total  = n
+    n_shown  = int(active.sum())
+    n_hidden = n_total - n_shown
 
-    sns.heatmap(pears.rename(index=dict(zip(pears.index, short_rows))),
-                ax=axes[0], **kws)
-    axes[0].set_title("Pearson correlation", fontsize=12, fontweight="bold")
+    pears_f = pears_df.loc[active, active]
+    spear_f = spear_df.loc[active, active]
 
-    sns.heatmap(spear.rename(index=dict(zip(spear.index, short_rows))),
-                ax=axes[1], **kws)
-    axes[1].set_title("Spearman correlation", fontsize=12, fontweight="bold")
+    subtitle = (
+        f"Showing {n_shown} of {n_total} columns  ·  "
+        f"threshold: |Pearson| or |Spearman| > {THRESHOLD}  ·  "
+        f"{n_hidden} column{'s' if n_hidden != 1 else ''} below threshold hidden"
+    )
+
+    # ── Compact figure (square matrix — no need to be huge) ────────────────────
+    cell = max(0.55, min(1.0, 14.0 / n_shown))   # cell size in inches
+    side = max(8, n_shown * cell)
+    side = min(side, 20)                          # cap at 20 inches
+    fig, axes = plt.subplots(2, 1, figsize=(side, side * 2 + 1))
+
+    kws = dict(
+        cmap="RdBu_r", vmin=-1, vmax=1,
+        linewidths=0.4, linecolor="white",
+        cbar_kws={"shrink": 0.5, "label": "r"},
+        annot=True, fmt=".2f", annot_kws={"size": max(5, min(8, int(120 / n_shown)))},
+    )
+
+    sns.heatmap(pears_f, ax=axes[0], **kws)
+    axes[0].set_title("Pearson correlation", fontsize=11, fontweight="bold", pad=8)
+
+    sns.heatmap(spear_f, ax=axes[1], **kws)
+    axes[1].set_title("Spearman correlation", fontsize=11, fontweight="bold", pad=8)
 
     for ax in axes:
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontsize=9)
-        ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=8)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right",
+                           fontsize=max(6, min(9, int(110 / n_shown))))
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0,
+                           fontsize=max(6, min(9, int(110 / n_shown))))
+        ax.set_xlabel(""); ax.set_ylabel("")
 
-    fig.suptitle("All features vs effluent targets — Pearson (left) and Spearman (right)",
-                 fontsize=13, fontweight="bold")
-    plt.tight_layout()
-    return save(fig, "06_cross_stage_heatmap")
+    fig.suptitle(
+        "Full correlation matrix — all features & targets vs each other\n" + subtitle,
+        fontsize=11, fontweight="bold",
+    )
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    path = save(fig, "06_cross_stage_heatmap")
+
+    # ── Build pair table (upper triangle, sorted by |Pearson| desc) ─────────────
+    pairs = []
+    cols_f = list(pears_f.columns)
+    for ii, ca in enumerate(cols_f):
+        for jj, cb in enumerate(cols_f):
+            if jj <= ii:      # lower triangle + diagonal → skip
+                continue
+            pr = pears_f.loc[ca, cb]
+            sr = spear_f.loc[ca, cb]
+            if pd.isna(pr) and pd.isna(sr):
+                continue
+            max_r = max(abs(pr) if pd.notna(pr) else 0,
+                        abs(sr) if pd.notna(sr) else 0)
+            if max_r >= THRESHOLD:
+                pairs.append((ca, cb, pr, sr, max_r))
+
+    pairs.sort(key=lambda x: x[4], reverse=True)   # sort by max |r|
+
+    def _rfmt(v):
+        if pd.isna(v): return "—"
+        clr = "#C0392B" if abs(v) >= 0.75 else ("#E07B20" if abs(v) >= 0.5 else "")
+        sign = "+" if v > 0 else ""
+        txt  = f"{sign}{v:.2f}"
+        return f"<span style='color:{clr};font-weight:600'>{txt}</span>" if clr else txt
+
+    TD = "padding:6px 12px;border-bottom:1px solid #2e3d52;color:#b8c8dc"
+    TD_R = f"{TD};text-align:right;font-variant-numeric:tabular-nums"
+    TD_ARROW = "padding:6px 4px;border-bottom:1px solid #2e3d52;color:#4a5a70;text-align:center"
+
+    rows_html = ""
+    for i, (ca, cb, pr, sr, _) in enumerate(pairs):
+        row_bg = "#141e2d" if i % 2 == 0 else "#192336"
+        rows_html += (
+            f"<tr style='background:{row_bg}'>"
+            f"<td style='{TD}'>{ca}</td>"
+            f"<td style='{TD_ARROW}'>↔</td>"
+            f"<td style='{TD}'>{cb}</td>"
+            f"<td style='{TD_R}'>{_rfmt(pr)}</td>"
+            f"<td style='{TD_R}'>{_rfmt(sr)}</td>"
+            f"</tr>"
+        )
+
+    table_html = f"""
+    <details open style='margin:16px 0'>
+      <summary style='font-weight:600;font-size:0.93rem;cursor:pointer;padding:6px 0;
+                      color:#8aa8cc;letter-spacing:0.01em'>
+        Correlated pairs &mdash; {len(pairs)} pair{'s' if len(pairs)!=1 else ''}
+        with |Pearson| or |Spearman| &ge; {THRESHOLD}
+        &nbsp;&middot;&nbsp; sorted by strongest correlation
+      </summary>
+      <div style='overflow-x:auto;margin-top:10px;border-radius:6px;
+                  border:1px solid #2e3d52;overflow:hidden'>
+      <table style='border-collapse:collapse;font-size:0.84rem;width:100%;
+                    max-width:760px;background:#111929'>
+        <thead>
+          <tr style='background:#1d2f45;border-bottom:2px solid #3a5070'>
+            <th style='padding:8px 12px;text-align:left;color:#8aa8cc;
+                       font-weight:600;letter-spacing:0.03em'>Feature / Target A</th>
+            <th style='padding:8px 4px'></th>
+            <th style='padding:8px 12px;text-align:left;color:#8aa8cc;
+                       font-weight:600;letter-spacing:0.03em'>Feature / Target B</th>
+            <th style='padding:8px 12px;text-align:right;color:#8aa8cc;
+                       font-weight:600;letter-spacing:0.03em'>Pearson r</th>
+            <th style='padding:8px 12px;text-align:right;color:#8aa8cc;
+                       font-weight:600;letter-spacing:0.03em'>Spearman r</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+      </div>
+      <p style='font-size:0.77rem;color:#556070;margin:6px 0 0'>
+        <span style='color:#C0392B;font-weight:600'>Red</span> = |r| &ge; 0.75 (strong)
+        &nbsp;&middot;&nbsp;
+        <span style='color:#E07B20;font-weight:600'>Orange</span> = |r| 0.50&ndash;0.74 (moderate)
+      </p>
+    </details>
+    """
+
+    return path, table_html
+
 
 
 # ── Chart 7: Stage removal efficiency ─────────────────────────────────────────
@@ -2059,16 +2169,24 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
 """)
 
     # ── Section 5: Cross-stage heatmap ─────────────────────────────────────────
+    cross_data = data.get("cross_heatmap", (None, ""))
+    cross_img  = cross_data[0] if isinstance(cross_data, tuple) else cross_data
+    cross_tbl  = cross_data[1] if isinstance(cross_data, tuple) else ""
     parts.append(f"""<div class="card" id="s5">
-<h2>5. Cross-stage correlation heatmap</h2>
-<p>All process features vs all eight effluent targets.
-Left panel = Pearson, right panel = Spearman. Rows are sorted by mean |Pearson r|
-across the four grab targets. This gives a single-view summary of which process
-stages and parameters are most associated with effluent quality.</p>
-{img_tag(data.get("cross_heatmap"))}
+<h2>5. Full correlation matrix — features &amp; targets</h2>
+<p>All process features <em>and</em> all eight effluent targets correlated against
+each other. Features below the threshold (|Pearson| and |Spearman| both &lt; 0.5 for
+every pair) are hidden. This reveals both <strong>feature–target signal</strong>
+(which inputs associate with which outputs) and <strong>inter-feature collinearity</strong>
+(which inputs carry redundant information).
+Top = Pearson, Bottom = Spearman.
+Diagonal self-correlations are excluded.</p>
+{img_tag(cross_img)}
+{cross_tbl}
 {_obs(obs.get("s5", ""))}
 </div>
 """)
+
 
     # ── Section 6: Missing data ────────────────────────────────────────────────
     parts.append(f"""<div class="card" id="s6">
@@ -2224,7 +2342,7 @@ def main():
     top_ridge_feats = compute_top_ridge_features(df)
     scatter_paths   = plot_scatter_grids(df, all_mi, top_ridge_feats)
     aeration_ts   = plot_aeration_timeseries(df)
-    cross_heatmap = plot_cross_stage_heatmap(df)
+    cross_heatmap_path, cross_heatmap_tbl = plot_cross_stage_heatmap(df)
     stage_removal = plot_stage_removal(df)
     do_effluent   = plot_do_vs_effluent(df)
     svi_tss       = plot_svi_mlss_vs_tss(df)
@@ -2247,7 +2365,7 @@ def main():
         "mi":           mi_result,
         "scatter":      scatter_paths,
         "aeration_ts":  aeration_ts,
-        "cross_heatmap":cross_heatmap,
+        "cross_heatmap":(cross_heatmap_path, cross_heatmap_tbl),
         "stage_removal":stage_removal,
         "do_effluent":  do_effluent,
         "svi_tss":      svi_tss,
