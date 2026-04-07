@@ -1,14 +1,26 @@
 """
-non_linear_modeling.py — Unified tree-ensemble training across all experiments.
+non_linear_modeling.py — Unified tree-ensemble training with hyperparameter tuning.
 
-Trains Random Forest, Gradient Boosting, and XGBoost with consistent fixed
-hyperparameters across all three experiments and eight targets.
+Trains Random Forest, Gradient Boosting, and XGBoost using the same CV protocol
+as linear_modeling.py (GridSearchCV / TimeSeriesSplit n_splits=3, scored on
+neg_root_mean_squared_error) for a fair apples-to-apples comparison.
 
   Experiment 1          — Inlet features only          (grab + composite)
   Experiment 2 Sub-1    — Secondary features only       (grab + composite)
   Experiment 2 Sub-2    — Inlet + Secondary features    (grab + composite)
 
 Train = 2020–2024 (2020 rows included where available)  |  Test = 2025
+
+Tuned parameters (via cross-validation):
+  RF  — max_depth [4,6,8,None], min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
+  GB  — max_depth [2,3,4,5],    min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
+  XGB — max_depth [2,3,4,5],    min_child_weight [5,10,20],
+         reg_alpha [0,0.1,1],    reg_lambda [0.5,1,5]              RandomizedSearchCV (n_iter=30)
+
+Fixed (architectural / learning-rate schedule):
+  All — n_estimators=300
+  GB/XGB — learning_rate=0.05, subsample=0.8
+  XGB    — colsample_bytree=0.8
 
 Outputs per model (rf / gb / xgb):
   non_linear_modeling/{model}/results.xlsx
@@ -32,6 +44,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -47,22 +60,40 @@ def _sub(stage_dir, name):
 # ── Splits ─────────────────────────────────────────────────────────────────────
 TRAIN_YEARS = [2021, 2022, 2023, 2024]   # base years; 2020 rows appended where present
 TEST_YEAR   = 2025
+TSCV        = TimeSeriesSplit(n_splits=3)   # identical protocol to linear_modeling.py
 
-# ── Hyperparameters — fixed for all three models (fair comparison) ─────────────
-RF_PARAMS = dict(
-    n_estimators=300, max_depth=8, min_samples_leaf=5,
-    max_features="sqrt", random_state=42, n_jobs=-1,
+# ── Fixed architectural hyperparameters ────────────────────────────────────────
+RF_BASE = dict(
+    n_estimators=300, max_features="sqrt", random_state=42,
+    n_jobs=1,           # n_jobs on estimator set to 1; GridSearchCV uses n_jobs=-1
 )
-GB_PARAMS = dict(
-    n_estimators=300, learning_rate=0.05, max_depth=4,
-    subsample=0.8, min_samples_leaf=5, random_state=42,
+GB_BASE = dict(
+    n_estimators=300, learning_rate=0.05,
+    subsample=0.8, random_state=42,
 )
-XGB_PARAMS = dict(
-    n_estimators=300, learning_rate=0.05, max_depth=4,
-    subsample=0.8, colsample_bytree=0.8, min_child_weight=5,
-    reg_alpha=0.1, reg_lambda=1.0, random_state=42,
-    n_jobs=-1, verbosity=0,
+XGB_BASE = dict(
+    n_estimators=300, learning_rate=0.05, subsample=0.8,
+    colsample_bytree=0.8, random_state=42,
+    n_jobs=1, verbosity=0,
 )
+
+# ── Hyperparameter search grids ────────────────────────────────────────────────
+RF_GRID = {
+    "max_depth":        [4, 6, 8, None],
+    "min_samples_leaf": [5, 10, 20],
+}   # 12 combos × 3 CV folds = 36 fits per dataset
+
+GB_GRID = {
+    "max_depth":        [2, 3, 4, 5],
+    "min_samples_leaf": [5, 10, 20],
+}   # 12 combos × 3 CV folds = 36 fits per dataset
+
+XGB_DIST = {
+    "max_depth":        [2, 3, 4, 5],
+    "min_child_weight": [5, 10, 20],
+    "reg_alpha":        [0.0, 0.1, 1.0],
+    "reg_lambda":       [0.5, 1.0, 5.0],
+}   # 108 combos → RandomizedSearchCV n_iter=30
 
 # ── Feature sets ───────────────────────────────────────────────────────────────
 GRAB_INLET = ["Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
@@ -85,89 +116,81 @@ S2P2_COMP = COMP_INLET + SEC_COLS + COMMON
 # (experiment_label, model_name, subset_path, features, target)
 REGISTRY = [
     # Experiment 1 — grab
-    ("Experiment 1",       "stage1_grab_BOD", _sub("stage1","stage1_grab_BOD"),
-     S1_GRAB,   "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 1",       "stage1_grab_COD", _sub("stage1","stage1_grab_COD"),
-     S1_GRAB,   "Effluent COD (mg/L, Grab)"),
-    ("Experiment 1",       "stage1_grab_TSS", _sub("stage1","stage1_grab_TSS"),
-     S1_GRAB,   "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 1",       "stage1_grab_pH",  _sub("stage1","stage1_grab_pH"),
-     S1_GRAB,   "Effluent pH (Grab)"),
+    ("Experiment 1", "stage1_grab_BOD", _sub("stage1", "stage1_grab_BOD"),
+     S1_GRAB, "Effluent BOD (mg/L, Grab)"),
+    ("Experiment 1", "stage1_grab_COD", _sub("stage1", "stage1_grab_COD"),
+     S1_GRAB, "Effluent COD (mg/L, Grab)"),
+    ("Experiment 1", "stage1_grab_TSS", _sub("stage1", "stage1_grab_TSS"),
+     S1_GRAB, "Effluent TSS (mg/L, Grab)"),
+    ("Experiment 1", "stage1_grab_pH",  _sub("stage1", "stage1_grab_pH"),
+     S1_GRAB, "Effluent pH (Grab)"),
     # Experiment 1 — composite
-    ("Experiment 1",       "stage1_comp_BOD", _sub("stage1","stage1_comp_BOD"),
-     S1_COMP,   "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 1",       "stage1_comp_COD", _sub("stage1","stage1_comp_COD"),
-     S1_COMP,   "Effluent COD (mg/L, Composite)"),
-    ("Experiment 1",       "stage1_comp_TSS", _sub("stage1","stage1_comp_TSS"),
-     S1_COMP,   "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 1",       "stage1_comp_pH",  _sub("stage1","stage1_comp_pH"),
-     S1_COMP,   "Effluent pH (Composite)"),
+    ("Experiment 1", "stage1_comp_BOD", _sub("stage1", "stage1_comp_BOD"),
+     S1_COMP, "Effluent BOD (mg/L, Composite)"),
+    ("Experiment 1", "stage1_comp_COD", _sub("stage1", "stage1_comp_COD"),
+     S1_COMP, "Effluent COD (mg/L, Composite)"),
+    ("Experiment 1", "stage1_comp_TSS", _sub("stage1", "stage1_comp_TSS"),
+     S1_COMP, "Effluent TSS (mg/L, Composite)"),
+    ("Experiment 1", "stage1_comp_pH",  _sub("stage1", "stage1_comp_pH"),
+     S1_COMP, "Effluent pH (Composite)"),
     # Experiment 2 Sub-1 — grab
     ("Experiment 2 Sub-1", "stage2_p1_grab_BOD",
-     _sub("stage2_phase1","stage2_p1_grab_BOD"), S2P1, "Effluent BOD (mg/L, Grab)"),
+     _sub("stage2_phase1", "stage2_p1_grab_BOD"), S2P1, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_COD",
-     _sub("stage2_phase1","stage2_p1_grab_COD"), S2P1, "Effluent COD (mg/L, Grab)"),
+     _sub("stage2_phase1", "stage2_p1_grab_COD"), S2P1, "Effluent COD (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_TSS",
-     _sub("stage2_phase1","stage2_p1_grab_TSS"), S2P1, "Effluent TSS (mg/L, Grab)"),
+     _sub("stage2_phase1", "stage2_p1_grab_TSS"), S2P1, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_pH",
-     _sub("stage2_phase1","stage2_p1_grab_pH"),  S2P1, "Effluent pH (Grab)"),
+     _sub("stage2_phase1", "stage2_p1_grab_pH"),  S2P1, "Effluent pH (Grab)"),
     # Experiment 2 Sub-1 — composite
     ("Experiment 2 Sub-1", "stage2_p1_comp_BOD",
-     _sub("stage2_phase1","stage2_p1_comp_BOD"), S2P1, "Effluent BOD (mg/L, Composite)"),
+     _sub("stage2_phase1", "stage2_p1_comp_BOD"), S2P1, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_COD",
-     _sub("stage2_phase1","stage2_p1_comp_COD"), S2P1, "Effluent COD (mg/L, Composite)"),
+     _sub("stage2_phase1", "stage2_p1_comp_COD"), S2P1, "Effluent COD (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_TSS",
-     _sub("stage2_phase1","stage2_p1_comp_TSS"), S2P1, "Effluent TSS (mg/L, Composite)"),
+     _sub("stage2_phase1", "stage2_p1_comp_TSS"), S2P1, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_pH",
-     _sub("stage2_phase1","stage2_p1_comp_pH"),  S2P1, "Effluent pH (Composite)"),
+     _sub("stage2_phase1", "stage2_p1_comp_pH"),  S2P1, "Effluent pH (Composite)"),
     # Experiment 2 Sub-2 — grab
     ("Experiment 2 Sub-2", "stage2_p2_grab_BOD",
-     _sub("stage2_phase2","stage2_p2_grab_BOD"), S2P2_GRAB, "Effluent BOD (mg/L, Grab)"),
+     _sub("stage2_phase2", "stage2_p2_grab_BOD"), S2P2_GRAB, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_COD",
-     _sub("stage2_phase2","stage2_p2_grab_COD"), S2P2_GRAB, "Effluent COD (mg/L, Grab)"),
+     _sub("stage2_phase2", "stage2_p2_grab_COD"), S2P2_GRAB, "Effluent COD (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_TSS",
-     _sub("stage2_phase2","stage2_p2_grab_TSS"), S2P2_GRAB, "Effluent TSS (mg/L, Grab)"),
+     _sub("stage2_phase2", "stage2_p2_grab_TSS"), S2P2_GRAB, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_pH",
-     _sub("stage2_phase2","stage2_p2_grab_pH"),  S2P2_GRAB, "Effluent pH (Grab)"),
+     _sub("stage2_phase2", "stage2_p2_grab_pH"),  S2P2_GRAB, "Effluent pH (Grab)"),
     # Experiment 2 Sub-2 — composite
     ("Experiment 2 Sub-2", "stage2_p2_comp_BOD",
-     _sub("stage2_phase2","stage2_p2_comp_BOD"), S2P2_COMP, "Effluent BOD (mg/L, Composite)"),
+     _sub("stage2_phase2", "stage2_p2_comp_BOD"), S2P2_COMP, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "stage2_p2_comp_COD",
-     _sub("stage2_phase2","stage2_p2_comp_COD"), S2P2_COMP, "Effluent COD (mg/L, Composite)"),
+     _sub("stage2_phase2", "stage2_p2_comp_COD"), S2P2_COMP, "Effluent COD (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "stage2_p2_comp_TSS",
-     _sub("stage2_phase2","stage2_p2_comp_TSS"), S2P2_COMP, "Effluent TSS (mg/L, Composite)"),
+     _sub("stage2_phase2", "stage2_p2_comp_TSS"), S2P2_COMP, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "stage2_p2_comp_pH",
-     _sub("stage2_phase2","stage2_p2_comp_pH"),  S2P2_COMP, "Effluent pH (Composite)"),
+     _sub("stage2_phase2", "stage2_p2_comp_pH"),  S2P2_COMP, "Effluent pH (Composite)"),
 ]
 
-# ── Year colours (consistent across project) ───────────────────────────────────
-YEAR_COLOURS = {2021:"#2171B5", 2022:"#74C476", 2023:"#238B45",
-                2024:"#FD8D3C", 2025:"#D94801"}
-
+# ── Year / model colours ───────────────────────────────────────────────────────
+YEAR_COLOURS = {2020: "#6BAED6", 2021: "#2171B5", 2022: "#74C476",
+                2023: "#238B45", 2024: "#FD8D3C", 2025: "#D94801"}
 MODEL_COLOURS = {"RF": "#2171B5", "GB": "#238B45", "XGB": "#D94801"}
 
 # ── Metric helpers ─────────────────────────────────────────────────────────────
-
 def _rmse(yt, yp): return float(np.sqrt(mean_squared_error(yt, yp)))
 def _mae(yt, yp):  return float(mean_absolute_error(yt, yp))
 def _r2(yt, yp):   return float(r2_score(yt, yp))
 
-def _run_number(model_dir: str, prefix: str) -> int:
-    """Next run number based on existing results.xlsx entries."""
+def _run_number(model_dir: str) -> int:
     rfile = os.path.join(model_dir, "results.xlsx")
     if not os.path.exists(rfile):
         return 1
-    df = pd.read_excel(rfile, nrows=0)
-    run_col = [c for c in df.columns if c == "run"]
-    if not run_col:
-        return 1
-    df_full = pd.read_excel(rfile)
-    return int(df_full["run"].max()) + 1
+    df = pd.read_excel(rfile)
+    return int(df["run"].max()) + 1 if "run" in df.columns else 1
 
 # ── Plotting ───────────────────────────────────────────────────────────────────
 
-def _plot_scatter(plots_dir, name, model_tag, run,
-                  test_df, y_test, y_pred, target):
+def _plot_scatter(plots_dir, name, model_tag, run, test_df, y_test, y_pred, target):
     fig, ax = plt.subplots(figsize=(6, 5))
     for yr in sorted(test_df["year"].unique()):
         m = test_df["year"].values == yr
@@ -178,7 +201,7 @@ def _plot_scatter(plots_dir, name, model_tag, run,
     hi = max(y_test.max(), y_pred.max())
     ax.plot([lo, hi], [lo, hi], "k--", linewidth=1)
     ax.set_xlabel(f"Actual {target}", fontsize=10)
-    ax.set_ylabel(f"Predicted", fontsize=10)
+    ax.set_ylabel("Predicted", fontsize=10)
     ax.set_title(f"{model_tag} | {name}\nTest scatter (run {run})", fontsize=10)
     ax.legend(title="Year", fontsize=8)
     plt.tight_layout()
@@ -187,8 +210,7 @@ def _plot_scatter(plots_dir, name, model_tag, run,
     return path
 
 
-def _plot_timeseries(plots_dir, name, model_tag, run,
-                     df_all, features, model, target):
+def _plot_timeseries(plots_dir, name, model_tag, run, df_all, features, model, target):
     df_plot = df_all.sort_values("Date").copy()
     df_plot["_pred"] = model.predict(df_plot[features].values)
     fig, ax = plt.subplots(figsize=(13, 3.5))
@@ -216,7 +238,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS[model_tag], edgecolor="white")
     ax.set_xlabel("Feature importance (impurity)", fontsize=9)
-    ax.set_title(f"{model_tag} | {name}\nFeature importance (run {run})", fontsize=10)
+    ax.set_title(f"{model_tag} | {name}\nFeature importance — best-CV model (run {run})", fontsize=10)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
@@ -225,8 +247,12 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
 # ── Core training loop ─────────────────────────────────────────────────────────
 
 def train_one(experiment, name, subset_path, features, target,
-              model_tag, estimator, run, model_dir):
-    """Train one (model, dataset) combination. Return metrics dict + plot paths."""
+              model_tag, search_factory, run, model_dir):
+    """
+    Train one (model, dataset) combination using a GridSearchCV /
+    RandomizedSearchCV factory. Fits the search, extracts best_estimator_,
+    records CV RMSE and best hyperparameters. Returns metrics dict + plot paths.
+    """
     df = pd.read_excel(subset_path, parse_dates=["Date"])
 
     train = df[df["year"].isin(TRAIN_YEARS)].copy()
@@ -234,7 +260,7 @@ def train_one(experiment, name, subset_path, features, target,
     if len(extra) > 0:
         train = pd.concat([extra, train]).drop_duplicates()
 
-    test  = df[df["year"] == TEST_YEAR]
+    test = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
         print(f"    SKIP — no test rows for {TEST_YEAR}")
         return None, None
@@ -242,11 +268,18 @@ def train_one(experiment, name, subset_path, features, target,
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    Train {len(train):4d}  Test {len(test):3d}")
-    estimator.fit(X_tr, y_tr)
+    print(f"    n_train={len(train)} n_test={len(test)} — tuning...", end="", flush=True)
 
-    tr_pred = estimator.predict(X_tr)
-    te_pred = estimator.predict(X_te)
+    # ── Hyperparameter search ─────────────────────────────────────────────────
+    search = search_factory()
+    search.fit(X_tr, y_tr)
+    best     = search.best_estimator_
+    cv_rmse  = float(-search.best_score_)
+    best_p   = search.best_params_
+    print(f"  CV_RMSE={cv_rmse:.3f}  best={best_p}")
+
+    tr_pred = best.predict(X_tr)
+    te_pred = best.predict(X_te)
 
     row = {
         "experiment":  experiment,
@@ -256,6 +289,7 @@ def train_one(experiment, name, subset_path, features, target,
         "target":      target,
         "n_train":     len(train),
         "n_test":      len(test),
+        "CV_RMSE":     round(cv_rmse, 4),
         "R2_train":    round(_r2(y_tr, tr_pred),  4),
         "RMSE_train":  round(_rmse(y_tr, tr_pred), 4),
         "MAE_train":   round(_mae(y_tr,  tr_pred), 4),
@@ -263,53 +297,53 @@ def train_one(experiment, name, subset_path, features, target,
         "RMSE_test":   round(_rmse(y_te, te_pred), 4),
         "MAE_test":    round(_mae(y_te,  te_pred), 4),
         "R2_gap":      round(_r2(y_tr, tr_pred) - _r2(y_te, te_pred), 4),
+        "best_params": str(best_p),
     }
 
-    # Save model
+    # ── Save best estimator ───────────────────────────────────────────────────
     plots_dir  = os.path.join(model_dir, "plots")
     models_dir = os.path.join(model_dir, "models")
     pkl_path   = os.path.join(models_dir, f"{name}_{model_tag}_run_{run}.pkl")
-    joblib.dump(estimator, pkl_path)
+    joblib.dump(best, pkl_path)
 
-    # Plots
+    # ── Plots ─────────────────────────────────────────────────────────────────
     plots = {
         "scatter":    _plot_scatter(plots_dir, name, model_tag, run,
                                     test, y_te, te_pred, target),
         "timeseries": _plot_timeseries(plots_dir, name, model_tag, run,
-                                       df, features, estimator, target),
+                                       df, features, best, target),
         "importance": _plot_importance(plots_dir, name, model_tag, run,
-                                       estimator, features),
+                                       best, features),
     }
 
-    # Append prediction column to subset file
+    # ── Append predictions to subset file ─────────────────────────────────────
     df_sub = pd.read_excel(subset_path)
     col    = f"predicted_{model_tag}_NL_run_{run}"
-    df_sub[col] = estimator.predict(df_sub[features].values).round(3)
+    df_sub[col] = best.predict(df_sub[features].values).round(3)
     df_sub.to_excel(subset_path, index=False)
 
     return row, plots
 
 
-def run_model(model_tag, estimator_cls, params):
+def run_model(model_tag, search_factory):
     model_dir  = os.path.join(SCRIPT_DIR, model_tag.lower())
     results_fp = os.path.join(model_dir, "results.xlsx")
-    run        = _run_number(model_dir, model_tag)
+    run        = _run_number(model_dir)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} — run {run}")
+    print(f"  {model_tag} — run {run}  (tuned via GridSearchCV / TimeSeriesSplit n=3)")
     print(f"{'='*65}")
 
     all_rows  = []
-    all_plots = {}   # name → {scatter, timeseries, importance}
+    all_plots = {}
 
     for experiment, name, subset_path, features, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
             print(f"    SKIP — file not found: {subset_path}"); continue
 
-        estimator = estimator_cls(**params)
         row, plots = train_one(experiment, name, subset_path, features, target,
-                               model_tag, estimator, run, model_dir)
+                               model_tag, search_factory, run, model_dir)
         if row is None:
             continue
         all_rows.append(row)
@@ -332,18 +366,30 @@ def run_model(model_tag, estimator_cls, params):
 
 def main():
     models = [
-        ("RF",  RandomForestRegressor,    RF_PARAMS),
-        ("GB",  GradientBoostingRegressor, GB_PARAMS),
-        ("XGB", XGBRegressor,              XGB_PARAMS),
+        ("RF",  lambda: GridSearchCV(
+            RandomForestRegressor(**RF_BASE), RF_GRID,
+            scoring="neg_root_mean_squared_error",
+            cv=TSCV, n_jobs=-1, refit=True,
+        )),
+        ("GB",  lambda: GridSearchCV(
+            GradientBoostingRegressor(**GB_BASE), GB_GRID,
+            scoring="neg_root_mean_squared_error",
+            cv=TSCV, n_jobs=-1, refit=True,
+        )),
+        ("XGB", lambda: RandomizedSearchCV(
+            XGBRegressor(**XGB_BASE), XGB_DIST,
+            n_iter=30, scoring="neg_root_mean_squared_error",
+            cv=TSCV, n_jobs=-1, refit=True, random_state=42,
+        )),
     ]
 
     summary = {}
-    for tag, cls, params in models:
-        rows, plots, run = run_model(tag, cls, params)
+    for tag, factory in models:
+        rows, plots, run = run_model(tag, factory)
         summary[tag] = {"rows": rows, "plots": plots, "run": run}
 
     print("\n" + "="*65)
-    print("  All models complete.")
+    print("  All models complete (tuned).")
     print(f"  Results in: {SCRIPT_DIR}/{{rf,gb,xgb}}/results.xlsx")
     print("="*65)
 
