@@ -744,11 +744,12 @@ def build_html(df: pd.DataFrame, run: int) -> str:
                 border-radius:8px;font-size:0.88rem;color:var(--text)">
       <strong>Purpose:</strong> Compare three tree-ensemble models — Random Forest (RF),
       Gradient Boosting (GB), and XGBoost (XGB) — across Experiments 1 and 2 using
-      <strong>identical, fixed hyperparameters</strong>. No hyperparameter tuning is
-      performed here; all three models use the same number of estimators (300),
-      learning rate (GB/XGB: 0.05), max depth, and regularisation settings.
-      This ensures a fair comparison of model <em>architecture</em> rather than
-      tuning effort.<br><br>
+      <strong>tuned hyperparameters</strong> on feature-selected (Core + Useful) subsets.
+      RF and GB are tuned via <code>GridSearchCV</code> (12 combos); XGB via
+      <code>RandomizedSearchCV</code> (n_iter=30). All use <code>TimeSeriesSplit(n_splits=3)</code>
+      scored on neg-RMSE — the same CV protocol as the linear models and the baseline
+      non-linear run, ensuring a fair apples-to-apples comparison. Fixed across all models:
+      n_estimators=300, learning_rate=0.05 (GB/XGB), subsample=0.8.<br><br>
       <strong>Feature importance note:</strong> All three models use impurity-based
       (Gini/variance) importance, which can overstate importance of high-cardinality
       or continuous features. Treat as directional, not definitive — use permutation
