@@ -287,79 +287,42 @@ def make_bar_chart(sub_target: pd.DataFrame, title: str, fname: str) -> str:
 CORE_THRESH   = 0.08
 USEFUL_THRESH = 0.03
 
-def build_recommendation(sub: pd.DataFrame) -> pd.DataFrame:
-    """
-    For each feature in the experiment variant, compute mean normalised
-    perm importance across all targets. Classify Core / Useful / Weak.
-    """
-    agg = (sub.groupby("feature")
-              .agg(
-                  feat_short    = ("feat_short",    "first"),
-                  is_temporal   = ("is_temporal",   "first"),
-                  mean_perm_norm= ("perm_imp_norm", "mean"),
-                  max_perm_norm = ("perm_imp_norm", "max"),
-                  mean_mi       = ("mi_score",      "mean"),
-                  mean_abs_pearson = ("pearson_r",  lambda x: x.abs().mean()),
-                  mean_abs_spearman= ("spearman_r", lambda x: x.abs().mean()),
-              )
-              .reset_index()
-              .sort_values("mean_perm_norm", ascending=False))
-
-    def _tier(row):
-        v = row["mean_perm_norm"]
-        if v >= CORE_THRESH:   return "Core ✓"
-        if v >= USEFUL_THRESH: return "Useful"
-        return "Weak ✗"
-
-    agg["recommendation"] = agg.apply(_tier, axis=1)
-    return agg
+def _tier_single(v: float) -> tuple[str, str]:
+    """Return (label, css_class) for a single normalised perm-imp value."""
+    if v >= CORE_THRESH:   return "Core ✓",  "tier-core"
+    if v >= USEFUL_THRESH: return "Useful",   "tier-useful"
+    return "Weak ✗",  "tier-weak"
 
 # ── HTML helpers ──────────────────────────────────────────────────────────────
 
-def _rec_table(rec: pd.DataFrame) -> str:
+
+
+def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str:
+    sub_s = sub_target.sort_values("perm_imp_norm", ascending=False)
+
+    # Build per-target recommendation summary line
+    core_f   = [r["feat_short"] for _, r in sub_s.iterrows() if r["perm_imp_norm"] >= CORE_THRESH]
+    useful_f = [r["feat_short"] for _, r in sub_s.iterrows() if USEFUL_THRESH <= r["perm_imp_norm"] < CORE_THRESH]
+    weak_f   = [r["feat_short"] for _, r in sub_s.iterrows() if r["perm_imp_norm"] < USEFUL_THRESH]
+    rec_line = (
+        f"<span class='tier-core'>Core ({len(core_f)}): {', '.join(core_f) or '—'}</span> &nbsp;|&nbsp; "
+        f"<span class='tier-useful'>Useful ({len(useful_f)})</span> &nbsp;|&nbsp; "
+        f"<span class='tier-weak'>Weak ({len(weak_f)}): {', '.join(weak_f) or '—'}</span>"
+    )
+
     rows = ""
-    for _, r in rec.iterrows():
-        tier = r["recommendation"]
-        cls  = "tier-core" if "Core" in tier else ("tier-useful" if "Useful" in tier else "tier-weak")
+    for _, r in sub_s.iterrows():
+        tier, tcls = _tier_single(r["perm_imp_norm"])
         temp = " 🕐" if r["is_temporal"] else ""
         rows += f"""<tr>
           <td class='left'>{r['feat_short']}{temp}</td>
-          <td class='num'>{r['mean_perm_norm']:.4f}</td>
-          <td class='num'>{r['max_perm_norm']:.4f}</td>
-          <td class='num'>{r['mean_mi']:.4f}</td>
-          <td class='num'>{r['mean_abs_pearson']:.3f}</td>
-          <td class='num'>{r['mean_abs_spearman']:.3f}</td>
-          <td class='{cls}'>{tier}</td>
-        </tr>"""
-    return f"""
-    <table class="metric-table">
-      <thead>
-        <tr>
-          <th class='left'>Feature <span style='font-weight:400;font-size:0.78rem'>🕐 = temporal</span></th>
-          <th>Mean Norm<br>Perm Imp</th>
-          <th>Max Norm<br>Perm Imp</th>
-          <th>Mean MI</th>
-          <th>Mean |Pearson r|</th>
-          <th>Mean |Spearman ρ|</th>
-          <th>Recommendation</th>
-        </tr>
-      </thead>
-      <tbody>{rows}</tbody>
-    </table>"""
-
-def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str:
-    ts = _tgt_short(target)
-    sub_s = sub_target.sort_values("perm_imp_norm", ascending=False)
-    rows = ""
-    for _, r in sub_s.iterrows():
-        rows += f"""<tr>
-          <td class='left'>{r['feat_short']}</td>
           <td class='num'>{r['perm_imp_norm']:.4f}</td>
           <td class='num'>{r['perm_imp_mean']:.6f} ± {r['perm_imp_std']:.6f}</td>
           <td class='num'>{r['impurity_imp']:.4f}</td>
           <td class='num'>{r['mi_score']:.4f}</td>
           <td class='num {"pos" if r["pearson_r"] >= 0 else "neg"}'>{r['pearson_r']:+.3f}</td>
           <td class='num {"pos" if r["spearman_r"] >= 0 else "neg"}'>{r['spearman_r']:+.3f}</td>
+          <td class='{tcls}'>{tier}</td>
         </tr>"""
 
     img = f'<img src="{_b64(bar_path)}" alt="bar">' if bar_path and os.path.exists(bar_path) else ""
@@ -367,17 +330,21 @@ def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str
     <details>
       <summary>{target}</summary>
       <div class="details-body">
+        <div class="obs" style="padding:8px 14px;margin-bottom:10px;font-size:0.85rem">
+          {rec_line}
+        </div>
         <div class="plot-box" style="max-width:680px;margin-bottom:12px">{img}</div>
         <table class="metric-table">
           <thead>
             <tr>
-              <th class='left'>Feature</th>
+              <th class='left'>Feature <span style='font-weight:400;font-size:0.76rem'>🕐 = temporal</span></th>
               <th>Norm Perm Imp</th>
               <th>Raw Perm Imp (mean ± std)</th>
               <th>Impurity Imp</th>
               <th>MI Score</th>
               <th>Pearson r</th>
               <th>Spearman ρ</th>
+              <th>Recommendation</th>
             </tr>
           </thead>
           <tbody>{rows}</tbody>
@@ -387,23 +354,14 @@ def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str
 
 def _variant_section(exp: str, variant: str, sub: pd.DataFrame,
                      heatmap_path: str, bar_paths: dict) -> str:
-    rec = build_recommendation(sub)
-    n_core   = (rec["recommendation"].str.contains("Core")).sum()
-    n_useful = (rec["recommendation"] == "Useful").sum()
-    n_weak   = (rec["recommendation"] == "Weak ✗").sum()
-    n_feat   = len(rec)
-
-    core_names   = ", ".join(rec[rec["recommendation"].str.contains("Core")]["feat_short"].tolist())
-    weak_names   = ", ".join(rec[rec["recommendation"] == "Weak ✗"]["feat_short"].tolist())
-
+    n_feat = sub["feature"].nunique()
     obs = f"""
     <strong>Feature set:</strong> {n_feat} features &nbsp;|&nbsp;
-    <strong style='color:#5BAD6F'>Core ({n_core}):</strong> {core_names or "—"} &nbsp;|&nbsp;
-    <strong style='color:#F0B849'>Useful ({n_useful})</strong> &nbsp;|&nbsp;
-    <strong style='color:#E15252'>Weak ({n_weak}):</strong> {weak_names or "—"}.
-    <br>
-    Temporal features (month, day_of_week, year) are highlighted 🕐 — their importance
-    reflects seasonality in the data, not a causal process variable.
+    Thresholds: <span class='tier-core'>Core ✓</span> norm perm imp ≥ {CORE_THRESH} &nbsp;|&nbsp;
+    <span class='tier-useful'>Useful</span> ≥ {USEFUL_THRESH} &nbsp;|&nbsp;
+    <span class='tier-weak'>Weak ✗</span> &lt; {USEFUL_THRESH}.<br>
+    Recommendations are shown per target below. Temporal features 🕐 (month, day_of_week, year)
+    reflect seasonality — not a process-controllable variable.
     """
 
     hm_img = f'<img src="{_b64(heatmap_path)}" alt="heatmap">' if heatmap_path and os.path.exists(heatmap_path) else ""
@@ -429,15 +387,11 @@ def _variant_section(exp: str, variant: str, sub: pd.DataFrame,
       </p>
       <div class="plot-box wide" style="max-width:900px">{hm_img}</div>
 
-      <h3>Recommendation Summary</h3>
-      <p style="font-size:0.8rem;color:var(--text-meta);margin:0 0 8px">
-        Thresholds — <span class='tier-core'>Core ✓</span>: mean norm perm imp ≥ {CORE_THRESH} &nbsp;|&nbsp;
-        <span class='tier-useful'>Useful</span>: ≥ {USEFUL_THRESH} &nbsp;|&nbsp;
-        <span class='tier-weak'>Weak ✗</span>: &lt; {USEFUL_THRESH}
+      <h3>Per-Target Recommendations &amp; Detail</h3>
+      <p style="font-size:0.8rem;color:var(--text-meta);margin:0 0 10px">
+        Each section shows the Core / Useful / Weak classification for that specific target,
+        alongside the full ranked metric table. Click to expand.
       </p>
-      {_rec_table(rec)}
-
-      <h3>Per-Target Detail</h3>
       {targets_html}
     </div>"""
 
