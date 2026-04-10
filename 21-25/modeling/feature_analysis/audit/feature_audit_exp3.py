@@ -44,7 +44,7 @@ from sklearn.feature_selection import mutual_info_regression
 
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
 BASE_DIR     = os.path.dirname(MODELING_DIR)
 DATA_FILE    = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")

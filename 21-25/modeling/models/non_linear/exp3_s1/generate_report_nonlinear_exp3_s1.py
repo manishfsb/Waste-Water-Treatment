@@ -33,7 +33,7 @@ import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
 RF_DIR   = os.path.join(SCRIPT_DIR, "rf")
 GB_DIR   = os.path.join(SCRIPT_DIR, "gb")
@@ -49,14 +49,10 @@ XGB_COLOR = "#D94801"
 MODELS    = ["RF", "GB", "XGB"]
 
 EXPERIMENT_LABELS = {
-    "Experiment 1":       "Experiment 1 — Inlet Features Only",
-    "Experiment 2 Sub-1": "Experiment 2 Sub-1 — Secondary Features Only",
-    "Experiment 2 Sub-2": "Experiment 2 Sub-2 — Inlet + Secondary Features",
+    "Experiment 3 Sub-1": "Experiment 3 Sub-1 — Exp2 Sub-2 Baseline + ADD-tier Features",
 }
 EXPERIMENT_NFEAT = {
-    "Experiment 1": 9,
-    "Experiment 2 Sub-1": 15,
-    "Experiment 2 Sub-2": 19,
+    "Experiment 3 Sub-1": "16–22",
 }
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
@@ -642,7 +638,7 @@ def _top_summary_cards(df: pd.DataFrame, run: int) -> str:
       <div class="stat-card">
         <div class="label">Datasets evaluated</div>
         <div class="value">{n_ds}</div>
-        <div class="sub">3 experiments × 8 targets</div>
+        <div class="sub">8 datasets</div>
       </div>
       <div class="stat-card" style="border-top-color:#F0B849">
         <div class="label">Best on Grab Effluents</div>
@@ -685,7 +681,7 @@ def _top_summary_cards(df: pd.DataFrame, run: int) -> str:
 
 def _cross_exp_table(df: pd.DataFrame) -> str:
     rows_html = ""
-    for exp in ["Experiment 1", "Experiment 2 Sub-1", "Experiment 2 Sub-2"]:
+    for exp in ["Experiment 3 Sub-1"]:
         grp = df[df["experiment"] == exp]
         if grp.empty:
             continue
@@ -733,7 +729,7 @@ def build_html(df: pd.DataFrame, run: int) -> str:
     """
 
     exp_sections = ""
-    for exp in ["Experiment 1", "Experiment 2 Sub-1", "Experiment 2 Sub-2"]:
+    for exp in ["Experiment 3 Sub-1"]:
         sub = df[df["experiment"] == exp].copy()
         if sub.empty:
             continue

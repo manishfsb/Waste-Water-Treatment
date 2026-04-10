@@ -24,7 +24,7 @@ import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
 

@@ -49,13 +49,17 @@ from xgboost import XGBRegressor
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
+
+_STAGE_DIRS = {
+    "experiment1":    os.path.join("datasets", "experiment1"),
+    "experiment2_s1": os.path.join("datasets", "experiment2", "sub_exp1"),
+    "experiment2_s2": os.path.join("datasets", "experiment2", "sub_exp2"),
+}
 
 def _sub(stage_dir, name):
     """Resolve path to an existing subset Excel file."""
-    if stage_dir == "experiment1":
-        return os.path.join(MODELING_DIR, "experiment1", f"{name}.xlsx")
-    return os.path.join(MODELING_DIR, stage_dir, "data", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, _STAGE_DIRS[stage_dir], f"{name}.xlsx")
 
 # ── Splits ─────────────────────────────────────────────────────────────────────
 TRAIN_YEARS = [2021, 2022, 2023, 2024]   # base years; 2020 rows appended where present

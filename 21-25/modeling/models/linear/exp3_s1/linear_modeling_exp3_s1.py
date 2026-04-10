@@ -30,7 +30,7 @@ import joblib
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
@@ -63,7 +63,7 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _e3s1(name):
-    return os.path.join(MODELING_DIR, "experiment3_s1", "data", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1", f"{name}.xlsx")
 
 
 # (experiment_label, dataset_id, file_path, target)

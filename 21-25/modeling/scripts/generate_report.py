@@ -19,11 +19,13 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+_SCRIPT_DIR = _os.path.dirname(_os.path.abspath(__file__))
+_sys.path.insert(0, _os.path.dirname(_SCRIPT_DIR))   # adds modeling/ so report_theme is importable
 from report_theme import dark_mode_css, DARK_MODE_JS
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+MODELING_DIR = os.path.dirname(BASE_DIR)
 DATA_DIR     = os.path.join(BASE_DIR, "data")
 MODELS_DIR   = os.path.join(BASE_DIR, "models")
 RESULTS_FILE = os.path.join(BASE_DIR, "results.xlsx")
@@ -416,7 +418,7 @@ def main():
     run = get_latest_run()
     print(f"Generating report for run {run}...")
     html = build_report(run)
-    out_path = os.path.join(BASE_DIR, f"report_stage1_run_{run}.html")
+    out_path = os.path.join(MODELING_DIR, "reports", f"report_stage1_run_{run}.html")
     with open(out_path, "w") as f:
         f.write(html)
     print(f"Report saved → {out_path}")

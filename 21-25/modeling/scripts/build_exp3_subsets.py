@@ -24,13 +24,13 @@ import pandas as pd
 
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR     = os.path.dirname(SCRIPT_DIR)
-DATA_FILE    = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
-AUDIT_FILE   = os.path.join(SCRIPT_DIR, "feature_audit_exp3", "feature_audit.xlsx")
-EXP2S2_GRAB  = os.path.join(SCRIPT_DIR, "experiment2_s2",  "data")  # row-count reference
+MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "All_Years_Full.xlsx")
+AUDIT_FILE   = os.path.join(MODELING_DIR, "feature_analysis", "audit", "feature_audit.xlsx")
+EXP2S2_GRAB  = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2")  # row-count reference
 EXP2S2_COMP  = EXP2S2_GRAB
-S1_DIR       = os.path.join(SCRIPT_DIR, "experiment3_s1", "data")
-S2_DIR       = os.path.join(SCRIPT_DIR, "experiment3_s2", "data")
+S1_DIR       = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1")
+S2_DIR       = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2")
 
 os.makedirs(S1_DIR, exist_ok=True)
 os.makedirs(S2_DIR, exist_ok=True)

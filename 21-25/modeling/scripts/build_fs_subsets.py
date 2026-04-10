@@ -23,17 +23,18 @@ import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-DATA_FILE    = os.path.join(os.path.dirname(SCRIPT_DIR), "All_Years_Full.xlsx")
-FI_FILE      = os.path.join(SCRIPT_DIR, "feature_selection", "feature_importance.xlsx")
+MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "All_Years_Full.xlsx")
+FI_FILE      = os.path.join(MODELING_DIR, "feature_analysis", "selection", "feature_importance.xlsx")
 
-EXP1_FS_DIR   = os.path.join(SCRIPT_DIR, "experiment1_fs")
-EXP2S1_FS_DIR = os.path.join(SCRIPT_DIR, "experiment2_s1_fs", "data")
-EXP2S2_FS_DIR = os.path.join(SCRIPT_DIR, "experiment2_s2_fs", "data")
+EXP1_FS_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1", "feature_selected_datasets")
+EXP2S1_FS_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1", "feature_selected_datasets")
+EXP2S2_FS_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2", "feature_selected_datasets")
 
 # Baseline subset dirs (for row-count comparison)
-EXP1_BASE_DIR   = os.path.join(SCRIPT_DIR, "experiment1")
-EXP2S1_BASE_DIR = os.path.join(SCRIPT_DIR, "experiment2_s1", "data")
-EXP2S2_BASE_DIR = os.path.join(SCRIPT_DIR, "experiment2_s2", "data")
+EXP1_BASE_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1")
+EXP2S1_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1")
+EXP2S2_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2")
 
 # ── Feature selection threshold ────────────────────────────────────────────────
 FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03–0.07); drop Weak (< 0.03)

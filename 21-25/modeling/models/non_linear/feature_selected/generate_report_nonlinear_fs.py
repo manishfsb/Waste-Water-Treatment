@@ -33,7 +33,7 @@ import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
 RF_DIR   = os.path.join(SCRIPT_DIR, "rf")
 GB_DIR   = os.path.join(SCRIPT_DIR, "gb")

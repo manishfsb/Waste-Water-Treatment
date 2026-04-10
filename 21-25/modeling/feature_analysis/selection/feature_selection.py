@@ -39,8 +39,8 @@ from sklearn.feature_selection import mutual_info_regression
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
-RF_MODELS    = os.path.join(MODELING_DIR, "non_linear_modeling_baseline", "rf", "models")
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
+RF_MODELS    = os.path.join(MODELING_DIR, "models", "non_linear", "baseline", "rf", "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
 
 sys.path.insert(0, MODELING_DIR)
@@ -66,10 +66,14 @@ S2P2_COMP = COMP_INLET + SEC_COLS + COMMON
 
 TRAIN_YEARS = [2021, 2022, 2023, 2024]
 
+_STAGE_DIRS = {
+    "experiment1":    os.path.join("datasets", "experiment1"),
+    "experiment2_s1": os.path.join("datasets", "experiment2", "sub_exp1"),
+    "experiment2_s2": os.path.join("datasets", "experiment2", "sub_exp2"),
+}
+
 def _sub(stage_dir, name):
-    if stage_dir == "experiment1":
-        return os.path.join(MODELING_DIR, "experiment1", f"{name}.xlsx")
-    return os.path.join(MODELING_DIR, stage_dir, "data", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, _STAGE_DIRS[stage_dir], f"{name}.xlsx")
 
 # ── Registry ──────────────────────────────────────────────────────────────────
 # (exp_label, variant_label, model_name, subset_path, features, target)

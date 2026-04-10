@@ -34,10 +34,11 @@ import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-LIN_DIR      = os.path.join(SCRIPT_DIR, "linear_modeling_baseline")
-NL_DIR       = os.path.join(SCRIPT_DIR, "non_linear_modeling_baseline")
+MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+LIN_DIR      = os.path.join(MODELING_DIR, "models", "linear", "baseline")
+NL_DIR       = os.path.join(MODELING_DIR, "models", "non_linear", "baseline")
 
-sys.path.insert(0, SCRIPT_DIR)
+sys.path.insert(0, MODELING_DIR)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 # ── Design tokens ──────────────────────────────────────────────────────────────
@@ -824,7 +825,7 @@ def main():
     print("Building HTML report...")
     html = build_html(df, run)
 
-    out_path = os.path.join(SCRIPT_DIR, f"report_comparison_baseline_run_{run}.html")
+    out_path = os.path.join(MODELING_DIR, "reports", f"report_comparison_baseline_run_{run}.html")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"\nReport → {out_path}")

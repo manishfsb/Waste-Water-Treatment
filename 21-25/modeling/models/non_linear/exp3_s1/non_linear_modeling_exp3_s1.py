@@ -29,10 +29,10 @@ from xgboost import XGBRegressor
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
 def _e3s1(name):
-    return os.path.join(MODELING_DIR, "experiment3_s1", "data", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1", f"{name}.xlsx")
 
 # ── Splits ─────────────────────────────────────────────────────────────────────
 TRAIN_YEARS = [2021, 2022, 2023, 2024]

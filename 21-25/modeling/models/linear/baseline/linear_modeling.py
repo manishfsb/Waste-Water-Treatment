@@ -38,7 +38,7 @@ import joblib
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
@@ -81,16 +81,16 @@ EXP2S2_C   = COMP_INLET + SEC_COLS + COMMON  # 19 features
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _s1(name):
-    """Experiment 1 files: modeling/experiment1/<name>.xlsx  (no data/ subdir)"""
-    return os.path.join(MODELING_DIR, "experiment1", f"{name}.xlsx")
+    """Experiment 1 files: datasets/experiment1/<name>.xlsx"""
+    return os.path.join(MODELING_DIR, "datasets", "experiment1", f"{name}.xlsx")
 
 def _s2a(name):
-    """Experiment 2 Sub-1: modeling/experiment2_s1/data/<name>.xlsx"""
-    return os.path.join(MODELING_DIR, "experiment2_s1", "data", f"{name}.xlsx")
+    """Experiment 2 Sub-1: datasets/experiment2/sub_exp1/<name>.xlsx"""
+    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1", f"{name}.xlsx")
 
 def _s2b(name):
-    """Experiment 2 Sub-2: modeling/experiment2_s2/data/<name>.xlsx"""
-    return os.path.join(MODELING_DIR, "experiment2_s2", "data", f"{name}.xlsx")
+    """Experiment 2 Sub-2: datasets/experiment2/sub_exp2/<name>.xlsx"""
+    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2", f"{name}.xlsx")
 
 
 # (experiment_label, dataset_id, file_path, features, target)
