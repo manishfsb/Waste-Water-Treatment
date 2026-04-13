@@ -212,11 +212,25 @@ EXP_INTRO = {
         "linear models."
     ),
     "Phase9": (
-        "Phase 9 evaluates advanced model architectures on the best feature set "
-        "(Exp3-S2). Three approaches are tested: an <strong>ANN</strong> "
-        "(MLPRegressor), a <strong>Voting ensemble</strong> averaging RF+Ridge+ElNet, "
-        "and a <strong>Stacking ensemble</strong> using a Ridge meta-learner. "
-        "The goal is to exceed the best single-model results from Exp3-S2."
+        "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
+        "which was selected as the richest validated set because it yielded the highest average "
+        "Test R² across all six baseline models among all prior experiments — ElNet reached "
+        "Test R²=0.684 (Grab BOD) and RF reached 0.504 (Grab TSS), both new records. "
+        "Despite GB/XGB overfitting on composite targets, the regularised models (ElNet, Ridge, RF) "
+        "all benefited from the expanded CONSIDER-tier features, making Exp3-S2 the best "
+        "starting point for advanced architectures."
+        "<br><br>"
+        "Three architectures are tested: "
+        "<strong>ANN</strong> (MLPRegressor, to test whether a neural network can outperform "
+        "regularised models on ~470 training samples); "
+        "<strong>Voting ensemble</strong> (RF + Ridge + ElNet, equal-weight averaging) — the three "
+        "models were chosen because they represent <em>complementary prediction styles</em>: "
+        "RF captures non-linear interactions and is robust to outliers; Ridge provides a "
+        "stable, collinearity-resistant linear fit; ElNet performs implicit feature selection "
+        "via L1 regularisation. Their prediction errors are largely uncorrelated, so averaging "
+        "reduces variance without amplifying bias; "
+        "<strong>Stacking ensemble</strong> (same three base learners → Ridge meta-learner) "
+        "learns target-specific weights instead of using equal averages."
     ),
     "Phase10": (
         "Phase 10 applies <strong>feature engineering</strong> (log transforms, "
@@ -527,9 +541,10 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
             gap = msub["R2_gap"].values[0]
             rmse = msub["RMSE_test"].values[0]
             is_best = (not np.isnan(r2)) and (not np.isnan(best_r2)) and abs(r2 - best_r2) < 1e-9
-            bold = "font-weight:bold;text-decoration:underline;" if is_best else ""
+            cell_bg = "background:rgba(74,144,217,0.20);font-weight:bold;" if is_best else ""
             cells += (
-                f'<td style="color:{_r2_color(r2)};{bold}">{_fmt(r2)}</td>'
+                f'<td style="color:{_r2_color(r2)};{cell_bg}">'
+                f'{"★ " if is_best else ""}{_fmt(r2)}</td>'
                 f'<td class="{_gap_cls(gap)}">{_fmt(gap)}</td>'
                 f'<td>{_fmt(rmse)}</td>'
             )
@@ -537,16 +552,19 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
 
     legend = (
         '<p class="table-note">'
-        'Test R² coloured: '
+        'Test R²: '
         '<span style="color:#2ecc71">≥0.6 strong</span> · '
         '<span style="color:#52c98a">0.4–0.6 good</span> · '
         '<span style="color:#f1c40f">0.2–0.4 moderate</span> · '
         '<span style="color:#e67e22">0–0.2 weak</span> · '
         '<span style="color:#e74c3c">&lt;0 fails baseline</span>. '
-        'R² Gap: <span class="gap-good">■ &lt;0.10 OK</span> · '
-        '<span class="gap-warn">■ 0.10–0.25 caution</span> · '
-        '<span class="gap-bad">■ &gt;0.25 overfit</span>. '
-        'Best per row is <u><strong>underlined</strong></u>.</p>'
+        'Best per row = <span style="background:rgba(74,144,217,0.20);'
+        'padding:1px 4px;border-radius:3px;font-weight:bold">★ highlighted</span>.</p>'
+        '<p class="table-note">'
+        'R² Gap (Train − Test): '
+        '<span class="gap-good">■ &lt;0.10 OK</span> · '
+        '<span class="gap-warn">■ 0.10–0.25 mild overfit</span> · '
+        '<span class="gap-bad">■ &gt;0.25 severe overfit — treat result with caution</span>.</p>'
     )
     table = f"""
 <div class="tbl-wrap" id="{section_id}">
@@ -597,38 +615,237 @@ def _train_metrics_table(df: pd.DataFrame, models: list) -> str:
 </details>"""
 
 
+def _fs_analysis_div(df_all: pd.DataFrame, full_key: str, fs_key: str) -> str:
+    """Summary div comparing FS variant against its full-feature counterpart."""
+    df_full = df_all[df_all["exp_key"] == full_key].dropna(subset=["R2_test"])
+    df_fs   = df_all[df_all["exp_key"] == fs_key].dropna(subset=["R2_test"])
+    if df_fs.empty or df_full.empty:
+        return ""
+
+    improved, degraded = [], []
+    deltas, delta_rows = {}, ""
+    for tgt in TARGETS_ORDERED:
+        fs_sub   = df_fs[df_fs["target"] == tgt]
+        full_sub = df_full[df_full["target"] == tgt]
+        if fs_sub.empty or full_sub.empty:
+            continue
+        r2_fs   = fs_sub["R2_test"].max()
+        r2_full = full_sub["R2_test"].max()
+        d = r2_fs - r2_full
+        short = TARGET_SHORT.get(tgt, tgt)
+        deltas[short] = d
+        (improved if d > 0.01 else (degraded if d < -0.01 else [])).append(short)
+        clr = "#2ecc71" if d > 0.01 else ("#e74c3c" if d < -0.01 else "#f39c12")
+        arrow = "▲" if d > 0.01 else ("▼" if d < -0.01 else "≈")
+        delta_rows += f'<tr><td>{short}</td><td style="color:{clr}">{arrow} {d:+.3f}</td></tr>'
+
+    n = len(deltas)
+    avg_d = sum(deltas.values()) / n if n else 0
+    full_lbl = EXP_CHART_LABELS.get(full_key, full_key)
+    fs_lbl   = EXP_CHART_LABELS.get(fs_key, fs_key)
+
+    if len(improved) > len(degraded):
+        vc, vi, vt = "#2ecc71", "✓", (
+            f"Feature selection <strong>helped</strong> on {len(improved)}/{n} targets "
+            f"(avg Δ = {avg_d:+.3f}). Fewer features → less overfitting; pruned features "
+            f"were likely adding noise rather than signal.")
+    elif len(degraded) > len(improved):
+        vc, vi, vt = "#e74c3c", "✗", (
+            f"Feature selection <strong>hurt</strong> on {len(degraded)}/{n} targets "
+            f"(avg Δ = {avg_d:+.3f}). The pruned features were still carrying predictive "
+            f"signal for those targets — consider a higher importance threshold.")
+    else:
+        vc, vi, vt = "#f39c12", "≈", (
+            f"Feature selection produced <strong>mixed results</strong> "
+            f"(avg Δ = {avg_d:+.3f}). Gains and losses roughly cancel; the full feature "
+            f"set and the reduced set are approximately equivalent in this experiment.")
+
+    return f"""
+<div class="fs-analysis-div">
+  <div class="fs-verdict" style="border-left:3px solid {vc}">
+    <span class="fs-verdict-icon" style="color:{vc};font-size:16px;font-weight:bold">{vi}</span>
+    <div><strong>Feature Selection Verdict ({fs_lbl} vs {full_lbl}):</strong> {vt}</div>
+  </div>
+  <details class="inner-fold">
+    <summary><span class="fold-icon">▶</span> Per-target Δ Test R² (FS − Full)</summary>
+    <div class="fold-body">
+      <table class="summary-table" style="width:auto;min-width:280px">
+        <thead><tr><th>Target</th><th>Δ Best Test R²</th></tr></thead>
+        <tbody>{delta_rows}</tbody>
+      </table>
+      <p class="meta" style="margin-top:6px">
+        ▲ &gt; +0.01 = FS improved · ▼ &lt; −0.01 = FS degraded · ≈ = negligible change</p>
+    </div>
+  </details>
+</div>"""
+
+
+def _data_cost_div(df_all: pd.DataFrame, expanded_key: str, base_key: str) -> str:
+    """Row-loss vs R²-gain analysis for experiments that add costly features."""
+    df_base = df_all[df_all["exp_key"] == base_key].dropna(subset=["R2_test"])
+    df_exp  = df_all[df_all["exp_key"] == expanded_key].dropna(subset=["R2_test"])
+    if df_base.empty or df_exp.empty:
+        return ""
+
+    tbl_rows, justified = "", 0
+    total = 0
+    for tgt in TARGETS_ORDERED:
+        bs = df_base[df_base["target"] == tgt]
+        es = df_exp[df_exp["target"] == tgt]
+        if bs.empty or es.empty:
+            continue
+        total += 1
+        n_b = int(bs["n_train"].iloc[0]) if not np.isnan(bs["n_train"].iloc[0]) else 0
+        n_e = int(es["n_train"].iloc[0])  if not np.isnan(es["n_train"].iloc[0])  else 0
+        loss_pct = (n_b - n_e) / n_b * 100 if n_b > 0 else 0
+        r2_b = bs["R2_test"].max()
+        r2_e = es["R2_test"].max()
+        delta = r2_e - r2_b
+        ok = delta > 0.02
+        if ok:
+            justified += 1
+        lc = "#e74c3c" if loss_pct > 30 else ("#f39c12" if loss_pct > 15 else "#2ecc71")
+        dc = "#2ecc71" if delta > 0.01 else ("#e74c3c" if delta < -0.01 else "#f39c12")
+        tbl_rows += (
+            f'<tr><td>{TARGET_SHORT.get(tgt, tgt)}</td>'
+            f'<td>{n_b} → {n_e}</td>'
+            f'<td style="color:{lc}">−{loss_pct:.0f}%</td>'
+            f'<td style="color:{dc}">{delta:+.3f}</td>'
+            f'<td>{"✓" if ok else "✗"}</td></tr>'
+        )
+
+    base_lbl = EXP_CHART_LABELS.get(base_key, base_key)
+    exp_lbl  = EXP_CHART_LABELS.get(expanded_key, expanded_key)
+    if justified >= (total + 1) // 2:
+        verdict = (f"The row cost is <strong>justified on {justified}/{total} targets</strong> — "
+                   f"R² gains exceed +0.02 for the majority. The CONSIDER-tier features add "
+                   f"meaningful signal despite the smaller training set.")
+    else:
+        verdict = (f"The row cost is <strong>not justified on most targets "
+                   f"({total - justified}/{total} showed &lt;0.02 R² gain)</strong>. "
+                   f"For those targets, prefer the {base_lbl} feature set which retains "
+                   f"more training data.")
+
+    return f"""
+<div class="data-cost-div">
+  <h5>📉 Data Cost vs Performance Gain ({base_lbl} → {exp_lbl})</h5>
+  <p class="meta">{verdict}</p>
+  <table class="summary-table" style="font-size:12px">
+    <thead><tr>
+      <th>Target</th><th>n_train change</th>
+      <th>Row loss %</th><th>Δ Best R²</th><th>Justified? (Δ &gt; +0.02)</th>
+    </tr></thead>
+    <tbody>{tbl_rows}</tbody>
+  </table>
+  <p class="meta" style="margin-top:6px">
+    Base = {base_lbl} · Expanded = {exp_lbl}</p>
+</div>"""
+
+
+def _section_bests_json(df_all: pd.DataFrame) -> str:
+    """JSON for the dynamic running-leaders sidebar panel."""
+    section_exp_keys = {
+        "exp1":    ["Exp1", "Exp1-FS"],
+        "exp2":    ["Exp2-Sub1", "Exp2-Sub1-FS", "Exp2-Sub2", "Exp2-Sub2-FS"],
+        "exp3":    ["Exp3-S1", "Exp3-S1-FS", "Exp3-S2"],
+        "phase9":  ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"],
+        "phase10": ["Phase10-FE", "Phase10b-FE"],
+    }
+    result = {}
+    for sec_id, exp_keys in section_exp_keys.items():
+        df_sec = df_all[df_all["exp_key"].isin(exp_keys)].dropna(subset=["R2_test"])
+        bests = {}
+        for tgt in TARGETS_ORDERED:
+            sub = df_sec[df_sec["target"] == tgt]
+            if sub.empty:
+                continue
+            row = sub.loc[sub["R2_test"].idxmax()]
+            bests[TARGET_SHORT.get(tgt, tgt)] = {
+                "model":  str(row["model"]),
+                "r2":     round(float(row["R2_test"]), 3),
+                "gap":    round(float(row["R2_gap"]) if not np.isnan(row["R2_gap"]) else 0, 3),
+                "exp":    EXP_CHART_LABELS.get(str(row["exp_key"]), str(row["exp_key"])),
+                "color":  MODEL_COLORS.get(str(row["model"]), "#888"),
+            }
+        result[sec_id] = bests
+    return json.dumps(result, ensure_ascii=False)
+
+
 def _best_model_box(df: pd.DataFrame, label: str) -> str:
-    """Champion box: best Test R² per target in this section."""
+    """Champion box: best Test R² per target in this section, with experiment source."""
     rows = []
+    overfit_warnings = []
     for tgt in TARGETS_ORDERED:
         sub = df[df["target"] == tgt].dropna(subset=["R2_test"])
         if sub.empty:
             continue
-        best = sub.loc[sub["R2_test"].idxmax()]
+        # Primary: best non-overfit model (gap ≤ 0.25); fallback: absolute best
+        non_of = sub[sub["R2_gap"].abs() <= 0.25]
+        best = non_of.loc[non_of["R2_test"].idxmax()] if not non_of.empty else sub.loc[sub["R2_test"].idxmax()]
+        abs_best = sub.loc[sub["R2_test"].idxmax()]
+        skipped_better = (not non_of.empty) and (abs_best["R2_test"] - best["R2_test"] > 0.005)
+
         slug = TARGET_SLUG.get(tgt, "all")
         col = _r2_color(best["R2_test"])
         mdl_col = MODEL_COLORS.get(best["model"], "#888")
         gap_cls_val = _gap_cls(best["R2_gap"])
+        exp_lbl = EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"])
+
+        overfit_flag = ""
+        if abs(best["R2_gap"]) > 0.25:
+            overfit_flag = ' <span style="color:#e74c3c;font-size:10px" title="R² gap > 0.25 — possible overfit">⚠ overfit</span>'
+            overfit_warnings.append(TARGET_SHORT.get(tgt, tgt))
+        skipped_note = ""
+        if skipped_better:
+            abs_r2_str = _fmt(abs_best["R2_test"])
+            abs_mdl    = abs_best["model"]
+            abs_gap    = _fmt(abs_best["R2_gap"])
+            skipped_note = (
+                f' <span style="color:#f39c12;font-size:10px" '
+                f'title="Higher R\u00b2 of {abs_r2_str} from {abs_mdl} suppressed (gap={abs_gap} > 0.25)">'
+                f'(overfit suppressed)</span>'
+            )
+
         rows.append(
             f'<tr data-target="{slug}">'
             f'<td>{TARGET_SHORT.get(tgt, tgt)}</td>'
             f'<td><strong style="color:{mdl_col};">{best["model"]}</strong></td>'
-            f'<td style="color:{col};font-weight:bold">{_fmt(best["R2_test"])}</td>'
+            f'<td style="color:{col};font-weight:bold">{_fmt(best["R2_test"])}{overfit_flag}</td>'
             f'<td class="{gap_cls_val}">{_fmt(best["R2_gap"])}</td>'
+            f'<td class="meta" style="font-size:11px">({exp_lbl}){skipped_note}</td>'
             f'</tr>'
         )
     if not rows:
         return ""
     avg_r2 = df.groupby("target")["R2_test"].max().mean()
+    overfit_note = ""
+    if overfit_warnings:
+        overfit_note = (
+            f'<p class="table-note" style="margin-top:8px;color:#f39c12">'
+            f'⚠ <strong>Overfitting note:</strong> '
+            f'{", ".join(overfit_warnings)} show R² gap &gt; 0.25. '
+            f'Best is ranked by Test R² among non-overfit models (gap ≤ 0.25) where available. '
+            f'High-gap winners may reflect the model memorising 2021–2024 patterns absent in 2025 — '
+            f'prefer lower-gap alternatives for deployment.</p>'
+        )
+    criteria_note = (
+        '<p class="table-note" style="margin-top:4px">'
+        '<strong>Selection criteria:</strong> highest Test R² among models with R² gap ≤ 0.25. '
+        'Alternatives: (a) use harmonic mean of Train+Test R² to penalise both under- and overfitting; '
+        '(b) rank by RMSE if absolute error scale matters; (c) for deployment, cap gap at 0.15 for '
+        'stricter stability.</p>'
+    )
     return f"""
 <div class="best-box">
   <div class="best-box-title">Best Model in {label}
     <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}</span>
   </div>
   <table class="summary-table best-table">
-    <thead><tr><th>Target</th><th>Model</th><th>Test R²</th><th>Gap</th></tr></thead>
+    <thead><tr><th>Target</th><th>Model</th><th>Test R²</th><th>Gap</th><th>Source</th></tr></thead>
     <tbody>{"".join(rows)}</tbody>
   </table>
+  {overfit_note}
+  {criteria_note}
 </div>"""
 
 
@@ -658,17 +875,17 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     {feat_html}
     {ds_html}
 
-    <details class="inner-fold" open>
+    <details class="inner-fold">
       <summary><span class="fold-icon">▶</span> Linear Models (OLS · Ridge · ElNet)</summary>
       <div class="fold-body">{lin_tbl}</div>
     </details>
 
-    <details class="inner-fold" open>
+    <details class="inner-fold">
       <summary><span class="fold-icon">▶</span> Non-Linear Models (RF · GB · XGB)</summary>
       <div class="fold-body">{nl_tbl}</div>
     </details>
 
-    <details class="inner-fold">
+    <details class="inner-fold" open>
       <summary><span class="fold-icon">▶</span> All Models — Combined Comparison</summary>
       <div class="fold-body">{comp_tbl}{train_tbl}</div>
     </details>
@@ -818,6 +1035,7 @@ def build_overview(df_all: pd.DataFrame) -> str:
 def build_exp1_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp1", "exp1-full",
                            "Full Feature Set (Inlet + COMMON)", open_default=True)
+    fs_div = _fs_analysis_div(df_all, "Exp1", "Exp1-FS")
     sub2 = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
                            "Feature Selected Variant", open_default=False)
     best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp1","Exp1-FS"])],
@@ -827,18 +1045,21 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Experiment 1 — Inlet + COMMON</h1>
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub1}
+  {fs_div}
   {sub2}
   {best}
 </section>"""
 
 
 def build_exp2_section(df_all: pd.DataFrame) -> str:
-    sub1 = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1",
-                           "Sub-experiment 1 — Secondary Clarifier + COMMON", open_default=True)
+    sub1   = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1",
+                             "Sub-experiment 1 — Secondary Clarifier + COMMON", open_default=True)
+    fs1div = _fs_analysis_div(df_all, "Exp2-Sub1", "Exp2-Sub1-FS")
     sub1fs = _exp_subsection(df_all, "Exp2-Sub1-FS", "exp2-s1-fs",
                              "Sub-experiment 1 — Feature Selected", open_default=False)
-    sub2 = _exp_subsection(df_all, "Exp2-Sub2", "exp2-s2",
-                           "Sub-experiment 2 — Inlet + Secondary + COMMON", open_default=True)
+    sub2   = _exp_subsection(df_all, "Exp2-Sub2", "exp2-s2",
+                             "Sub-experiment 2 — Inlet + Secondary + COMMON", open_default=True)
+    fs2div = _fs_analysis_div(df_all, "Exp2-Sub2", "Exp2-Sub2-FS")
     sub2fs = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s2-fs",
                              "Sub-experiment 2 — Feature Selected", open_default=False)
     best = _best_model_box(
@@ -849,20 +1070,38 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Experiment 2 — Secondary & Combined Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
   {sub1}
+  {fs1div}
   {sub1fs}
   {sub2}
+  {fs2div}
   {sub2fs}
   {best}
 </section>"""
 
 
 def build_exp3_section(df_all: pd.DataFrame) -> str:
-    sub1 = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
-                           "Sub-experiment 1 — ADD-tier Aeration Features", open_default=True)
+    sub1   = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
+                             "Sub-experiment 1 — ADD-tier Aeration Features", open_default=True)
+    fs1div = _fs_analysis_div(df_all, "Exp3-S1", "Exp3-S1-FS")
     sub1fs = _exp_subsection(df_all, "Exp3-S1-FS", "exp3-s1-fs",
                              "Sub-experiment 1 — Feature Selected", open_default=False)
-    sub2 = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
-                           "Sub-experiment 2 — ADD + CONSIDER-tier Features", open_default=True)
+    sub2   = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
+                             "Sub-experiment 2 — ADD + CONSIDER-tier Features", open_default=True)
+    cost_div = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
+
+    # Note: no feature-selected variant exists for Exp3-S2
+    no_fs_note = """
+<div class="info-note">
+  <strong>ℹ No Feature-Selected variant for Sub-experiment 2:</strong>
+  Exp3-S2 represents the broadest feature scope (ADD + CONSIDER tier). A feature-selected
+  variant was not run because: (1) the Exp3-S1-FS result above already provides the
+  "best-features-only" view on the ADD-tier set; (2) GB/XGB already catastrophically
+  overfit composite targets in Exp3-S2, making further FS primarily relevant for the
+  linear models; (3) Exp3-S2 feeds directly into Phase 9 ensemble methods, which handle
+  feature redundancy via regularisation internally. A dedicated Exp3-S2-FS run remains
+  a candidate for future work if Comp COD performance needs further improvement.
+</div>"""
+
     best = _best_model_box(
         df_all[df_all["exp_key"].isin(["Exp3-S1","Exp3-S1-FS","Exp3-S2"])],
         "Experiment 3")
@@ -871,8 +1110,11 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Experiment 3 — Expanded Feature Sets</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
+  {fs1div}
   {sub1fs}
   {sub2}
+  {cost_div}
+  {no_fs_note}
   {best}
 </section>"""
 
@@ -1051,6 +1293,17 @@ def _sidebar() -> str:
     <div class="nav-group-items" id="nav-p10">
       <a class="nav-item nav-sub" href="#p10-full">Full FE (P10)</a>
       <a class="nav-item nav-sub" href="#p10b">Selective FE (P10b) ★</a>
+    </div>
+  </div>
+
+  <div id="running-leaders-panel">
+    <div class="nav-divider"></div>
+    <div class="nav-leaders-title">
+      Leaders so far
+      <span class="nav-leaders-hint">scroll to update</span>
+    </div>
+    <div id="leaders-content">
+      <p class="leaders-empty">Scroll past a section to see running leaders.</p>
     </div>
   </div>
 </nav>"""
@@ -1255,6 +1508,51 @@ CUSTOM_CSS = """
   /* ── Leaderboard ───────────────────────────────────────────────── */
   .leaderboard-table { font-size: 13px; }
 
+  /* ── Running Leaders sidebar panel ────────────────────────────── */
+  #running-leaders-panel { border-top: 1px solid var(--border); margin-top: 8px; }
+  .nav-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .nav-leaders-title {
+    padding: 8px 16px 4px; font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .6px; color: var(--text);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nav-leaders-hint { font-size: 9px; color: var(--text-muted); font-weight: 400;
+    text-transform: none; letter-spacing: 0; }
+  .leaders-empty { padding: 6px 16px; font-size: 11px; color: var(--text-muted); }
+  #leaders-content { padding: 4px 8px 8px; }
+  .leaders-mini { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .leaders-mini td { padding: 3px 6px; border-bottom: 1px solid var(--border-light); }
+  .leaders-mini .l-tgt { color: var(--text-muted); font-size: 10px; }
+  .leaders-mini .l-r2  { font-weight: 700; text-align: right; }
+  .leaders-mini .l-mdl { font-size: 10px; }
+  .leaders-mini .l-exp { font-size: 9px; color: var(--text-muted); }
+
+  /* ── FS analysis div ───────────────────────────────────────────── */
+  .fs-analysis-div { margin: 8px 0 16px; }
+  .fs-verdict {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 14px; border-radius: 6px;
+    background: var(--details-bg); margin-bottom: 8px;
+    font-size: 13px; line-height: 1.5; color: var(--text);
+  }
+  .fs-verdict-icon { font-size: 18px; line-height: 1; margin-top: 1px; flex-shrink: 0; }
+
+  /* ── Data cost div ─────────────────────────────────────────────── */
+  .data-cost-div {
+    padding: 12px 16px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--details-bg); margin: 12px 0;
+  }
+  .data-cost-div h5 { margin: 0 0 8px; font-size: 13px; color: var(--text); }
+
+  /* ── Info note (neutral) ───────────────────────────────────────── */
+  .info-note {
+    padding: 10px 14px; border-left: 3px solid #4A90D9;
+    background: var(--toc-bg); border-radius: 0 6px 6px 0;
+    font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
+    margin: 12px 0;
+  }
+  .info-note strong { color: var(--text); }
+
   /* ── Hidden filter rows ────────────────────────────────────────── */
   tr.filter-hidden { display: none; }
 """
@@ -1360,6 +1658,86 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+// ── Running Leaders sidebar ─────────────────────────────────────────────────
+(function() {
+  // SECTION_BESTS is injected by Python below
+  var sectionOrder = ['exp1', 'exp2', 'exp3', 'phase9', 'phase10'];
+  var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',
+                      'Comp BOD','Comp COD','Comp TSS','Comp pH'];
+  var modelColors  = {
+    'OLS':'#E15252','Ridge':'#4A90D9','ElNet':'#5BAD6F',
+    'RF':'#2171B5','GB':'#238B45','XGB':'#D94801',
+    'ANN':'#9B59B6','Voting':'#E67E22','Stacking':'#1ABC9C'
+  };
+  var runningLeaders = {};
+  var lastRendered   = '';
+
+  function gapClass(g) {
+    if (Math.abs(g) < 0.10) return 'gap-good';
+    if (Math.abs(g) < 0.25) return 'gap-warn';
+    return 'gap-bad';
+  }
+
+  function mergeSection(id) {
+    var bests = window.SECTION_BESTS && window.SECTION_BESTS[id];
+    if (!bests) return;
+    targetList.forEach(function(tgt) {
+      var b = bests[tgt];
+      if (!b) return;
+      if (!runningLeaders[tgt] || b.r2 > runningLeaders[tgt].r2) {
+        runningLeaders[tgt] = b;
+      }
+    });
+  }
+
+  function renderLeaders() {
+    var keys = Object.keys(runningLeaders);
+    if (keys.length === 0) return;
+    var rows = '';
+    targetList.forEach(function(tgt) {
+      var b = runningLeaders[tgt];
+      if (!b) return;
+      var r2Color = b.r2 >= 0.6 ? '#2ecc71' : b.r2 >= 0.4 ? '#52c98a'
+                  : b.r2 >= 0.2 ? '#f1c40f' : b.r2 >= 0 ? '#e67e22' : '#e74c3c';
+      var mdlColor = modelColors[b.model] || '#888';
+      rows += '<tr>'
+        + '<td class="l-tgt">' + tgt + '</td>'
+        + '<td class="l-r2" style="color:' + r2Color + '">' + b.r2.toFixed(3) + '</td>'
+        + '<td class="l-mdl ' + gapClass(b.gap) + '" style="color:' + mdlColor + '">'
+        + b.model + '</td>'
+        + '<td class="l-exp">(' + b.exp + ')</td>'
+        + '</tr>';
+    });
+    var html = '<table class="leaders-mini"><tbody>' + rows + '</tbody></table>';
+    if (html !== lastRendered) {
+      document.getElementById('leaders-content').innerHTML = html;
+      lastRendered = html;
+    }
+  }
+
+  function checkSections() {
+    var mid = window.innerHeight * 0.6;
+    sectionOrder.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var rect = el.getBoundingClientRect();
+      if (rect.top < mid) mergeSection(id);
+    });
+    renderLeaders();
+  }
+
+  // Debounced scroll
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      requestAnimationFrame(function() { checkSections(); ticking = false; });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('DOMContentLoaded', checkSections);
+})();
 </script>
 """
 
@@ -1397,6 +1775,10 @@ def main():
         build_phase10_section(df_all),
     ]
 
+    # Inline section-bests JSON for the running leaders JS widget
+    sec_bests_json = _section_bests_json(df_all)
+    section_data_js = f"<script>window.SECTION_BESTS = {sec_bests_json};</script>"
+
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
     css = dark_mode_css(CUSTOM_CSS)
 
@@ -1409,6 +1791,7 @@ def main():
   <style>{css}</style>
   {DARK_MODE_JS}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  {section_data_js}
 </head>
 <body>
 {_sidebar()}
