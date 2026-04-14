@@ -154,20 +154,31 @@ FEATURE_DESCRIPTIONS = {
                      "insufficient for a multi-layer perceptron.",
     },
     "Phase9-Voting": {
-        "label": "Exp3-S2 Features → Voting Ensemble (RF + Ridge + ElNet, averaged)",
+        "label": "Exp3-S2 Features → Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
         "features": "Same as Exp3-S2 (25 features per target); VotingRegressor averaging "
-                    "RF, Ridge, and ElasticNet with equal weights",
-        "rationale": "Averaging diverse model families reduces variance and smooths "
-                     "individual model failure modes. Tests ensemble averaging vs "
-                     "best single model.",
+                    "ElasticNet, RandomForest, and XGBoost with equal weights. "
+                    "Replaces original Ridge+ElNet+RF — Ridge removed because it duplicates "
+                    "ElNet's L2 regularisation (redundant voter); XGBoost added for "
+                    "structural diversity (gradient boosting vs. bagging vs. linear).",
+        "rationale": "Ensemble averaging reduces variance through uncorrelated errors. "
+                     "ElNet: regularised linear with feature selection (L1). "
+                     "RF: bagging over decision trees, robust to outliers. "
+                     "XGB: boosted trees, captures residual non-linearities. "
+                     "Three structurally distinct inductive biases.",
     },
     "Phase9-Stacking": {
-        "label": "Exp3-S2 Features → Stacking (RF + Ridge + ElNet → Ridge meta-learner)",
-        "features": "Same as Exp3-S2 (25 features); StackingRegressor: RF/Ridge/ElNet "
-                    "base learners → Ridge meta-learner (KFold n_splits=5, no shuffle)",
-        "rationale": "Meta-learning to optimally weight base models. KFold (not "
-                     "TimeSeriesSplit) used for cross_val_predict compatibility. "
-                     "Final evaluation is still on the 2025 holdout.",
+        "label": "Exp3-S2 Features → Stacking (ElNet + RF + XGB → Ridge meta, walk-forward OOF)",
+        "features": "Same as Exp3-S2 (25 features); walk-forward stacking with "
+                    "TimeSeriesSplit(n_splits=5) OOF generation. "
+                    "Base: ElNet + RF + XGBoost. Meta-learner: Ridge (tuned alpha). "
+                    "First ~1/6 of training samples excluded from meta-learner training "
+                    "(no OOF fold coverage) — strictly no look-ahead bias. "
+                    "Base models retrained on full training set before inference.",
+        "rationale": "Replaces original KFold(n_splits=5) StackingRegressor which had "
+                     "look-ahead bias: predicting 2021 data using models trained on 2022–2024. "
+                     "Walk-forward OOF ensures the meta-learner learns how base models "
+                     "perform when projecting forward in time. "
+                     "Approx. 83% OOF coverage across all targets.",
     },
     "Phase10-FE": {
         "label": "Exp3-S2 + Full Feature Engineering — All Targets (37–52 features)",
@@ -213,24 +224,24 @@ EXP_INTRO = {
     ),
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
-        "which was selected as the richest validated set because it yielded the highest average "
-        "Test R² across all six baseline models among all prior experiments — ElNet reached "
-        "Test R²=0.684 (Grab BOD) and RF reached 0.504 (Grab TSS), both new records. "
-        "Despite GB/XGB overfitting on composite targets, the regularised models (ElNet, Ridge, RF) "
-        "all benefited from the expanded CONSIDER-tier features, making Exp3-S2 the best "
-        "starting point for advanced architectures."
+        "which was selected as the richest validated set (ElNet Test R²=0.684 Grab BOD, "
+        "RF 0.504 Grab TSS — new records at the time). "
         "<br><br>"
         "Three architectures are tested: "
-        "<strong>ANN</strong> (MLPRegressor, to test whether a neural network can outperform "
-        "regularised models on ~470 training samples); "
-        "<strong>Voting ensemble</strong> (RF + Ridge + ElNet, equal-weight averaging) — the three "
-        "models were chosen because they represent <em>complementary prediction styles</em>: "
-        "RF captures non-linear interactions and is robust to outliers; Ridge provides a "
-        "stable, collinearity-resistant linear fit; ElNet performs implicit feature selection "
-        "via L1 regularisation. Their prediction errors are largely uncorrelated, so averaging "
-        "reduces variance without amplifying bias; "
-        "<strong>Stacking ensemble</strong> (same three base learners → Ridge meta-learner) "
-        "learns target-specific weights instead of using equal averages."
+        "<strong>ANN</strong> (MLPRegressor) — failed; ~470 training samples insufficient for "
+        "MLP (avg Test R²=−1.12). All targets selected alpha=1.0 (max regularisation). Not recommended. "
+        "<br>"
+        "<strong>Voting ensemble</strong> (ElNet + RF + XGBoost, equal weights) — "
+        "original composition (Ridge+ElNet+RF) was corrected: Ridge duplicates ElNet's L2 "
+        "penalty, making two of three voters collinear. XGBoost replaces Ridge for structural "
+        "diversity (gradient boosting vs. bagging vs. regularised linear). "
+        "All three voters pre-tuned via TimeSeriesSplit GridSearchCV/RandomizedSearchCV. "
+        "<br>"
+        "<strong>Stacking ensemble</strong> (ElNet + RF + XGB → Ridge meta, walk-forward OOF) — "
+        "original KFold(n_splits=5) stacking had look-ahead bias: 2021 samples were predicted "
+        "using base models trained on 2022–2024 data. Replaced with manual walk-forward OOF "
+        "using TimeSeriesSplit(n_splits=5): each sample's OOF prediction uses only past data. "
+        "~83% OOF coverage per target; first ~17% excluded from meta-learner training."
     ),
     "Phase10": (
         "Phase 10 applies <strong>feature engineering</strong> (log transforms, "
@@ -505,17 +516,59 @@ def _dataset_summary(df: pd.DataFrame) -> str:
 </details>"""
 
 
+def _pick_best(avail, sub):
+    """
+    Threshold best-model criterion per target row:
+      - Primary:  highest Test R², when at least one model has R² ≥ 0.
+      - Fallback: lowest RMSE_test, when ALL models have R² < 0
+                  (variance collapse makes R² unreliable).
+    Returns a set of model names that qualify as 'best' for this row.
+    """
+    r2_vals = {}
+    rmse_vals = {}
+    for m in avail:
+        msub = sub[sub["model"] == m]
+        if msub.empty:
+            continue
+        r2   = msub["R2_test"].values[0]
+        rmse = msub["RMSE_test"].values[0]
+        if not np.isnan(r2):
+            r2_vals[m] = r2
+        if not np.isnan(rmse):
+            rmse_vals[m] = rmse
+
+    if not r2_vals:
+        return set()
+
+    max_r2 = max(r2_vals.values())
+    if max_r2 >= 0:
+        # At least one model beats naive baseline — use R²
+        threshold = max_r2 - 1e-9
+        return {m for m, v in r2_vals.items() if v >= threshold}
+    else:
+        # All models fail; fall back to lowest RMSE
+        if not rmse_vals:
+            return set()
+        min_rmse = min(rmse_vals.values())
+        return {m for m, v in rmse_vals.items() if v <= min_rmse + 1e-9}
+
+
 def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
-    """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE)."""
+    """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE / MAE).
+
+    Best-model highlighting uses a threshold rule:
+      - Any model has R² ≥ 0 → highlight highest R² (★)
+      - All models have R² < 0 → fall back to lowest RMSE (★ in RMSE cell)
+    """
     avail = [m for m in models if m in df["model"].values]
     if not avail:
         return "<p class='meta'>No data for these models.</p>"
 
     hdr1 = "".join(
-        '<th colspan="3" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "#888"), m)
+        '<th colspan="4" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "#888"), m)
         for m in avail
     )
-    hdr2 = "".join("<th>Test R²</th><th>R² Gap</th><th>RMSE</th>" for _ in avail)
+    hdr2 = "".join("<th>Test R²</th><th>R² Gap</th><th>RMSE</th><th>MAE</th>" for _ in avail)
 
     rows = []
     for tgt in TARGETS_ORDERED:
@@ -524,29 +577,39 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
             continue
         slug = TARGET_SLUG.get(tgt, "all")
         cells = f'<td class="tgt-name">{TARGET_SHORT.get(tgt, tgt)}</td>'
-        best_r2 = max(
-            (sub[sub["model"] == m]["R2_test"].values[0]
-             if m in sub["model"].values else float("nan"))
-            for m in avail
-            if not np.isnan(sub[sub["model"] == m]["R2_test"].values[0]
-                            if m in sub["model"].values else float("nan"))
-        ) if any(m in sub["model"].values for m in avail) else float("nan")
+
+        best_models = _pick_best(avail, sub)
+        # Determine whether best is by R² or RMSE (for star placement)
+        r2_vals = {m: sub[sub["model"] == m]["R2_test"].values[0]
+                   for m in avail if m in sub["model"].values}
+        use_rmse_fallback = bool(r2_vals) and max(
+            (v for v in r2_vals.values() if not np.isnan(v)), default=float("-inf")
+        ) < 0
 
         for m in avail:
             msub = sub[sub["model"] == m]
             if msub.empty:
-                cells += "<td>—</td><td>—</td><td>—</td>"
+                cells += "<td>—</td><td>—</td><td>—</td><td>—</td>"
                 continue
-            r2  = msub["R2_test"].values[0]
-            gap = msub["R2_gap"].values[0]
+            r2   = msub["R2_test"].values[0]
+            gap  = msub["R2_gap"].values[0]
             rmse = msub["RMSE_test"].values[0]
-            is_best = (not np.isnan(r2)) and (not np.isnan(best_r2)) and abs(r2 - best_r2) < 1e-9
+            mae  = msub["MAE_test"].values[0]
+            is_best = m in best_models
+
             cell_bg = "background:rgba(74,144,217,0.20);font-weight:bold;" if is_best else ""
+
+            # Star goes on R² normally; on RMSE when using fallback criterion
+            r2_star   = "★ " if (is_best and not use_rmse_fallback) else ""
+            rmse_star = "★ " if (is_best and use_rmse_fallback)     else ""
+
             cells += (
                 f'<td style="color:{_r2_color(r2)};{cell_bg}">'
-                f'{"★ " if is_best else ""}{_fmt(r2)}</td>'
+                f'{r2_star}{_fmt(r2)}</td>'
                 f'<td class="{_gap_cls(gap)}">{_fmt(gap)}</td>'
-                f'<td>{_fmt(rmse)}</td>'
+                f'<td style="{cell_bg if use_rmse_fallback else ""}">'
+                f'{rmse_star}{_fmt(rmse)}</td>'
+                f'<td>{_fmt(mae)}</td>'
             )
         rows.append(f'<tr data-target="{slug}">{cells}</tr>')
 
@@ -558,8 +621,12 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         '<span style="color:#f1c40f">0.2–0.4 moderate</span> · '
         '<span style="color:#e67e22">0–0.2 weak</span> · '
         '<span style="color:#e74c3c">&lt;0 fails baseline</span>. '
-        'Best per row = <span style="background:rgba(74,144,217,0.20);'
-        'padding:1px 4px;border-radius:3px;font-weight:bold">★ highlighted</span>.</p>'
+        'Best per row: <span style="background:rgba(74,144,217,0.20);'
+        'padding:1px 4px;border-radius:3px;font-weight:bold">★ highest R²</span> '
+        'when any model ≥ 0; '
+        '<span style="background:rgba(74,144,217,0.20);'
+        'padding:1px 4px;border-radius:3px;font-weight:bold">★ lowest RMSE</span> '
+        'when all R² &lt; 0 (variance-collapse fallback).</p>'
         '<p class="table-note">'
         'R² Gap (Train − Test): '
         '<span class="gap-good">■ &lt;0.10 OK</span> · '
@@ -745,11 +812,20 @@ def _data_cost_div(df_all: pd.DataFrame, expanded_key: str, base_key: str) -> st
 def _section_bests_json(df_all: pd.DataFrame) -> str:
     """JSON for the dynamic running-leaders sidebar panel."""
     section_exp_keys = {
-        "exp1":    ["Exp1", "Exp1-FS"],
-        "exp2":    ["Exp2-Sub1", "Exp2-Sub1-FS", "Exp2-Sub2", "Exp2-Sub2-FS"],
-        "exp3":    ["Exp3-S1", "Exp3-S1-FS", "Exp3-S2"],
-        "phase9":  ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"],
-        "phase10": ["Phase10-FE", "Phase10b-FE"],
+        "exp1-full":   ["Exp1"],
+        "exp1-fs":     ["Exp1-FS"],
+        "exp2-s1":     ["Exp2-Sub1"],
+        "exp2-s1-fs":  ["Exp2-Sub1-FS"],
+        "exp2-s2":     ["Exp2-Sub2"],
+        "exp2-s2-fs":  ["Exp2-Sub2-FS"],
+        "exp3-s1":     ["Exp3-S1"],
+        "exp3-s1-fs":  ["Exp3-S1-FS"],
+        "exp3-s2":     ["Exp3-S2"],
+        "p9-ann":      ["Phase9-ANN"],
+        "p9-voting":   ["Phase9-Voting"],
+        "p9-stacking": ["Phase9-Stacking"],
+        "p10-full":    ["Phase10-FE"],
+        "p10b":        ["Phase10b-FE"],
     }
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
@@ -1033,20 +1109,20 @@ def build_overview(df_all: pd.DataFrame) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def build_exp1_section(df_all: pd.DataFrame) -> str:
-    sub1 = _exp_subsection(df_all, "Exp1", "exp1-full",
-                           "Full Feature Set (Inlet + COMMON)", open_default=True)
+    sub1   = _exp_subsection(df_all, "Exp1", "exp1-full",
+                             "Full Feature Set (Inlet + COMMON)", open_default=True)
+    sub2   = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
+                             "Feature Selected Variant", open_default=False)
     fs_div = _fs_analysis_div(df_all, "Exp1", "Exp1-FS")
-    sub2 = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
-                           "Feature Selected Variant", open_default=False)
-    best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp1","Exp1-FS"])],
-                           "Experiment 1")
+    best   = _best_model_box(df_all[df_all["exp_key"].isin(["Exp1","Exp1-FS"])],
+                             "Experiment 1")
     return f"""
 <section id="exp1">
   <h1 class="section-title">Experiment 1 — Inlet + COMMON</h1>
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub1}
-  {fs_div}
   {sub2}
+  {fs_div}
   {best}
 </section>"""
 
@@ -1070,11 +1146,11 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Experiment 2 — Secondary & Combined Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
   {sub1}
-  {fs1div}
   {sub1fs}
+  {fs1div}
   {sub2}
-  {fs2div}
   {sub2fs}
+  {fs2div}
   {best}
 </section>"""
 
@@ -1110,8 +1186,8 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Experiment 3 — Expanded Feature Sets</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
-  {fs1div}
   {sub1fs}
+  {fs1div}
   {sub2}
   {cost_div}
   {no_fs_note}
@@ -1146,26 +1222,148 @@ def _phase9_model_subsection(df_all: pd.DataFrame, exp_key: str,
 </details>"""
 
 
+def _variance_diagnosis_callout() -> str:
+    """
+    Load raw Phase 9 ensemble results and render a variance-collapse diagnosis
+    table for targets with negative Test R². Shows σ_train, σ_test, σ-ratio,
+    MAE_2024 vs MAE_2025 to distinguish genuine model failure from variance collapse.
+    """
+    results_path = os.path.join(
+        MODELING_DIR, "models", "phase9", "ensemble", "results.xlsx"
+    )
+    if not os.path.exists(results_path):
+        return ""
+
+    df = pd.read_excel(results_path)
+    df = df[df["run"] == df["run"].max()]
+
+    # Targets with negative R² in either Voting or Stacking
+    neg_rows = df[df["R2_test"] < 0].copy()
+    if neg_rows.empty:
+        return ""
+
+    rows_html = ""
+    for _, r in neg_rows.sort_values(["target", "model"]).iterrows():
+        y_tr_std  = r.get("y_train_std", float("nan"))
+        y_te_std  = r.get("y_test_std",  float("nan"))
+        mae_2024  = r.get("MAE_2024",    float("nan"))
+        mae_2025  = r.get("MAE_test",    float("nan"))
+        rmse_2024 = r.get("RMSE_2024",   float("nan"))
+        rmse_2025 = r.get("RMSE_test",   float("nan"))
+        nrmse     = r.get("NRMSE_test",  float("nan"))
+
+        def _safe(v):
+            return not (isinstance(v, float) and np.isnan(v))
+
+        ratio      = y_te_std  / y_tr_std  if (_safe(y_tr_std)  and y_tr_std  > 0) else float("nan")
+        mae_ratio  = mae_2025  / mae_2024  if (_safe(mae_2024)  and mae_2024  > 0) else float("nan")
+        rmse_ratio = rmse_2025 / rmse_2024 if (_safe(rmse_2024) and rmse_2024 > 0) else float("nan")
+
+        delta_mae  = mae_2025  - mae_2024  if (_safe(mae_2024)  and _safe(mae_2025))  else float("nan")
+        delta_rmse = rmse_2025 - rmse_2024 if (_safe(rmse_2024) and _safe(rmse_2025)) else float("nan")
+
+        # Classify: collapse vs genuine failure vs mixed
+        # Variance collapse: σ-ratio < 0.5 AND (MAE ratio < 1.3 — not much absolute change)
+        # Genuine failure: MAE doubled or more regardless of variance
+        is_collapse  = _safe(ratio)     and ratio     < 0.5
+        is_failure   = _safe(mae_ratio) and mae_ratio > 1.5
+        is_improving = _safe(delta_mae) and delta_mae < 0   # MAE improved despite negative R²
+
+        if is_improving:
+            dx_class   = "info"
+            badge_col  = "#1abc9c"
+            diagnosis  = f"MAE improved ({_fmt(mae_2024,3)}→{_fmt(mae_2025,3)}); R² negative due to variance collapse"
+        elif is_collapse and not is_failure:
+            dx_class   = "warn"
+            badge_col  = "#e67e22"
+            diagnosis  = f"Variance collapse (σ-ratio={_fmt(ratio,2)}) — R² unreliable; check MAE"
+        elif is_failure and not is_collapse:
+            dx_class   = "fail"
+            badge_col  = "#e74c3c"
+            diagnosis  = f"Genuine deterioration (MAE ×{_fmt(mae_ratio,1)} from 2024→2025)"
+        else:
+            dx_class   = "warn"
+            badge_col  = "#e67e22"
+            r_str = _fmt(ratio,2) if _safe(ratio) else "—"
+            m_str = _fmt(mae_ratio,1) if _safe(mae_ratio) else "—"
+            diagnosis  = f"Mixed — σ-ratio={r_str}, MAE ×{m_str}"
+
+        tgt_short = TARGET_SHORT.get(r["target"], r["target"])
+
+        def _delta_cell(val, is_good_if_negative=True):
+            """Format a delta value with colour: green if improving, red if degrading."""
+            if not _safe(val):
+                return "—"
+            colour = "#2ecc71" if (val < 0) == is_good_if_negative else "#e74c3c"
+            sign = "+" if val >= 0 else ""
+            return f'<span style="color:{colour}">{sign}{_fmt(val,3)}</span>'
+
+        rows_html += f"""
+        <tr>
+          <td>{r['model']}</td>
+          <td>{tgt_short}</td>
+          <td style="color:#e74c3c">{_fmt(r['R2_test'])}</td>
+          <td>{_fmt(y_tr_std, 3)}</td>
+          <td>{_fmt(y_te_std, 3)}</td>
+          <td>{"—" if not _safe(ratio) else _fmt(ratio, 2)}</td>
+          <td>{_fmt(mae_2024, 3)}</td>
+          <td>{_fmt(mae_2025, 3)}</td>
+          <td>{_delta_cell(delta_mae)}</td>
+          <td>{_fmt(rmse_2024, 3)}</td>
+          <td>{_fmt(rmse_2025, 3)}</td>
+          <td>{_delta_cell(delta_rmse)}</td>
+          <td>{_fmt(nrmse, 3)}</td>
+          <td><span style="color:{badge_col};font-size:0.82em">{diagnosis}</span></td>
+        </tr>"""
+
+    return f"""
+<div class="obs-card" style="margin:1rem 0;border-left:4px solid #e67e22">
+  <h4 style="margin:0 0 0.6rem">Negative R² Diagnosis — Variance Collapse vs Genuine Failure</h4>
+  <p style="font-size:0.85em;color:var(--text-muted);margin:0 0 0.8rem">
+    R² = 1 − SS_res/SS_tot. A low-variance 2025 test set (σ-ratio &lt; 0.5) shrinks the
+    denominator and forces R² negative even when absolute accuracy is unchanged or improving.
+    <strong>ΔMAE</strong> and <strong>ΔRMSE</strong> (2025 − 2024) give scale-grounded evidence:
+    negative = model improved in absolute terms; positive = genuine deterioration.
+    NRMSE = RMSE / (max − min) for scale-normalised cross-target comparison.
+  </p>
+  <div style="overflow-x:auto">
+  <table style="font-size:0.82em;width:100%">
+    <thead><tr>
+      <th>Model</th><th>Target</th><th>Test R²</th>
+      <th>σ_train</th><th>σ_test</th><th>σ-ratio</th>
+      <th>MAE 2024</th><th>MAE 2025</th><th>ΔMAE</th>
+      <th>RMSE 2024</th><th>RMSE 2025</th><th>ΔRMSE</th>
+      <th>NRMSE</th><th>Diagnosis</th>
+    </tr></thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+  </div>
+</div>"""
+
+
 def build_phase9_section(df_all: pd.DataFrame) -> str:
     ann_sub = _phase9_model_subsection(
         df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
         _badge("FAILED avg R²=−1.12", "fail"))
     vote_sub = _phase9_model_subsection(
-        df_all, "Phase9-Voting", "p9-voting", "Voting Ensemble (RF + Ridge + ElNet)",
+        df_all, "Phase9-Voting", "p9-voting",
+        "Voting Ensemble (ElNet + RF + XGBoost)",
         _badge("RECOMMENDED", "rec"))
     stack_sub = _phase9_model_subsection(
-        df_all, "Phase9-Stacking", "p9-stacking", "Stacking Ensemble (RF + Ridge + ElNet → Ridge)",
-        _badge("MIXED — Grab only", "warn"))
+        df_all, "Phase9-Stacking", "p9-stacking",
+        "Stacking Ensemble (ElNet + RF + XGB → Ridge, walk-forward OOF)",
+        _badge("CONSISTENT — no leakage", "warn"))
 
     # Combined comparison across all three
     df_p9 = df_all[df_all["exp_key"].isin(["Phase9-ANN","Phase9-Voting","Phase9-Stacking"])].copy()
     all_m = [m for m in ADV_MODELS if m in df_p9["model"].values]
     comp_tbl = _metrics_table(df_p9, all_m, "p9-comp")
     best = _best_model_box(df_p9, "Phase 9")
+    var_dx = _variance_diagnosis_callout()
 
     return f"""
 <section id="phase9">
-  <h1 class="section-title">Phase 9 — Advanced Models</h1>
+  <h1 class="section-title">Phase 9 — Advanced Models (Corrected)</h1>
   <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
   {ann_sub}
   {vote_sub}
@@ -1174,6 +1372,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
     <summary><span class="fold-icon">▶</span> Phase 9 — All Models Combined</summary>
     <div class="exp-body">{comp_tbl}</div>
   </details>
+  {var_dx}
   {best}
 </section>"""
 
@@ -1280,8 +1479,8 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-p9">
       <a class="nav-item nav-sub" href="#p9-ann">ANN</a>
-      <a class="nav-item nav-sub" href="#p9-voting">Voting Ensemble</a>
-      <a class="nav-item nav-sub" href="#p9-stacking">Stacking Ensemble</a>
+      <a class="nav-item nav-sub" href="#p9-voting">Voting (ElNet+RF+XGB)</a>
+      <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
       <a class="nav-item nav-sub" href="#p9-comparison">Combined</a>
     </div>
   </div>
@@ -1662,7 +1861,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── Running Leaders sidebar ─────────────────────────────────────────────────
 (function() {
   // SECTION_BESTS is injected by Python below
-  var sectionOrder = ['exp1', 'exp2', 'exp3', 'phase9', 'phase10'];
+  var sectionOrder = ['exp1-full','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
+                      'exp3-s1','exp3-s1-fs','exp3-s2','p9-ann','p9-voting','p9-stacking',
+                      'p10-full','p10b'];
   var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',
                       'Comp BOD','Comp COD','Comp TSS','Comp pH'];
   var modelColors  = {

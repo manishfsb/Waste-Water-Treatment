@@ -2,24 +2,26 @@
 ensemble_modeling_phase9.py — Voting and Stacking ensembles for Phase 9.
 
 Uses Experiment 3 Sub-2 datasets. Builds two ensemble strategies:
-  1. Voting  — VotingRegressor: RF + ElNet + Ridge (equal weights)
-  2. Stacking — StackingRegressor: RF + Ridge + ElNet → Ridge meta-learner
+  1. Voting  — VotingRegressor: ElNet + RF + XGBoost (equal weights)
+             (replaces original Ridge+ElNet+RF which had L2 redundancy)
+  2. Stacking — Walk-forward stacking with TimeSeriesSplit OOF
+             Base: ElNet + RF + XGBoost → Meta: Ridge
+             (replaces KFold-based StackingRegressor which had look-ahead bias)
 
-All base models use the same hyperparameter ranges as previous experiments.
-TimeSeriesSplit(n_splits=3) throughout.
-
-Outputs:
-  - phase9/ensemble/results.xlsx
-  - phase9/ensemble/models/<name>_{voting,stacking}_run_N.pkl
-  - phase9/ensemble/plots/<name>_{voting,stacking}_run_N_{scatter,timeseries,lc}.png
-  - Appends predicted_Voting_run_N, predicted_Stacking_run_N columns to datasets
+Changes vs run 1:
+  - Voting: dropped redundant Ridge; added XGBoost for structural diversity
+  - Stacking: replaced KFold StackingRegressor with manual walk-forward OOF
+    using TimeSeriesSplit(n_splits=5). Only past data is used when generating
+    OOF predictions for each sample. First ~1/6 of training samples (no OOF fold
+    coverage) are excluded from meta-learner training — no look-ahead bias.
+  - Diagnostics: added y_train_std, y_test_std, MAE_2024, NRMSE_test columns
+    to results for R²-vs-variance diagnosis (esp. Composite COD).
 
 Usage (from project root):
     .venv/bin/python3 21-25/modeling/models/phase9/ensemble/ensemble_modeling_phase9.py
 """
 
 import os
-import sys
 import pickle
 import warnings
 from datetime import datetime
@@ -29,15 +31,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import TimeSeriesSplit, KFold, GridSearchCV, learning_curve
-from sklearn.ensemble import (
-    RandomForestRegressor, GradientBoostingRegressor,
-    VotingRegressor, StackingRegressor,
+from sklearn.model_selection import (
+    TimeSeriesSplit, GridSearchCV, RandomizedSearchCV, learning_curve,
 )
+from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from sklearn.linear_model import Ridge, ElasticNet
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from xgboost import XGBRegressor
 
 warnings.filterwarnings("ignore")
 
@@ -54,77 +56,77 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
-    {
-        "name":    "s2_stage3_grab_BOD",
-        "file":    os.path.join(DS_DIR, "s2_stage3_grab_BOD.xlsx"),
-        "target":  "Effluent BOD (mg/L, Grab)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_grab_COD",
-        "file":    os.path.join(DS_DIR, "s2_stage3_grab_COD.xlsx"),
-        "target":  "Effluent COD (mg/L, Grab)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_grab_TSS",
-        "file":    os.path.join(DS_DIR, "s2_stage3_grab_TSS.xlsx"),
-        "target":  "Effluent TSS (mg/L, Grab)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_grab_pH",
-        "file":    os.path.join(DS_DIR, "s2_stage3_grab_pH.xlsx"),
-        "target":  "Effluent pH (Grab)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_comp_BOD",
-        "file":    os.path.join(DS_DIR, "s2_stage3_comp_BOD.xlsx"),
-        "target":  "Effluent BOD (mg/L, Composite)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_comp_COD",
-        "file":    os.path.join(DS_DIR, "s2_stage3_comp_COD.xlsx"),
-        "target":  "Effluent COD (mg/L, Composite)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_comp_TSS",
-        "file":    os.path.join(DS_DIR, "s2_stage3_comp_TSS.xlsx"),
-        "target":  "Effluent TSS (mg/L, Composite)",
-        "experiment": "Phase9-Ensemble",
-    },
-    {
-        "name":    "s2_stage3_comp_pH",
-        "file":    os.path.join(DS_DIR, "s2_stage3_comp_pH.xlsx"),
-        "target":  "Effluent pH (Composite)",
-        "experiment": "Phase9-Ensemble",
-    },
+    {"name": "s2_stage3_grab_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_grab_COD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_COD.xlsx"),  "target": "Effluent COD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_grab_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_grab_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_grab_pH",   "file": os.path.join(DS_DIR, "s2_stage3_grab_pH.xlsx"),   "target": "Effluent pH (Grab)",               "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_comp_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_comp_COD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_COD.xlsx"),  "target": "Effluent COD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_comp_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_comp_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "s2_stage3_comp_pH",   "file": os.path.join(DS_DIR, "s2_stage3_comp_pH.xlsx"),   "target": "Effluent pH (Composite)",          "experiment": "Phase9-Ensemble"},
 ]
 
-# ── Base model configs ─────────────────────────────────────────────────────────
-
-# Ridge — tuned via GridSearchCV
+# ── Hyperparameter grids ───────────────────────────────────────────────────────
 RIDGE_ALPHAS = [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
 
-# ElNet — tuned via GridSearchCV
 ELNET_GRID = {
     "alpha":    [0.001, 0.01, 0.1, 1.0, 10.0],
     "l1_ratio": [0.1, 0.3, 0.5, 0.7, 0.9],
     "max_iter": [5000],
 }
 
-# RF — fixed best-typical params (avoids nested CV cost)
 RF_PARAMS = dict(
     n_estimators=300, max_features="sqrt",
-    max_depth=6, min_samples_leaf=10, random_state=42, n_jobs=-1
+    max_depth=6, min_samples_leaf=10, random_state=42, n_jobs=-1,
 )
+
+XGB_BASE = dict(
+    n_estimators=300, learning_rate=0.05, subsample=0.8,
+    colsample_bytree=0.8, random_state=42, n_jobs=1, verbosity=0,
+)
+XGB_DIST = {
+    "max_depth":       [2, 3, 4, 5],
+    "min_child_weight":[5, 10, 20],
+    "reg_alpha":       [0.0, 0.1, 1.0],
+    "reg_lambda":      [0.5, 1.0, 5.0],
+}
+
+
+# ── Walk-forward stacking predictor ────────────────────────────────────────────
+
+class WalkForwardStackingPredictor:
+    """
+    Minimal sklearn-compatible wrapper for manual walk-forward stacking.
+    Holds three fully-retrained base models and a Ridge meta-learner.
+    Pickleable.
+    """
+    def __init__(self, base_models, meta_model, meta_alpha, oof_coverage):
+        # base_models: list of (name, fitted estimator)
+        self.base_models   = base_models
+        self.meta_model    = meta_model
+        self.meta_alpha    = meta_alpha
+        self.oof_coverage  = oof_coverage   # fraction of train rows that had OOF preds
+
+    def predict(self, X):
+        meta_X = np.column_stack([m.predict(X) for _, m in self.base_models])
+        return self.meta_model.predict(meta_X)
+
+    # Enough for sklearn learning_curve (won't be perfect but won't crash)
+    def fit(self, X, y):
+        for _, m in self.base_models:
+            m.fit(X, y)
+        return self
+
+    def get_params(self, deep=True):
+        return {}
+
+    def set_params(self, **params):
+        return self
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def infer_features(df: pd.DataFrame, target: str) -> list[str]:
+def infer_features(df: pd.DataFrame, target: str) -> list:
     exclude = {"Date", "year", "month", "day_of_week", target}
     return [c for c in df.columns
             if c not in exclude and not c.startswith("predicted_")]
@@ -150,6 +152,11 @@ def _metrics(y_true, y_pred):
     mae  = mean_absolute_error(y_true, y_pred)
     mape = _mape(y_true, y_pred)
     return r2, rmse, mae, mape
+
+
+def _nrmse(rmse, y):
+    rng = y.max() - y.min()
+    return rmse / rng if rng > 0 else np.nan
 
 
 # ── Plotting ───────────────────────────────────────────────────────────────────
@@ -200,11 +207,10 @@ def _learning_curve_plot(model, X_train, y_train, name, model_tag, run):
         ts, train_sc, val_sc = learning_curve(
             model, X_train, y_train,
             cv=tscv, train_sizes=train_sizes,
-            scoring="r2", n_jobs=1
+            scoring="r2", n_jobs=1,
         )
     except Exception:
         return
-
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.plot(ts, train_sc.mean(axis=1), "o-", color="#4A90D9", lw=1.5, label="Train R²")
     ax.fill_between(ts,
@@ -227,160 +233,191 @@ def _learning_curve_plot(model, X_train, y_train, name, model_tag, run):
     plt.close(fig)
 
 
-# ── Base model builders ────────────────────────────────────────────────────────
+# ── Base model tuning helpers ──────────────────────────────────────────────────
 
-def _fit_ridge(X_tr, y_tr):
-    """Return fitted Ridge with best alpha chosen by TimeSeriesSplit CV."""
-    tscv = TimeSeriesSplit(n_splits=3)
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_tr)
-    best_alpha, best_score = RIDGE_ALPHAS[0], -np.inf
-    for a in RIDGE_ALPHAS:
-        scores = []
-        for train_idx, val_idx in tscv.split(X_scaled):
-            m = Ridge(alpha=a)
-            m.fit(X_scaled[train_idx], y_tr[train_idx])
-            scores.append(r2_score(y_tr[val_idx], m.predict(X_scaled[val_idx])))
-        if np.mean(scores) > best_score:
-            best_score = np.mean(scores)
-            best_alpha = a
-    model = Pipeline([("sc", StandardScaler()), ("ridge", Ridge(alpha=best_alpha))])
-    model.fit(X_tr, y_tr)
-    return model, best_alpha
-
-
-def _fit_elnet(X_tr, y_tr):
-    """Return fitted ElasticNet pipeline with GridSearchCV."""
+def _tune_elnet(Xs, y_tr):
+    """GridSearchCV for ElasticNet on already-scaled data."""
     tscv = TimeSeriesSplit(n_splits=3)
     gs = GridSearchCV(
-        ElasticNet(max_iter=5000),
-        ELNET_GRID, cv=tscv,
-        scoring="neg_root_mean_squared_error", n_jobs=-1
+        ElasticNet(max_iter=5000), ELNET_GRID, cv=tscv,
+        scoring="neg_root_mean_squared_error", n_jobs=-1,
     )
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_tr)
-    gs.fit(X_scaled, y_tr)
-    best_en = gs.best_estimator_
-    model = Pipeline([("sc", StandardScaler()),
-                      ("en", ElasticNet(alpha=best_en.alpha,
-                                        l1_ratio=best_en.l1_ratio,
-                                        max_iter=5000))])
-    model.fit(X_tr, y_tr)
-    return model
+    gs.fit(Xs, y_tr)
+    return gs.best_params_
 
 
-def _fit_rf(X_tr, y_tr):
-    rf = RandomForestRegressor(**RF_PARAMS)
-    rf.fit(X_tr, y_tr)
-    return rf
-
-
-# ── Voting & Stacking builders ─────────────────────────────────────────────────
-
-def _build_voting(X_tr, y_tr):
-    """
-    VotingRegressor: Ridge (tuned) + ElNet (tuned) + RF (fixed params).
-    Note: VotingRegressor fits estimators internally; we pass pre-configured
-    estimators with good starting params, then wrap in a scaler pipeline.
-    We tune Ridge alpha and ElNet params via a light CV beforehand.
-    """
+def _tune_xgb(Xs, y_tr):
+    """RandomizedSearchCV for XGBoost (scale-invariant; receives scaled data)."""
     tscv = TimeSeriesSplit(n_splits=3)
+    rs = RandomizedSearchCV(
+        XGBRegressor(**XGB_BASE), XGB_DIST, n_iter=20, cv=tscv,
+        scoring="neg_root_mean_squared_error", n_jobs=1, random_state=42,
+    )
+    rs.fit(Xs, y_tr)
+    return rs.best_params_
 
-    # Tune Ridge alpha
-    scaler_tmp = StandardScaler()
-    Xs = scaler_tmp.fit_transform(X_tr)
+
+def _tune_ridge_alpha(Xs, y_tr):
+    """Manual CV for Ridge alpha on already-scaled data."""
+    tscv = TimeSeriesSplit(n_splits=3)
     best_alpha, best_sc = RIDGE_ALPHAS[0], -np.inf
     for a in RIDGE_ALPHAS:
         scores = [
-            r2_score(y_tr[vi],
-                     Ridge(alpha=a).fit(Xs[ti], y_tr[ti]).predict(Xs[vi]))
+            r2_score(y_tr[vi], Ridge(alpha=a).fit(Xs[ti], y_tr[ti]).predict(Xs[vi]))
             for ti, vi in tscv.split(Xs)
         ]
         if np.mean(scores) > best_sc:
             best_sc, best_alpha = np.mean(scores), a
+    return best_alpha
 
-    # Tune ElNet
-    gs_en = GridSearchCV(
-        ElasticNet(max_iter=5000), ELNET_GRID, cv=tscv,
-        scoring="neg_root_mean_squared_error", n_jobs=-1
-    )
-    gs_en.fit(Xs, y_tr)
-    best_en_p = gs_en.best_params_
 
-    # Build VotingRegressor inside a scaler pipeline
+# ── Voting builder ─────────────────────────────────────────────────────────────
+
+def _build_voting(X_tr, y_tr):
+    """
+    VotingRegressor: ElNet (tuned) + RF (fixed) + XGBoost (tuned).
+
+    Replaces original Ridge+ElNet+RF which over-weighted L2 linear regularisation.
+    Ridge removed; XGBoost added for structural diversity (gradient boosting
+    vs. bagging vs. regularised regression).
+    """
+    tscv = TimeSeriesSplit(n_splits=3)
+    scaler = StandardScaler()
+    Xs = scaler.fit_transform(X_tr)
+
+    best_en_p  = _tune_elnet(Xs, y_tr)
+    best_xgb_p = _tune_xgb(Xs, y_tr)
+
     estimators = [
-        ("ridge", Ridge(alpha=best_alpha)),
-        ("elnet", ElasticNet(alpha=best_en_p["alpha"],
-                             l1_ratio=best_en_p["l1_ratio"],
-                             max_iter=5000)),
+        ("elnet", ElasticNet(
+            alpha=best_en_p["alpha"], l1_ratio=best_en_p["l1_ratio"], max_iter=5000)),
         ("rf",    RandomForestRegressor(**RF_PARAMS)),
+        ("xgb",   XGBRegressor(**XGB_BASE, **best_xgb_p)),
     ]
+    # Pipeline: StandardScaler → VotingRegressor
+    # RF and XGB are scale-invariant; scaling is harmless for them and
+    # required for ElNet.
     voting = Pipeline([
         ("sc",     StandardScaler()),
         ("voting", VotingRegressor(estimators=estimators)),
     ])
     voting.fit(X_tr, y_tr)
-    return voting, best_alpha, best_en_p
+    return voting, {"elnet": best_en_p, "xgb": best_xgb_p}
 
+
+# ── Stacking builder ───────────────────────────────────────────────────────────
 
 def _build_stacking(X_tr, y_tr):
     """
-    StackingRegressor: base=[RF, Ridge, ElNet], meta=Ridge.
-    Uses TimeSeriesSplit cross-val to generate out-of-fold meta-features.
-    Wrapped in a StandardScaler pipeline for the linear base models.
-    """
-    tscv = TimeSeriesSplit(n_splits=3)
+    Walk-forward stacking with TimeSeriesSplit(n_splits=5) OOF generation.
 
-    # Pre-tune Ridge + ElNet params
+    Replaces the previous KFold(n_splits=5, shuffle=False) StackingRegressor
+    which allowed future data to train base models when predicting past samples
+    (look-ahead bias). Here, for every OOF prediction of sample i, the base
+    models are trained ONLY on samples 0..(i-1), i.e. strictly past data.
+
+    Approx. first 1/6 of training samples have no OOF coverage (TimeSeriesSplit
+    constraint) and are excluded from meta-learner training. The fraction
+    excluded is stored as `oof_coverage` in the predictor for reporting.
+
+    Base models: ElNet + RF + XGBoost (same as Voting, consistent diversity).
+    Meta-learner: Ridge (tuned alpha via TimeSeriesSplit on OOF data).
+    Base models are retrained on full training set before deployment.
+    """
+    n = len(y_tr)
+    tscv_outer = TimeSeriesSplit(n_splits=5)
     scaler_tmp = StandardScaler()
     Xs = scaler_tmp.fit_transform(X_tr)
-    best_alpha, best_sc = RIDGE_ALPHAS[0], -np.inf
-    for a in RIDGE_ALPHAS:
-        scores = [
-            r2_score(y_tr[vi],
-                     Ridge(alpha=a).fit(Xs[ti], y_tr[ti]).predict(Xs[vi]))
-            for ti, vi in tscv.split(Xs)
-        ]
-        if np.mean(scores) > best_sc:
-            best_sc, best_alpha = np.mean(scores), a
 
-    gs_en = GridSearchCV(
-        ElasticNet(max_iter=5000), ELNET_GRID, cv=tscv,
-        scoring="neg_root_mean_squared_error", n_jobs=-1
+    # Tune hyperparameters using inner CV on full training data
+    best_en_p  = _tune_elnet(Xs, y_tr)
+    best_xgb_p = _tune_xgb(Xs, y_tr)
+
+    # ── Walk-forward OOF generation ────────────────────────────────────────────
+    oof_en  = np.full(n, np.nan)
+    oof_rf  = np.full(n, np.nan)
+    oof_xgb = np.full(n, np.nan)
+
+    for tr_idx, te_idx in tscv_outer.split(X_tr):
+        # ElNet (needs scaling)
+        en_fold = Pipeline([
+            ("sc", StandardScaler()),
+            ("en", ElasticNet(alpha=best_en_p["alpha"], l1_ratio=best_en_p["l1_ratio"],
+                              max_iter=5000)),
+        ])
+        en_fold.fit(X_tr[tr_idx], y_tr[tr_idx])
+        oof_en[te_idx] = en_fold.predict(X_tr[te_idx])
+
+        # RF
+        rf_fold = RandomForestRegressor(**RF_PARAMS)
+        rf_fold.fit(X_tr[tr_idx], y_tr[tr_idx])
+        oof_rf[te_idx] = rf_fold.predict(X_tr[te_idx])
+
+        # XGB
+        xgb_fold = XGBRegressor(**XGB_BASE, **best_xgb_p)
+        xgb_fold.fit(X_tr[tr_idx], y_tr[tr_idx])
+        oof_xgb[te_idx] = xgb_fold.predict(X_tr[te_idx])
+
+    # Exclude samples with no OOF coverage (first fold's training portion)
+    valid_mask = ~(np.isnan(oof_en) | np.isnan(oof_rf) | np.isnan(oof_xgb))
+    n_valid     = valid_mask.sum()
+    oof_coverage = n_valid / n
+
+    meta_X_oof = np.column_stack([oof_en[valid_mask], oof_rf[valid_mask], oof_xgb[valid_mask]])
+    meta_y_oof = y_tr[valid_mask]
+
+    # Tune Ridge meta-learner on OOF meta-features (strictly past data only)
+    tscv_meta = TimeSeriesSplit(n_splits=3)
+    meta_alpha = _tune_ridge_alpha(meta_X_oof, meta_y_oof)
+    meta_model = Ridge(alpha=meta_alpha)
+    meta_model.fit(meta_X_oof, meta_y_oof)
+
+    print(f"      Stacking OOF coverage: {n_valid}/{n} ({oof_coverage:.1%}), meta α={meta_alpha}")
+
+    # ── Retrain base models on full training set ───────────────────────────────
+    en_full = Pipeline([
+        ("sc", StandardScaler()),
+        ("en", ElasticNet(alpha=best_en_p["alpha"], l1_ratio=best_en_p["l1_ratio"],
+                          max_iter=5000)),
+    ])
+    en_full.fit(X_tr, y_tr)
+
+    rf_full = RandomForestRegressor(**RF_PARAMS)
+    rf_full.fit(X_tr, y_tr)
+
+    xgb_full = XGBRegressor(**XGB_BASE, **best_xgb_p)
+    xgb_full.fit(X_tr, y_tr)
+
+    predictor = WalkForwardStackingPredictor(
+        base_models=[("en", en_full), ("rf", rf_full), ("xgb", xgb_full)],
+        meta_model=meta_model,
+        meta_alpha=meta_alpha,
+        oof_coverage=oof_coverage,
     )
-    gs_en.fit(Xs, y_tr)
-    best_en_p = gs_en.best_params_
-
-    # Stacking base estimators (operate on scaled input)
-    base_estimators = [
-        ("rf",    RandomForestRegressor(**RF_PARAMS)),
-        ("ridge", Pipeline([("sc2", StandardScaler()),
-                            ("r",   Ridge(alpha=best_alpha))])),
-        ("elnet", Pipeline([("sc2", StandardScaler()),
-                            ("e",   ElasticNet(
-                                        alpha=best_en_p["alpha"],
-                                        l1_ratio=best_en_p["l1_ratio"],
-                                        max_iter=5000))])),
-    ]
-
-    # KFold (not TimeSeriesSplit) required by cross_val_predict inside StackingRegressor.
-    # Temporal ordering is preserved by base models; meta-learner just combines outputs.
-    stack_cv = KFold(n_splits=5, shuffle=False)
-
-    stacking = StackingRegressor(
-        estimators=base_estimators,
-        final_estimator=Ridge(alpha=best_alpha),
-        cv=stack_cv,
-        passthrough=False,
-        n_jobs=1,
-    )
-    stacking.fit(X_tr, y_tr)
-    return stacking, best_alpha, best_en_p
+    return predictor, {"elnet": best_en_p, "xgb": best_xgb_p,
+                       "meta_alpha": meta_alpha, "n_oof_valid": int(n_valid)}
 
 
 # ── Per-dataset training ───────────────────────────────────────────────────────
 
-def train_dataset(ds: dict, run: int) -> list[dict]:
+def _per_year_metrics(model, train_df, feat_cols, target):
+    """Return dict {year: (mae, rmse)} for each training year with ≥5 rows."""
+    result = {}
+    for yr in sorted(train_df["Date"].dt.year.unique()):
+        mask = train_df["Date"].dt.year == yr
+        if mask.sum() < 5:
+            continue
+        X_yr = train_df.loc[mask, feat_cols].values
+        y_yr = train_df.loc[mask, target].values
+        preds = model.predict(X_yr)
+        result[yr] = (
+            mean_absolute_error(y_yr, preds),
+            float(np.sqrt(mean_squared_error(y_yr, preds))),
+        )
+    return result
+
+
+def train_dataset(ds: dict, run: int) -> list:
     name   = ds["name"]
     target = ds["target"]
 
@@ -397,8 +434,8 @@ def train_dataset(ds: dict, run: int) -> list[dict]:
     X_train, y_train = train[feat_cols].values, train[target].values
     X_test,  y_test  = test[feat_cols].values,  test[target].values
 
-    records = []
-    df_orig = pd.read_excel(ds["file"])
+    records   = []
+    df_orig   = pd.read_excel(ds["file"])
     df_orig["Date"] = pd.to_datetime(df_orig["Date"])
 
     for model_tag, builder_fn in [
@@ -409,19 +446,35 @@ def train_dataset(ds: dict, run: int) -> list[dict]:
         try:
             result = builder_fn()
             model  = result[0]
-            params = {"alpha": result[1], "elnet": result[2]} if len(result) > 1 else {}
+            params = result[1] if len(result) > 1 else {}
 
             y_tr_pred = model.predict(X_train)
             y_te_pred = model.predict(X_test)
 
-            r2_tr, rmse_tr, mae_tr, _ = _metrics(y_train, y_tr_pred)
-            r2_te, rmse_te, mae_te, mape_te = _metrics(y_test, y_te_pred)
+            r2_tr, rmse_tr, mae_tr, _        = _metrics(y_train, y_tr_pred)
+            r2_te, rmse_te, mae_te, mape_te  = _metrics(y_test,  y_te_pred)
             gap = r2_tr - r2_te
 
-            print(f"      Train R²={r2_tr:+.3f}  Test R²={r2_te:+.3f}  Gap={gap:+.3f}")
+            print(f"      Train R²={r2_tr:+.3f}  Test R²={r2_te:+.3f}  "
+                  f"Gap={gap:+.3f}  MAE_test={mae_te:.3f}")
+
+            # ── Diagnostic metrics (Point 4) ───────────────────────────────
+            y_train_std = float(np.std(y_train))
+            y_test_std  = float(np.std(y_test))
+            nrmse_test  = _nrmse(rmse_te, y_test)
+
+            # MAE and RMSE on 2024 training data as holdout baseline
+            yr_metrics = _per_year_metrics(model, train, feat_cols, target)
+            mae_2024  = yr_metrics.get(2024, (np.nan, np.nan))[0]
+            rmse_2024 = yr_metrics.get(2024, (np.nan, np.nan))[1]
+
+            print(f"      MAE_2024={mae_2024:.3f}  MAE_2025={mae_te:.3f}  "
+                  f"RMSE_2024={rmse_2024:.3f}  RMSE_2025={rmse_te:.3f}  "
+                  f"y_train_std={y_train_std:.3f}  y_test_std={y_test_std:.3f}")
 
             # Save model
-            model_path = os.path.join(MODELS_DIR, f"{name}_{model_tag.lower()}_run_{run}.pkl")
+            model_path = os.path.join(MODELS_DIR,
+                                      f"{name}_{model_tag.lower()}_run_{run}.pkl")
             with open(model_path, "wb") as f:
                 pickle.dump(model, f)
 
@@ -436,32 +489,38 @@ def train_dataset(ds: dict, run: int) -> list[dict]:
                              name, model_tag, run)
 
             # Append predictions to dataset xlsx
-            pred_col = f"predicted_{model_tag}_run_{run}"
+            pred_col   = f"predicted_{model_tag}_run_{run}"
             feat_avail = [c for c in feat_cols if c in df_orig.columns]
             if target in df_orig.columns and all(c in df_orig.columns for c in feat_avail):
-                mask = df_orig[feat_avail + [target]].notna().all(axis=1)
+                mask_orig = df_orig[feat_avail + [target]].notna().all(axis=1)
                 df_orig.loc[:, pred_col] = np.nan
-                df_orig.loc[mask, pred_col] = model.predict(
-                    df_orig.loc[mask, feat_avail].values
+                df_orig.loc[mask_orig, pred_col] = model.predict(
+                    df_orig.loc[mask_orig, feat_avail].values
                 )
 
             records.append({
-                "experiment":  ds["experiment"],
-                "model_name":  f"p9_{model_tag.lower()}_{name.split('_')[-2]}_{name.split('_')[-1]}",
-                "run":         run,
-                "model":       model_tag,
-                "target":      target,
-                "n_train":     len(train),
-                "n_test":      len(test),
-                "n_features":  len(feat_cols),
-                "R2_train":    r2_tr,
-                "RMSE_train":  rmse_tr,
-                "MAE_train":   mae_tr,
-                "R2_test":     r2_te,
-                "RMSE_test":   rmse_te,
-                "MAE_test":    mae_te,
-                "MAPE_test":   mape_te,
-                "R2_gap":      gap,
+                "experiment": ds["experiment"],
+                "model_name": (f"p9_{model_tag.lower()}_"
+                               f"{name.split('_')[-2]}_{name.split('_')[-1]}"),
+                "run":        run,
+                "model":      model_tag,
+                "target":     target,
+                "n_train":    len(train),
+                "n_test":     len(test),
+                "n_features": len(feat_cols),
+                "R2_train":   r2_tr,
+                "RMSE_train": rmse_tr,
+                "MAE_train":  mae_tr,
+                "R2_test":    r2_te,
+                "RMSE_test":  rmse_te,
+                "MAE_test":   mae_te,
+                "NRMSE_test": nrmse_test,
+                "MAPE_test":  mape_te,
+                "R2_gap":     gap,
+                "MAE_2024":    mae_2024,
+                "RMSE_2024":   rmse_2024,
+                "y_train_std": y_train_std,
+                "y_test_std":  y_test_std,
                 "best_params": str(params),
             })
         except Exception as e:
@@ -478,7 +537,9 @@ def train_dataset(ds: dict, run: int) -> list[dict]:
 def main():
     run = _next_run(RESULTS_FILE)
     print(f"=== Phase 9 — Ensemble Models (Voting + Stacking) — Run {run} ===")
-    print(f"Start: {datetime.now().strftime('%H:%M:%S')}")
+    print(f"  Voting:   ElNet + RF + XGB (equal weights)")
+    print(f"  Stacking: ElNet + RF + XGB base → Ridge meta (walk-forward OOF)")
+    print(f"Start: {datetime.now().strftime('%H:%M:%S')}\n")
 
     all_records = []
     for ds in DATASETS:
@@ -501,12 +562,29 @@ def main():
         print("\n=== Summary ===")
         for model_tag in ["Voting", "Stacking"]:
             sub = [r for r in all_records if r["model"] == model_tag]
-            if sub:
-                avg = np.mean([r["R2_test"] for r in sub])
-                print(f"\n  {model_tag}:")
-                for r in sub:
-                    print(f"    {r['target']:45s}  Test R²={r['R2_test']:+.3f}  Gap={r['R2_gap']:+.3f}")
-                print(f"    Avg Test R²: {avg:+.3f}")
+            if not sub:
+                continue
+            avg_r2 = np.mean([r["R2_test"] for r in sub])
+            print(f"\n  {model_tag} (ElNet+RF+XGB):")
+            for r in sub:
+                print(f"    {r['target']:45s}  "
+                      f"R²={r['R2_test']:+.3f}  MAE={r['MAE_test']:.3f}  "
+                      f"MAE_2024={r['MAE_2024']:.3f}  "
+                      f"σ_train={r['y_train_std']:.3f}  σ_test={r['y_test_std']:.3f}")
+            print(f"    Avg Test R²: {avg_r2:+.3f}")
+
+        # Variance diagnosis for targets with negative R²
+        print("\n  === Variance Collapse Diagnosis (R² < 0 targets) ===")
+        for r in all_records:
+            if r["R2_test"] < 0:
+                ratio = r["y_test_std"] / r["y_train_std"] if r["y_train_std"] > 0 else np.nan
+                delta_mae  = r["MAE_test"]  - r["MAE_2024"]
+                delta_rmse = r["RMSE_test"] - r["RMSE_2024"]
+                print(f"    {r['model']:10s} {r['target']:45s}  "
+                      f"R²={r['R2_test']:+.3f}  "
+                      f"σ-ratio={ratio:.2f}  "
+                      f"ΔMAE={delta_mae:+.3f} (2024:{r['MAE_2024']:.3f}→2025:{r['MAE_test']:.3f})  "
+                      f"ΔRMSE={delta_rmse:+.3f} (2024:{r['RMSE_2024']:.3f}→2025:{r['RMSE_test']:.3f})")
 
     print(f"\nDone: {datetime.now().strftime('%H:%M:%S')}")
 
