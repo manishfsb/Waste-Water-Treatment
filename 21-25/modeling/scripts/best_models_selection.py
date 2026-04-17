@@ -100,6 +100,7 @@ def _pick_rules(sub: pd.DataFrame) -> dict:
         naive_model   = naive_row["model"],
         naive_R2      = naive_row["R2_test"],
         naive_gap     = naive_row["R2_gap"],
+        naive_score   = naive_row["gap_adj"],
         naive_RMSE    = naive_row.get("RMSE_test",  float("nan")),
         naive_MAE     = naive_row.get("MAE_test",   float("nan")),
         gadj_model    = gadj_row["model"],
@@ -111,6 +112,7 @@ def _pick_rules(sub: pd.DataFrame) -> dict:
         onese_model   = onese_row["model"],
         onese_R2      = onese_row["R2_test"],
         onese_gap     = onese_row["R2_gap"],
+        onese_score   = onese_row["gap_adj"],
         onese_RMSE    = onese_row.get("RMSE_test",  float("nan")),
         onese_MAE     = onese_row.get("MAE_test",   float("nan")),
         pareto        = ", ".join(front),
@@ -342,52 +344,38 @@ def _render_global_table(df: pd.DataFrame) -> str:
     """
     head = [
         "Target",
-        "Naive winner", "R²", "Gap", "RMSE", "MAE",
-        "One-SE winner", "R²", "Gap", "RMSE", "MAE",
-        "Gap-adj winner", "Gap", "Score", "RMSE", "MAE",
-        "Pareto frontier", "Changed?",
+        "Gap-adj winner", "R²", "Gap", "Score", "RMSE", "MAE",
+        "Pareto frontier",
     ]
     rows = []
     for _, r in df.iterrows():
         state, info_html = _row_state(r)
         btn = _popup_btn(info_html)
 
-        if state == "disagree":
-            naive_bg = _DISAGREE_NAIVE_BG
-            alt_bg   = _DISAGREE_ALT_BG
-        else:
-            naive_bg = ""
-            alt_bg   = _STATE_ALT_BG[state]
-
-        chg = "✓" if r["changed"] else ""
-
         def _td(content, extra_style="", cls=""):
             cls_attr = f" class='{cls}'" if cls else ""
             return f"<td{cls_attr} style='{extra_style}'>{content}</td>"
 
+        gadj_R2    = _cell(r["gadj_R2"])
+        gadj_gap   = _cell(r["gadj_gap"])
+        gadj_score = _cell(r["gadj_score"])
+        gadj_RMSE  = _cell(r.get("gadj_RMSE", float("nan")))
+        gadj_MAE   = _cell(r.get("gadj_MAE",  float("nan")))
+
+        gadj_R2_color  = f"color:{_r2_color(r['gadj_R2'])}"
+        gadj_gap_cls   = _gap_cls(r["gadj_gap"])
+
         tds = [
             f"<td><strong>{r['target_short']}</strong></td>",
-            # Naive block
-            _td(r["naive_model"],                         naive_bg),
-            _td(_cell(r["naive_R2"]),   f"{naive_bg}color:{_r2_color(r['naive_R2'])}"),
-            _td(_cell(r["naive_gap"]),  naive_bg, _gap_cls(r["naive_gap"])),
-            _td(_cell(r.get("naive_RMSE", float("nan"))), naive_bg),
-            _td(_cell(r.get("naive_MAE",  float("nan"))), naive_bg),
-            # One-SE block
-            _td(r["onese_model"],                         alt_bg),
-            _td(_cell(r["onese_R2"]),   f"{alt_bg}color:{_r2_color(r['onese_R2'])}"),
-            _td(_cell(r["onese_gap"]),  alt_bg, _gap_cls(r["onese_gap"])),
-            _td(_cell(r.get("onese_RMSE", float("nan"))), alt_bg),
-            _td(_cell(r.get("onese_MAE",  float("nan"))), alt_bg),
-            # Gap-adj block (no R²; ⓘ button embedded in model cell)
-            f"<td style='{alt_bg}'><strong>{r['gadj_model']}</strong>{btn}</td>",
-            _td(_cell(r["gadj_gap"]),   alt_bg, _gap_cls(r["gadj_gap"])),
-            _td(_cell(r["gadj_score"]), alt_bg),
-            _td(_cell(r.get("gadj_RMSE", float("nan"))), alt_bg),
-            _td(_cell(r.get("gadj_MAE",  float("nan"))), alt_bg),
+            # Gap-adj block
+            f"<td>{r['gadj_model']}{btn}</td>",
+            _td(gadj_R2,                gadj_R2_color),
+            _td(gadj_gap,               "", gadj_gap_cls),
+            _td(gadj_score,             ""),
+            _td(gadj_RMSE,              ""),
+            _td(gadj_MAE,               ""),
             # Meta
             f"<td style='font-size:11px'>{r['pareto']}</td>",
-            f"<td style='text-align:center'>{chg}</td>",
         ]
         rows.append("<tr>" + "".join(tds) + "</tr>")
 
@@ -405,24 +393,26 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
       1  Naive model    (no sort header)
       2  Naive R²
       3  Naive Gap
-      4  Naive RMSE
-      5  Naive MAE
-      6  One-SE model   (no sort header)
-      7  One-SE R²
-      8  One-SE Gap
-      9  One-SE RMSE
-      10 One-SE MAE
-      11 Gap-adj model  (no sort header; ⓘ embedded)
-      12 Gap-adj Gap
-      13 Gap-adj Score
-      14 Gap-adj RMSE
-      15 Gap-adj MAE
-      16 Pareto         (no sort)
-      17 Changed?       (no sort)
+      4  Naive Score
+      5  Naive RMSE
+      6  Naive MAE
+      7  One-SE model   (no sort header)
+      8  One-SE R²
+      9  One-SE Gap
+      10 One-SE Score
+      11 One-SE RMSE
+      12 One-SE MAE
+      13 Gap-adj model  (no sort header; ⓘ embedded)
+      14 Gap-adj R²
+      15 Gap-adj Gap
+      16 Gap-adj Score
+      17 Gap-adj RMSE
+      18 Gap-adj MAE
+      19 Pareto         (no sort)
 
-    N_DATA_COLS = 18 (+ 1 target col = 19 total)
+    N_DATA_COLS = 20 (+ 1 target col = 21 total)
     """
-    N_DATA_COLS = 18
+    N_DATA_COLS = 20
 
     def _sh(label, col_idx, is_num=False):
         arr = f" <span class='sort-arr' data-col='{col_idx}'>↕</span>"
@@ -433,15 +423,15 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
         "<th class='target-th'>Target</th>"
         + _sh("Experiment", 0)
         + "<th>Naive winner</th>"
-        + _sh("R²",   2, True) + _sh("Gap", 3, True)
-        + _sh("RMSE", 4, True) + _sh("MAE", 5, True)
+        + _sh("R²",   2, True) + _sh("Gap", 3, True) + _sh("Score", 4, True)
+        + _sh("RMSE", 5, True) + _sh("MAE", 6, True)
         + "<th>One-SE winner</th>"
-        + _sh("R²",   7, True) + _sh("Gap", 8, True)
-        + _sh("RMSE", 9, True) + _sh("MAE", 10, True)
+        + _sh("R²",   8, True) + _sh("Gap", 9, True) + _sh("Score", 10, True)
+        + _sh("RMSE", 11, True) + _sh("MAE", 12, True)
         + "<th>Gap-adj winner</th>"
-        + _sh("Gap",   12, True) + _sh("Score", 13, True)
-        + _sh("RMSE",  14, True) + _sh("MAE",   15, True)
-        + "<th>Pareto</th><th>Changed?</th>"
+        + _sh("R²",  14, True) + _sh("Gap",  15, True) + _sh("Score", 16, True)
+        + _sh("RMSE", 17, True) + _sh("MAE",  18, True)
+        + "<th>Pareto</th>"
     )
 
     target_order = [t for t in TARGETS_ORDERED if t in df["target"].values]
@@ -451,6 +441,7 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
         grp = df[df["target"] == tgt].sort_values("naive_R2", ascending=False)
         n   = len(grp)
         slug = TARGET_SHORT.get(tgt, tgt).lower().replace(" ", "-")
+        best_gadj_score = grp["gadj_score"].max()
 
         for i_row, (_, r) in enumerate(grp.iterrows()):
             is_first = (i_row == 0)
@@ -458,13 +449,6 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
             btn = _popup_btn(info_html)
             chg = "✓" if r["changed"] else ""
             dv  = lambda v: f"data-val='{_safe_float(v)}'"  # noqa: E731
-
-            if state == "disagree":
-                naive_bg = _DISAGREE_NAIVE_BG
-                alt_bg   = _DISAGREE_ALT_BG
-            else:
-                naive_bg = ""
-                alt_bg   = _STATE_ALT_BG[state]
 
             tds = []
             if is_first:
@@ -474,43 +458,80 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                     f"{r['target_short']}</td>"
                 )
 
+            onese_same = r['onese_model'] == r['naive_model']
+            gadj_same  = r['gadj_model'] == r['naive_model']
+
+            gadj_gap_val = r.get('gadj_gap', float('nan'))
+            is_severe = not pd.isna(gadj_gap_val) and abs(gadj_gap_val) >= 0.25
+
+            if is_severe:
+                gadj_bg = "background:rgba(231,76,60,0.12);"
+            elif gadj_same:
+                gadj_bg = "background:rgba(46,204,113,0.12);"
+            else:
+                gadj_bg = "background:rgba(74,144,217,0.12);"
+
+            def _fmt_st(val_str, is_same):
+                if is_same and val_str and val_str != "—":
+                    return f"<s style='color:var(--text-muted);opacity:0.6'>{val_str}</s>"
+                return val_str
+
+            onese_R2   = _fmt_st(_cell(r['onese_R2']), onese_same)
+            onese_gap  = _fmt_st(_cell(r['onese_gap']), onese_same)
+            onese_score= _fmt_st(_cell(r['onese_score']), onese_same)
+            onese_RMSE = _fmt_st(_cell(r.get('onese_RMSE', float('nan'))), onese_same)
+            onese_MAE  = _fmt_st(_cell(r.get('onese_MAE', float('nan'))), onese_same)
+            
+            gadj_R2    = _fmt_st(_cell(r['gadj_R2']), gadj_same)
+            gadj_gap   = _fmt_st(_cell(r['gadj_gap']), gadj_same)
+            
+            is_best = pd.notna(r['gadj_score']) and pd.notna(best_gadj_score) and r['gadj_score'] == best_gadj_score
+            raw_score = _cell(r['gadj_score'])
+            if is_best:
+                raw_score = f"★ {raw_score}"
+            gadj_score = _fmt_st(raw_score, gadj_same)
+            
+            gadj_RMSE  = _fmt_st(_cell(r.get('gadj_RMSE', float('nan'))), gadj_same)
+            gadj_MAE   = _fmt_st(_cell(r.get('gadj_MAE', float('nan'))), gadj_same)
+            
+            onese_R2_color = "" if onese_same else f"color:{_r2_color(r['onese_R2'])}"
+            onese_gap_cls  = "" if onese_same else _gap_cls(r['onese_gap'])
+            gadj_R2_color  = "" if gadj_same else f"color:{_r2_color(r['gadj_R2'])}"
+            gadj_gap_cls   = "" if gadj_same else _gap_cls(r['gadj_gap'])
+
             tds += [
                 # Experiment (col 0)
                 f"<td {dv(r['exp_key'])}>{r['exp_key']}</td>",
-                # Naive block (cols 1-5)
-                f"<td {dv(r['naive_model'])} style='{naive_bg}'>"
+                # Naive block (cols 1-6)
+                f"<td {dv(r['naive_model'])}>"
                     f"<strong>{r['naive_model']}</strong></td>",
-                f"<td {dv(r['naive_R2'])} style='{naive_bg}color:{_r2_color(r['naive_R2'])}'>"
+                f"<td {dv(r['naive_R2'])} style='color:{_r2_color(r['naive_R2'])}'>"
                     f"{_cell(r['naive_R2'])}</td>",
-                f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}' "
-                    f"style='{naive_bg}'>{_cell(r['naive_gap'])}</td>",
-                f"<td {dv(r.get('naive_RMSE', float('nan')))} style='{naive_bg}'>"
+                f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}'>"
+                    f"{_cell(r['naive_gap'])}</td>",
+                f"<td {dv(r['naive_score'])}>"
+                    f"{_cell(r['naive_score'])}</td>",
+                f"<td {dv(r.get('naive_RMSE', float('nan')))}>"
                     f"{_cell(r.get('naive_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('naive_MAE', float('nan')))} style='{naive_bg}'>"
+                f"<td {dv(r.get('naive_MAE', float('nan')))}>"
                     f"{_cell(r.get('naive_MAE', float('nan')))}</td>",
-                # One-SE block (cols 6-10)
-                f"<td {dv(r['onese_model'])} style='{alt_bg}'>{r['onese_model']}</td>",
-                f"<td {dv(r['onese_R2'])} style='{alt_bg}color:{_r2_color(r['onese_R2'])}'>"
-                    f"{_cell(r['onese_R2'])}</td>",
-                f"<td {dv(r['onese_gap'])} class='{_gap_cls(r['onese_gap'])}' "
-                    f"style='{alt_bg}'>{_cell(r['onese_gap'])}</td>",
-                f"<td {dv(r.get('onese_RMSE', float('nan')))} style='{alt_bg}'>"
-                    f"{_cell(r.get('onese_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('onese_MAE', float('nan')))} style='{alt_bg}'>"
-                    f"{_cell(r.get('onese_MAE', float('nan')))}</td>",
-                # Gap-adj block (cols 11-15; no R²; ⓘ in model cell)
-                f"<td {dv(r['gadj_model'])} style='{alt_bg}'>"
-                    f"<strong>{r['gadj_model']}</strong>{btn}</td>",
-                f"<td {dv(r['gadj_gap'])} class='{_gap_cls(r['gadj_gap'])}' "
-                    f"style='{alt_bg}'>{_cell(r['gadj_gap'])}</td>",
-                f"<td {dv(r['gadj_score'])} style='{alt_bg}'>{_cell(r['gadj_score'])}</td>",
-                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{alt_bg}'>"
-                    f"{_cell(r.get('gadj_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{alt_bg}'>"
-                    f"{_cell(r.get('gadj_MAE', float('nan')))}</td>",
-                # Meta (cols 16-17)
+                # One-SE block (cols 7-12)
+                f"<td {dv(r['onese_model'])}>{r['onese_model']}</td>",
+                f"<td {dv(r['onese_R2'])} style='{onese_R2_color}'>{onese_R2}</td>",
+                f"<td {dv(r['onese_gap'])} class='{onese_gap_cls}'>{onese_gap}</td>",
+                f"<td {dv(r['onese_score'])}>{onese_score}</td>",
+                f"<td {dv(r.get('onese_RMSE', float('nan')))}>{onese_RMSE}</td>",
+                f"<td {dv(r.get('onese_MAE', float('nan')))}>{onese_MAE}</td>",
+                # Gap-adj block (cols 13-18)
+                f"<td {dv(r['gadj_model'])} style='{gadj_bg}'>"
+                    f"{r['gadj_model']}{btn}</td>",
+                f"<td {dv(r['gadj_R2'])} style='{gadj_bg}{gadj_R2_color}'>{gadj_R2}</td>",
+                f"<td {dv(r['gadj_gap'])} class='{gadj_gap_cls}' style='{gadj_bg}'>{gadj_gap}</td>",
+                f"<td {dv(r['gadj_score'])} style='{gadj_bg}'>{gadj_score}</td>",
+                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{gadj_bg}'>{gadj_RMSE}</td>",
+                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{gadj_bg}'>{gadj_MAE}</td>",
+                # Meta (col 19)
                 f"<td style='font-size:10px'>{r['pareto']}</td>",
-                f"<td style='text-align:center'>{chg}</td>",
             ]
 
             attrs = f"data-group='{slug}'"
