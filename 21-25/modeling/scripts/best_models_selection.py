@@ -18,6 +18,8 @@ Outputs:
 Run:  .venv/bin/python3 21-25/modeling/scripts/best_models_selection.py
 """
 
+import html as _html_lib
+import json
 import os
 import sys
 from datetime import datetime
@@ -157,7 +159,7 @@ def build_global(df_all: pd.DataFrame) -> pd.DataFrame:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HTML render
+# HTML render helpers
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _cell(val, d=3):
@@ -182,7 +184,6 @@ def _gap_cls(v):
 
 
 def _safe_float(v):
-    """Return numeric value as string for data-val; 'nan' when missing."""
     try:
         f = float(v)
         return "nan" if np.isnan(f) else str(f)
@@ -190,51 +191,206 @@ def _safe_float(v):
         return "nan"
 
 
-_GREY = "background:rgba(140,140,140,0.12);"
+# ── Row-state classification ──────────────────────────────────────────────────
 
+def _row_state(r):
+    """Classify a result row and return (state_str, info_html).
+
+    state_str:
+      'agree_ok'  — gap-adj == naive AND |gap| < 0.25  (green or yellow gap)
+      'agree_bad' — gap-adj == naive AND |gap| >= 0.25 (red gap, no better alt)
+      'disagree'  — gap-adj picks a different model
+    """
+    gadj   = str(r.get("gadj_model", ""))
+    naive  = str(r.get("naive_model", ""))
+    gap    = r.get("naive_gap", float("nan"))
+    gap_abs = abs(gap) if not pd.isna(gap) else 0.0
+
+    if gadj == naive:
+        if gap_abs >= 0.25:
+            state = "agree_bad"
+            info_html = (
+                "<strong>All rules agree — but the overfitting gap is large.</strong><br><br>"
+                "Naive, gap-adjusted, and one-SE rules all select the same model, "
+                "because no alternative achieves comparable accuracy with a smaller gap. "
+                f"However, the train/test gap is "
+                f"<span style='color:#e74c3c;font-weight:600'>{gap:+.3f}</span> "
+                f"(|gap| ≥ 0.25 — red zone). "
+                "The model is likely memorising training patterns. "
+                "Monitor performance on fresh data, especially during high-flow or "
+                "winter regimes where distribution shift is most pronounced."
+            )
+        else:
+            state = "agree_ok"
+            gap_str   = f"{gap:+.3f}" if not pd.isna(gap) else "—"
+            gap_color = "#2ecc71" if gap_abs < 0.10 else "#f1c40f"
+            thresh    = "well within tolerance (green)" if gap_abs < 0.10 else "within tolerance (yellow)"
+            info_html = (
+                "<strong>All selection rules agree — safe pick.</strong><br><br>"
+                "The naive winner also passes the gap-adjusted test: gap = "
+                f"<span style='color:{gap_color};font-weight:600'>{gap_str}</span> "
+                f"({thresh}). "
+                f"The one-SE rule confirms the same model (within the "
+                f"{ONE_SE_MARGIN} R² equivalence margin). "
+                "No overfitting concern for this experiment × target combination."
+            )
+    else:
+        state = "disagree"
+        gadj_r2  = r.get("gadj_R2",  float("nan"))
+        gadj_gap = r.get("gadj_gap", float("nan"))
+        gap_str  = f"{gap:+.3f}"     if not pd.isna(gap)      else "—"
+        gr2_str  = f"{gadj_r2:+.3f}" if not pd.isna(gadj_r2)  else "—"
+        gg_str   = f"{gadj_gap:+.3f}" if not pd.isna(gadj_gap) else "—"
+        gg_color = ("#2ecc71" if (not pd.isna(gadj_gap) and abs(gadj_gap) < 0.10) else
+                    "#f1c40f" if (not pd.isna(gadj_gap) and abs(gadj_gap) < 0.25) else "#e74c3c")
+        info_html = (
+            "<strong>Rules disagree — gap-adjusted recommends a different model.</strong>"
+            "<br><br>"
+            f"<em>Naive winner:</em> {naive} "
+            f"(R² = {_cell(r.get('naive_R2'))}, "
+            f"gap = <span style='color:#e74c3c;font-weight:600'>{gap_str}</span>) "
+            "— overfit flag.<br>"
+            f"<em>Gap-adjusted:</em> {gadj} "
+            f"(R² = {gr2_str}, "
+            f"gap = <span style='color:{gg_color};font-weight:600'>{gg_str}</span>) "
+            "— preferred for deployment.<br><br>"
+            "The gap-adjusted model trades a small R² reduction for a much smaller "
+            "overfitting gap, suggesting better generalisation on out-of-distribution data."
+        )
+
+    return state, info_html
+
+
+# State cell-background constants
+# Applied to One-SE + Gap-adj cell groups (state agree_ok/agree_bad).
+# For 'disagree': naive cells get a mild warning tint, gadj cells get a blue recommendation tint.
+_STATE_ALT_BG = {
+    "agree_ok":  "background:rgba(46,204,113,0.12);",
+    "agree_bad": "background:rgba(231,76,60,0.10);",
+    "disagree":  "",
+}
+_DISAGREE_NAIVE_BG = "background:rgba(241,196,15,0.07);"
+_DISAGREE_ALT_BG   = "background:rgba(74,144,217,0.12);"
+
+
+def _popup_btn(info_html):
+    """Return HTML for a ⓘ button that triggers the shared overlay popup."""
+    escaped = _html_lib.escape(info_html, quote=True)
+    return (f"<span class='sel-info-btn' data-popup=\"{escaped}\" "
+            f"title='Why this selection?'>ⓘ</span>")
+
+
+# Shared popup overlay (rendered once per page / section).
+_SEL_OVERLAY_HTML = (
+    "<div id='sel-popup-overlay' style='"
+    "display:none;position:fixed;z-index:1000;"
+    "background:var(--card,#23272F);"
+    "border:1px solid var(--border-color,#3a3f4b);"
+    "border-radius:6px;padding:14px 16px 12px;"
+    "max-width:420px;min-width:260px;"
+    "font-size:12px;line-height:1.7;"
+    "color:var(--text,#e0e0e0);"
+    "box-shadow:0 8px 24px rgba(0,0,0,0.55);"
+    "white-space:normal'>"
+    "<button onclick=\"document.getElementById('sel-popup-overlay').style.display='none'\" "
+    "style='float:right;background:none;border:none;cursor:pointer;"
+    "font-size:16px;color:var(--text-muted,#8a8f9a);line-height:1;"
+    "margin:-4px -4px 6px 10px'>×</button>"
+    "<div id='sel-popup-content'></div>"
+    "</div>"
+)
+
+_SEL_POPUP_JS = """
+<script>
+(function(){
+  var overlay = document.getElementById('sel-popup-overlay');
+  if (!overlay) return;
+  document.querySelectorAll('.sel-info-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      document.getElementById('sel-popup-content').innerHTML = btn.dataset.popup || '';
+      var rect = btn.getBoundingClientRect();
+      var top  = rect.bottom + 8;
+      var left = rect.left;
+      if (left + 430 > window.innerWidth) left = Math.max(0, window.innerWidth - 440);
+      if (top  + 220 > window.innerHeight) top  = Math.max(0, rect.top - 228);
+      overlay.style.top  = top  + 'px';
+      overlay.style.left = left + 'px';
+      overlay.style.display = 'block';
+      e.stopPropagation();
+    });
+  });
+  document.addEventListener('click', function(){ overlay.style.display = 'none'; });
+  overlay.addEventListener('click', function(e){ e.stopPropagation(); });
+})();
+</script>
+"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Table renderers
+# ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_global_table(df: pd.DataFrame) -> str:
-    """8-row global table: Naive | One-SE | Gap-adjusted | Pareto | Changed?
-    Columns swapped vs. old order. One-SE and gap-adj cells greyed when
-    one-SE winner == naive winner (all rules agree, no concern)."""
+    """8-row global table.
+
+    Columns (no Gap-adj R²):
+      Target | Naive winner R² Gap RMSE MAE |
+      One-SE winner R² Gap RMSE MAE |
+      Gap-adj winner Gap Score RMSE MAE | Pareto | Changed?
+    Row background depends on state (agree_ok → green, agree_bad → red, disagree → split).
+    ⓘ button in Gap-adj winner cell links to shared overlay popup.
+    """
     head = [
         "Target",
         "Naive winner", "R²", "Gap", "RMSE", "MAE",
         "One-SE winner", "R²", "Gap", "RMSE", "MAE",
-        "Gap-adjusted winner", "R²", "Gap", "Score", "RMSE", "MAE",
+        "Gap-adj winner", "Gap", "Score", "RMSE", "MAE",
         "Pareto frontier", "Changed?",
     ]
     rows = []
     for _, r in df.iterrows():
-        same = (r["onese_model"] == r["naive_model"])
-        bg   = _GREY if same else ""
-        chg  = "✓" if r["changed"] else ""
+        state, info_html = _row_state(r)
+        btn = _popup_btn(info_html)
+
+        if state == "disagree":
+            naive_bg = _DISAGREE_NAIVE_BG
+            alt_bg   = _DISAGREE_ALT_BG
+        else:
+            naive_bg = ""
+            alt_bg   = _STATE_ALT_BG[state]
+
+        chg = "✓" if r["changed"] else ""
+
+        def _td(content, extra_style="", cls=""):
+            cls_attr = f" class='{cls}'" if cls else ""
+            return f"<td{cls_attr} style='{extra_style}'>{content}</td>"
+
         tds = [
             f"<td><strong>{r['target_short']}</strong></td>",
             # Naive block
-            f"<td>{r['naive_model']}</td>",
-            f"<td style='color:{_r2_color(r['naive_R2'])}'>{_cell(r['naive_R2'])}</td>",
-            f"<td class='{_gap_cls(r['naive_gap'])}'>{_cell(r['naive_gap'])}</td>",
-            f"<td>{_cell(r.get('naive_RMSE', float('nan')))}</td>",
-            f"<td>{_cell(r.get('naive_MAE',  float('nan')))}</td>",
+            _td(r["naive_model"],                         naive_bg),
+            _td(_cell(r["naive_R2"]),   f"{naive_bg}color:{_r2_color(r['naive_R2'])}"),
+            _td(_cell(r["naive_gap"]),  naive_bg, _gap_cls(r["naive_gap"])),
+            _td(_cell(r.get("naive_RMSE", float("nan"))), naive_bg),
+            _td(_cell(r.get("naive_MAE",  float("nan"))), naive_bg),
             # One-SE block
-            f"<td style='{bg}'>{r['onese_model']}</td>",
-            f"<td style='{bg}color:{_r2_color(r['onese_R2'])}'>{_cell(r['onese_R2'])}</td>",
-            f"<td class='{_gap_cls(r['onese_gap'])}' style='{bg}'>{_cell(r['onese_gap'])}</td>",
-            f"<td style='{bg}'>{_cell(r.get('onese_RMSE', float('nan')))}</td>",
-            f"<td style='{bg}'>{_cell(r.get('onese_MAE',  float('nan')))}</td>",
-            # Gap-adjusted block
-            f"<td style='{bg}'><strong>{r['gadj_model']}</strong></td>",
-            f"<td style='{bg}color:{_r2_color(r['gadj_R2'])}'>{_cell(r['gadj_R2'])}</td>",
-            f"<td class='{_gap_cls(r['gadj_gap'])}' style='{bg}'>{_cell(r['gadj_gap'])}</td>",
-            f"<td style='{bg}'>{_cell(r['gadj_score'])}</td>",
-            f"<td style='{bg}'>{_cell(r.get('gadj_RMSE', float('nan')))}</td>",
-            f"<td style='{bg}'>{_cell(r.get('gadj_MAE',  float('nan')))}</td>",
+            _td(r["onese_model"],                         alt_bg),
+            _td(_cell(r["onese_R2"]),   f"{alt_bg}color:{_r2_color(r['onese_R2'])}"),
+            _td(_cell(r["onese_gap"]),  alt_bg, _gap_cls(r["onese_gap"])),
+            _td(_cell(r.get("onese_RMSE", float("nan"))), alt_bg),
+            _td(_cell(r.get("onese_MAE",  float("nan"))), alt_bg),
+            # Gap-adj block (no R²; ⓘ button embedded in model cell)
+            f"<td style='{alt_bg}'><strong>{r['gadj_model']}</strong>{btn}</td>",
+            _td(_cell(r["gadj_gap"]),   alt_bg, _gap_cls(r["gadj_gap"])),
+            _td(_cell(r["gadj_score"]), alt_bg),
+            _td(_cell(r.get("gadj_RMSE", float("nan"))), alt_bg),
+            _td(_cell(r.get("gadj_MAE",  float("nan"))), alt_bg),
             # Meta
             f"<td style='font-size:11px'>{r['pareto']}</td>",
             f"<td style='text-align:center'>{chg}</td>",
         ]
         rows.append("<tr>" + "".join(tds) + "</tr>")
+
     thead = "".join(f"<th>{h}</th>" for h in head)
     return ("<table class='sel-table'><thead><tr>"
             + thead + "</tr></thead><tbody>"
@@ -242,23 +398,33 @@ def _render_global_table(df: pd.DataFrame) -> str:
 
 
 def _render_perexp_table(df: pd.DataFrame) -> str:
-    """Per-(experiment × target) table with:
-    - Target first, then Experiment (columns swapped)
-    - One-SE before Gap-adjusted (columns swapped)
-    - Sorted within each target group by naive R² descending (initial)
-    - Merged target cells (rowspan), group whitespace
-    - Sortable column headers via JS within-group sort
-    - One-SE / gap-adj cells greyed when one-SE == naive
+    """Per-(experiment × target) table.
+
+    Columns (logical indices; 0-based, excluding the target rowspan col):
+      0  Experiment
+      1  Naive model    (no sort header)
+      2  Naive R²
+      3  Naive Gap
+      4  Naive RMSE
+      5  Naive MAE
+      6  One-SE model   (no sort header)
+      7  One-SE R²
+      8  One-SE Gap
+      9  One-SE RMSE
+      10 One-SE MAE
+      11 Gap-adj model  (no sort header; ⓘ embedded)
+      12 Gap-adj Gap
+      13 Gap-adj Score
+      14 Gap-adj RMSE
+      15 Gap-adj MAE
+      16 Pareto         (no sort)
+      17 Changed?       (no sort)
+
+    N_DATA_COLS = 18 (+ 1 target col = 19 total)
     """
-    # ── Column definitions (logical indices 0..18, excluding target col) ──────
-    # 0=Exp, 1=Naive model, 2=Naive R², 3=Naive Gap, 4=Naive RMSE, 5=Naive MAE,
-    # 6=OneSE model, 7=OneSE R², 8=OneSE Gap, 9=OneSE RMSE, 10=OneSE MAE,
-    # 11=Gadj model, 12=Gadj R², 13=Gadj Gap, 14=Gadj Score, 15=Gadj RMSE, 16=Gadj MAE,
-    # 17=Pareto, 18=Changed?
-    N_DATA_COLS = 19
+    N_DATA_COLS = 18
 
     def _sh(label, col_idx, is_num=False):
-        """Sortable th: label + ↕ arrow, data-logical-col for JS."""
         arr = f" <span class='sort-arr' data-col='{col_idx}'>↕</span>"
         return (f"<th class='perexp-sort-th' data-logical-col='{col_idx}'"
                 f" data-num='{1 if is_num else 0}'>{label}{arr}</th>")
@@ -273,13 +439,11 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
         + _sh("R²",   7, True) + _sh("Gap", 8, True)
         + _sh("RMSE", 9, True) + _sh("MAE", 10, True)
         + "<th>Gap-adj winner</th>"
-        + _sh("R²",    12, True) + _sh("Gap",   13, True)
-        + _sh("Score", 14, True) + _sh("RMSE",  15, True)
-        + _sh("MAE",   16, True)
+        + _sh("Gap",   12, True) + _sh("Score", 13, True)
+        + _sh("RMSE",  14, True) + _sh("MAE",   15, True)
         + "<th>Pareto</th><th>Changed?</th>"
     )
 
-    # Group by target in TARGETS_ORDERED order
     target_order = [t for t in TARGETS_ORDERED if t in df["target"].values]
     rows_html = []
 
@@ -290,10 +454,17 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
 
         for i_row, (_, r) in enumerate(grp.iterrows()):
             is_first = (i_row == 0)
-            same     = (r["onese_model"] == r["naive_model"])
-            bg       = _GREY if same else ""
-            chg      = "✓" if r["changed"] else ""
-            dv       = lambda v: f"data-val='{_safe_float(v)}'"  # noqa: E731
+            state, info_html = _row_state(r)
+            btn = _popup_btn(info_html)
+            chg = "✓" if r["changed"] else ""
+            dv  = lambda v: f"data-val='{_safe_float(v)}'"  # noqa: E731
+
+            if state == "disagree":
+                naive_bg = _DISAGREE_NAIVE_BG
+                alt_bg   = _DISAGREE_ALT_BG
+            else:
+                naive_bg = ""
+                alt_bg   = _STATE_ALT_BG[state]
 
             tds = []
             if is_first:
@@ -304,41 +475,40 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 )
 
             tds += [
-                # Experiment
+                # Experiment (col 0)
                 f"<td {dv(r['exp_key'])}>{r['exp_key']}</td>",
-                # Naive block
-                f"<td {dv(r['naive_model'])}><strong>{r['naive_model']}</strong></td>",
-                f"<td {dv(r['naive_R2'])} style='color:{_r2_color(r['naive_R2'])}'>"
+                # Naive block (cols 1-5)
+                f"<td {dv(r['naive_model'])} style='{naive_bg}'>"
+                    f"<strong>{r['naive_model']}</strong></td>",
+                f"<td {dv(r['naive_R2'])} style='{naive_bg}color:{_r2_color(r['naive_R2'])}'>"
                     f"{_cell(r['naive_R2'])}</td>",
-                f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}'>"
-                    f"{_cell(r['naive_gap'])}</td>",
-                f"<td {dv(r.get('naive_RMSE', float('nan')))}>"
+                f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}' "
+                    f"style='{naive_bg}'>{_cell(r['naive_gap'])}</td>",
+                f"<td {dv(r.get('naive_RMSE', float('nan')))} style='{naive_bg}'>"
                     f"{_cell(r.get('naive_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('naive_MAE', float('nan')))}>"
+                f"<td {dv(r.get('naive_MAE', float('nan')))} style='{naive_bg}'>"
                     f"{_cell(r.get('naive_MAE', float('nan')))}</td>",
-                # One-SE block
-                f"<td {dv(r['onese_model'])} style='{bg}'>{r['onese_model']}</td>",
-                f"<td {dv(r['onese_R2'])} style='{bg}color:{_r2_color(r['onese_R2'])}'>"
+                # One-SE block (cols 6-10)
+                f"<td {dv(r['onese_model'])} style='{alt_bg}'>{r['onese_model']}</td>",
+                f"<td {dv(r['onese_R2'])} style='{alt_bg}color:{_r2_color(r['onese_R2'])}'>"
                     f"{_cell(r['onese_R2'])}</td>",
-                f"<td {dv(r['onese_gap'])} class='{_gap_cls(r['onese_gap'])}' style='{bg}'>"
-                    f"{_cell(r['onese_gap'])}</td>",
-                f"<td {dv(r.get('onese_RMSE', float('nan')))} style='{bg}'>"
+                f"<td {dv(r['onese_gap'])} class='{_gap_cls(r['onese_gap'])}' "
+                    f"style='{alt_bg}'>{_cell(r['onese_gap'])}</td>",
+                f"<td {dv(r.get('onese_RMSE', float('nan')))} style='{alt_bg}'>"
                     f"{_cell(r.get('onese_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('onese_MAE', float('nan')))} style='{bg}'>"
+                f"<td {dv(r.get('onese_MAE', float('nan')))} style='{alt_bg}'>"
                     f"{_cell(r.get('onese_MAE', float('nan')))}</td>",
-                # Gap-adj block
-                f"<td {dv(r['gadj_model'])} style='{bg}'>"
-                    f"<strong>{r['gadj_model']}</strong></td>",
-                f"<td {dv(r['gadj_R2'])} style='{bg}color:{_r2_color(r['gadj_R2'])}'>"
-                    f"{_cell(r['gadj_R2'])}</td>",
-                f"<td {dv(r['gadj_gap'])} class='{_gap_cls(r['gadj_gap'])}' style='{bg}'>"
-                    f"{_cell(r['gadj_gap'])}</td>",
-                f"<td {dv(r['gadj_score'])} style='{bg}'>{_cell(r['gadj_score'])}</td>",
-                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{bg}'>"
+                # Gap-adj block (cols 11-15; no R²; ⓘ in model cell)
+                f"<td {dv(r['gadj_model'])} style='{alt_bg}'>"
+                    f"<strong>{r['gadj_model']}</strong>{btn}</td>",
+                f"<td {dv(r['gadj_gap'])} class='{_gap_cls(r['gadj_gap'])}' "
+                    f"style='{alt_bg}'>{_cell(r['gadj_gap'])}</td>",
+                f"<td {dv(r['gadj_score'])} style='{alt_bg}'>{_cell(r['gadj_score'])}</td>",
+                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{alt_bg}'>"
                     f"{_cell(r.get('gadj_RMSE', float('nan')))}</td>",
-                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{bg}'>"
+                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{alt_bg}'>"
                     f"{_cell(r.get('gadj_MAE', float('nan')))}</td>",
-                # Meta
+                # Meta (cols 16-17)
                 f"<td style='font-size:10px'>{r['pareto']}</td>",
                 f"<td style='text-align:center'>{chg}</td>",
             ]
@@ -348,7 +518,6 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 attrs += " data-is-first='true'"
             rows_html.append(f"<tr {attrs}>{''.join(tds)}</tr>")
 
-        # Spacer row between groups
         if i_tgt < len(target_order) - 1:
             rows_html.append(
                 f"<tr class='group-gap'>"
@@ -362,90 +531,95 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
         f"<tbody>{''.join(rows_html)}</tbody>"
         f"</table>"
     )
-    return table_html + _PEREXP_SORT_JS
+    return table_html + _perexp_sort_js()
 
 
-_PEREXP_SORT_JS = """
+def _perexp_sort_js() -> str:
+    exp_order_json = json.dumps(EXP_CHART_ORDER)
+    return f"""
 <script>
-(function(){
-  var sortState = null;  // {col: int, asc: bool}
+(function(){{
+  var EXP_ORDER = {exp_order_json};
+  var sortState = null;  // {{col: int, asc: bool}}
 
-  // Attach click handlers to all sort headers
-  document.querySelectorAll('#perexp-tbl .perexp-sort-th').forEach(function(th){
+  document.querySelectorAll('#perexp-tbl .perexp-sort-th').forEach(function(th){{
     th.style.cursor = 'pointer';
-    th.addEventListener('click', function(){
-      var col = parseInt(th.dataset.logicalCol);
+    th.addEventListener('click', function(){{
+      var col   = parseInt(th.dataset.logicalCol);
       var isNum = th.dataset.num === '1';
-      var asc = !(sortState && sortState.col === col && sortState.asc);
-      sortState = {col: col, asc: asc};
-      // Update arrow icons
-      document.querySelectorAll('#perexp-tbl .sort-arr').forEach(function(a){
+      var asc   = !(sortState && sortState.col === col && sortState.asc);
+      sortState = {{col: col, asc: asc}};
+      document.querySelectorAll('#perexp-tbl .sort-arr').forEach(function(a){{
         a.textContent = (parseInt(a.dataset.col) === col) ? (asc ? '↑' : '↓') : '↕';
-      });
+      }});
       sortPerexp(col, isNum, asc);
-    });
-  });
+    }});
+  }});
 
-  function getVal(tr, logicalCol) {
-    // First rows have target-cell at cells[0], so data cols start at cells[1]
+  function getVal(tr, logicalCol) {{
     var offset = tr.dataset.isFirst === 'true' ? 1 : 0;
     var cell = tr.cells[logicalCol + offset];
     if (!cell) return null;
     var v = cell.getAttribute('data-val');
     return (v === null || v === 'nan' || v === '') ? null : v;
-  }
+  }}
 
-  function sortPerexp(col, isNum, asc) {
+  function sortPerexp(col, isNum, asc) {{
     var tbody = document.querySelector('#perexp-tbl tbody');
     var allTrs = Array.from(tbody.querySelectorAll('tr'));
 
-    // Partition into groups and gap rows
-    var groups = {}, groupOrder = [], gapRows = [];
-    allTrs.forEach(function(tr){
-      if (tr.classList.contains('group-gap')){ gapRows.push(tr); return; }
+    var groups = {{}}, groupOrder = [], gapRows = [];
+    allTrs.forEach(function(tr){{
+      if (tr.classList.contains('group-gap')){{ gapRows.push(tr); return; }}
       var g = tr.dataset.group;
       if (!g) return;
-      if (!groups[g]){ groups[g] = []; groupOrder.push(g); }
+      if (!groups[g]){{ groups[g] = []; groupOrder.push(g); }}
       groups[g].push(tr);
-    });
+    }});
 
-    groupOrder.forEach(function(g){
+    groupOrder.forEach(function(g){{
       var rows = groups[g];
 
-      rows.sort(function(a, b){
+      rows.sort(function(a, b){{
         var av = getVal(a, col), bv = getVal(b, col);
         if (av === null && bv === null) return 0;
         if (av === null) return 1;
         if (bv === null) return -1;
-        if (isNum){
+        if (isNum) {{
           var an = parseFloat(av), bn = parseFloat(bv);
           return asc ? an - bn : bn - an;
-        }
+        }}
+        // Experiment column (col 0): sort by canonical EXP_ORDER index
+        if (col === 0) {{
+          var ai = EXP_ORDER.indexOf(av), bi = EXP_ORDER.indexOf(bv);
+          if (ai < 0) ai = 999;
+          if (bi < 0) bi = 999;
+          return asc ? ai - bi : bi - ai;
+        }}
         return asc ? av.localeCompare(bv) : bv.localeCompare(av);
-      });
+      }});
 
       // Move the target-cell td to whichever row is now first
-      var oldFirst = rows.find(function(r){ return r.dataset.isFirst === 'true'; });
+      var oldFirst = rows.find(function(r){{ return r.dataset.isFirst === 'true'; }});
       var newFirst = rows[0];
-      if (oldFirst && newFirst !== oldFirst) {
+      if (oldFirst && newFirst !== oldFirst) {{
         var targetTd = oldFirst.querySelector('.target-cell');
-        if (targetTd) {
+        if (targetTd) {{
           oldFirst.removeChild(targetTd);
           delete oldFirst.dataset.isFirst;
           newFirst.insertBefore(targetTd, newFirst.firstChild);
           newFirst.dataset.isFirst = 'true';
-        }
-      }
-    });
+        }}
+      }}
+    }});
 
-    // Rebuild tbody: groups interleaved with gap rows
     tbody.innerHTML = '';
-    groupOrder.forEach(function(g, i){
-      groups[g].forEach(function(tr){ tbody.appendChild(tr); });
+    groupOrder.forEach(function(g, i){{
+      groups[g].forEach(function(tr){{ tbody.appendChild(tr); }});
       if (gapRows[i]) tbody.appendChild(gapRows[i]);
-    });
-  }
-})();
+    }});
+  }}
+}})();
 </script>
 """
 
@@ -469,6 +643,22 @@ SEL_CSS = """
     .rule-card-sel h4 { margin:0 0 6px 0; font-size:13px; color:#4A90D9; }
     .rule-card-sel p  { margin:2px 0; font-size:12px; color:var(--text-muted); }
     .sel-tbl-wrap { overflow-x:auto; }
+    /* ⓘ info button */
+    .sel-info-btn {
+        cursor:pointer; color:#4A90D9; font-size:12px;
+        margin-left:5px; user-select:none; vertical-align:middle;
+    }
+    .sel-info-btn:hover { color:#74b3f0; }
+    /* State legend */
+    .sel-state-legend {
+        display:flex; gap:16px; flex-wrap:wrap;
+        margin:8px 0 12px; font-size:11px; color:var(--text-muted);
+    }
+    .sel-state-legend span { display:flex; align-items:center; gap:5px; }
+    .sel-state-swatch {
+        display:inline-block; width:12px; height:12px;
+        border-radius:2px; flex-shrink:0;
+    }
 """
 
 
@@ -478,7 +668,22 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
     n_changed_global  = int(global_df["changed"].sum())
     n_changed_per_exp = int(per_exp_df["changed"].sum())
 
+    legend = (
+        "<div class='sel-state-legend'>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(46,204,113,0.35)'></span>"
+        "All rules agree, gap ≤ 0.25</span>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(231,76,60,0.35)'></span>"
+        "All rules agree, gap &gt; 0.25 — caution</span>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(74,144,217,0.35)'></span>"
+        "Gap-adj picks a different model (blue = recommended)</span>"
+        "</div>"
+    )
+
     parts = [
+        _SEL_OVERLAY_HTML,
         f"<style>{SEL_CSS}</style>",
         "<div class='rule-card-sel'>",
         "  <h4>Why re-rank?</h4>",
@@ -501,20 +706,26 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Global best per target (across all experiments)</h3>",
+        legend,
+        "<p style='color:var(--text-muted);font-size:11px;margin:0 0 6px'>"
+        "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
         "<div class='sel-tbl-wrap'>",
         _render_global_table(global_df),
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Best per (experiment × target)</h3>",
+        legend,
         "<p style='color:var(--text-muted);font-size:12px'>",
-        "Sorted within each target group by naive Test R² (descending). "
-        "Click column headers to re-sort within groups. "
-        "Grey cells indicate one-SE winner agrees with naive — no overfitting concern.</p>",
+        "Initially sorted within each target group by naive Test R² (descending). "
+        "Click column headers to re-sort within groups — the Experiment column follows "
+        "canonical experiment order (Exp1 → Exp1-FS → Exp2-Sub1 → … → Phase11). "
+        "Click ⓘ on any Gap-adj winner cell for selection reasoning.</p>",
         "<div class='sel-tbl-wrap'>",
         _render_perexp_table(per_exp_df),
         "</div>",
         f"<p style='color:var(--text-muted);font-size:11px;margin-top:20px'>"
         f"Source: {len(df_all)} model evaluations across "
         f"{df_all['exp_key'].nunique()} experiments.</p>",
+        _SEL_POPUP_JS,
     ]
     return "\n".join(parts)
 
@@ -532,18 +743,42 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
                  padding:12px 16px; margin:12px 0; border-radius:4px; }
     .rule-card h4 { margin:0 0 6px 0; font-size:13px; color:#4A90D9; }
     .rule-card p { margin:2px 0; font-size:12px; color:var(--text-muted); }
+    .sel-info-btn { cursor:pointer; color:#4A90D9; font-size:12px;
+                    margin-left:5px; user-select:none; vertical-align:middle; }
+    .sel-info-btn:hover { color:#74b3f0; }
+    .sel-state-legend { display:flex; gap:16px; flex-wrap:wrap;
+        margin:8px 0 12px; font-size:11px; color:var(--text-muted); }
+    .sel-state-legend span { display:flex; align-items:center; gap:5px; }
+    .sel-state-swatch { display:inline-block; width:12px; height:12px;
+        border-radius:2px; flex-shrink:0; }
     h2 { border-bottom:1px solid var(--border); padding-bottom:4px; }
     body { font-family: -apple-system, Segoe UI, sans-serif; padding:24px; }
     .container { max-width:1400px; margin:0 auto; }
     """)
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-    n_changed_global = int(global_df["changed"].sum())
+    n_changed_global  = int(global_df["changed"].sum())
     n_changed_per_exp = int(per_exp_df["changed"].sum())
+
+    legend = (
+        "<div class='sel-state-legend'>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(46,204,113,0.35)'></span>"
+        "All rules agree, gap ≤ 0.25</span>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(231,76,60,0.35)'></span>"
+        "All rules agree, gap &gt; 0.25 — caution</span>"
+        "<span><span class='sel-state-swatch' "
+        "style='background:rgba(74,144,217,0.35)'></span>"
+        "Gap-adj picks a different model (blue = recommended)</span>"
+        "</div>"
+    )
 
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
         f"<title>Best Models — Overfitting-Aware Selection</title>",
-        f"<style>{css}</style></head><body><div class='container'>",
+        f"<style>{css}</style></head><body>",
+        _SEL_OVERLAY_HTML,
+        "<div class='container'>",
         f"<h1>Overfitting-Aware Best-Model Selection</h1>",
         f"<p style='color:var(--text-muted)'>Generated {ts}</p>",
         "<div class='rule-card'>",
@@ -564,15 +799,26 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
         "</div>",
         "<h2>Global best per target (across all experiments)</h2>",
+        legend,
+        "<p style='color:var(--text-muted);font-size:11px;margin:0 0 6px'>"
+        "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
+        "<div style='overflow-x:auto'>",
         _render_global_table(global_df),
+        "</div>",
         "<h2>Best per (experiment × target)</h2>",
+        legend,
         "<p style='color:var(--text-muted); font-size:12px'>"
         "Sorted within each target group by naive Test R² (descending). "
-        "Click column headers to re-sort within groups.</p>",
+        "Click column headers to re-sort within groups — Experiment column follows "
+        "canonical order (Exp1 → Phase11). "
+        "Click ⓘ on any Gap-adj winner for selection reasoning.</p>",
+        "<div style='overflow-x:auto'>",
         _render_perexp_table(per_exp_df),
+        "</div>",
         f"<p style='color:var(--text-muted); font-size:11px; margin-top:30px'>"
         f"Source: {len(df_all)} model evaluations across "
         f"{df_all['exp_key'].nunique()} experiments.</p>",
+        _SEL_POPUP_JS,
         f"<script>{DARK_MODE_JS}</script></div></body></html>",
     ]
     return "\n".join(parts)

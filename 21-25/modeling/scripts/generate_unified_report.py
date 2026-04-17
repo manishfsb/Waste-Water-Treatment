@@ -2058,7 +2058,7 @@ CUSTOM_CSS = """
   .noalt-info-btn:hover { color: #74b3f0; }
   .noalt-popup {
     position: absolute; left: 0; top: 100%;
-    background: var(--card-bg); border: 1px solid var(--border-color);
+    background: var(--card); border: 1px solid var(--border-color);
     border-radius: 6px; padding: 12px 14px 10px;
     max-width: 420px; min-width: 280px;
     font-size: 12px; line-height: 1.6;
