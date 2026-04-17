@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 
 def get_data():

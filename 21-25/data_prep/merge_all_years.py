@@ -17,7 +17,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ── Column schema ──────────────────────────────────────────────────────────────
 # Only columns present in ALL years (2021 Jul–Dec JSON + 2022–2025 JSON).

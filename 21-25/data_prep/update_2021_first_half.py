@@ -3,7 +3,7 @@ import json
 import csv
 from datetime import datetime
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_PATH = os.path.join(BASE_DIR, "2020", "RAW.csv")
 JSON_2021_PATH = os.path.join(BASE_DIR, "2021", "data", "all_months.json")
 
