@@ -7,7 +7,7 @@ complementary rules instead of raw max(Test R²):
   1. Naive:            argmax(R2_test)                                  — current rule
   2. Gap-adjusted:     argmax(R2_test − λ · max(0, R2_gap − τ))         — penalise overfit
                          where τ=0.10 (tolerated gap), λ=0.5
-  3. One-SE rule:      among models within δ=0.03 R² of the top,
+  3. One-SE rule:      among models within δ=0.05 R² of the top,
                          pick the smallest |R2_gap|
   4. Pareto frontier:  models not dominated in (R2_test↑, |R2_gap|↓)
 
@@ -33,7 +33,7 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 # Reuse the unified loader — single source of truth for schema harmonisation.
 sys.path.insert(0, SCRIPT_DIR)
 from generate_unified_report import (           # noqa: E402
-    load_all_data, TARGETS_ORDERED, TARGET_SHORT,
+    load_all_data, TARGETS_ORDERED, TARGET_SHORT, EXP_CHART_ORDER,
 )
 sys.path.insert(0, MODELING_DIR)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
@@ -41,7 +41,9 @@ from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 # ── Selection-rule parameters ──────────────────────────────────────────────────
 GAP_TOLERANCE  = 0.10   # τ — gaps below this are not penalised
 GAP_PENALTY    = 0.50   # λ — weight on excess gap
-ONE_SE_MARGIN  = 0.03   # δ — R² margin counted as "equivalent"
+ONE_SE_MARGIN  = 0.05   # δ — R² margin counted as "equivalent"
+                        #     0.03 was too tight: SE(R²) ≈ 0.05–0.07 at n_test≈200,
+                        #     so a 0.03 gap is well within measurement noise.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -96,13 +98,19 @@ def _pick_rules(sub: pd.DataFrame) -> dict:
         naive_model   = naive_row["model"],
         naive_R2      = naive_row["R2_test"],
         naive_gap     = naive_row["R2_gap"],
+        naive_RMSE    = naive_row.get("RMSE_test",  float("nan")),
+        naive_MAE     = naive_row.get("MAE_test",   float("nan")),
         gadj_model    = gadj_row["model"],
         gadj_R2       = gadj_row["R2_test"],
         gadj_gap      = gadj_row["R2_gap"],
         gadj_score    = gadj_row["gap_adj"],
+        gadj_RMSE     = gadj_row.get("RMSE_test",   float("nan")),
+        gadj_MAE      = gadj_row.get("MAE_test",    float("nan")),
         onese_model   = onese_row["model"],
         onese_R2      = onese_row["R2_test"],
         onese_gap     = onese_row["R2_gap"],
+        onese_RMSE    = onese_row.get("RMSE_test",  float("nan")),
+        onese_MAE     = onese_row.get("MAE_test",   float("nan")),
         pareto        = ", ".join(front),
         n_pareto      = len(front),
         changed       = (naive_row["model"] != gadj_row["model"])
@@ -173,35 +181,56 @@ def _gap_cls(v):
     return "gap-good" if a < 0.10 else ("gap-warn" if a < 0.25 else "gap-bad")
 
 
-def _render_table(df: pd.DataFrame, include_exp: bool) -> str:
-    head = []
-    if include_exp:
-        head.append("Experiment")
-    head += [
+def _safe_float(v):
+    """Return numeric value as string for data-val; 'nan' when missing."""
+    try:
+        f = float(v)
+        return "nan" if np.isnan(f) else str(f)
+    except (TypeError, ValueError):
+        return "nan"
+
+
+_GREY = "background:rgba(140,140,140,0.12);"
+
+
+def _render_global_table(df: pd.DataFrame) -> str:
+    """8-row global table: Naive | One-SE | Gap-adjusted | Pareto | Changed?
+    Columns swapped vs. old order. One-SE and gap-adj cells greyed when
+    one-SE winner == naive winner (all rules agree, no concern)."""
+    head = [
         "Target",
-        "Naive winner", "R²", "Gap",
-        "Gap-adjusted winner", "R²", "Gap", "Score",
-        "One-SE winner", "R²", "Gap",
+        "Naive winner", "R²", "Gap", "RMSE", "MAE",
+        "One-SE winner", "R²", "Gap", "RMSE", "MAE",
+        "Gap-adjusted winner", "R²", "Gap", "Score", "RMSE", "MAE",
         "Pareto frontier", "Changed?",
     ]
     rows = []
     for _, r in df.iterrows():
-        tds = []
-        if include_exp:
-            tds.append(f"<td>{r['exp_key']}</td>")
-        chg = "✓" if r["changed"] else ""
-        tds += [
+        same = (r["onese_model"] == r["naive_model"])
+        bg   = _GREY if same else ""
+        chg  = "✓" if r["changed"] else ""
+        tds = [
             f"<td><strong>{r['target_short']}</strong></td>",
+            # Naive block
             f"<td>{r['naive_model']}</td>",
             f"<td style='color:{_r2_color(r['naive_R2'])}'>{_cell(r['naive_R2'])}</td>",
             f"<td class='{_gap_cls(r['naive_gap'])}'>{_cell(r['naive_gap'])}</td>",
-            f"<td><strong>{r['gadj_model']}</strong></td>",
-            f"<td style='color:{_r2_color(r['gadj_R2'])}'>{_cell(r['gadj_R2'])}</td>",
-            f"<td class='{_gap_cls(r['gadj_gap'])}'>{_cell(r['gadj_gap'])}</td>",
-            f"<td>{_cell(r['gadj_score'])}</td>",
-            f"<td>{r['onese_model']}</td>",
-            f"<td style='color:{_r2_color(r['onese_R2'])}'>{_cell(r['onese_R2'])}</td>",
-            f"<td class='{_gap_cls(r['onese_gap'])}'>{_cell(r['onese_gap'])}</td>",
+            f"<td>{_cell(r.get('naive_RMSE', float('nan')))}</td>",
+            f"<td>{_cell(r.get('naive_MAE',  float('nan')))}</td>",
+            # One-SE block
+            f"<td style='{bg}'>{r['onese_model']}</td>",
+            f"<td style='{bg}color:{_r2_color(r['onese_R2'])}'>{_cell(r['onese_R2'])}</td>",
+            f"<td class='{_gap_cls(r['onese_gap'])}' style='{bg}'>{_cell(r['onese_gap'])}</td>",
+            f"<td style='{bg}'>{_cell(r.get('onese_RMSE', float('nan')))}</td>",
+            f"<td style='{bg}'>{_cell(r.get('onese_MAE',  float('nan')))}</td>",
+            # Gap-adjusted block
+            f"<td style='{bg}'><strong>{r['gadj_model']}</strong></td>",
+            f"<td style='{bg}color:{_r2_color(r['gadj_R2'])}'>{_cell(r['gadj_R2'])}</td>",
+            f"<td class='{_gap_cls(r['gadj_gap'])}' style='{bg}'>{_cell(r['gadj_gap'])}</td>",
+            f"<td style='{bg}'>{_cell(r['gadj_score'])}</td>",
+            f"<td style='{bg}'>{_cell(r.get('gadj_RMSE', float('nan')))}</td>",
+            f"<td style='{bg}'>{_cell(r.get('gadj_MAE',  float('nan')))}</td>",
+            # Meta
             f"<td style='font-size:11px'>{r['pareto']}</td>",
             f"<td style='text-align:center'>{chg}</td>",
         ]
@@ -210,6 +239,284 @@ def _render_table(df: pd.DataFrame, include_exp: bool) -> str:
     return ("<table class='sel-table'><thead><tr>"
             + thead + "</tr></thead><tbody>"
             + "".join(rows) + "</tbody></table>")
+
+
+def _render_perexp_table(df: pd.DataFrame) -> str:
+    """Per-(experiment × target) table with:
+    - Target first, then Experiment (columns swapped)
+    - One-SE before Gap-adjusted (columns swapped)
+    - Sorted within each target group by naive R² descending (initial)
+    - Merged target cells (rowspan), group whitespace
+    - Sortable column headers via JS within-group sort
+    - One-SE / gap-adj cells greyed when one-SE == naive
+    """
+    # ── Column definitions (logical indices 0..18, excluding target col) ──────
+    # 0=Exp, 1=Naive model, 2=Naive R², 3=Naive Gap, 4=Naive RMSE, 5=Naive MAE,
+    # 6=OneSE model, 7=OneSE R², 8=OneSE Gap, 9=OneSE RMSE, 10=OneSE MAE,
+    # 11=Gadj model, 12=Gadj R², 13=Gadj Gap, 14=Gadj Score, 15=Gadj RMSE, 16=Gadj MAE,
+    # 17=Pareto, 18=Changed?
+    N_DATA_COLS = 19
+
+    def _sh(label, col_idx, is_num=False):
+        """Sortable th: label + ↕ arrow, data-logical-col for JS."""
+        arr = f" <span class='sort-arr' data-col='{col_idx}'>↕</span>"
+        return (f"<th class='perexp-sort-th' data-logical-col='{col_idx}'"
+                f" data-num='{1 if is_num else 0}'>{label}{arr}</th>")
+
+    head_ths = (
+        "<th class='target-th'>Target</th>"
+        + _sh("Experiment", 0)
+        + "<th>Naive winner</th>"
+        + _sh("R²",   2, True) + _sh("Gap", 3, True)
+        + _sh("RMSE", 4, True) + _sh("MAE", 5, True)
+        + "<th>One-SE winner</th>"
+        + _sh("R²",   7, True) + _sh("Gap", 8, True)
+        + _sh("RMSE", 9, True) + _sh("MAE", 10, True)
+        + "<th>Gap-adj winner</th>"
+        + _sh("R²",    12, True) + _sh("Gap",   13, True)
+        + _sh("Score", 14, True) + _sh("RMSE",  15, True)
+        + _sh("MAE",   16, True)
+        + "<th>Pareto</th><th>Changed?</th>"
+    )
+
+    # Group by target in TARGETS_ORDERED order
+    target_order = [t for t in TARGETS_ORDERED if t in df["target"].values]
+    rows_html = []
+
+    for i_tgt, tgt in enumerate(target_order):
+        grp = df[df["target"] == tgt].sort_values("naive_R2", ascending=False)
+        n   = len(grp)
+        slug = TARGET_SHORT.get(tgt, tgt).lower().replace(" ", "-")
+
+        for i_row, (_, r) in enumerate(grp.iterrows()):
+            is_first = (i_row == 0)
+            same     = (r["onese_model"] == r["naive_model"])
+            bg       = _GREY if same else ""
+            chg      = "✓" if r["changed"] else ""
+            dv       = lambda v: f"data-val='{_safe_float(v)}'"  # noqa: E731
+
+            tds = []
+            if is_first:
+                tds.append(
+                    f"<td class='target-cell' rowspan='{n}' "
+                    f"data-val='{r['target_short']}'>"
+                    f"{r['target_short']}</td>"
+                )
+
+            tds += [
+                # Experiment
+                f"<td {dv(r['exp_key'])}>{r['exp_key']}</td>",
+                # Naive block
+                f"<td {dv(r['naive_model'])}><strong>{r['naive_model']}</strong></td>",
+                f"<td {dv(r['naive_R2'])} style='color:{_r2_color(r['naive_R2'])}'>"
+                    f"{_cell(r['naive_R2'])}</td>",
+                f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}'>"
+                    f"{_cell(r['naive_gap'])}</td>",
+                f"<td {dv(r.get('naive_RMSE', float('nan')))}>"
+                    f"{_cell(r.get('naive_RMSE', float('nan')))}</td>",
+                f"<td {dv(r.get('naive_MAE', float('nan')))}>"
+                    f"{_cell(r.get('naive_MAE', float('nan')))}</td>",
+                # One-SE block
+                f"<td {dv(r['onese_model'])} style='{bg}'>{r['onese_model']}</td>",
+                f"<td {dv(r['onese_R2'])} style='{bg}color:{_r2_color(r['onese_R2'])}'>"
+                    f"{_cell(r['onese_R2'])}</td>",
+                f"<td {dv(r['onese_gap'])} class='{_gap_cls(r['onese_gap'])}' style='{bg}'>"
+                    f"{_cell(r['onese_gap'])}</td>",
+                f"<td {dv(r.get('onese_RMSE', float('nan')))} style='{bg}'>"
+                    f"{_cell(r.get('onese_RMSE', float('nan')))}</td>",
+                f"<td {dv(r.get('onese_MAE', float('nan')))} style='{bg}'>"
+                    f"{_cell(r.get('onese_MAE', float('nan')))}</td>",
+                # Gap-adj block
+                f"<td {dv(r['gadj_model'])} style='{bg}'>"
+                    f"<strong>{r['gadj_model']}</strong></td>",
+                f"<td {dv(r['gadj_R2'])} style='{bg}color:{_r2_color(r['gadj_R2'])}'>"
+                    f"{_cell(r['gadj_R2'])}</td>",
+                f"<td {dv(r['gadj_gap'])} class='{_gap_cls(r['gadj_gap'])}' style='{bg}'>"
+                    f"{_cell(r['gadj_gap'])}</td>",
+                f"<td {dv(r['gadj_score'])} style='{bg}'>{_cell(r['gadj_score'])}</td>",
+                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{bg}'>"
+                    f"{_cell(r.get('gadj_RMSE', float('nan')))}</td>",
+                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{bg}'>"
+                    f"{_cell(r.get('gadj_MAE', float('nan')))}</td>",
+                # Meta
+                f"<td style='font-size:10px'>{r['pareto']}</td>",
+                f"<td style='text-align:center'>{chg}</td>",
+            ]
+
+            attrs = f"data-group='{slug}'"
+            if is_first:
+                attrs += " data-is-first='true'"
+            rows_html.append(f"<tr {attrs}>{''.join(tds)}</tr>")
+
+        # Spacer row between groups
+        if i_tgt < len(target_order) - 1:
+            rows_html.append(
+                f"<tr class='group-gap'>"
+                f"<td colspan='{N_DATA_COLS + 1}' "
+                f"style='padding:6px;background:transparent;border:none'></td></tr>"
+            )
+
+    table_html = (
+        f"<table id='perexp-tbl' class='sel-table sel-perexp-tbl'>"
+        f"<thead><tr>{head_ths}</tr></thead>"
+        f"<tbody>{''.join(rows_html)}</tbody>"
+        f"</table>"
+    )
+    return table_html + _PEREXP_SORT_JS
+
+
+_PEREXP_SORT_JS = """
+<script>
+(function(){
+  var sortState = null;  // {col: int, asc: bool}
+
+  // Attach click handlers to all sort headers
+  document.querySelectorAll('#perexp-tbl .perexp-sort-th').forEach(function(th){
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', function(){
+      var col = parseInt(th.dataset.logicalCol);
+      var isNum = th.dataset.num === '1';
+      var asc = !(sortState && sortState.col === col && sortState.asc);
+      sortState = {col: col, asc: asc};
+      // Update arrow icons
+      document.querySelectorAll('#perexp-tbl .sort-arr').forEach(function(a){
+        a.textContent = (parseInt(a.dataset.col) === col) ? (asc ? '↑' : '↓') : '↕';
+      });
+      sortPerexp(col, isNum, asc);
+    });
+  });
+
+  function getVal(tr, logicalCol) {
+    // First rows have target-cell at cells[0], so data cols start at cells[1]
+    var offset = tr.dataset.isFirst === 'true' ? 1 : 0;
+    var cell = tr.cells[logicalCol + offset];
+    if (!cell) return null;
+    var v = cell.getAttribute('data-val');
+    return (v === null || v === 'nan' || v === '') ? null : v;
+  }
+
+  function sortPerexp(col, isNum, asc) {
+    var tbody = document.querySelector('#perexp-tbl tbody');
+    var allTrs = Array.from(tbody.querySelectorAll('tr'));
+
+    // Partition into groups and gap rows
+    var groups = {}, groupOrder = [], gapRows = [];
+    allTrs.forEach(function(tr){
+      if (tr.classList.contains('group-gap')){ gapRows.push(tr); return; }
+      var g = tr.dataset.group;
+      if (!g) return;
+      if (!groups[g]){ groups[g] = []; groupOrder.push(g); }
+      groups[g].push(tr);
+    });
+
+    groupOrder.forEach(function(g){
+      var rows = groups[g];
+
+      rows.sort(function(a, b){
+        var av = getVal(a, col), bv = getVal(b, col);
+        if (av === null && bv === null) return 0;
+        if (av === null) return 1;
+        if (bv === null) return -1;
+        if (isNum){
+          var an = parseFloat(av), bn = parseFloat(bv);
+          return asc ? an - bn : bn - an;
+        }
+        return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+
+      // Move the target-cell td to whichever row is now first
+      var oldFirst = rows.find(function(r){ return r.dataset.isFirst === 'true'; });
+      var newFirst = rows[0];
+      if (oldFirst && newFirst !== oldFirst) {
+        var targetTd = oldFirst.querySelector('.target-cell');
+        if (targetTd) {
+          oldFirst.removeChild(targetTd);
+          delete oldFirst.dataset.isFirst;
+          newFirst.insertBefore(targetTd, newFirst.firstChild);
+          newFirst.dataset.isFirst = 'true';
+        }
+      }
+    });
+
+    // Rebuild tbody: groups interleaved with gap rows
+    tbody.innerHTML = '';
+    groupOrder.forEach(function(g, i){
+      groups[g].forEach(function(tr){ tbody.appendChild(tr); });
+      if (gapRows[i]) tbody.appendChild(gapRows[i]);
+    });
+  }
+})();
+</script>
+"""
+
+
+SEL_CSS = """
+    .sel-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0 20px; }
+    .sel-table th, .sel-table td {
+        padding:5px 8px; border-bottom:1px solid var(--border);
+        text-align:left; white-space:nowrap; }
+    .sel-table th { background:var(--bg-soft); font-weight:600; }
+    .sel-perexp-tbl .target-cell {
+        font-weight:600; background:var(--bg-soft);
+        border-right:2px solid var(--border-color);
+        text-align:center; vertical-align:middle;
+        font-size:11px; padding:6px 10px; }
+    .sel-perexp-tbl .group-gap td { border:none; }
+    .perexp-sort-th:hover { background:var(--toc-bg); }
+    .sort-arr { font-size:10px; color:var(--text-muted); margin-left:2px; }
+    .rule-card-sel { background:var(--bg-soft); border-left:3px solid #4A90D9;
+                     padding:12px 16px; margin:12px 0; border-radius:4px; }
+    .rule-card-sel h4 { margin:0 0 6px 0; font-size:13px; color:#4A90D9; }
+    .rule-card-sel p  { margin:2px 0; font-size:12px; color:var(--text-muted); }
+    .sel-tbl-wrap { overflow-x:auto; }
+"""
+
+
+def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
+                 df_all: pd.DataFrame) -> str:
+    """Return inner section HTML for embedding in the unified report (no html/head/body)."""
+    n_changed_global  = int(global_df["changed"].sum())
+    n_changed_per_exp = int(per_exp_df["changed"].sum())
+
+    parts = [
+        f"<style>{SEL_CSS}</style>",
+        "<div class='rule-card-sel'>",
+        "  <h4>Why re-rank?</h4>",
+        "  <p>On this dataset (n_test ≈ 160–280 for the held-out 2025 year), "
+        "Test R² alone is noisy. A model with R²=0.43 and gap=0.88 is not "
+        "equivalent to one with R²=0.40 and gap=0.02 — the former is memorising.</p>",
+        "  <h4>Rules applied</h4>",
+        f"  <p><strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
+        "Penalises overfit beyond a 10-pt tolerance.</p>",
+        f"  <p><strong>One-SE rule:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|.</p>",
+        "  <p><strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓).</p>",
+        "  <p><strong>RMSE and MAE</strong> are shown alongside R² for each rule's winner — "
+        "they carry the same ranking as R² within a target but are operationally interpretable "
+        "(mg/L for BOD/COD/TSS, pH units for pH).</p>",
+        "</div>",
+        "<div class='rule-card-sel'>",
+        f"  <h4>Headline</h4>",
+        f"  <p>Naive winner differs from gap-adjusted / one-SE winner in "
+        f"<strong>{n_changed_global} / {len(global_df)}</strong> global target rows and "
+        f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
+        "</div>",
+        "<h3 style='margin:20px 0 8px;font-size:15px'>Global best per target (across all experiments)</h3>",
+        "<div class='sel-tbl-wrap'>",
+        _render_global_table(global_df),
+        "</div>",
+        "<h3 style='margin:20px 0 8px;font-size:15px'>Best per (experiment × target)</h3>",
+        "<p style='color:var(--text-muted);font-size:12px'>",
+        "Sorted within each target group by naive Test R² (descending). "
+        "Click column headers to re-sort within groups. "
+        "Grey cells indicate one-SE winner agrees with naive — no overfitting concern.</p>",
+        "<div class='sel-tbl-wrap'>",
+        _render_perexp_table(per_exp_df),
+        "</div>",
+        f"<p style='color:var(--text-muted);font-size:11px;margin-top:20px'>"
+        f"Source: {len(df_all)} model evaluations across "
+        f"{df_all['exp_key'].nunique()} experiments.</p>",
+    ]
+    return "\n".join(parts)
 
 
 def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
@@ -257,12 +564,12 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
         "</div>",
         "<h2>Global best per target (across all experiments)</h2>",
-        _render_table(global_df, include_exp=False),
+        _render_global_table(global_df),
         "<h2>Best per (experiment × target)</h2>",
         "<p style='color:var(--text-muted); font-size:12px'>"
-        "Rows where the gap-adjusted or one-SE rule disagrees with naive Test R² "
-        "are flagged in the rightmost column.</p>",
-        _render_table(per_exp_df, include_exp=True),
+        "Sorted within each target group by naive Test R² (descending). "
+        "Click column headers to re-sort within groups.</p>",
+        _render_perexp_table(per_exp_df),
         f"<p style='color:var(--text-muted); font-size:11px; margin-top:30px'>"
         f"Source: {len(df_all)} model evaluations across "
         f"{df_all['exp_key'].nunique()} experiments.</p>",

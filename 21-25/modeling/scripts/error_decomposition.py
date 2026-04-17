@@ -273,6 +273,78 @@ def render_html(all_results: pd.DataFrame) -> str:
     return "\n".join(parts)
 
 
+def section_html(all_results: pd.DataFrame) -> str:
+    """Return inner section HTML for embedding in the unified report (no html/head/body)."""
+    if all_results.empty:
+        return "<p style='color:var(--text-muted)'>No error decomposition data available.</p>"
+
+    css = """
+    <style>
+    table.ed-decomp { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 24px; }
+    table.ed-decomp th, table.ed-decomp td { padding:5px 8px; border-bottom:1px solid var(--border); }
+    table.ed-decomp th { background:var(--bg-soft); font-weight:600; text-align:left; }
+    table.ed-decomp td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .ed-target-header { font-size:15px; font-weight:600; margin:20px 0 6px;
+                        padding:6px 10px; background:var(--bg-soft);
+                        border-left:3px solid #4A90D9; border-radius:0 4px 4px 0; }
+    .ed-axis-row td { background:var(--bg-soft); font-weight:600; font-size:11px;
+                      text-transform:uppercase; letter-spacing:.4px; color:#4A90D9; }
+    </style>
+    """
+
+    note = (
+        "<p style='color:var(--text-muted);font-size:12px;margin:0 0 12px'>"
+        f"Model: <code>{MODEL_COL}</code> (Phase 9 Voting = ElNet+RF+XGB). "
+        "Quartile thresholds fitted on training years (2021–2024) and applied to 2025. "
+        "Cells where MAE is &gt;1.75× baseline are red — error concentrates in that regime. "
+        "Bias coloured when |bias| &gt; 0.5 × overall MAE (systematic over/under-prediction).</p>"
+    )
+
+    parts = [css, note]
+
+    for target, df_tgt in all_results.groupby("target", sort=False):
+        overall = df_tgt[df_tgt["axis"] == "OVERALL"].iloc[0]
+        mae_overall = overall["mae"]
+
+        parts.append(
+            f"<div class='ed-target-header'>{target} "
+            f"(overall n={int(overall['n'])}, MAE={_fmt(overall['mae'])}, "
+            f"RMSE={_fmt(overall['rmse'])}, bias={_fmt(overall['bias'])}, "
+            f"R²={_fmt(overall['r2'])})</div>"
+        )
+        parts.append("<table class='ed-decomp'>")
+        parts.append(
+            "<thead><tr>"
+            "<th>Axis</th><th>Bucket</th><th>n</th>"
+            "<th>MAE</th><th>RMSE</th><th>Bias</th><th>R²</th>"
+            "</tr></thead><tbody>"
+        )
+        current_axis = None
+        for _, r in df_tgt.iterrows():
+            if r["axis"] == "OVERALL":
+                continue
+            if r["axis"] != current_axis:
+                parts.append(
+                    f"<tr class='ed-axis-row'><td colspan='7'>{r['axis']}</td></tr>"
+                )
+                current_axis = r["axis"]
+            mae_style  = _mae_ratio_color(r["mae"], mae_overall)
+            bias_style = _bias_color(r["bias"], mae_overall)
+            parts.append(
+                "<tr>"
+                f"<td></td><td>{r['bucket']}</td>"
+                f"<td class='num'>{_fmt(r['n'])}</td>"
+                f"<td class='num' style='{mae_style}'>{_fmt(r['mae'])}</td>"
+                f"<td class='num'>{_fmt(r['rmse'])}</td>"
+                f"<td class='num' style='{bias_style}'>{_fmt(r['bias'])}</td>"
+                f"<td class='num'>{_fmt(r['r2'])}</td>"
+                "</tr>"
+            )
+        parts.append("</tbody></table>")
+
+    return "\n".join(parts)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Entry point
 # ═══════════════════════════════════════════════════════════════════════════════

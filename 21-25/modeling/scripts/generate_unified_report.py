@@ -76,8 +76,12 @@ EXP_CHART_LABELS = {
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
     "Phase9-Stacking": "P9-Stack",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
+    "Phase11": "P11",
 }
 EXP_CHART_ORDER = list(EXP_CHART_LABELS.keys())
+
+GRAB_TARGETS = TARGETS_ORDERED[:4]
+COMP_TARGETS = TARGETS_ORDERED[4:]
 
 FEATURE_DESCRIPTIONS = {
     "Exp1": {
@@ -198,6 +202,18 @@ FEATURE_DESCRIPTIONS = {
                      "composite datasets (n_train ≈ 290). Selective approach preserves "
                      "FE gains on grab targets while stabilising composites.",
     },
+    "Phase11": {
+        "label": "Exp3-S2 + Temporal Lags + log1p Target Transform (50–58 features)",
+        "features": "Base Exp3-S2 features + lag 1/3/7-day + 7-day calendar rolling mean "
+                    "applied to inlet + Flow + Power columns only (~50–58 total features per target). "
+                    "BOD/COD/TSS targets log1p-transformed; pH untransformed. "
+                    "Back-transform via Duan smearing: expm1(ŷ) × mean(exp(training residuals)).",
+        "rationale": "Daily wastewater quality has temporal autocorrelation — yesterday's "
+                     "influent predicts today's effluent better than cross-sectional features "
+                     "alone. Lag expansion restricted to inlet+Flow+Power columns to avoid "
+                     "catastrophic overfitting on composite datasets (n≈290 rows). "
+                     "log1p targets reduce right-skew in BOD/COD/TSS distributions.",
+    },
 }
 
 EXP_INTRO = {
@@ -249,6 +265,20 @@ EXP_INTRO = {
         "Phase 10 (full) applies this uniformly to all targets. Phase 10b "
         "(selective) applies FE only to grab targets after discovering that "
         "composite datasets overfit severely with the expanded feature count."
+    ),
+    "Phase11": (
+        "Phase 11 adds <strong>temporal lag features</strong> (lag 1/3/7-day) and a "
+        "<strong>7-day rolling mean</strong> to inlet, Flow, and Power columns, "
+        "plus a log1p target transform on BOD/COD/TSS with Duan smearing back-transform. "
+        "Feature expansion is restricted to inlet+Flow+Power columns to avoid the "
+        "catastrophic overfitting seen when applying temporal features to all columns "
+        "(which would produce ~128 features on ~290 composite rows)."
+        "<br><br>"
+        "Key wins: <strong>Grab BOD</strong> (Ridge 0.656, gap −0.095) and "
+        "<strong>Grab COD</strong> (XGB 0.464, gap +0.057 — new Grab COD high with an honest gap). "
+        "Key losses: all composite targets deteriorate, especially Comp TSS (Ridge −1.04, gap +1.82). "
+        "Conclusion: temporal features help Grab targets; composites lack the sample size to benefit. "
+        "CV_R² and Gap_gen = CV_R² − Test_R² are recorded per model for distribution-shift diagnosis."
     ),
 }
 
@@ -343,6 +373,26 @@ def _norm_phase9(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize Phase 11 results (temporal features + log1p targets)."""
+    out = pd.DataFrame(dict(
+        exp_key="Phase11",
+        target=df["target"],
+        model=df["model"],
+        n_train=df.get("n_train"),
+        n_test=df.get("n_test"),
+        n_features=df.get("n_features"),
+        R2_train=df.get("R2_train"),
+        R2_test=df.get("R2_test"),
+        R2_gap=df.get("R2_gap"),
+        RMSE_train=df.get("RMSE_train"),
+        RMSE_test=df.get("RMSE_test"),
+        MAE_test=df.get("MAE_test"),
+        MAPE_test=df.get("MAPE_test"),
+    ))
+    return out
+
+
 def _norm_phase10(df: pd.DataFrame, is_10b: bool) -> pd.DataFrame:
     exp_key = "Phase10b-FE" if is_10b else "Phase10-FE"
     out = pd.DataFrame(dict(
@@ -407,6 +457,13 @@ def load_all_data() -> pd.DataFrame:
             df = pd.read_excel(path)
             df = df[df["run"] == df["run"].max()]
             frames.append(_norm_phase10(df, is_10b))
+
+    # Phase 11
+    p11 = os.path.join(m, "phase11", "results.xlsx")
+    if os.path.exists(p11):
+        df = pd.read_excel(p11)
+        df = df[df["run"] == df["run"].max()]
+        frames.append(_norm_phase11(df))
 
     combined = pd.concat(frames, ignore_index=True)
 
@@ -826,6 +883,7 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "p9-stacking": ["Phase9-Stacking"],
         "p10-full":    ["Phase10-FE"],
         "p10b":        ["Phase10b-FE"],
+        "p11":         ["Phase11"],
     }
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
@@ -893,7 +951,22 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
         )
     if not rows:
         return ""
-    avg_r2 = df.groupby("target")["R2_test"].max().mean()
+    grab_best_vals = [df[df["target"] == t]["R2_test"].max()
+                      for t in GRAB_TARGETS
+                      if not df[df["target"] == t].dropna(subset=["R2_test"]).empty]
+    comp_best_vals = [df[df["target"] == t]["R2_test"].max()
+                      for t in COMP_TARGETS
+                      if not df[df["target"] == t].dropna(subset=["R2_test"]).empty]
+    grab_avg = float(np.nanmean(grab_best_vals)) if grab_best_vals else float("nan")
+    comp_avg = float(np.nanmean(comp_best_vals)) if comp_best_vals else float("nan")
+    avg_r2   = float(np.nanmean(grab_best_vals + comp_best_vals)) \
+               if (grab_best_vals or comp_best_vals) else float("nan")
+    avg_detail = ""
+    if not np.isnan(grab_avg) and not np.isnan(comp_avg):
+        avg_detail = (
+            f" · Grab avg {_fmt(grab_avg)}"
+            f" · Composite avg <span style='color:{_r2_color(comp_avg)}'>{_fmt(comp_avg)}</span>"
+        )
     overfit_note = ""
     if overfit_warnings:
         overfit_note = (
@@ -914,7 +987,7 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
     return f"""
 <div class="best-box">
   <div class="best-box-title">Best Model in {label}
-    <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}</span>
+    <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
   </div>
   <table class="summary-table best-table">
     <thead><tr><th>Target</th><th>Model</th><th>Test R²</th><th>Gap</th><th>Source</th></tr></thead>
@@ -973,7 +1046,59 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
 # OVERVIEW SECTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _no_alt_popup_text(tgt: str, naive_compound: str, naive_r2: float,
+                        naive_gap: float, df_all: pd.DataFrame) -> str:
+    """Generate a concise paragraph explaining why no better alternative exists."""
+    from best_models_selection import _gap_adjusted_score, ONE_SE_MARGIN  # noqa: E402
+    sub = df_all[df_all["target"] == tgt].dropna(subset=["R2_test"]).copy()
+    sub = sub.assign(model=sub["exp_key"].astype(str) + " · " + sub["model"].astype(str))
+    sub["gap_adj"] = sub.apply(lambda r: _gap_adjusted_score(r["R2_test"], r["R2_gap"]), axis=1)
+
+    # One-SE window
+    within = sub[sub["R2_test"] >= naive_r2 - ONE_SE_MARGIN].copy()
+    within["abs_gap"] = within["R2_gap"].abs()
+    within = within.sort_values("abs_gap")
+
+    window_items = [
+        f"{r['model']} (R²={r['R2_test']:.3f}, gap={r['R2_gap']:+.3f})"
+        for _, r in within.iterrows()
+    ]
+    window_str = "; ".join(window_items) if window_items else "none"
+
+    min_gap_in_window = within["abs_gap"].min() if not within.empty else float("nan")
+    n_window = len(within)
+
+    # Best gap-adjusted model (should equal naive since no_alt)
+    best_gadj = sub.loc[sub["gap_adj"].idxmax()] if sub["gap_adj"].notna().any() else None
+    gadj_score = best_gadj["gap_adj"] if best_gadj is not None else float("nan")
+
+    intro = (
+        f"{n_window} model{'s' if n_window != 1 else ''} fall within the "
+        f"±{ONE_SE_MARGIN} R² competitive window: {window_str}. "
+    )
+    if np.isnan(min_gap_in_window):
+        gap_note = "No gap data available for window members."
+    else:
+        gap_note = (
+            f"The smallest |gap| among them is {min_gap_in_window:+.3f} — "
+            f"every competitive model carries a substantial overfit gap. "
+        )
+    conclusion = (
+        f"The gap-adjusted score (max {gadj_score:.3f}) still peaks at the naive champion "
+        f"({naive_compound}), so no less-overfit alternative achieves comparable accuracy "
+        f"on this target. This target needs more training data, better features, or "
+        f"a regime-specific model rather than a different model from the current pool."
+    )
+    return intro + gap_note + conclusion
+
+
 def _global_leaderboard(df_all: pd.DataFrame) -> str:
+    # Late import — best_models_selection imports from this module, so must be deferred
+    from best_models_selection import build_global as _build_global  # noqa: E402
+    global_picks   = _build_global(df_all)
+    gadj_by_target = {row["target"]: row for _, row in global_picks.iterrows()}
+    _popup_counter = [0]  # mutable counter for unique popup IDs
+
     rows = []
     for tgt in TARGETS_ORDERED:
         sub = df_all[df_all["target"] == tgt].dropna(subset=["R2_test"])
@@ -981,91 +1106,238 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
             continue
         best = sub.loc[sub["R2_test"].idxmax()]
         slug = TARGET_SLUG.get(tgt, "all")
-        col = _r2_color(best["R2_test"])
-        exp_label = EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"])
-        mdl_col2 = MODEL_COLORS.get(best["model"], "#888")
-        gap_cls2 = _gap_cls(best["R2_gap"])
-        n_tr = _fmt(best["n_train"], 0) if not np.isnan(best["n_train"]) else "—"
+
+        # ── Naive champion ─────────────────────────────────────────────────────
+        naive_r2   = best["R2_test"]
+        naive_gap  = best["R2_gap"]
+        naive_rmse = best.get("RMSE_test", float("nan"))
+        naive_mdl  = best["model"]
+        exp_label  = EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"])
+        mdl_col    = MODEL_COLORS.get(naive_mdl, "#888")
+
+        # ── Gap-adjusted recommendation (across all experiments) ───────────────
+        # build_global stores "exp_key · model" as the composite label so that
+        # the rule can distinguish the same model type from different experiments.
+        naive_compound = f"{best['exp_key']} · {naive_mdl}"
+
+        gpick = gadj_by_target.get(tgt)
+        if gpick is not None:
+            gadj_lbl  = str(gpick.get("gadj_model", "—"))
+            gadj_r2   = float(gpick.get("gadj_R2",  float("nan")))
+            gadj_gap  = float(gpick.get("gadj_gap", float("nan")))
+            gadj_rmse = float(gpick.get("gadj_RMSE", float("nan")))
+        else:
+            gadj_lbl = naive_compound; gadj_r2 = naive_r2
+            gadj_gap = naive_gap; gadj_rmse = naive_rmse
+
+        # Classify this row into three display states:
+        #   • gap_ok       — naive gap is acceptable (< 0.10); no concern, blank right side
+        #   • has_alt      — gap is concerning AND gap-adj picks a DIFFERENT model
+        #   • no_alt       — gap is concerning but gap-adj picks the SAME model (no better option)
+        gap_ok   = naive_gap < 0.10          # positive direction is the concerning one
+        has_alt  = (not gap_ok) and (gadj_lbl != naive_compound)
+        no_alt   = (not gap_ok) and (gadj_lbl == naive_compound)
+
+        if gap_ok:
+            right_cells = "<td></td><td></td><td></td><td></td>"
+            warn_cell   = "<td></td>"
+        elif has_alt:
+            right_cells = (
+                f"<td style='font-size:11px;color:var(--text-muted)'>{gadj_lbl}</td>"
+                f"<td style='color:{_r2_color(gadj_r2)}'>{_fmt(gadj_r2)}</td>"
+                f"<td class='{_gap_cls(gadj_gap)}'>{_fmt(gadj_gap)}</td>"
+                f"<td class='meta'>{_fmt(gadj_rmse)}</td>"
+            )
+            warn_cell = (
+                "<td style='color:#E67E22;font-size:15px;text-align:center"
+                ";vertical-align:middle' title='Naive model is overfit; "
+                "consider the gap-adjusted recommendation instead'>⚠</td>"
+            )
+        else:  # no_alt
+            _popup_counter[0] += 1
+            pid = f"noalt-popup-{_popup_counter[0]}"
+            popup_text = _no_alt_popup_text(
+                tgt, naive_compound, naive_r2, naive_gap, df_all
+            )
+            # Escape single quotes for inline HTML attribute
+            popup_text_safe = popup_text.replace("'", "&#39;")
+            right_cells = (
+                f"<td colspan='4' style='color:var(--text-muted);font-size:11px"
+                f";font-style:italic;position:relative'>"
+                f"no better alternative found"
+                f"<span class='noalt-info-btn' "
+                f"onclick=\"document.getElementById('{pid}').style.display="
+                f"document.getElementById('{pid}').style.display==='none'?'block':'none';"
+                f"event.stopPropagation()\" "
+                f"title='Click for details'>ⓘ</span>"
+                f"<div id='{pid}' class='noalt-popup' style='display:none'>"
+                f"<button class='noalt-popup-close' "
+                f"onclick=\"this.parentElement.style.display='none'\">×</button>"
+                f"<p>{popup_text}</p>"
+                f"</div></td>"
+            )
+            warn_cell = (
+                "<td style='color:#E67E22;font-size:15px;text-align:center"
+                ";vertical-align:middle' title='Naive model is overfit but "
+                "no less-overfit model achieves comparable accuracy'>⚠</td>"
+            )
+
         rows.append(
             f'<tr data-target="{slug}">'
+            # Naive champion
             f'<td><strong>{TARGET_SHORT.get(tgt, tgt)}</strong></td>'
-            f'<td><strong style="color:{mdl_col2};">{best["model"]}</strong></td>'
-            f'<td style="color:{col};font-weight:bold;font-size:15px">'
-            f'{_fmt(best["R2_test"])}</td>'
-            f'<td class="{gap_cls2}">{_fmt(best["R2_gap"])}</td>'
-            f'<td class="meta">{exp_label}</td>'
-            f'<td>{n_tr} / '
-            f'{_fmt(best["n_test"],0) if not np.isnan(best["n_test"]) else "—"}</td>'
+            f'<td><strong style="color:{mdl_col}">{naive_mdl}</strong></td>'
+            f'<td style="color:{_r2_color(naive_r2)};font-weight:bold">{_fmt(naive_r2)}</td>'
+            f'<td class="{_gap_cls(naive_gap)}">{_fmt(naive_gap)}</td>'
+            f'<td class="meta">{_fmt(naive_rmse)}</td>'
+            f'<td class="meta" style="font-size:11px">{exp_label}</td>'
+            + right_cells + warn_cell +
             f'</tr>'
         )
-    avg_all = df_all.groupby("target")["R2_test"].max().mean()
+
+    # Compute split averages (naive best per target)
+    grab_vals = [df_all[df_all["target"] == t]["R2_test"].max()
+                 for t in GRAB_TARGETS
+                 if not df_all[df_all["target"] == t].dropna(subset=["R2_test"]).empty]
+    comp_vals = [df_all[df_all["target"] == t]["R2_test"].max()
+                 for t in COMP_TARGETS
+                 if not df_all[df_all["target"] == t].dropna(subset=["R2_test"]).empty]
+    grab_avg = float(np.nanmean(grab_vals)) if grab_vals else float("nan")
+    comp_avg = float(np.nanmean(comp_vals)) if comp_vals else float("nan")
+    avg_all  = float(np.nanmean(grab_vals + comp_vals)) if (grab_vals or comp_vals) else float("nan")
+
+    def _avg_row(label, val):
+        return (
+            f"<tr style='background:var(--toc-bg);font-style:italic'>"
+            f"<td colspan='10' style='text-align:right;color:var(--text-muted);font-size:11px'>"
+            f"{label}</td>"
+            f"<td style='font-weight:700;color:{_r2_color(val)};white-space:nowrap'>"
+            f"avg R² {_fmt(val)}</td></tr>"
+        )
+
+    avg_rows = (
+        _avg_row("Avg naive best R² — Grab targets", grab_avg) +
+        _avg_row("Avg naive best R² — Composite targets", comp_avg) +
+        _avg_row("Avg naive best R² — All targets", avg_all)
+    )
+
     return f"""
 <div class="card section-card" id="overview-leaderboard">
   <h2>Global Leaderboard — Best Result Per Target</h2>
-  <p class="meta">The highest Test R² achieved for each target across all experiments,
-  models, and phases. Use the target filter buttons above the table to focus on
-  specific parameters.</p>
-  <table class="summary-table leaderboard-table">
-    <thead><tr>
-      <th>Target</th><th>Model</th><th>Test R²</th>
-      <th>R² Gap</th><th>Experiment</th><th>n_train / n_test</th>
-    </tr></thead>
-    <tbody>{"".join(rows)}</tbody>
-  </table>
-  <p class="meta" style="margin-top:8px">
-    Overall avg best Test R² = <strong>{_fmt(avg_all)}</strong> (mean of per-target maxima)
+  <p class="meta">
+    Left half: the <strong>highest raw Test R²</strong> achieved for each target across all
+    experiments — the naive ceiling.
+    Right half: the <strong>gap-adjusted recommendation</strong> — the best model after
+    penalising large train/test gaps (see
+    <a href="#model-selection">Model Selection</a> for the full rule explanation).
+    A <span style="color:#E67E22">⚠</span> in the last column flags targets where the
+    recommended model differs from the naive champion — those are the cases where
+    overfitting matters for deployment.
   </p>
+  <div style="overflow-x:auto">
+  <table class="summary-table leaderboard-table">
+    <thead>
+      <tr>
+        <th rowspan="2">Target</th>
+        <th colspan="5" style="text-align:center;border-bottom:1px solid var(--border-color)">
+          Naive champion (highest Test R²)</th>
+        <th colspan="4" style="text-align:center;border-bottom:1px solid var(--border-color)">
+          Recommended (gap-adjusted)</th>
+        <th rowspan="2">⚠</th>
+      </tr>
+      <tr>
+        <th>Model</th><th>Test R²</th><th>R² Gap</th><th>RMSE</th><th>Experiment</th>
+        <th>Model · Experiment</th><th>R²</th><th>Gap</th><th>RMSE</th>
+      </tr>
+    </thead>
+    <tbody>{"".join(rows)}{avg_rows}</tbody>
+  </table>
+  </div>
 </div>"""
 
 
 def _progression_chart(df_all: pd.DataFrame) -> str:
-    """Chart.js line chart: avg Test R² per experiment per model family."""
-    # Compute avg R² per (exp_key, model) across all targets
-    grp = df_all.groupby(["exp_key", "model"])["R2_test"].mean().reset_index()
+    """Chart.js line chart with R² / RMSE / MAE toggle per model family."""
+    chart_models = ["Ridge", "ElNet", "RF", "Voting", "Stacking", "ANN"]
+    metrics = [
+        ("R2_test",   "Avg Test R²",   False),   # (col, y-label, lower_is_better)
+        ("RMSE_test", "Avg Test RMSE", True),
+        ("MAE_test",  "Avg Test MAE",  True),
+    ]
 
-    exp_order_present = [e for e in EXP_CHART_ORDER if e in grp["exp_key"].values]
+    # Build one grp per metric
+    grp_all = {}
+    for col, _, _ in metrics:
+        if col in df_all.columns:
+            grp_all[col] = df_all.groupby(["exp_key", "model"])[col].mean().reset_index()
+        else:
+            grp_all[col] = pd.DataFrame(columns=["exp_key", "model", col])
+
+    # Determine x-axis from R2 presence
+    grp_r2 = grp_all["R2_test"]
+    exp_order_present = [e for e in EXP_CHART_ORDER if e in grp_r2["exp_key"].values]
     labels = [EXP_CHART_LABELS.get(e, e) for e in exp_order_present]
 
-    # Models to show in chart — pick the "winner" per family to keep it readable
-    chart_models = ["Ridge", "ElNet", "RF", "Voting", "Stacking", "ANN"]
-    datasets = []
-    for mdl in chart_models:
-        data = []
-        for ek in exp_order_present:
-            row = grp[(grp["exp_key"] == ek) & (grp["model"] == mdl)]
-            val = float(row["R2_test"].values[0]) if not row.empty else None
-            data.append(val if val is not None and not np.isnan(val) else None)
-        # Only include if model appears at least once
-        if any(v is not None for v in data):
-            datasets.append({
-                "label": mdl,
-                "data": data,
-                "borderColor": MODEL_COLORS.get(mdl, "#888"),
-                "backgroundColor": MODEL_COLORS.get(mdl, "#888"),
-                "spanGaps": True,
-                "tension": 0.3,
-                "pointRadius": 5,
-                "borderWidth": 2,
-            })
+    def _build_datasets(col):
+        grp = grp_all[col]
+        out = []
+        for mdl in chart_models:
+            data = []
+            for ek in exp_order_present:
+                row = grp[(grp["exp_key"] == ek) & (grp["model"] == mdl)]
+                val = float(row[col].values[0]) if not row.empty else None
+                data.append(val if val is not None and not np.isnan(val) else None)
+            if any(v is not None for v in data):
+                out.append({
+                    "label": mdl,
+                    "data": data,
+                    "borderColor": MODEL_COLORS.get(mdl, "#888"),
+                    "backgroundColor": MODEL_COLORS.get(mdl, "#888"),
+                    "spanGaps": True,
+                    "tension": 0.3,
+                    "pointRadius": 5,
+                    "borderWidth": 2,
+                })
+        return out
 
-    chart_data = json.dumps({"labels": labels, "datasets": datasets})
+    all_data = {
+        "r2":   {"labels": labels, "datasets": _build_datasets("R2_test")},
+        "rmse": {"labels": labels, "datasets": _build_datasets("RMSE_test")},
+        "mae":  {"labels": labels, "datasets": _build_datasets("MAE_test")},
+    }
+    chart_json = json.dumps(all_data)
+
     return f"""
 <div class="card section-card" id="overview-progression">
-  <h2>R² Progression Across Experiments</h2>
-  <p class="meta">Average Test R² across all 8 targets per model per experiment.
-  Gaps in a line indicate the model was not run in that experiment.</p>
+  <h2>Metric Progression Across Experiments</h2>
+  <p class="meta">Average metric across all 8 targets per model per experiment.
+  Gaps in a line indicate the model was not run in that experiment.
+  <strong>R²:</strong> higher is better. <strong>RMSE / MAE:</strong> lower is better (original units, mg/L or pH).</p>
+  <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="prog-btn-r2"   onclick="switchProgMetric('r2')"
+      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid #4A90D9;background:#4A90D9;color:#fff;font-weight:600">R²</button>
+    <button id="prog-btn-rmse" onclick="switchProgMetric('rmse')"
+      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color)">RMSE</button>
+    <button id="prog-btn-mae"  onclick="switchProgMetric('mae')"
+      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color)">MAE</button>
+  </div>
   <div style="position:relative;height:380px;max-width:1000px;margin:0 auto">
     <canvas id="progressionChart"></canvas>
   </div>
   <script>
   (function() {{
-    var ctx = document.getElementById('progressionChart').getContext('2d');
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var allData   = {chart_json};
+    var isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
     var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
     var textColor = isDark ? '#A0A6B2' : '#555';
-    new Chart(ctx, {{
+
+    var yLabels = {{ r2: 'Avg Test R²', rmse: 'Avg Test RMSE', mae: 'Avg Test MAE' }};
+    var lowerBetter = {{ r2: false, rmse: true, mae: true }};
+
+    var ctx = document.getElementById('progressionChart').getContext('2d');
+    var progChart = new Chart(ctx, {{
       type: 'line',
-      data: {chart_data},
+      data: allData['r2'],
       options: {{
         responsive: true,
         maintainAspectRatio: false,
@@ -1073,9 +1345,9 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
           legend: {{ labels: {{ color: textColor, boxWidth: 14 }} }},
           tooltip: {{
             callbacks: {{
-              label: function(ctx) {{
-                var v = ctx.parsed.y;
-                return ctx.dataset.label + ': ' + (v !== null ? v.toFixed(3) : 'n/a');
+              label: function(c) {{
+                var v = c.parsed.y;
+                return c.dataset.label + ': ' + (v !== null ? v.toFixed(3) : 'n/a');
               }}
             }}
           }}
@@ -1090,6 +1362,37 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
         }}
       }}
     }});
+
+    window.switchProgMetric = function(metric) {{
+      progChart.data = allData[metric];
+      // Update y-axis label and scale hints
+      var isLower = lowerBetter[metric];
+      progChart.options.scales.y.title.text = yLabels[metric];
+      if (metric === 'r2') {{
+        progChart.options.scales.y.suggestedMin = -0.2;
+        progChart.options.scales.y.suggestedMax = 0.7;
+      }} else {{
+        delete progChart.options.scales.y.suggestedMin;
+        delete progChart.options.scales.y.suggestedMax;
+      }}
+      progChart.update();
+
+      // Update button styles
+      ['r2','rmse','mae'].forEach(function(m) {{
+        var btn = document.getElementById('prog-btn-' + m);
+        if (m === metric) {{
+          btn.style.background = '#4A90D9';
+          btn.style.color = '#fff';
+          btn.style.borderColor = '#4A90D9';
+          btn.style.fontWeight = '600';
+        }} else {{
+          btn.style.background = 'var(--card-bg)';
+          btn.style.color = 'var(--text-color)';
+          btn.style.borderColor = 'var(--border-color)';
+          btn.style.fontWeight = 'normal';
+        }}
+      }});
+    }};
   }})();
   </script>
 </div>"""
@@ -1425,6 +1728,46 @@ def build_phase10_section(df_all: pd.DataFrame) -> str:
 </section>"""
 
 
+def build_phase11_section(df_all: pd.DataFrame) -> str:
+    df = df_all[df_all["exp_key"] == "Phase11"].copy()
+    if df.empty:
+        return ""
+    models = [m for m in ALL_MODELS_ORD if m in df["model"].values]
+    feat_html = _feature_card("Phase11")
+    ds_html   = _dataset_summary(df)
+    tbl       = _metrics_table(df, models, "p11-comp")
+    train_tbl = _train_metrics_table(df, models)
+    best      = _best_model_box(df, "Phase 11")
+
+    # Phase 11-specific callout: CV_R2 is very noisy on first fold
+    cv_note = """
+<div class="info-note">
+  <strong>Phase 11 CV note:</strong> <code>CV_R²</code> and <code>Gap_gen = CV_R² − Test_R²</code>
+  are stored in results.xlsx but not shown in the table above (unified schema). They are available
+  in the raw <code>models/phase11/results.xlsx</code>. The first TimeSeriesSplit fold trains on
+  ~80 rows with ~55 features, making CV_R² very noisy for Ridge/ElNet — interpret per-fold
+  rather than as a mean. Key finding: Grab COD RF has CV_R²=0.291, Gap_gen=−0.014 — the most
+  consistent Grab COD model by cross-validation.
+</div>"""
+
+    return f"""
+<section id="phase11">
+  <h1 class="section-title">Phase 11 — Temporal Features + log1p Targets</h1>
+  <p class="section-intro">{EXP_INTRO["Phase11"]}</p>
+  <details class="exp-details" open id="p11-detail">
+    <summary><span class="fold-icon">▶</span> Phase 11 — All Models</summary>
+    <div class="exp-body">
+      {feat_html}
+      {ds_html}
+      {tbl}
+      {train_tbl}
+    </div>
+  </details>
+  {cv_note}
+  {best}
+</section>"""
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR NAV
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1492,6 +1835,25 @@ def _sidebar() -> str:
     <div class="nav-group-items" id="nav-p10">
       <a class="nav-item nav-sub" href="#p10-full">Full FE (P10)</a>
       <a class="nav-item nav-sub" href="#p10b">Selective FE (P10b) ★</a>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-p11">
+      Phase 11 — Temporal <span class="nav-chevron">▾</span>
+    </div>
+    <div class="nav-group-items" id="nav-p11">
+      <a class="nav-item nav-sub" href="#phase11">Temporal Lags + log1p</a>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-analytics">
+      Analytics <span class="nav-chevron">▾</span>
+    </div>
+    <div class="nav-group-items" id="nav-analytics">
+      <a class="nav-item nav-sub" href="#model-selection">Overfit-Aware Selection</a>
+      <a class="nav-item nav-sub" href="#error-decomposition">Error Regime Decomposition</a>
     </div>
   </div>
 
@@ -1688,6 +2050,29 @@ CUSTOM_CSS = """
   .gap-warn { color: #f39c12; font-weight: 600; }
   .gap-bad  { color: #e74c3c; font-weight: 600; }
 
+  /* ── No-alt ⓘ popup ─────────────────────────────────────────────── */
+  .noalt-info-btn {
+    cursor: pointer; color: #4A90D9; font-size: 13px;
+    margin-left: 6px; user-select: none;
+  }
+  .noalt-info-btn:hover { color: #74b3f0; }
+  .noalt-popup {
+    position: absolute; left: 0; top: 100%;
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 6px; padding: 12px 14px 10px;
+    max-width: 420px; min-width: 280px;
+    font-size: 12px; line-height: 1.6;
+    color: var(--text-color); z-index: 200;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    white-space: normal; font-style: normal;
+  }
+  .noalt-popup p { margin: 0; }
+  .noalt-popup-close {
+    float: right; background: none; border: none;
+    cursor: pointer; color: var(--text-muted);
+    font-size: 15px; line-height: 1; margin: -2px -2px 4px 8px;
+  }
+
   /* ── Best model box ────────────────────────────────────────────── */
   .best-box {
     border: 2px solid #4A90D9; border-radius: 8px;
@@ -1763,6 +2148,15 @@ CUSTOM_CSS = """
 
 FILTER_JS = """
 <script>
+// ── No-alt popup: close on outside click ───────────────────────────────────
+document.addEventListener('click', function(e) {
+  if (!e.target.classList.contains('noalt-info-btn')) {
+    document.querySelectorAll('.noalt-popup').forEach(function(p) {
+      p.style.display = 'none';
+    });
+  }
+});
+
 // ── Target filter ──────────────────────────────────────────────────────────
 (function() {
   var currentFilter = 'all';
@@ -1863,7 +2257,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // SECTION_BESTS is injected by Python below
   var sectionOrder = ['exp1-full','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
                       'exp3-s1','exp3-s1-fs','exp3-s2','p9-ann','p9-voting','p9-stacking',
-                      'p10-full','p10b'];
+                      'p10-full','p10b','p11'];
   var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',
                       'Comp BOD','Comp COD','Comp TSS','Comp pH'];
   var modelColors  = {
@@ -1959,6 +2353,63 @@ def _filter_bar() -> str:
     return f'<div class="filter-bar" id="global-filter"><label>Filter by target:</label>{btns}</div>'
 
 
+def _build_model_selection_section(df_all: pd.DataFrame) -> str:
+    """Build the overfit-aware model selection section by importing from best_models_selection."""
+    # Late import to avoid circular dependency at module level
+    # (best_models_selection imports from generate_unified_report)
+    from best_models_selection import (  # noqa: E402
+        build_global, build_per_experiment, section_html as bms_section_html,
+    )
+    global_df  = build_global(df_all)
+    per_exp_df = build_per_experiment(df_all)
+    inner = bms_section_html(global_df, per_exp_df, df_all)
+    return f"""
+<section id="model-selection">
+  <h1 class="section-title">Overfit-Aware Model Selection</h1>
+  <p class="section-intro">
+    Three complementary rules re-rank every (target × experiment) row beyond naive
+    max(Test R²): <strong>gap-adjusted score</strong> penalises overfit beyond a 10-pt
+    tolerance; the <strong>one-SE rule</strong> picks the smallest-gap model within
+    0.03 R² of the top; the <strong>Pareto frontier</strong> lists all models not
+    dominated on (R²_test ↑, |gap| ↓). RMSE and MAE are shown alongside R² for
+    operational interpretability — they rank identically to R² within a target but
+    carry real units (mg/L or pH) that relate to discharge consent limits.
+  </p>
+  {inner}
+</section>"""
+
+
+def _build_error_decomposition_section() -> str:
+    """Build the error decomposition section by importing from error_decomposition."""
+    from error_decomposition import (   # noqa: E402
+        decompose_target, TARGETS as ED_TARGETS, section_html as ed_section_html,
+    )
+    frames = []
+    for name, tgt, inlet in ED_TARGETS:
+        df = decompose_target(name, tgt, inlet)
+        if not df.empty:
+            frames.append(df)
+    if not frames:
+        combined = pd.DataFrame()
+    else:
+        combined = pd.concat(frames, ignore_index=True)
+    inner = ed_section_html(combined)
+    return f"""
+<section id="error-decomposition">
+  <h1 class="section-title">2025 Residual Decomposition by Operational Regime</h1>
+  <p class="section-intro">
+    Decomposes 2025 residuals for the <strong>Phase 9 Voting</strong> (ElNet+RF+XGB)
+    model across four operational axes: Flow quartile, Weekday vs Weekend, Season
+    (DJF/MAM/JJA/SON), and Inlet Load quartile. Quartile thresholds are fit on the
+    training set (2021–2024) only. Headline finding: error concentrates in
+    <strong>Q4 high-flow</strong> and <strong>DJF winter</strong> regimes (2–3× overall
+    MAE) for every BOD/TSS target — predictions during hydraulic or thermal stress
+    should be flagged as low-confidence.
+  </p>
+  {inner}
+</section>"""
+
+
 def main():
     print("Loading results data…")
     df_all = load_all_data()
@@ -1967,6 +2418,7 @@ def main():
           f"{df_all['model'].nunique()} models.")
 
     print("Building HTML sections…")
+    print("  Building experiment and phase sections…")
     sections = [
         build_overview(df_all),
         build_exp1_section(df_all),
@@ -1974,7 +2426,14 @@ def main():
         build_exp3_section(df_all),
         build_phase9_section(df_all),
         build_phase10_section(df_all),
+        build_phase11_section(df_all),
     ]
+
+    print("  Building model selection section…")
+    sections.append(_build_model_selection_section(df_all))
+
+    print("  Building error decomposition section…")
+    sections.append(_build_error_decomposition_section())
 
     # Inline section-bests JSON for the running leaders JS widget
     sec_bests_json = _section_bests_json(df_all)
@@ -2000,7 +2459,7 @@ def main():
   <div class="page-header">
     <h1>Wastewater Treatment — Unified Modeling Report</h1>
     <p class="meta">Generated {ts} &nbsp;·&nbsp;
-      Experiments 1–3 + Phases 9–10 &nbsp;·&nbsp;
+      Experiments 1–3 + Phases 9–11 &nbsp;·&nbsp;
       9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp;
       Train 2021–2024 · Test 2025
     </p>
