@@ -83,6 +83,37 @@ EXP_CHART_ORDER = list(EXP_CHART_LABELS.keys())
 GRAB_TARGETS = TARGETS_ORDERED[:4]
 COMP_TARGETS = TARGETS_ORDERED[4:]
 
+# MdAE is the primary reliability metric for these targets (severe outlier distributions)
+MDAE_TARGETS = {
+    "Effluent BOD (mg/L, Grab)",
+    "Effluent TSS (mg/L, Grab)",
+    "Effluent BOD (mg/L, Composite)",
+    "Effluent TSS (mg/L, Composite)",
+}
+
+# Dataset directory fragment → exp_key (order matters: most-specific first)
+_DS_EXP_MAP = [
+    ("experiment3/sub_exp2",                           "Exp3-S2"),
+    ("experiment3/sub_exp1/feature_selected_datasets", "Exp3-S1-FS"),
+    ("experiment3/sub_exp1",                           "Exp3-S1"),
+    ("experiment2/sub_exp2/feature_selected_datasets", "Exp2-Sub2-FS"),
+    ("experiment2/sub_exp2",                           "Exp2-Sub2"),
+    ("experiment2/sub_exp1/feature_selected_datasets", "Exp2-Sub1-FS"),
+    ("experiment2/sub_exp1",                           "Exp2-Sub1"),
+    ("experiment1/feature_selected_datasets",          "Exp1-FS"),
+    ("experiment1",                                    "Exp1"),
+]
+
+# predicted_<TAG>_run_N → canonical model name
+_PRED_MODEL_MAP = {
+    "OLS": "OLS", "Ridge": "Ridge", "ElNet": "ElNet",
+    "RF_NL": "RF", "GB_NL": "GB", "XGB_NL": "XGB",
+    "ANN": "ANN", "Voting": "Voting", "Stacking": "Stacking",
+}
+
+# Phase 9 models live inside Exp3-S2 files but belong to a different exp_key
+_PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Ensemble", "Stacking": "Phase9-Ensemble"}
+
 FEATURE_DESCRIPTIONS = {
     "Exp1": {
         "label": "Inlet + COMMON (9 features)",
@@ -483,6 +514,79 @@ def load_all_data() -> pd.DataFrame:
     return combined
 
 
+def compute_all_mdae() -> pd.DataFrame:
+    """Scan every dataset xlsx file, compute MdAE on 2025 rows for BOD/TSS targets only.
+
+    Returns a DataFrame with columns: exp_key, model, target, MdAE_test.
+    Phase 10 and Phase 11 do not store row-level predictions so those phases
+    are absent — MdAE_test will be NaN for them after the merge.
+    """
+    import glob, re
+    ds_base = os.path.join(MODELING_DIR, "datasets")
+    records = []
+
+    for fpath in sorted(glob.glob(os.path.join(ds_base, "**", "*.xlsx"), recursive=True)):
+        rel = fpath.replace(ds_base + os.sep, "").replace("\\", "/")
+
+        # Determine exp_key from directory path
+        exp_key = None
+        for fragment, key in _DS_EXP_MAP:
+            if rel.startswith(fragment):
+                exp_key = key
+                break
+        if exp_key is None:
+            continue
+
+        df = pd.read_excel(fpath)
+        if "Date" not in df.columns:
+            continue
+        df["Date"] = pd.to_datetime(df["Date"])
+        df_2025 = df[df["Date"].dt.year == 2025]
+        if len(df_2025) < 5:
+            continue
+
+        # Identify target column (single Effluent column)
+        tgt_cols = [c for c in df.columns if c.startswith("Effluent")]
+        if len(tgt_cols) != 1:
+            continue
+        target = tgt_cols[0]
+        if target not in MDAE_TARGETS:
+            continue
+
+        # Find predicted columns, take highest run per model tag
+        pred_cols = [c for c in df.columns if c.startswith("predicted_")]
+        best_run: dict = {}
+        for col in pred_cols:
+            m = re.match(r"predicted_(.+)_run_(\d+)$", col)
+            if not m:
+                continue
+            tag, run = m.group(1), int(m.group(2))
+            if tag not in best_run or run > best_run[tag][0]:
+                best_run[tag] = (run, col)
+
+        for tag, (run, col) in best_run.items():
+            model = _PRED_MODEL_MAP.get(tag)
+            if model is None:
+                continue
+
+            # Phase 9 models stored in Exp3-S2 files need their own exp_key
+            row_exp_key = exp_key
+            if exp_key == "Exp3-S2" and model in _PHASE9_EXP:
+                row_exp_key = _PHASE9_EXP[model]
+
+            sub = df_2025[[target, col]].dropna()
+            if len(sub) < 5:
+                continue
+
+            mdae = float(np.median(np.abs(sub[target].values - sub[col].values)))
+            records.append({"exp_key": row_exp_key, "model": model,
+                            "target": target, "MdAE_test": mdae})
+
+    if not records:
+        return pd.DataFrame(columns=["exp_key", "model", "target", "MdAE_test"])
+    return pd.DataFrame(records)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # HTML UTILITIES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -611,7 +715,12 @@ def _pick_best(avail, sub):
 
 
 def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
-    """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE / MAE).
+    """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE / MAE / MdAE).
+
+    MdAE (Median Absolute Error) is shown for BOD and TSS targets only — these have
+    severe outlier distributions (up to 9.8% severe outliers in training) where RMSE
+    is dominated by spikes. MdAE is the primary reliability metric for those targets.
+    Phase 10 and Phase 11 do not store row-level predictions so MdAE is unavailable (—).
 
     Best-model highlighting uses a threshold rule:
       - Any model has R² ≥ 0 → highlight highest R² (★)
@@ -621,11 +730,16 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
     if not avail:
         return "<p class='meta'>No data for these models.</p>"
 
+    has_mdae = "MdAE_test" in df.columns
+
     hdr1 = "".join(
-        '<th colspan="4" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "#888"), m)
+        '<th colspan="5" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "#888"), m)
         for m in avail
     )
-    hdr2 = "".join("<th>Test R²</th><th>R² Gap</th><th>RMSE</th><th>MAE</th>" for _ in avail)
+    hdr2 = "".join(
+        "<th>Test R²</th><th>R² Gap</th><th>RMSE</th><th>MAE</th><th>MdAE</th>"
+        for _ in avail
+    )
 
     rows = []
     for tgt in TARGETS_ORDERED:
@@ -634,9 +748,9 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
             continue
         slug = TARGET_SLUG.get(tgt, "all")
         cells = f'<td class="tgt-name">{TARGET_SHORT.get(tgt, tgt)}</td>'
+        show_mdae = tgt in MDAE_TARGETS
 
         best_models = _pick_best(avail, sub)
-        # Determine whether best is by R² or RMSE (for star placement)
         r2_vals = {m: sub[sub["model"] == m]["R2_test"].values[0]
                    for m in avail if m in sub["model"].values}
         use_rmse_fallback = bool(r2_vals) and max(
@@ -646,7 +760,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         for m in avail:
             msub = sub[sub["model"] == m]
             if msub.empty:
-                cells += "<td>—</td><td>—</td><td>—</td><td>—</td>"
+                cells += "<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>"
                 continue
             r2   = msub["R2_test"].values[0]
             gap  = msub["R2_gap"].values[0]
@@ -656,9 +770,20 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
 
             cell_bg = "background:rgba(74,144,217,0.20);font-weight:bold;" if is_best else ""
 
-            # Star goes on R² normally; on RMSE when using fallback criterion
             r2_star   = "★ " if (is_best and not use_rmse_fallback) else ""
             rmse_star = "★ " if (is_best and use_rmse_fallback)     else ""
+
+            # MdAE cell — only for BOD/TSS targets; dash otherwise
+            if show_mdae and has_mdae:
+                mdae_val = msub["MdAE_test"].values[0]
+                mdae_str = _fmt(mdae_val) if not (isinstance(mdae_val, float) and np.isnan(mdae_val)) else "—"
+                mdae_title = 'title="Primary reliability metric for outlier-prone targets"'
+                mdae_cell = (
+                    f'<td style="color:#f1c40f;font-style:italic;" {mdae_title}>'
+                    f'{mdae_str}</td>'
+                )
+            else:
+                mdae_cell = '<td style="color:var(--text-muted)">—</td>'
 
             cells += (
                 f'<td style="color:{_r2_color(r2)};{cell_bg}">'
@@ -667,6 +792,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
                 f'<td style="{cell_bg if use_rmse_fallback else ""}">'
                 f'{rmse_star}{_fmt(rmse)}</td>'
                 f'<td>{_fmt(mae)}</td>'
+                f'{mdae_cell}'
             )
         rows.append(f'<tr data-target="{slug}">{cells}</tr>')
 
@@ -689,6 +815,13 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         '<span class="gap-good">■ &lt;0.10 OK</span> · '
         '<span class="gap-warn">■ 0.10–0.25 mild overfit</span> · '
         '<span class="gap-bad">■ &gt;0.25 severe overfit — treat result with caution</span>.</p>'
+        '<p class="table-note">'
+        '<span style="color:#f1c40f;font-style:italic;">MdAE</span> '
+        '(Median Absolute Error) shown for BOD and TSS targets only — RMSE is unreliable '
+        'for these targets due to severe outlier distributions (up to 9.8% severe outliers '
+        'in training data, TSS train max = 1266 mg/L). '
+        'MdAE is the primary reliability metric for BOD/TSS; — indicates predictions not '
+        'stored at row level (Phase 10 / Phase 11).</p>'
     )
     table = f"""
 <div class="tbl-wrap" id="{section_id}">
@@ -2416,6 +2549,17 @@ def main():
     print(f"  Loaded {len(df_all)} rows across "
           f"{df_all['exp_key'].nunique()} experiments, "
           f"{df_all['model'].nunique()} models.")
+
+    print("Computing MdAE from stored predictions (BOD/TSS targets)…")
+    mdae_df = compute_all_mdae()
+    if not mdae_df.empty:
+        df_all = df_all.merge(mdae_df, on=["exp_key", "model", "target"], how="left")
+        n_filled = df_all["MdAE_test"].notna().sum()
+        print(f"  MdAE computed for {n_filled} rows "
+              f"({mdae_df['exp_key'].nunique()} experiments × BOD/TSS targets).")
+    else:
+        df_all["MdAE_test"] = np.nan
+        print("  No MdAE data found — MdAE column will show — in report.")
 
     print("Building HTML sections…")
     print("  Building experiment and phase sections…")
