@@ -60,6 +60,26 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
         and not any(c.startswith(p) for p in _EXCLUDE_PREFIXES)
     ]
 
+def _cyclic_features(df: pd.DataFrame) -> tuple:
+    """Compute sin/cos encoding of month and day-of-week from Date column.
+
+    Returns (array of shape [n, 4], list of 4 feature names).
+    month: 1–12 encoded on a 12-period cycle.
+    day_of_week: 0–6 encoded on a 7-period cycle.
+    closed='left' semantics are not needed here — Date is the calendar date
+    of the measurement, not a look-ahead value.
+    """
+    m = df["Date"].dt.month.values.astype(float)
+    d = df["Date"].dt.dayofweek.values.astype(float)
+    X = np.column_stack([
+        np.sin(2 * np.pi * m / 12),
+        np.cos(2 * np.pi * m / 12),
+        np.sin(2 * np.pi * d / 7),
+        np.cos(2 * np.pi * d / 7),
+    ])
+    names = ["month_sin", "month_cos", "dow_sin", "dow_cos"]
+    return X, names
+
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _e3s2(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2", f"{name}.xlsx")
@@ -147,6 +167,18 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     X_test  = test_df[features].values
     y_test  = test_df[target].values
     X_all   = df[features].values
+
+    # Append cyclical time features (sin/cos of month and day-of-week).
+    # Raw integer month/day_of_week are excluded from infer_features; these
+    # encoded versions are injected here so linear models see temporal patterns
+    # without imposing false ordinality (Jan=1 < Dec=12 would be meaningless).
+    cyc_tr,  cyc_names = _cyclic_features(train_df)
+    cyc_te,  _         = _cyclic_features(test_df)
+    cyc_all, _         = _cyclic_features(df)
+    X_train = np.hstack([X_train, cyc_tr])
+    X_test  = np.hstack([X_test,  cyc_te])
+    X_all   = np.hstack([X_all,   cyc_all])
+    features = features + cyc_names
 
     print(f"  Train: {len(train_df):>4d} rows | Test: {len(test_df):>3d} rows")
 

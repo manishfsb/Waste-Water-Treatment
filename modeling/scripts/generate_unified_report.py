@@ -999,6 +999,253 @@ def _data_cost_div(df_all: pd.DataFrame, expanded_key: str, base_key: str) -> st
 </div>"""
 
 
+def _vif_callout() -> str:
+    """Compute VIF for Exp3-S2 feature sets inline and render as a foldable section."""
+    try:
+        from statsmodels.stats.outliers_influence import variance_inflation_factor
+        from statsmodels.tools.tools import add_constant
+    except ImportError:
+        return '<div class="info-note">VIF analysis requires statsmodels (pip install statsmodels).</div>'
+
+    ds_dir = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2")
+    DATASETS = [
+        ("s2_stage3_grab_BOD", "Effluent BOD (mg/L, Grab)"),
+        ("s2_stage3_grab_COD", "Effluent COD (mg/L, Grab)"),
+        ("s2_stage3_grab_TSS", "Effluent TSS (mg/L, Grab)"),
+        ("s2_stage3_grab_pH",  "Effluent pH (Grab)"),
+        ("s2_stage3_comp_BOD", "Effluent BOD (mg/L, Composite)"),
+        ("s2_stage3_comp_COD", "Effluent COD (mg/L, Composite)"),
+        ("s2_stage3_comp_TSS", "Effluent TSS (mg/L, Composite)"),
+        ("s2_stage3_comp_pH",  "Effluent pH (Composite)"),
+    ]
+    EXCLUDE = {"Date", "year", "month", "day_of_week"}
+
+    def _infer_feats(df, target):
+        return [c for c in df.columns if c != target and c not in EXCLUDE
+                and not c.startswith("predicted_")]
+
+    def _compute_vif(X, names):
+        Xc = add_constant(X, has_constant="add")
+        rows = []
+        for i, name in enumerate(names):
+            try:
+                vif = variance_inflation_factor(Xc, i + 1)
+            except Exception:
+                vif = float("nan")
+            rows.append((name, round(float(vif), 2)))
+        return sorted(rows, key=lambda x: -x[1])
+
+    def _vflag(vif):
+        if vif > 10: return "HIGH", "#e74c3c"
+        if vif > 5:  return "MODERATE", "#f39c12"
+        return "OK", "#2ecc71"
+
+    total_high = total_mod = 0
+    ds_htmls = []
+
+    for name, target in DATASETS:
+        path = os.path.join(ds_dir, f"{name}.xlsx")
+        if not os.path.exists(path):
+            continue
+        df = pd.read_excel(path, parse_dates=["Date"])
+        train = df[df["year"] < 2025].copy()
+        features = _infer_feats(train, target)
+        X_clean = train[features].dropna()
+        if X_clean.empty:
+            continue
+        vif_rows = _compute_vif(X_clean.values, features)
+        n_high = sum(1 for _, v in vif_rows if v > 10)
+        n_mod  = sum(1 for _, v in vif_rows if 5 < v <= 10)
+        total_high += n_high
+        total_mod  += n_mod
+
+        short_name = name.replace("s2_stage3_", "").replace("_", " ").title()
+        tbl_rows = ""
+        for feat, vif_val in vif_rows:
+            flag, fc = _vflag(vif_val)
+            vif_str = f"{vif_val:.2f}" if not (isinstance(vif_val, float) and np.isnan(vif_val)) else "—"
+            bold = "bold" if vif_val > 10 else "normal"
+            tbl_rows += (
+                f'<tr><td>{feat}</td>'
+                f'<td style="color:{fc};font-weight:{bold}">{vif_str}</td>'
+                f'<td><span style="color:{fc};font-size:11px">{flag}</span></td></tr>'
+            )
+
+        badge_col = "#e74c3c" if n_high > 0 else ("#f39c12" if n_mod > 0 else "#2ecc71")
+        ok_ct     = len(vif_rows) - n_high - n_mod
+        badge_txt = f"{n_high} HIGH · {n_mod} MOD · {ok_ct} OK"
+        ds_htmls.append(f"""
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> {short_name}
+    <span style="margin-left:8px;font-size:11px;color:{badge_col}">{badge_txt}</span>
+  </summary>
+  <div class="fold-body">
+    <p class="meta">n_train (complete rows): {len(X_clean)} · n_features: {len(features)}</p>
+    <table class="summary-table" style="font-size:12px;max-width:540px">
+      <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
+      <tbody>{tbl_rows}</tbody>
+    </table>
+  </div>
+</details>""")
+
+    summary_html = (
+        f'<p class="meta">Global across all 8 datasets: '
+        f'<strong style="color:#e74c3c">{total_high} HIGH (VIF&gt;10)</strong> · '
+        f'<strong style="color:#f39c12">{total_mod} MODERATE (VIF 5–10)</strong>. '
+        f'Concentrated in Sec Sed vs Sec Clarifier pairs (adjacent measurements of the same parameter) '
+        f'and Aeration SVI (mathematically derived from SV30/MLSS). '
+        f'ElasticNet handles collinearity via L1 penalty — this explains why ElNet outperforms '
+        f'OLS/Ridge on composite targets. OLS/Ridge coefficients are directly inflated by collinear pairs.</p>'
+    )
+
+    return f"""
+<details class="exp-details" id="exp3-vif">
+  <summary><span class="fold-icon">▶</span> VIF Collinearity Analysis — Exp3-S2 Feature Sets</summary>
+  <div class="exp-body">
+    <p class="meta">
+      Variance Inflation Factor computed on training rows (year &lt; 2025) after listwise deletion.
+      VIF &gt; 10 = problematic collinearity for linear models.
+      VIF 5–10 = moderate.
+      The threshold rule of thumb: VIF &gt; 10 indicates that the variance of a coefficient estimate
+      is inflated by a factor of 10 relative to an orthogonal design — OLS/Ridge predictions are
+      less reliable for such features.
+    </p>
+    {summary_html}
+    {"".join(ds_htmls)}
+  </div>
+</details>"""
+
+
+def _ann_failure_callout() -> str:
+    """Render ANN (MLPRegressor) failure post-mortem as a foldable section."""
+    results_path = os.path.join(MODELING_DIR, "models", "phase9", "ann", "results.xlsx")
+    if not os.path.exists(results_path):
+        return ""
+
+    df = pd.read_excel(results_path)
+    df = df[df["run"] == df["run"].max()].copy()
+
+    avg_r2  = df["R2_test"].mean()
+    avg_gap = df["R2_gap"].mean()
+
+    VOTING_R2 = {
+        "Effluent BOD (mg/L, Grab)":       0.6924,
+        "Effluent COD (mg/L, Grab)":       0.4328,
+        "Effluent TSS (mg/L, Grab)":       0.4781,
+        "Effluent pH (Grab)":              0.2208,
+        "Effluent BOD (mg/L, Composite)":  0.4542,
+        "Effluent COD (mg/L, Composite)": -0.3050,
+        "Effluent TSS (mg/L, Composite)":  0.1130,
+        "Effluent pH (Composite)":         0.2065,
+    }
+
+    def _aflag(r2):
+        if r2 < -0.5:  return "CATASTROPHIC", "#c0392b"
+        if r2 < 0:     return "FAILED", "#e74c3c"
+        if r2 < 0.25:  return "POOR", "#e67e22"
+        if r2 < 0.50:  return "MODERATE", "#f39c12"
+        return "GOOD", "#2ecc71"
+
+    tbl_rows = ""
+    for _, row in df.sort_values("R2_test").iterrows():
+        tgt    = row["target"]
+        n_p    = row["n_train"] / row["n_features"]
+        r2_tr  = row["R2_train"]
+        r2_te  = row["R2_test"]
+        gap    = row["R2_gap"]
+        params = str(row.get("best_params", ""))
+        arch   = (params.split("hidden_layer_sizes': ")[1].split(",")[0].rstrip("}").strip()
+                  if "hidden_layer_sizes" in params else "—")
+        alpha  = (params.split("alpha': ")[1].split("}")[0].strip()
+                  if "alpha" in params else "—")
+        voting = VOTING_R2.get(tgt, float("nan"))
+        delta  = r2_te - voting
+        status, sc = _aflag(r2_te)
+        np_col = "#e74c3c" if n_p < 20 else "#2ecc71"
+        dc_col = "#e74c3c" if delta < 0 else "#2ecc71"
+
+        tbl_rows += (
+            f'<tr>'
+            f'<td>{TARGET_SHORT.get(tgt, tgt)}</td>'
+            f'<td>{int(row["n_train"])}</td>'
+            f'<td>{int(row["n_features"])}</td>'
+            f'<td style="color:{np_col}">{n_p:.1f}</td>'
+            f'<td style="font-size:11px">{arch}</td>'
+            f'<td style="font-size:11px">{alpha}</td>'
+            f'<td>{_fmt(r2_tr)}</td>'
+            f'<td style="color:{sc}">{_fmt(r2_te)}</td>'
+            f'<td class="{_gap_cls(gap)}">{_fmt(gap)}</td>'
+            f'<td><span style="color:{sc};font-size:11px">{status}</span></td>'
+            f'<td style="color:{dc_col}">{delta:+.3f}</td>'
+            f'</tr>'
+        )
+
+    return f"""
+<details class="exp-details" id="p9-ann-diagnosis">
+  <summary><span class="fold-icon">▶</span> ANN Failure Post-Mortem
+    <span style="margin-left:8px;font-size:11px;color:#e74c3c">avg Test R²={avg_r2:+.3f} · avg Gap={avg_gap:+.3f}</span>
+  </summary>
+  <div class="exp-body">
+    <p class="meta">
+      Grid search: 5 architectures × 4 regularisation values = 20 combinations per target.
+      Fixed: relu, adam, max_iter=2000, early_stopping=True (validation_fraction=0.10,
+      n_iter_no_change=20). Tuning via TimeSeriesSplit(n_splits=3).
+      All targets selected alpha=1.0 (maximum regularisation).
+    </p>
+
+    <div class="obs-card" style="border-left:4px solid #e74c3c;margin:0.8rem 0">
+      <strong style="color:#e74c3c">6 of 8 targets have Test R² ≤ 0. ANN not recommended at current sample sizes.</strong>
+    </div>
+
+    <table class="summary-table metrics-table" style="font-size:12px">
+      <thead>
+        <tr>
+          <th>Target</th><th>n_train</th><th>n_feat</th>
+          <th title="Training rows ÷ features — MLPs need n/p ≥ 100">n/p</th>
+          <th>Best arch</th><th>Best α</th>
+          <th>Train R²</th><th>Test R²</th><th>R² Gap</th>
+          <th>Status</th><th>Δ vs Voting</th>
+        </tr>
+      </thead>
+      <tbody>{tbl_rows}</tbody>
+    </table>
+    <p class="table-note">
+      n/p = training rows ÷ features. <span style="color:#e74c3c">Red</span> = n/p &lt; 20 (underdetermined — high overfitting risk).
+      MLPs typically need n/p ≥ 100–200 for stable generalisation on tabular data.
+      Δ vs Voting = ANN Test R² − Phase 9 Voting Test R².
+    </p>
+
+    <details class="inner-fold">
+      <summary><span class="fold-icon">▶</span> Root-Cause Analysis</summary>
+      <div class="fold-body">
+        <p class="meta"><strong style="color:var(--accent-blue)">1. Sample-to-feature ratio.</strong>
+          Worst case: Comp TSS — 290 training rows, 27 features → n/p = 10.7.
+          MLPs require far more data than tree ensembles to generalise from small tabular datasets.
+          Typical guidance: n/p ≥ 100–200 for stable MLP generalisation.</p>
+        <p class="meta"><strong style="color:var(--accent-blue)">2. Temporal distribution shift.</strong>
+          2025 test data shows different distributional properties than 2021–2024 training data
+          (Q4-Flow and DJF errors 2–3× higher — see Error Regime Decomposition).
+          MLPs form highly non-linear decision boundaries that diverge further from shifted data
+          than regularised linear models or bagged trees.</p>
+        <p class="meta"><strong style="color:var(--accent-blue)">3. Early stopping did not prevent 2025 failure.</strong>
+          Early stopping (validation_fraction=0.10, n_iter_no_change=20) monitors in-sample
+          generalisation on the 2021–2024 fold, not 2025 generalisation.
+          Gaps range from +0.41 (Grab COD) to +6.77 (Comp pH) despite early stopping —
+          confirming that early stopping alone cannot address distributional shift.</p>
+        <p class="meta"><strong style="color:var(--accent-blue)">4. Network capacity is not the bottleneck.</strong>
+          Best architectures are small — (64,) or (128,) single hidden layer with α=1.0 for 6 of 8 targets.
+          The grid search found that more capacity hurts; adding layers would worsen the gaps.
+          The problem is generalisation, not expressiveness.</p>
+        <p class="meta"><strong style="color:var(--accent-blue)">Future conditions for ANN.</strong>
+          Dataset growth to n ≥ 3,000 per target and an LSTM architecture (explicit temporal modelling
+          via hidden state rather than hand-crafted lags) are the recommended prerequisites before
+          revisiting neural networks on this problem.</p>
+      </div>
+    </details>
+  </div>
+</details>"""
+
+
 def _section_bests_json(df_all: pd.DataFrame) -> str:
     """JSON for the dynamic running-leaders sidebar panel."""
     section_exp_keys = {
@@ -1600,6 +1847,7 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
     sub2   = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
                              "Sub-experiment 2 — ADD + CONSIDER-tier Features", open_default=True)
     cost_div = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
+    vif_div  = _vif_callout()
 
     # Note: no feature-selected variant exists for Exp3-S2
     no_fs_note = """
@@ -1626,6 +1874,7 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   {fs1div}
   {sub2}
   {cost_div}
+  {vif_div}
   {no_fs_note}
   {best}
 </section>"""
@@ -1778,9 +2027,10 @@ def _variance_diagnosis_callout() -> str:
 
 
 def build_phase9_section(df_all: pd.DataFrame) -> str:
-    ann_sub = _phase9_model_subsection(
+    ann_sub     = _phase9_model_subsection(
         df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
         _badge("FAILED avg R²=−1.12", "fail"))
+    ann_failure = _ann_failure_callout()
     vote_sub = _phase9_model_subsection(
         df_all, "Phase9-Voting", "p9-voting",
         "Voting Ensemble (ElNet + RF + XGBoost)",
@@ -1802,6 +2052,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
   <h1 class="section-title">Phase 9 — Advanced Models (Corrected)</h1>
   <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
   {ann_sub}
+  {ann_failure}
   {vote_sub}
   {stack_sub}
   <details class="exp-details" id="p9-comparison">
@@ -1946,6 +2197,7 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp3-s1">Sub-exp 1 (ADD)</a>
       <a class="nav-item nav-sub" href="#exp3-s1-fs">Sub-exp 1 FS</a>
       <a class="nav-item nav-sub" href="#exp3-s2">Sub-exp 2 (CONSIDER)</a>
+      <a class="nav-item nav-sub" href="#exp3-vif">VIF Collinearity</a>
     </div>
   </div>
 
@@ -1955,6 +2207,7 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-p9">
       <a class="nav-item nav-sub" href="#p9-ann">ANN</a>
+      <a class="nav-item nav-sub" href="#p9-ann-diagnosis">ANN Failure Post-Mortem</a>
       <a class="nav-item nav-sub" href="#p9-voting">Voting (ElNet+RF+XGB)</a>
       <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
       <a class="nav-item nav-sub" href="#p9-comparison">Combined</a>

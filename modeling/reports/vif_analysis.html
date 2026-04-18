@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>VIF Analysis — Experiment 3 Sub-2</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background:#1a1a2e; color:#e0e0e0;
+         margin:0; padding:20px; }
+  h1   { color:#F0B849; font-size:1.4em; }
+  h2   { color:#4A90D9; font-size:1.1em; margin-top:30px; border-bottom:1px solid #333; }
+  table{ border-collapse:collapse; width:100%; font-size:0.85em; margin-bottom:20px; }
+  th   { background:#12122a; color:#F0B849; padding:6px 10px; text-align:left; }
+  td   { padding:5px 10px; border-bottom:1px solid #2a2a4a; }
+  tr:hover td { background:#22224a; }
+  .flag{ font-weight:bold; border-radius:3px; padding:1px 6px; font-size:0.8em; }
+  .HIGH    { background:#c0392b22; color:#e74c3c; }
+  .MODERATE{ background:#e67e2222; color:#f39c12; }
+  .OK      { background:#27ae6022; color:#2ecc71; }
+  .summary { background:#12122a; border-radius:6px; padding:12px 16px; margin-bottom:24px; }
+  .summary p { margin:3px 0; font-size:0.88em; }
+</style></head><body>
+<h1>VIF Analysis — Experiment 3 Sub-2 Feature Sets</h1>
+<p style="color:#888;font-size:0.85em">
+  Variance Inflation Factor computed on training rows (year &lt; 2025) after listwise deletion.
+  VIF &gt; 10 = problematic collinearity for linear models (OLS/Ridge/ElNet).
+  VIF 5–10 = moderate. ElasticNet handles collinearity via L1 penalty; OLS/Ridge are affected.
+</p>
+
+
+<div class="summary">
+  <p><strong>Global summary across all 8 datasets:</strong></p>
+  <p>Features with VIF &gt; 10 (HIGH):    <span class="flag HIGH">25</span></p>
+  <p>Features with VIF 5–10 (MODERATE): <span class="flag MODERATE">57</span></p>
+  <p>Features with VIF ≤ 5 (OK):        <span class="flag OK">107</span></p>
+</div>
+
+<h2>Grab Bod</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 2 &nbsp;|&nbsp; MODERATE VIF: 12 &nbsp;|&nbsp; 25 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Aeration SVI (New)</td><td>12.26</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Aeration SV30 (ml/L, New)</td><td>10.94</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Sec Sed BOD (mg/L)</td><td>9.98</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>4</td><td>Sec Clarifier BOD (mg/L)</td><td>9.76</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>5</td><td>Aeration SVI (Existing)</td><td>9.73</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>6</td><td>Aeration MLSS (mg/L, Existing)</td><td>9.37</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Aeration DO (mg/L, New)</td><td>7.74</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Aeration DO (mg/L, Existing)</td><td>7.30</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Sec Clarifier TSS (mg/L)</td><td>6.60</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>10</td><td>Sec Sed RAS (New)</td><td>6.27</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>11</td><td>Sec Sed TSS (mg/L)</td><td>6.13</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>12</td><td>Sec Clarifier RAS</td><td>5.96</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>13</td><td>Sec Clarifier COD (mg/L)</td><td>5.57</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>14</td><td>Sec Sed COD (mg/L)</td><td>5.19</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>15</td><td>Aeration SV30 (ml/L, Existing)</td><td>4.57</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Sec Sed pH</td><td>4.18</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Sec Clarifier pH</td><td>3.99</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Inlet BOD (mg/L, Grab)</td><td>3.64</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Inlet TSS (mg/L, Grab)</td><td>3.38</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Inlet COD (mg/L, Grab)</td><td>2.86</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Primary Sludge Totalizer (m3)</td><td>2.20</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Power Total (KW)</td><td>2.04</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Flow (MLD)</td><td>1.98</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>24</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.61</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>25</td><td>Inlet pH (Grab)</td><td>1.28</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Grab Cod</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 0 &nbsp;|&nbsp; MODERATE VIF: 4 &nbsp;|&nbsp; 17 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Sed BOD (mg/L)</td><td>8.88</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>2</td><td>Sec Clarifier BOD (mg/L)</td><td>8.70</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>3</td><td>Sec Clarifier TSS (mg/L)</td><td>5.91</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>4</td><td>Sec Sed TSS (mg/L)</td><td>5.59</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>5</td><td>Sec Clarifier COD (mg/L)</td><td>4.99</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>6</td><td>Sec Sed COD (mg/L)</td><td>4.96</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>7</td><td>Sec Sed RAS (New)</td><td>3.74</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>8</td><td>Sec Clarifier RAS</td><td>3.47</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>9</td><td>Sec Sed pH</td><td>3.27</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>10</td><td>Sec Clarifier pH</td><td>3.15</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>11</td><td>Inlet TSS (mg/L, Grab)</td><td>3.08</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>12</td><td>Inlet BOD (mg/L, Grab)</td><td>2.94</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>13</td><td>Inlet COD (mg/L, Grab)</td><td>2.62</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>14</td><td>Flow (MLD)</td><td>1.57</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>15</td><td>Power Total (KW)</td><td>1.46</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.23</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Inlet pH (Grab)</td><td>1.16</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Grab Tss</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 4 &nbsp;|&nbsp; MODERATE VIF: 10 &nbsp;|&nbsp; 29 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Aeration SVI (New)</td><td>13.20</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Aeration SV30 (ml/L, New)</td><td>12.65</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Aeration SVI (Existing)</td><td>10.10</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>4</td><td>Sec Sed BOD (mg/L)</td><td>10.03</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>5</td><td>Sec Clarifier BOD (mg/L)</td><td>9.95</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>6</td><td>Aeration MLSS (mg/L, Existing)</td><td>9.72</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Aeration DO (mg/L, New)</td><td>8.45</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Aeration DO (mg/L, Existing)</td><td>8.15</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Sec Clarifier TSS (mg/L)</td><td>6.73</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>10</td><td>Sec Sed RAS (New)</td><td>6.41</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>11</td><td>Sec Sed TSS (mg/L)</td><td>6.14</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>12</td><td>Sec Clarifier RAS</td><td>5.97</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>13</td><td>Sec Clarifier COD (mg/L)</td><td>5.58</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>14</td><td>Sec Sed COD (mg/L)</td><td>5.20</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>15</td><td>Aeration pH (New)</td><td>4.81</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Aeration SV30 (ml/L, Existing)</td><td>4.65</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Sec Sed pH</td><td>4.56</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Sec Clarifier pH</td><td>4.20</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Aeration pH (Existing)</td><td>4.07</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Inlet BOD (mg/L, Grab)</td><td>3.97</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Inlet TSS (mg/L, Grab)</td><td>3.68</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Inlet COD (mg/L, Grab)</td><td>2.93</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Primary Sludge Totalizer (m3)</td><td>2.40</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>24</td><td>Power GE (KW)</td><td>2.28</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>25</td><td>Primary BOD (mg/L)</td><td>2.21</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>26</td><td>Power Total (KW)</td><td>2.13</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>27</td><td>Flow (MLD)</td><td>2.00</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>28</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.62</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>29</td><td>Inlet pH (Grab)</td><td>1.30</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Grab Ph</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 5 &nbsp;|&nbsp; MODERATE VIF: 3 &nbsp;|&nbsp; 23 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Clarifier TSS (mg/L)</td><td>16.97</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Sec Sed TSS (mg/L)</td><td>15.07</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Sec Clarifier BOD (mg/L)</td><td>11.90</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>4</td><td>Sec Sed BOD (mg/L)</td><td>11.80</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>5</td><td>Sec Clarifier COD (mg/L)</td><td>10.45</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>6</td><td>Sec Sed COD (mg/L)</td><td>8.58</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Sec Sed pH</td><td>5.22</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Aeration pH (New)</td><td>5.09</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Sec Clarifier pH</td><td>4.92</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>10</td><td>Aeration SV30 (ml/L, New)</td><td>4.62</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>11</td><td>Aeration pH (Existing)</td><td>4.41</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>12</td><td>Aeration SV30 (ml/L, Existing)</td><td>4.20</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>13</td><td>Sec Sed RAS (New)</td><td>3.79</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>14</td><td>Inlet BOD (mg/L, Grab)</td><td>3.67</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>15</td><td>Sec Clarifier RAS</td><td>3.62</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Inlet TSS (mg/L, Grab)</td><td>3.13</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Primary Clarifier pH</td><td>2.77</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Inlet pH (Grab)</td><td>2.57</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Inlet COD (mg/L, Grab)</td><td>2.33</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Aeration DO (mg/L, Existing)</td><td>2.07</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Power Total (KW)</td><td>1.67</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Flow (MLD)</td><td>1.59</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Aeration SVI (Existing)</td><td>1.47</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Comp Bod</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 5 &nbsp;|&nbsp; MODERATE VIF: 9 &nbsp;|&nbsp; 27 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Sed BOD (mg/L)</td><td>12.25</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Aeration SVI (New)</td><td>11.57</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Sec Clarifier BOD (mg/L)</td><td>10.75</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>4</td><td>Aeration MLSS (mg/L, Existing)</td><td>10.28</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>5</td><td>Aeration SV30 (ml/L, New)</td><td>10.15</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>6</td><td>Aeration SVI (Existing)</td><td>8.99</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Aeration DO (mg/L, Existing)</td><td>8.87</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Aeration DO (mg/L, New)</td><td>8.69</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Sec Sed TSS (mg/L)</td><td>6.90</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>10</td><td>Sec Clarifier TSS (mg/L)</td><td>6.79</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>11</td><td>Sec Sed RAS (New)</td><td>6.40</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>12</td><td>Sec Clarifier RAS</td><td>6.13</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>13</td><td>Sec Clarifier COD (mg/L)</td><td>5.33</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>14</td><td>Sec Sed COD (mg/L)</td><td>5.22</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>15</td><td>Sec Sed pH</td><td>4.34</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Sec Clarifier pH</td><td>4.14</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Aeration SV30 (ml/L, Existing)</td><td>3.95</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Inlet TSS (mg/L, Composite)</td><td>3.64</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Inlet BOD (mg/L, Composite)</td><td>3.25</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Inlet COD (mg/L, Composite)</td><td>2.88</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Primary Sludge Totalizer (m3)</td><td>2.67</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Power GE (KW)</td><td>2.62</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Aeration pH (Existing)</td><td>2.44</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>24</td><td>Power Total (KW)</td><td>2.30</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>25</td><td>Flow (MLD)</td><td>1.81</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>26</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.71</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>27</td><td>Inlet pH (Composite)</td><td>1.23</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Comp Cod</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 1 &nbsp;|&nbsp; MODERATE VIF: 3 &nbsp;|&nbsp; 17 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Sed BOD (mg/L)</td><td>10.76</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Sec Clarifier BOD (mg/L)</td><td>9.80</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>3</td><td>Sec Sed TSS (mg/L)</td><td>6.22</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>4</td><td>Sec Clarifier TSS (mg/L)</td><td>6.19</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>5</td><td>Sec Sed COD (mg/L)</td><td>4.92</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>6</td><td>Sec Clarifier COD (mg/L)</td><td>4.85</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>7</td><td>Sec Sed RAS (New)</td><td>3.71</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>8</td><td>Sec Clarifier RAS</td><td>3.43</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>9</td><td>Sec Sed pH</td><td>3.22</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>10</td><td>Sec Clarifier pH</td><td>3.07</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>11</td><td>Inlet TSS (mg/L, Composite)</td><td>3.03</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>12</td><td>Inlet COD (mg/L, Composite)</td><td>2.81</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>13</td><td>Inlet BOD (mg/L, Composite)</td><td>2.79</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>14</td><td>Power Total (KW)</td><td>1.53</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>15</td><td>Flow (MLD)</td><td>1.53</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.26</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Inlet pH (Composite)</td><td>1.10</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Comp Tss</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 3 &nbsp;|&nbsp; MODERATE VIF: 10 &nbsp;|&nbsp; 27 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Sed BOD (mg/L)</td><td>18.53</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Sec Clarifier BOD (mg/L)</td><td>16.44</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Sec Sed TSS (mg/L)</td><td>10.33</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>4</td><td>Aeration SVI (Existing)</td><td>9.97</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>5</td><td>Aeration SVI (New)</td><td>9.15</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>6</td><td>Sec Clarifier TSS (mg/L)</td><td>9.10</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Sec Clarifier COD (mg/L)</td><td>9.01</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Sec Sed COD (mg/L)</td><td>8.56</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Aeration DO (mg/L, Existing)</td><td>8.05</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>10</td><td>Aeration MLSS (mg/L, Existing)</td><td>7.43</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>11</td><td>Sec Clarifier RAS</td><td>7.33</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>12</td><td>Aeration DO (mg/L, New)</td><td>7.11</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>13</td><td>Sec Sed RAS (New)</td><td>5.91</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>14</td><td>Sec Clarifier pH</td><td>4.46</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>15</td><td>Sec Sed pH</td><td>4.40</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Inlet COD (mg/L, Composite)</td><td>4.09</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Primary Sludge Totalizer (m3)</td><td>3.94</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Inlet TSS (mg/L, Composite)</td><td>3.63</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Aeration SV30 (ml/L, Existing)</td><td>3.58</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Inlet BOD (mg/L, Composite)</td><td>3.55</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Inlet PO4/TP (mg/L, Grab)</td><td>3.31</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Aeration pH (Existing)</td><td>2.98</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Flow (MLD)</td><td>2.02</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>24</td><td>Power GE (KW)</td><td>1.99</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>25</td><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td>1.77</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>26</td><td>Power Total (KW)</td><td>1.56</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>27</td><td>Inlet pH (Composite)</td><td>1.21</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+<h2>Comp Ph</h2>
+<p style='font-size:0.82em;color:#888'>HIGH VIF: 5 &nbsp;|&nbsp; MODERATE VIF: 6 &nbsp;|&nbsp; 24 total features</p>
+<table><tr><th>#</th><th>Feature</th><th>VIF</th><th>Flag</th></tr>
+<tr><td>1</td><td>Sec Clarifier TSS (mg/L)</td><td>21.20</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>2</td><td>Sec Sed BOD (mg/L)</td><td>18.62</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>3</td><td>Sec Sed TSS (mg/L)</td><td>18.40</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>4</td><td>Sec Clarifier BOD (mg/L)</td><td>17.91</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>5</td><td>Sec Clarifier COD (mg/L)</td><td>12.29</td><td><span class='flag HIGH'>HIGH</span></td></tr>
+<tr><td>6</td><td>Sec Sed COD (mg/L)</td><td>9.34</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>7</td><td>Aeration SVI (New)</td><td>9.12</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>8</td><td>Aeration SV30 (ml/L, New)</td><td>7.33</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>9</td><td>Aeration DO (mg/L, Existing)</td><td>7.27</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>10</td><td>Aeration DO (mg/L, New)</td><td>7.11</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>11</td><td>Aeration SVI (Existing)</td><td>5.67</td><td><span class='flag MODERATE'>MODERATE</span></td></tr>
+<tr><td>12</td><td>Sec Sed pH</td><td>4.94</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>13</td><td>Sec Clarifier pH</td><td>4.73</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>14</td><td>Sec Sed RAS (New)</td><td>3.85</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>15</td><td>Sec Clarifier RAS</td><td>3.57</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>16</td><td>Aeration SV30 (ml/L, Existing)</td><td>3.57</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>17</td><td>Inlet BOD (mg/L, Composite)</td><td>3.19</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>18</td><td>Inlet TSS (mg/L, Composite)</td><td>2.96</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>19</td><td>Aeration pH (Existing)</td><td>2.49</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>20</td><td>Inlet COD (mg/L, Composite)</td><td>2.43</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>21</td><td>Power Total (KW)</td><td>1.88</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>22</td><td>Primary Clarifier pH</td><td>1.52</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>23</td><td>Flow (MLD)</td><td>1.51</td><td><span class='flag OK'>OK</span></td></tr>
+<tr><td>24</td><td>Inlet pH (Composite)</td><td>1.37</td><td><span class='flag OK'>OK</span></td></tr>
+</table>
+</body></html>
