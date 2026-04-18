@@ -42,7 +42,7 @@ warnings.filterwarnings("ignore")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXCEL_IN  = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
+EXCEL_IN  = os.path.join(BASE_DIR, "raw_data", "All_Years_Full.xlsx")
 PLOTS_DIR = os.path.join(BASE_DIR, "eda", "plots")
 REPORT    = os.path.join(BASE_DIR, "eda_full_report.html")
 os.makedirs(PLOTS_DIR, exist_ok=True)

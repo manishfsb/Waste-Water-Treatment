@@ -24,7 +24,7 @@ import pandas as pd
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(SCRIPT_DIR)
-DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "All_Years_Full.xlsx")
+DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "raw_data", "All_Years_Full.xlsx")
 FI_FILE      = os.path.join(MODELING_DIR, "feature_analysis", "selection", "feature_importance.xlsx")
 
 EXP1_FS_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1", "feature_selected_datasets")

@@ -835,7 +835,7 @@ def write_excel(rows, output_path):
 if __name__ == "__main__":
     print("Extracting full dataset (2020–2025)...\n")
     rows = collect_all_rows()
-    output = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
+    output = os.path.join(BASE_DIR, "raw_data", "All_Years_Full.xlsx")
     print(f"\nWriting {len(rows)} rows to {output}...")
     write_excel(rows, output)
     print(f"Done. Total rows: {len(rows)}, columns: {len(COLUMNS)}")

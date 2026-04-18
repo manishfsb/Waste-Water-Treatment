@@ -25,7 +25,7 @@ import pandas as pd
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(SCRIPT_DIR)
-DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "All_Years_Full.xlsx")
+DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "raw_data", "All_Years_Full.xlsx")
 AUDIT_FILE   = os.path.join(MODELING_DIR, "feature_analysis", "audit", "feature_audit.xlsx")
 EXP2S2_GRAB  = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2")  # row-count reference
 EXP2S2_COMP  = EXP2S2_GRAB
