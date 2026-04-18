@@ -20,14 +20,14 @@ observations or tone to justify a pre-chosen model.
 ```
 Working directory : /Users/soltii/Desktop/New_Project/
 Python            : .venv/bin/python3   (always use this, not system python)
-Main data dir     : 21-25/
+Main data dir     : raw_data/
 ```
 
 ---
 
 ## Data
 
-**Master dataset:** `21-25/All_Years_Full.xlsx` — ~1,900 rows × 60 cols, 2021–2025  
+**Master dataset:** `raw_data/All_Years_Full.xlsx` — ~1,900 rows × 60 cols, 2021–2025  
 **Split:** Train = 2021–2024 (2020 rows included where present) · Test = 2025
 
 **Targets (8):**
@@ -49,7 +49,7 @@ COMMON     = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
 **COMMON note:** `month`, `day_of_week`, `year` are derived — compute via `df["Date"].dt.*`
 before any `dropna()` call.
 
-**Directory layout under `21-25/modeling/`:**
+**Directory layout under `modeling/`:**
 ```
 datasets/
   experiment1/                           8 xlsx + feature_selected_datasets/
@@ -104,7 +104,7 @@ Tuned: max_depth, min_samples_leaf (RF/GB); max_depth, min_child_weight, reg_alp
 **Reporting — unified single script (all individual report scripts deleted):**
 - `scripts/generate_unified_report.py` — reads all `results.xlsx` files across every
   experiment/phase, produces `reports/unified_report.html` (single navigable report).
-  Run: `.venv/bin/python3 21-25/modeling/scripts/generate_unified_report.py`
+  Run: `.venv/bin/python3 modeling/scripts/generate_unified_report.py`
 - Output: `reports/unified_report.html` (~240 KB, no embedded images)
 
 Report scripts are standalone — run independently from modeling scripts.  
@@ -139,12 +139,12 @@ Run any script: `.venv/bin/python3 <path/to/script.py>` from project root.
 ---
 
 ## File disambiguation
-- Active EDA: `21-25/eda/eda_full.py` (not `21-25/eda/eda.py` — deleted)
-- Active EDA plots: `21-25/eda/plots/` (moved from `eda_full_plots/`; `eda_plots/` deleted)
-- Raw year data: `21-25/raw_data/20XX/` (moved from `21-25/20XX/`)
-- Extracted JSON data: `21-25/raw_data/20XX/extracted_data/` (renamed from `data/`)
-- Dashboard: `21-25/dashboard/` (top-level only; `21-25/2021/dashboard/` removed)
-- Data prep scripts: `21-25/data_prep/` (check_missing, extract_full_dataset, merge_all_years, process_years, update_2021_first_half)
+- Active EDA: `eda/eda_full.py`
+- Active EDA plots: `eda/plots/`
+- Raw year data: `raw_data/20XX/`
+- Extracted JSON data: `raw_data/20XX/extracted_data/`
+- Dashboard: `dashboard/`
+- Data prep scripts: `data_prep/` (check_missing, extract_full_dataset, merge_all_years, process_years, update_2021_first_half)
 - Always use the highest `run_N` report of any type.
 
 ---
@@ -153,7 +153,7 @@ Run any script: `.venv/bin/python3 <path/to/script.py>` from project root.
 - Dark mode: import from `modeling/report_theme.py` (`dark_mode_css`, `DARK_MODE_JS`) — never duplicate inline.
 - Obs card tables: CSS selector `.obs-card table` (not a class on the table element).
 - R² table column order: `Train R² | Test R² | R² Gap`, then RMSE columns.
-- Foldable sections: `<details>`/`<summary>` with `.fold-icon` (▶) and `.fold-hint`. Use `_fold()` helper in `21-25/eda/eda_full.py` — do not duplicate inline.
+- Foldable sections: `<details>`/`<summary>` with `.fold-icon` (▶) and `.fold-hint`. Use `_fold()` helper in `eda/eda_full.py` — do not duplicate inline.
 - EDA sidebar nav: `<nav id="sidenav">`, `<div id="main-content">` with `margin-left: 265px`. Anchor pattern: `{section_id}-{tgt_slug}`. Slug map in `_TGT_SLUG` dict inside `build_html`.
 
 ---
@@ -322,7 +322,7 @@ aeration data availability.
 
 ## Outlier audit (targets, April 2026)
 
-Analysed from `21-25/All_Years_Full.xlsx` using IQR rule (Q3 + 1.5×IQR threshold fit on full training set).
+Analysed from `raw_data/All_Years_Full.xlsx` using IQR rule (Q3 + 1.5×IQR threshold fit on full training set).
 
 **No outlier treatment has been applied in any experiment (Exp 1–3, Phase 9–11).** Phase 10/10b added binary IQR *flag* features as model inputs but never removed or capped values. Phase 11 log1p-transforms the targets (BOD/COD/TSS), which partially mitigates target-side leverage.
 
