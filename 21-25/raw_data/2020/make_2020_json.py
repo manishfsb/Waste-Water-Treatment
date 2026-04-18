@@ -6,7 +6,7 @@ from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, "RAW.csv")
-OUT_DIR = os.path.join(BASE_DIR, "data")
+OUT_DIR = os.path.join(BASE_DIR, "extracted_data")
 OUT_FILE = os.path.join(OUT_DIR, "all_months.json")
 
 def load_csv(csv_path):

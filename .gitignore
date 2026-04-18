@@ -9,6 +9,7 @@
 ideas.txt
 
 **/data/*.json
+**/extracted_data/*.json
 CLAUDE.md
 AGENTS.md
 *.docx

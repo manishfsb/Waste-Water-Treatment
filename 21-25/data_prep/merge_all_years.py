@@ -108,7 +108,7 @@ def col_fill(jkey):
 
 def load_json_year(year):
     """Load all months from the year's all_months.json, return list of day dicts."""
-    path = os.path.join(BASE_DIR, str(year), "data", "all_months.json")
+    path = os.path.join(BASE_DIR, "raw_data", str(year), "extracted_data", "all_months.json")
     if not os.path.exists(path):
         print(f"  WARNING: {path} not found — skipping {year}.")
         return []
@@ -196,7 +196,7 @@ def merge_all_rows():
     2022 Jan–Jun JSON data. JSON always takes priority for overlapping dates
     since it carries more attributes (power_ge, composite samples, etc.).
     """
-    CSV_PATH = os.path.join(BASE_DIR, "2020", "RAW.csv")
+    CSV_PATH = os.path.join(BASE_DIR, "raw_data", "2020", "RAW.csv")
 
     # ── Collect all JSON dates (priority source) ───────────────────────────────
     json_rows = []

@@ -590,7 +590,7 @@ def extract_month(year, month_name, filename):
     Read one monthly Excel file and return list of daily dicts.
     Returns empty list if the file does not exist.
     """
-    filepath = os.path.join(BASE_DIR, str(year), filename)
+    filepath = os.path.join(BASE_DIR, "raw_data", str(year), filename)
     if not os.path.exists(filepath):
         print(f"    WARNING: {filename} not found — skipping.")
         return []
@@ -706,7 +706,7 @@ def collect_all_rows():
 
     excel_dates = {r["date"] for r in excel_rows}
 
-    csv_path = os.path.join(BASE_DIR, "2020", "RAW.csv")
+    csv_path = os.path.join(BASE_DIR, "raw_data", "2020", "RAW.csv")
     csv_rows = load_csv(csv_path)
     csv_kept = [r for r in csv_rows if r["date"] not in excel_dates]
     csv_skip = len(csv_rows) - len(csv_kept)

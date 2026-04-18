@@ -14,7 +14,7 @@ Reads 21-25/All_Years_Full.xlsx (60 columns, 1918 rows) and generates:
   9.  svi_mlss_vs_tss         — SVI / MLSS vs effluent TSS scatter
   10. linearity_residuals     — Ridge residuals: linearity diagnostic per target
 
-Outputs: 21-25/eda_full_plots/  (PNG files)
+Outputs: 21-25/eda/plots/  (PNG files)
          21-25/eda_full_report.html
 """
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXCEL_IN  = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
-PLOTS_DIR = os.path.join(BASE_DIR, "eda_full_plots")
+PLOTS_DIR = os.path.join(BASE_DIR, "eda", "plots")
 REPORT    = os.path.join(BASE_DIR, "eda_full_report.html")
 os.makedirs(PLOTS_DIR, exist_ok=True)
 

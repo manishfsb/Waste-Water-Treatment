@@ -225,7 +225,7 @@ def extract_month(base_dir, month_name, filename):
 
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    out_dir = os.path.join(base_dir, "data")
+    out_dir = os.path.join(base_dir, "extracted_data")
     os.makedirs(out_dir, exist_ok=True)
 
     print("Extracting wastewater lab report data...")
