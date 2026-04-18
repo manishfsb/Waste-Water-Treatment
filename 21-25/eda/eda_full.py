@@ -41,7 +41,7 @@ from sklearn.preprocessing import StandardScaler
 warnings.filterwarnings("ignore")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXCEL_IN  = os.path.join(BASE_DIR, "All_Years_Full.xlsx")
 PLOTS_DIR = os.path.join(BASE_DIR, "eda_full_plots")
 REPORT    = os.path.join(BASE_DIR, "eda_full_report.html")
@@ -1161,6 +1161,285 @@ def plot_linearity_residuals(df):
         results[group][target] = save(fig, f"10_resid_{slug}")
 
     return results
+
+
+# ── Section 12: Operational overview (ported from eda.py) ────────────────────
+
+_OP_YEAR_COLOURS = {
+    2021: "#2171B5",
+    2022: "#74C476",
+    2023: "#238B45",
+    2024: "#FD8D3C",
+    2025: "#D94801",
+}
+
+_COMPLIANCE_LIMITS = {
+    "Effluent pH (Grab)":       ("range", 6.5,  8.0),
+    "Effluent BOD (mg/L, Grab)": ("max",  None, 10),
+    "Effluent COD (mg/L, Grab)": ("max",  None, 250),
+    "Effluent TSS (mg/L, Grab)": ("max",  None, 10),
+}
+
+_REMOVAL_PAIRS = [
+    ("Inlet BOD (mg/L, Grab)", "Effluent BOD (mg/L, Grab)", "BOD"),
+    ("Inlet COD (mg/L, Grab)", "Effluent COD (mg/L, Grab)", "COD"),
+    ("Inlet TSS (mg/L, Grab)", "Effluent TSS (mg/L, Grab)", "TSS"),
+]
+
+_OP_CORE_COLS = [
+    ("Flow (MLD)",              "Flow (MLD)"),
+    ("Power / Flow (KW/ML)",    "Power per Flow (KW/ML)"),
+    ("Inlet pH (Grab)",         "Inlet pH (Grab)"),
+    ("Inlet BOD (mg/L, Grab)",  "Inlet BOD (Grab)"),
+    ("Inlet COD (mg/L, Grab)",  "Inlet COD (Grab)"),
+    ("Inlet TSS (mg/L, Grab)",  "Inlet TSS (Grab)"),
+    ("Effluent pH (Grab)",      "Effluent pH (Grab)"),
+    ("Effluent BOD (mg/L, Grab)", "Effluent BOD (Grab)"),
+    ("Effluent COD (mg/L, Grab)", "Effluent COD (Grab)"),
+    ("Effluent TSS (mg/L, Grab)", "Effluent TSS (Grab)"),
+]
+
+_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def plot_op_boxplot_by_year(df):
+    """Box plots of core parameters grouped by year."""
+    print("12a. Operational boxplot by year...")
+    cols = [(c, lbl) for c, lbl in _OP_CORE_COLS if c in df.columns]
+    ncols = 2
+    nrows = (len(cols) + 1) // 2
+    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 4 * nrows))
+    axes = axes.flatten()
+
+    for i, (col, lbl) in enumerate(cols):
+        sub = df[[col, "Date"]].copy().dropna(subset=[col])
+        sub["year"] = sub["Date"].dt.year
+        years = sorted(sub["year"].unique())
+        groups = [sub.loc[sub["year"] == y, col].values for y in years]
+        bp = axes[i].boxplot(groups, patch_artist=True, notch=False,
+                             flierprops=dict(marker=".", markersize=2, alpha=0.4))
+        for patch, yr in zip(bp["boxes"], years):
+            patch.set_facecolor(_OP_YEAR_COLOURS.get(yr, "steelblue"))
+            patch.set_alpha(0.7)
+        if col in _COMPLIANCE_LIMITS:
+            ctype, lo, hi = _COMPLIANCE_LIMITS[col]
+            if ctype == "max":
+                axes[i].axhline(hi, color="red", lw=1, linestyle="--", alpha=0.7)
+            else:
+                axes[i].axhline(lo, color="orange", lw=1, linestyle="--", alpha=0.7)
+                axes[i].axhline(hi, color="orange", lw=1, linestyle="--", alpha=0.7)
+        axes[i].set_xticklabels([str(y) for y in years])
+        axes[i].set_title(lbl, fontsize=9)
+
+    for j in range(len(cols), len(axes)):
+        axes[j].set_visible(False)
+
+    from matplotlib.patches import Patch
+    legend_els = [Patch(facecolor=_OP_YEAR_COLOURS.get(y, "steelblue"), label=str(y))
+                  for y in sorted(_OP_YEAR_COLOURS.keys()) if y in df["Date"].dt.year.unique()]
+    fig.legend(handles=legend_els, title="Year", loc="lower right", ncol=5, fontsize=8)
+    fig.suptitle("Annual Distributions by Year (IQR box, 1.5×IQR whiskers)",
+                 fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return save(fig, "12a_op_boxplot_by_year")
+
+
+def plot_op_boxplot_by_month(df):
+    """Box plots of flow and pollutant parameters grouped by calendar month."""
+    print("12b. Operational boxplot by month...")
+    month_cols = [(c, lbl) for c, lbl in [
+        ("Flow (MLD)",               "Flow (MLD)"),
+        ("Inlet BOD (mg/L, Grab)",   "Inlet BOD (Grab)"),
+        ("Inlet COD (mg/L, Grab)",   "Inlet COD (Grab)"),
+        ("Inlet TSS (mg/L, Grab)",   "Inlet TSS (Grab)"),
+        ("Effluent BOD (mg/L, Grab)", "Effluent BOD (Grab)"),
+        ("Effluent COD (mg/L, Grab)", "Effluent COD (Grab)"),
+        ("Effluent TSS (mg/L, Grab)", "Effluent TSS (Grab)"),
+    ] if c in df.columns]
+
+    ncols = 2
+    nrows = (len(month_cols) + 1) // 2
+    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 4 * nrows))
+    axes = axes.flatten()
+
+    for i, (col, lbl) in enumerate(month_cols):
+        sub = df[[col, "Date"]].copy().dropna(subset=[col])
+        sub["month"] = sub["Date"].dt.month
+        groups = [sub.loc[sub["month"] == m, col].values for m in range(1, 13)]
+        bp = axes[i].boxplot(groups, patch_artist=True,
+                             flierprops=dict(marker=".", markersize=2, alpha=0.4))
+        for patch in bp["boxes"]:
+            patch.set_facecolor("steelblue")
+            patch.set_alpha(0.6)
+        if col in _COMPLIANCE_LIMITS:
+            ctype, lo, hi = _COMPLIANCE_LIMITS[col]
+            if ctype == "max":
+                axes[i].axhline(hi, color="red", lw=1, linestyle="--", alpha=0.7)
+        axes[i].set_xticklabels(_MONTH_NAMES, fontsize=7)
+        axes[i].set_title(lbl, fontsize=9)
+
+    for j in range(len(month_cols), len(axes)):
+        axes[j].set_visible(False)
+    fig.suptitle("Seasonal Distributions by Month (all years combined)",
+                 fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return save(fig, "12b_op_boxplot_by_month")
+
+
+def plot_op_removal_efficiency(df):
+    """BOD/COD/TSS removal efficiency over time and by year."""
+    print("12c. Operational removal efficiency...")
+    eff_data = {}
+    for inlet_col, eff_col, label in _REMOVAL_PAIRS:
+        if inlet_col not in df.columns or eff_col not in df.columns:
+            continue
+        both = df[[inlet_col, eff_col, "Date"]].dropna().copy()
+        both = both[both[inlet_col] > 0]
+        both["removal"] = (both[inlet_col] - both[eff_col]) / both[inlet_col] * 100
+        both["year"] = both["Date"].dt.year
+        eff_data[label] = both
+
+    if not eff_data:
+        print("  No removal efficiency data available.")
+        return None
+
+    n = len(eff_data)
+    fig, axes = plt.subplots(2, n, figsize=(6 * n, 9))
+    if n == 1:
+        axes = [[axes[0]], [axes[1]]]
+
+    for j, (label, both) in enumerate(eff_data.items()):
+        ts = both.set_index("Date")["removal"].rolling("7D").mean()
+        axes[0][j].plot(ts.index, ts.values, lw=0.9, color="steelblue")
+        axes[0][j].set_title(f"{label} Removal Efficiency (%)", fontsize=9)
+        axes[0][j].set_ylabel("Removal (%)")
+        axes[0][j].axhline(90, color="orange", lw=1, linestyle="--", label="90%")
+        axes[0][j].axhline(95, color="red",    lw=1, linestyle="--", label="95%")
+        axes[0][j].legend(fontsize=7)
+        axes[0][j].tick_params(axis="x", labelsize=6)
+
+        years  = sorted(both["year"].unique())
+        groups = [both.loc[both["year"] == y, "removal"].values for y in years]
+        bp = axes[1][j].boxplot(groups, patch_artist=True,
+                                flierprops=dict(marker=".", markersize=2, alpha=0.4))
+        for patch, yr in zip(bp["boxes"], years):
+            patch.set_facecolor(_OP_YEAR_COLOURS.get(yr, "steelblue"))
+            patch.set_alpha(0.7)
+        axes[1][j].set_xticklabels([str(y) for y in years])
+        axes[1][j].set_ylabel("Removal (%)")
+        axes[1][j].axhline(90, color="orange", lw=1, linestyle="--")
+        axes[1][j].axhline(95, color="red",    lw=1, linestyle="--")
+
+    fig.suptitle("Treatment Removal Efficiency — BOD, COD, TSS",
+                 fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return save(fig, "12c_op_removal_efficiency")
+
+
+def plot_op_compliance(df):
+    """Monthly compliance pass/fail rate for grab effluent parameters."""
+    print("12d. Operational compliance over time...")
+    params = [(col, s(col), ctype, lo, hi)
+              for col, (ctype, lo, hi) in _COMPLIANCE_LIMITS.items()
+              if col in df.columns]
+
+    if not params:
+        return None
+
+    n = len(params)
+    fig, axes = plt.subplots(n, 1, figsize=(16, 3.5 * n), sharex=True)
+    if n == 1:
+        axes = [axes]
+
+    for ax, (col, lbl, ctype, lo, hi) in zip(axes, params):
+        def _pass(val):
+            if pd.isna(val):
+                return np.nan
+            if ctype == "range":
+                return 1.0 if lo <= val <= hi else 0.0
+            return 1.0 if val <= hi else 0.0
+
+        tmp = df.set_index("Date")[[col]]
+        pass_rate = tmp.resample("ME").apply(lambda g: g[col].map(_pass).mean())
+        miss_rate = tmp.resample("ME").apply(lambda g: g[col].isna().mean())
+
+        x = pass_rate.index
+        ax.fill_between(x, pass_rate.values * 100, alpha=0.7, color="green", label="Pass %")
+        ax.fill_between(x, miss_rate.values * 100, alpha=0.5, color="grey", label="Missing %")
+        ax.axhline(80, color="orange", lw=1, linestyle="--", label="80%")
+        ax.set_ylabel(lbl, fontsize=9)
+        ax.set_ylim(0, 105)
+        ax.legend(fontsize=7, loc="lower left")
+
+    axes[-1].set_xlabel("Month")
+    fig.suptitle("Monthly Compliance Rate (%) — Effluent Parameters",
+                 fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return save(fig, "12d_op_compliance")
+
+
+def plot_op_power_vs_flow(df):
+    """Power efficiency vs. flow scatter coloured by year."""
+    print("12e. Operational power vs. flow...")
+    flow_col  = "Flow (MLD)"
+    power_col = "Power / Flow (KW/ML)"
+    if flow_col not in df.columns or power_col not in df.columns:
+        return None
+
+    data = df[[flow_col, power_col, "Date"]].dropna().copy()
+    data["year"] = data["Date"].dt.year
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for yr in sorted(data["year"].unique()):
+        sub = data[data["year"] == yr]
+        ax.scatter(sub[flow_col], sub[power_col],
+                   s=12, alpha=0.5, color=_OP_YEAR_COLOURS.get(yr, "grey"), label=str(yr))
+    ax.axhline(482.02, color="red", lw=1.2, linestyle="--", label="Limit: 482.02 KWh/ML")
+    ax.set_xlabel("Flow (MLD)")
+    ax.set_ylabel("Power / Flow (KWh/ML)")
+    ax.set_title("Power Efficiency vs. Flow (coloured by year)", fontsize=12, fontweight="bold")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    return save(fig, "12e_op_power_vs_flow")
+
+
+def plot_op_seasonal_heatmap(df):
+    """Monthly average heatmap for key parameters (normalised per column)."""
+    print("12f. Operational seasonal heatmap...")
+    heat_cols = [(c, s(c)) for c in [
+        "Flow (MLD)",
+        "Power / Flow (KW/ML)",
+        "Inlet BOD (mg/L, Grab)",
+        "Inlet COD (mg/L, Grab)",
+        "Inlet TSS (mg/L, Grab)",
+        "Effluent BOD (mg/L, Grab)",
+        "Effluent COD (mg/L, Grab)",
+        "Effluent TSS (mg/L, Grab)",
+    ] if c in df.columns]
+
+    if not heat_cols:
+        return None
+
+    tmp = df.copy()
+    tmp["month"] = tmp["Date"].dt.month
+    raw_cols = [c for c, _ in heat_cols]
+    monthly_avg = tmp.groupby("month")[raw_cols].mean()
+    monthly_avg.index = _MONTH_NAMES
+
+    normed = (monthly_avg - monthly_avg.min()) / (monthly_avg.max() - monthly_avg.min())
+    normed.columns = [lbl for _, lbl in heat_cols]
+    monthly_avg.columns = [lbl for _, lbl in heat_cols]
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+    sns.heatmap(normed.T, ax=ax, cmap="YlOrRd",
+                annot=monthly_avg.T.round(1), fmt=".1f",
+                linewidths=0.5, annot_kws={"size": 8},
+                cbar_kws={"label": "Normalised value"})
+    ax.set_xticklabels(_MONTH_NAMES, rotation=0)
+    ax.set_title("Seasonal Heatmap — Monthly Average (annotated with actual values)",
+                 fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return save(fig, "12f_op_seasonal_heatmap")
 
 
 # ── Data-driven observations ──────────────────────────────────────────────────
@@ -2322,7 +2601,8 @@ def build_html(data):
     data keys:
       residuals, pearson (dict grab/comp), mi (dict grab/comp/mi_data),
       scatter (list), aeration_ts, cross_heatmap, stage_removal,
-      do_effluent, svi_tss, missing_all, obs (dict s1…s10)
+      do_effluent, svi_tss, missing_all, obs (dict s1…s10),
+      operational (dict year/month/removal/compliance/power/heatmap)
     """
     obs = data.get("obs", {})
     title = "EDA Full Report — All_Years_Full.xlsx"
@@ -2551,6 +2831,16 @@ def build_html(data):
     <li class="nav-s"><a href="#s9">9. DO vs Effluent</a></li>
     <li class="nav-s"><a href="#s10">10. Settleability vs TSS</a></li>
     <li class="nav-s"><a href="#s11">11. Feature Suggestions — Exp 3</a></li>
+    <li class="nav-s"><a class="nav-toggle" href="#s12">12. Operational Overview</a>
+      <ul class="nav-children">
+        <li class="nav-t"><a href="#s12-year">Distributions by Year</a></li>
+        <li class="nav-t"><a href="#s12-month">Distributions by Month</a></li>
+        <li class="nav-t"><a href="#s12-removal">Removal Efficiency</a></li>
+        <li class="nav-t"><a href="#s12-compliance">Compliance Over Time</a></li>
+        <li class="nav-t"><a href="#s12-power">Power vs. Flow</a></li>
+        <li class="nav-t"><a href="#s12-heatmap">Seasonal Heatmap</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>"""
 
@@ -2818,6 +3108,53 @@ candidates for the feature selection pool.</p>
 
     parts.append(data.get("suggestions", ""))
 
+    # ── Section 12: Operational Overview ─────────────────────────────────────
+    op = data.get("operational", {})
+    parts.append(f"""<div class="card" id="s12">
+<h2>12. Operational Overview</h2>
+<p>Six operational charts ported from the legacy EDA script, now using the enriched
+60-column dataset (<code>All_Years_Full.xlsx</code>). These charts focus on year-over-year
+and month-over-month patterns, removal efficiency, compliance rates, and power efficiency.
+All use grab-sample effluent columns.</p>
+
+<h3 id="s12-year">12a — Annual distributions by parameter</h3>
+<p>Box plots (IQR + 1.5×IQR whiskers) for each core parameter, one box per year.
+Compliance limit lines are drawn in red/orange where applicable.
+Colour scheme is consistent with year palettes used throughout the report.</p>
+{img_tag(op.get("year"))}
+
+<h3 id="s12-month">12b — Seasonal distributions by calendar month</h3>
+<p>Box plots of flow, inlet, and effluent parameters aggregated over all years by month.
+Look for the monsoon signal (Jun–Sep) in flow and inlet load, and for how effluent
+quality follows or lags the inlet.</p>
+{img_tag(op.get("month"))}
+
+<h3 id="s12-removal">12c — Removal efficiency (BOD, COD, TSS)</h3>
+<p>Top row: 7-day rolling removal efficiency time series. Orange/red dashed lines mark
+90% and 95% removal targets. Bottom row: box plots of daily removal % by year.
+2022 anomaly (high inlet concentrations) should appear as elevated removal variance.</p>
+{img_tag(op.get("removal"))}
+
+<h3 id="s12-compliance">12d — Monthly compliance rate</h3>
+<p>Green area = fraction of daily measurements that met the discharge standard.
+Grey area = fraction of missing readings. Orange dashed line at 80% pass rate.
+Drops in compliance often coincide with monsoon high-flow months or 2022 upsets.</p>
+{img_tag(op.get("compliance"))}
+
+<h3 id="s12-power">12e — Power efficiency vs. flow</h3>
+<p>Scatter of Power/Flow (KWh/ML) vs. daily flow (MLD), coloured by year.
+The red dashed line is the regulatory limit of 482 KWh/ML.
+A downward trend indicates better energy efficiency at higher flows (economies of scale).</p>
+{img_tag(op.get("power"))}
+
+<h3 id="s12-heatmap">12f — Seasonal heatmap (monthly averages)</h3>
+<p>Monthly average of each parameter, colour-normalised per row so within-year
+seasonal patterns are visible across different units. Actual values are annotated
+in each cell. Jun–Sep monsoon months should appear distinctly in flow and inlet load.</p>
+{img_tag(op.get("heatmap"))}
+</div>
+""")
+
     parts.append("""
 </div><!-- /#main-content -->
 <script>
@@ -2915,6 +3252,12 @@ def main():
     svi_tss       = plot_svi_mlss_vs_tss(df)
     residuals     = plot_linearity_residuals(df)
     ridge_coefs   = plot_ridge_coefficients(df)
+    op_year       = plot_op_boxplot_by_year(df)
+    op_month      = plot_op_boxplot_by_month(df)
+    op_removal    = plot_op_removal_efficiency(df)
+    op_compliance = plot_op_compliance(df)
+    op_power      = plot_op_power_vs_flow(df)
+    op_heatmap    = plot_op_seasonal_heatmap(df)
 
     n_charts = (1 + len(pearson_data["grab"]) + len(pearson_data["comp"])
                 + len([p for p in mi_result["grab"] if p])
@@ -2940,6 +3283,14 @@ def main():
         "missing_all":  missing_all,
         "obs":          section_obs,
         "suggestions":  suggestions_html,
+        "operational": {
+            "year":       op_year,
+            "month":      op_month,
+            "removal":    op_removal,
+            "compliance": op_compliance,
+            "power":      op_power,
+            "heatmap":    op_heatmap,
+        },
     })
     print(f"\nDone. ~{n_charts} chart files → {PLOTS_DIR}/")
     print(f"Report: {REPORT}")
