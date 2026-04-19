@@ -36,11 +36,12 @@ import pandas as pd
 
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+PROJECT_ROOT = os.path.dirname(MODELING_DIR)
 DS_DIR       = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2")
 REPORTS_DIR  = os.path.join(MODELING_DIR, "reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-sys.path.insert(0, MODELING_DIR)
+sys.path.insert(0, PROJECT_ROOT)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 TARGETS = [

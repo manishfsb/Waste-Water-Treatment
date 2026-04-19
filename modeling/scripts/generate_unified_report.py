@@ -26,9 +26,10 @@ import pandas as pd
 
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(SCRIPT_DIR)
+PROJECT_ROOT = os.path.dirname(MODELING_DIR)
 REPORTS_DIR  = os.path.join(MODELING_DIR, "reports")
 
-sys.path.insert(0, MODELING_DIR)
+sys.path.insert(0, PROJECT_ROOT)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 os.makedirs(REPORTS_DIR, exist_ok=True)
@@ -999,6 +1000,50 @@ def _data_cost_div(df_all: pd.DataFrame, expanded_key: str, base_key: str) -> st
 </div>"""
 
 
+def _load_mi_lookup() -> dict:
+    """Return {(feature, target): mi_score} from feature_importance (Exp2-S2) + feature_audit."""
+    sel_dir   = os.path.join(MODELING_DIR, "feature_analysis", "selection")
+    audit_dir = os.path.join(MODELING_DIR, "feature_analysis", "audit")
+    lookup: dict = {}
+
+    fi_path = os.path.join(sel_dir, "feature_importance.xlsx")
+    if os.path.exists(fi_path):
+        fi = pd.read_excel(fi_path)
+        fi = fi[fi["experiment"] == "Experiment 2 Sub-2"][["feature", "target", "mi_score"]].drop_duplicates()
+        for _, row in fi.iterrows():
+            lookup[(row["feature"], row["target"])] = float(row["mi_score"])
+
+    fa_path = os.path.join(audit_dir, "feature_audit.xlsx")
+    if os.path.exists(fa_path):
+        fa = pd.read_excel(fa_path)[["feature", "target", "mi"]].drop_duplicates()
+        for _, row in fa.iterrows():
+            key = (row["feature"], row["target"])
+            if key not in lookup:
+                lookup[key] = float(row["mi"])
+
+    return lookup
+
+
+def _load_cost_lookup() -> dict:
+    """Return {feature: max marginal_cost_pct across targets} from feature_audit.
+    Base features (Inlet + Secondary + COMMON) are not in the audit — they default to 0.0."""
+    audit_dir = os.path.join(MODELING_DIR, "feature_analysis", "audit")
+    fa_path   = os.path.join(audit_dir, "feature_audit.xlsx")
+    if not os.path.exists(fa_path):
+        return {}
+    fa = pd.read_excel(fa_path)[["feature", "marginal_cost_pct"]]
+    return fa.groupby("feature")["marginal_cost_pct"].max().to_dict()
+
+
+# Known mathematically derived features: {derived: set_of_components}.
+# If a feature is derived from one of its pair partners, drop the derived feature.
+_DERIVED_FROM: dict = {
+    "Aeration SVI (Existing)": {"Aeration SV30 (ml/L, Existing)", "Aeration MLSS (mg/L, Existing)"},
+    "Aeration SVI (New)":      {"Aeration SV30 (ml/L, New)",      "Aeration MLSS (mg/L, New)"},
+    "Power / Flow (KW/ML)":    {"Power Total (KW)", "Flow (MLD)"},
+}
+
+
 def _vif_callout() -> str:
     """Compute VIF for Exp3-S2 feature sets inline and render as a foldable section."""
     try:
@@ -1006,6 +1051,9 @@ def _vif_callout() -> str:
         from statsmodels.tools.tools import add_constant
     except ImportError:
         return '<div class="info-note">VIF analysis requires statsmodels (pip install statsmodels).</div>'
+
+    mi_lookup   = _load_mi_lookup()
+    cost_lookup = _load_cost_lookup()   # {feature: max marginal_cost_pct}; base features default 0.0
 
     ds_dir = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2")
     DATASETS = [
@@ -1040,6 +1088,21 @@ def _vif_callout() -> str:
         if vif > 5:  return "MODERATE", "#f39c12"
         return "OK", "#2ecc71"
 
+    PAIR_R_THRESH = 0.85  # |r| above which two features are called collinear
+
+    def _collinear_pairs(X_df, feat_names, vif_scores):
+        """Return list of (feat_a, feat_b, r) for pairs with |r| >= threshold."""
+        corr = X_df.corr().abs()
+        pairs = []
+        for i, fa in enumerate(feat_names):
+            for j, fb in enumerate(feat_names):
+                if j <= i:
+                    continue
+                r = corr.loc[fa, fb] if fa in corr.index and fb in corr.columns else 0.0
+                if r >= PAIR_R_THRESH:
+                    pairs.append((fa, fb, round(float(r), 3)))
+        return sorted(pairs, key=lambda x: -x[2])
+
     total_high = total_mod = 0
     ds_htmls = []
 
@@ -1059,6 +1122,10 @@ def _vif_callout() -> str:
         total_high += n_high
         total_mod  += n_mod
 
+        # Collinear pairs among ALL features
+        X_df_clean = pd.DataFrame(X_clean.values, columns=features)
+        pairs = _collinear_pairs(X_df_clean, features, dict(vif_rows))
+
         short_name = name.replace("s2_stage3_", "").replace("_", " ").title()
         tbl_rows = ""
         for feat, vif_val in vif_rows:
@@ -1070,6 +1137,83 @@ def _vif_callout() -> str:
                 f'<td style="color:{fc};font-weight:{bold}">{vif_str}</td>'
                 f'<td><span style="color:{fc};font-size:11px">{flag}</span></td></tr>'
             )
+
+        # Collinear pairs sub-table
+        vif_dict = dict(vif_rows)
+        if pairs:
+            pair_rows = ""
+            for feat_a, feat_b, r in pairs:
+                r_col = "#e74c3c" if r >= 0.95 else "#f39c12"
+                mi_a   = mi_lookup.get((feat_a, target), None)
+                mi_b   = mi_lookup.get((feat_b, target), None)
+                cost_a = cost_lookup.get(feat_a, 0.0)   # base features default to 0
+                cost_b = cost_lookup.get(feat_b, 0.0)
+
+                # Priority 1: domain logic — drop known derived feature
+                drop_feat = reason = None
+                if feat_a in _DERIVED_FROM and feat_b in _DERIVED_FROM[feat_a]:
+                    drop_feat = feat_a
+                    reason = f"domain: {feat_a} is mathematically derived from {feat_b}"
+                elif feat_b in _DERIVED_FROM and feat_a in _DERIVED_FROM[feat_b]:
+                    drop_feat = feat_b
+                    reason = f"domain: {feat_b} is mathematically derived from {feat_a}"
+
+                # Priority 2: missingness cost — drop higher-cost feature if gap > 5 pp
+                if drop_feat is None and abs(cost_a - cost_b) > 5.0:
+                    drop_feat = feat_a if cost_a > cost_b else feat_b
+                    keep_cost = cost_b if drop_feat == feat_a else cost_a
+                    reason = (f"missingness: {cost_a:.1f}% vs {cost_b:.1f}% marginal row cost "
+                              f"— drop higher-cost feature ({drop_feat.split('(')[0].strip()})")
+
+                # Priority 3: MI with target — drop lower MI
+                if drop_feat is None:
+                    if mi_a is not None and mi_b is not None:
+                        drop_feat = feat_a if mi_a <= mi_b else feat_b
+                        mi_drop   = mi_a if drop_feat == feat_a else mi_b
+                        mi_keep   = mi_b if drop_feat == feat_a else mi_a
+                        reason    = f"MI {mi_drop:.3f} vs {mi_keep:.3f} — lower MI with target"
+                    elif mi_a is not None or mi_b is not None:
+                        drop_feat = feat_b if mi_a is not None else feat_a
+                        reason    = "MI available for one feature only — drop the unlisted one"
+
+                # Priority 4: VIF fallback
+                if drop_feat is None:
+                    drop_feat = feat_a if vif_dict.get(feat_a, 0) >= vif_dict.get(feat_b, 0) else feat_b
+                    reason    = f"VIF fallback ({vif_dict.get(drop_feat, 0):.1f} > other)"
+
+                mi_a_str   = f"{mi_a:.3f}"   if mi_a   is not None else "—"
+                mi_b_str   = f"{mi_b:.3f}"   if mi_b   is not None else "—"
+                cost_a_str = f"{cost_a:.1f}%" if cost_a > 0 else "0%"
+                cost_b_str = f"{cost_b:.1f}%" if cost_b > 0 else "0%"
+                pair_rows += (
+                    f'<tr>'
+                    f'<td>{feat_a}<br>'
+                    f'<span style="color:#888;font-size:10px">MI={mi_a_str} · cost={cost_a_str}</span></td>'
+                    f'<td>{feat_b}<br>'
+                    f'<span style="color:#888;font-size:10px">MI={mi_b_str} · cost={cost_b_str}</span></td>'
+                    f'<td style="color:{r_col};font-weight:bold">{r:.3f}</td>'
+                    f'<td style="color:#aaa;font-size:11px">drop <em>{drop_feat}</em><br>'
+                    f'<span style="color:#666;font-size:10px">{reason}</span></td></tr>'
+                )
+            pairs_html = f"""
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ {PAIR_R_THRESH}) — {len(pairs)} found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds {PAIR_R_THRESH}.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody>{pair_rows}</tbody>
+    </table>
+  </div>
+</details>"""
+        else:
+            pairs_html = f'<p class="meta" style="color:#2ecc71;font-size:11px">No feature pairs exceed |r| = {PAIR_R_THRESH} — high VIF may stem from many weak correlations rather than one dominant pair.</p>'
 
         badge_col = "#e74c3c" if n_high > 0 else ("#f39c12" if n_mod > 0 else "#2ecc71")
         ok_ct     = len(vif_rows) - n_high - n_mod
@@ -1085,8 +1229,31 @@ def _vif_callout() -> str:
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody>{tbl_rows}</tbody>
     </table>
+    {pairs_html}
   </div>
 </details>""")
+
+    action_guide = """
+<div class="obs-card" style="margin:12px 0;padding:14px 18px">
+  <strong style="font-size:13px">How to act on high VIF</strong>
+  <ol style="margin:8px 0 0 18px;font-size:12px;line-height:1.8">
+    <li><strong>Check the collinear pairs table first</strong> (inside each dataset fold below).
+        VIF alone tells you <em>that</em> a feature is inflated; the pairs table tells you
+        <em>which other feature</em> is causing it.</li>
+    <li><strong>Multiple HIGH features ≠ remove all.</strong>
+        If 5 features are HIGH but the pairs table shows 2 pairs + 1 hub, you only need to
+        drop 3 features (one from each pair + the hub), not all 5.</li>
+    <li><strong>Within a collinear pair, drop the one with:</strong>
+        higher VIF, higher missingness cost, or lower MI score with the target —
+        whichever is less informative domain-wise.</li>
+    <li><strong>Hub pattern:</strong> if one feature appears in many pairs (e.g. SVI),
+        dropping just that one hub resolves multiple HIGH VIFs simultaneously.</li>
+    <li><strong>Tree models (RF, XGB) are unaffected</strong> — collinearity only harms
+        OLS/Ridge coefficient stability. ElasticNet auto-handles it via L1 shrinkage.
+        VIF-based removal is primarily relevant before fitting OLS or Ridge.</li>
+    <li><strong>After dropping,</strong> re-fit and check that VIF &lt; 10 for remaining features.</li>
+  </ol>
+</div>"""
 
     summary_html = (
         f'<p class="meta">Global across all 8 datasets: '
@@ -1096,6 +1263,7 @@ def _vif_callout() -> str:
         f'and Aeration SVI (mathematically derived from SV30/MLSS). '
         f'ElasticNet handles collinearity via L1 penalty — this explains why ElNet outperforms '
         f'OLS/Ridge on composite targets. OLS/Ridge coefficients are directly inflated by collinear pairs.</p>'
+        f'{action_guide}'
     )
 
     return f"""
@@ -1244,6 +1412,362 @@ def _ann_failure_callout() -> str:
     </details>
   </div>
 </details>"""
+
+
+# ─── Cyclical Encoding methodology callout ────────────────────────────────────
+
+def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
+    """Foldable Exp3-S2 methodology card explaining sin/cos calendar encoding."""
+    lin = df_all[df_all["model"].isin(LINEAR_MODELS)].copy()
+
+    rows_html = ""
+    for exp_key, enc_label in [("Exp3-S1", "Raw integer (1–12 / 0–6)"),
+                                ("Exp3-S2", "Cyclic sin/cos (4 columns)")]:
+        sub = lin[lin["exp_key"] == exp_key]
+        if sub.empty:
+            continue
+        for model in LINEAR_MODELS:
+            m_sub = sub[sub["model"] == model]
+            if m_sub.empty:
+                continue
+            avg_r2 = m_sub["R2_test"].mean()
+            color  = _r2_color(avg_r2)
+            rows_html += (
+                f"<tr><td>{exp_key}</td><td>{model}</td><td>{enc_label}</td>"
+                f'<td style="color:{color};font-weight:bold">{_fmt(avg_r2)}</td></tr>'
+            )
+
+    return f"""
+<details class="exp-details" id="exp3-cyclic">
+  <summary><span class="fold-icon">▶</span> Methodology — Cyclical Encoding of Calendar Features</summary>
+  <div class="exp-body">
+
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <h4 style="margin:0 0 0.6rem">The Discontinuity Problem with Raw Integer Encoding</h4>
+      <p class="meta">
+        <code>month</code> (1–12) and <code>day_of_week</code> (0–6) are cyclic: December is
+        adjacent to January, and Sunday wraps back to Monday. As raw integers, a linear model
+        treats the gap between month 12 and month 1 as <em>11 units</em> — the largest possible
+        distance — creating a spurious discontinuity at the year boundary. The fitted coefficient
+        forces a monotone trend across the full 1–12 range and cannot capture the seasonal
+        "U-shape" or mid-year peaks that several effluent targets exhibit. Tree models (RF, GB,
+        XGB) are unaffected because their splits are ordinal and learned independently per node;
+        the discontinuity never enters their loss.
+      </p>
+    </div>
+
+    <div class="obs-card" style="border-left:4px solid #5BAD6F;margin-top:1rem">
+      <h4 style="margin:0 0 0.6rem">Encoding Formula</h4>
+      <p class="meta">Two orthogonal projections onto the unit circle replace each integer feature.
+         Together, (sin, cos) uniquely identify any cycle position while preserving wrap-around
+         topology: December and January are geometrically close, not 11 units apart.</p>
+      <div style="overflow-x:auto">
+      <table style="font-size:0.88em;max-width:640px">
+        <thead><tr>
+          <th>Original feature</th><th>Period</th>
+          <th>sin column</th><th>cos column</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><code>month</code> (1–12)</td><td>12</td>
+            <td><code>month_sin = sin(2π × month / 12)</code></td>
+            <td><code>month_cos = cos(2π × month / 12)</code></td>
+          </tr>
+          <tr>
+            <td><code>day_of_week</code> (0–6)</td><td>7</td>
+            <td><code>dow_sin = sin(2π × dow / 7)</code></td>
+            <td><code>dow_cos = cos(2π × dow / 7)</code></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="meta" style="margin-top:0.6rem">
+        The raw <code>month</code> and <code>day_of_week</code> columns are dropped before
+        training; the 4 cyclic columns take their place, adding zero rows of missingness.
+        The <code>year</code> column is kept as-is (not cyclic — it encodes genuine secular trend).
+      </p>
+    </div>
+
+    <div class="obs-card" style="border-left:4px solid #e67e22;margin-top:1rem">
+      <h4 style="margin:0 0 0.6rem">Scope and Interpretation Caveat</h4>
+      <p class="meta">
+        Cyclic encoding is applied <strong>only in Exp3-S2 linear models</strong>
+        (OLS, Ridge, ElasticNet). All prior experiments (Exp1, Exp2, Exp3 Sub-1) and all
+        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9–11) use raw
+        integer encoding.
+      </p>
+      <p class="meta">
+        Exp3-S2 also introduces new CONSIDER-tier features absent from Exp3-S1, so the two
+        experiments are <strong>not a controlled A/B test</strong> for encoding alone. Any R²
+        difference in the table below reflects the combined effect of the broader feature set
+        <em>and</em> the encoding change.
+      </p>
+    </div>
+
+    <details class="inner-fold" style="margin-top:1rem">
+      <summary><span class="fold-icon">▶</span>
+        Exp3-S1 (raw integers) vs Exp3-S2 (cyclic) — Linear Model Avg Test R² (all 8 targets)
+      </summary>
+      <div style="overflow-x:auto;margin-top:0.6rem">
+      <table style="font-size:0.88em;max-width:560px">
+        <thead><tr>
+          <th>Experiment</th><th>Model</th>
+          <th>Calendar encoding</th><th>Avg Test R²</th>
+        </tr></thead>
+        <tbody>{rows_html}</tbody>
+      </table>
+      </div>
+      <p class="meta" style="margin-top:0.5rem;font-size:0.8em;color:var(--text-muted)">
+        A controlled run of Exp3-S2 features with raw-integer encoding was not performed.
+        Isolating the encoding contribution would require a dedicated ablation run.
+      </p>
+    </details>
+
+  </div>
+</details>"""
+
+
+# ─── Comp COD persistent-failure diagnostic ───────────────────────────────────
+
+def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
+    """Standalone section: per-year distribution, distribution shift, performance
+    panorama, and root cause analysis for the persistently failing Comp COD target."""
+
+    TARGET_COL = "Effluent COD (mg/L, Composite)"
+    data_file  = os.path.join(PROJECT_ROOT, "raw_data", "All_Years_Full.xlsx")
+
+    # ── Per-year statistics and shift metrics ─────────────────────────────
+    stats_html = ""
+    shift_html = ""
+
+    if os.path.exists(data_file):
+        import warnings as _w
+        with _w.catch_warnings():
+            _w.simplefilter("ignore")
+            df_raw = pd.read_excel(data_file, parse_dates=["Date"])
+        df_raw = (df_raw[["Date", TARGET_COL]]
+                  .dropna(subset=[TARGET_COL])
+                  .sort_values("Date")
+                  .reset_index(drop=True))
+        df_raw["year"] = df_raw["Date"].dt.year
+
+        train = df_raw[df_raw["year"] <= 2024]
+        test  = df_raw[df_raw["year"] == 2025]
+
+        train_mean = train[TARGET_COL].mean()
+        train_std  = train[TARGET_COL].std()
+        train_p25  = train[TARGET_COL].quantile(0.25)
+        train_p75  = train[TARGET_COL].quantile(0.75)
+
+        year_rows = ""
+        for year, grp in df_raw.groupby("year"):
+            v = grp[TARGET_COL]
+            mean_shift = abs(v.mean() - train_mean) / train_std
+            m_color = ("#e74c3c" if mean_shift > 1.0 else
+                       "#e67e22" if mean_shift > 0.5 else "var(--text)")
+            bold = "bold" if year == 2025 else "normal"
+            tag  = " ★" if year == 2025 else ""
+            year_rows += (
+                f"<tr><td><strong>{year}{tag}</strong></td>"
+                f"<td>{len(v)}</td>"
+                f'<td style="color:{m_color};font-weight:{bold}">{v.mean():.1f}</td>'
+                f"<td>{v.std():.1f}</td>"
+                f"<td>{v.min():.1f}</td>"
+                f"<td>{v.quantile(0.25):.1f}</td>"
+                f"<td>{v.quantile(0.75):.1f}</td>"
+                f"<td>{v.max():.1f}</td></tr>"
+            )
+
+        stats_html = f"""
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> Per-Year Distribution Statistics</summary>
+  <div style="overflow-x:auto;margin-top:0.6rem">
+  <table style="font-size:0.88em">
+    <thead><tr>
+      <th>Year</th><th>n</th><th>Mean</th><th>Std</th>
+      <th>Min</th><th>P25</th><th>P75</th><th>Max</th>
+    </tr></thead>
+    <tbody>
+      {year_rows}
+      <tr style="border-top:2px solid var(--border);font-style:italic;color:var(--text-muted)">
+        <td>Train 2021–2024</td>
+        <td>{len(train)}</td>
+        <td>{train_mean:.1f}</td><td>{train_std:.1f}</td>
+        <td>{train[TARGET_COL].min():.1f}</td>
+        <td>{train_p25:.1f}</td><td>{train_p75:.1f}</td>
+        <td>{train[TARGET_COL].max():.1f}</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="meta" style="font-size:0.8em;color:var(--text-muted);margin-top:0.4rem">
+    Red mean = year mean deviates by &gt;1σ from training mean.
+    Orange = 0.5–1σ shift. 2025 (★) is the test set.
+  </p>
+</details>"""
+
+        if not test.empty:
+            frac_iqr   = ((test[TARGET_COL] >= train_p25) &
+                          (test[TARGET_COL] <= train_p75)).mean()
+            frac_above = (test[TARGET_COL] > train_p75).mean()
+            mean_sigma = abs(test[TARGET_COL].mean() - train_mean) / train_std
+
+            iqr_col   = ("#2ecc71" if frac_iqr > 0.5 else
+                         "#e67e22" if frac_iqr > 0.3 else "#e74c3c")
+            sig_col   = ("#2ecc71" if mean_sigma < 0.5 else
+                         "#e67e22" if mean_sigma < 1.0 else "#e74c3c")
+
+            shift_html = f"""
+<div class="obs-card" style="border-left:4px solid #e74c3c;margin-bottom:1rem">
+  <h4 style="margin:0 0 0.8rem">2025 Distribution Shift vs Training (2021–2024)</h4>
+  <div style="display:flex;gap:2rem;flex-wrap:wrap">
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:{iqr_col}">{frac_iqr:.0%}</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        of 2025 values within<br>training IQR
+        [{train_p25:.1f}, {train_p75:.1f}] mg/L
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#e74c3c">{frac_above:.0%}</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        of 2025 values above<br>training P75 ({train_p75:.1f} mg/L)
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:{sig_col}">{mean_sigma:.2f}σ</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        2025 mean shift relative<br>to training std
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#e74c3c">
+        {test[TARGET_COL].mean():.1f} mg/L
+      </div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        2025 mean<br>(train mean: {train_mean:.1f} mg/L)
+      </div>
+    </div>
+  </div>
+</div>"""
+    else:
+        stats_html = '<div class="info-note">Raw data file not found — distribution stats unavailable.</div>'
+
+    # ── Performance panorama across all experiments ───────────────────────
+    comp_cod = df_all[df_all["target"] == TARGET_COL].copy()
+    global_max = comp_cod["R2_test"].max()
+    n_exp = comp_cod["exp_key"].nunique()
+    n_mod = comp_cod["model"].nunique()
+
+    perf_rows = ""
+    for exp_key in EXP_CHART_ORDER:
+        sub = comp_cod[comp_cod["exp_key"] == exp_key]
+        if sub.empty:
+            continue
+        best = sub.loc[sub["R2_test"].idxmax()]
+        r2   = best["R2_test"]
+        gap  = best.get("R2_gap", float("nan"))
+        color   = _r2_color(r2)
+        gap_cls = _gap_cls(gap)
+        gap_str = _fmt(gap) if not (isinstance(gap, float) and np.isnan(gap)) else "—"
+        badge = ""
+        if r2 == global_max:
+            badge = ' <span style="font-size:0.75em;color:#f1c40f">★ best</span>'
+        perf_rows += (
+            f"<tr><td>{EXP_CHART_LABELS.get(exp_key, exp_key)}</td>"
+            f"<td>{best['model']}</td>"
+            f'<td style="color:{color};font-weight:bold">{_fmt(r2)}{badge}</td>'
+            f'<td class="{gap_cls}">{gap_str}</td></tr>'
+        )
+
+    perf_table = f"""
+<details class="inner-fold" style="margin-top:1rem">
+  <summary><span class="fold-icon">▶</span>
+    Best Comp COD Result per Experiment ({n_exp} experiments, {n_mod} model families)
+  </summary>
+  <div style="overflow-x:auto;margin-top:0.6rem">
+  <table style="font-size:0.88em;max-width:500px">
+    <thead><tr>
+      <th>Experiment</th><th>Best Model</th><th>Test R²</th><th>R² Gap</th>
+    </tr></thead>
+    <tbody>{perf_rows}</tbody>
+  </table>
+  </div>
+  <p class="meta" style="margin-top:0.5rem;font-size:0.8em;color:var(--text-muted)">
+    Global best Test R² across all experiments: <strong>{_fmt(global_max)}</strong>.
+    Every regularisation strategy, feature set expansion, and engineering approach
+    has been tried; none breaks through to meaningful generalisation on 2025.
+  </p>
+</details>"""
+
+    return f"""
+<section id="comp-cod-diagnostic">
+  <h1 class="section-title">Comp COD — Persistent Failure Diagnostic</h1>
+  <p class="section-intro">
+    Effluent COD (Composite) is the only target where <em>no model generalises</em> across any
+    experiment or phase (best Test R² = {_fmt(global_max)} across {n_exp} experiment variants).
+    Phase 9 Voting MAE doubled from 8.7 mg/L (2024 in-sample) to 18.1 mg/L (2025 test).
+    Variance is not collapsed (σ-ratio = 0.78), which rules out the low-variance artefact
+    that drives negative R² in Comp pH and Comp TSS. This section documents the distribution
+    shift, the performance panorama across every experiment, and the evidence for a
+    2025 process change as the likely root cause.
+  </p>
+
+  {shift_html}
+  {stats_html}
+  {perf_table}
+
+  <div class="obs-card" style="border-left:4px solid #e74c3c;margin-top:1.5rem">
+    <h4 style="margin:0 0 0.8rem">Root Cause Analysis</h4>
+
+    <p class="meta"><strong style="color:#e74c3c">1. Genuine 2025 process change — not a
+      modelling artefact.</strong>
+      MAE doubled (8.7 → 18.1 mg/L) while σ-ratio = 0.78, confirming the 2025 test set has
+      comparable variance to training. The model is not hitting a low-variance wall —
+      it is predicting the wrong values. This is the signature of a non-stationarity in
+      the plant's COD removal mechanism that was absent during the 2021–2024 training window.
+    </p>
+
+    <p class="meta"><strong style="color:#e67e22">2. Inlet COD is a weak proxy for effluent
+      COD under the current conditions.</strong>
+      Composite effluent COD depends on secondary treatment efficiency, which is governed by
+      MLSS, SVI, and aeration conditions — features with 35–50% missingness on composite rows
+      (CONSIDER tier). When these are absent, the model falls back to inlet + flow, whose MI
+      with effluent Comp COD is low (&lt;0.15 on training data).
+    </p>
+
+    <p class="meta"><strong style="color:#e67e22">3. Small composite sample size amplifies
+      memorisation.</strong>
+      Composite targets have only ~515–633 training rows after dropna. With 17–32 features
+      the effective rows-per-feature ratio is 16–37 — below the commonly cited heuristic of 50.
+      Even heavily regularised models (ElNet α=10) risk encoding 2022-era COD spikes that
+      do not recur in 2025.
+    </p>
+
+    <p class="meta"><strong style="color:#f1c40f">4. Feature engineering and temporal lags
+      do not help.</strong>
+      Phase 10 full FE: best R² = −0.008 (Ridge). Phase 10b selective FE: best = −0.051.
+      Phase 11 temporal lags: best = +0.107 (ElNet, Phase 11) but 2025 MAE remains ~17 mg/L.
+      Every additional feature increases the risk of learning training-specific patterns without
+      improving generalisation.
+    </p>
+
+    <p class="meta"><strong style="color:#4A90D9">5. Recommended next steps.</strong>
+      (a) <strong>Flag Comp COD predictions as unreliable</strong> in any operational dashboard
+      until 2025 data is incorporated into training.
+      (b) <strong>Collect causal features</strong> with higher priority: secondary sludge age
+      (SRT), MLSS, and effluent turbidity have high missingness now but directly govern COD
+      removal — their availability on composite measurement days would be the single highest
+      leverage improvement.
+      (c) <strong>Retrain once ≥ 90 new 2025 rows are available</strong> (roughly 3 months of
+      composite measurements) and test whether the new regime is stable enough for a combined
+      2021–2025 model.
+      (d) As an interim measure, <strong>a shallow decision tree (max depth 3) trained only
+      on 2024–2025 data</strong> is likely to outperform any model trained on the full
+      2021–2024 window for near-term operational use.
+    </p>
+  </div>
+</section>"""
 
 
 def _section_bests_json(df_all: pd.DataFrame) -> str:
@@ -1846,8 +2370,9 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
                              "Sub-experiment 1 — Feature Selected", open_default=False)
     sub2   = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
                              "Sub-experiment 2 — ADD + CONSIDER-tier Features", open_default=True)
-    cost_div = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
-    vif_div  = _vif_callout()
+    cyclic_div = _cyclic_encoding_callout(df_all)
+    cost_div   = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
+    vif_div    = _vif_callout()
 
     # Note: no feature-selected variant exists for Exp3-S2
     no_fs_note = """
@@ -1873,6 +2398,7 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   {sub1fs}
   {fs1div}
   {sub2}
+  {cyclic_div}
   {cost_div}
   {vif_div}
   {no_fs_note}
@@ -2197,6 +2723,7 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp3-s1">Sub-exp 1 (ADD)</a>
       <a class="nav-item nav-sub" href="#exp3-s1-fs">Sub-exp 1 FS</a>
       <a class="nav-item nav-sub" href="#exp3-s2">Sub-exp 2 (CONSIDER)</a>
+      <a class="nav-item nav-sub" href="#exp3-cyclic">Cyclic Encoding</a>
       <a class="nav-item nav-sub" href="#exp3-vif">VIF Collinearity</a>
     </div>
   </div>
@@ -2240,6 +2767,7 @@ def _sidebar() -> str:
     <div class="nav-group-items" id="nav-analytics">
       <a class="nav-item nav-sub" href="#model-selection">Overfit-Aware Selection</a>
       <a class="nav-item nav-sub" href="#error-decomposition">Error Regime Decomposition</a>
+      <a class="nav-item nav-sub" href="#comp-cod-diagnostic">Comp COD Diagnostic</a>
     </div>
   </div>
 
@@ -2831,6 +3359,9 @@ def main():
 
     print("  Building error decomposition section…")
     sections.append(_build_error_decomposition_section())
+
+    print("  Building Comp COD diagnostic section…")
+    sections.append(_build_comp_cod_diagnostic(df_all))
 
     # Inline section-bests JSON for the running leaders JS widget
     sec_bests_json = _section_bests_json(df_all)

@@ -442,6 +442,7 @@
       <a class="nav-item nav-sub" href="#exp3-s1">Sub-exp 1 (ADD)</a>
       <a class="nav-item nav-sub" href="#exp3-s1-fs">Sub-exp 1 FS</a>
       <a class="nav-item nav-sub" href="#exp3-s2">Sub-exp 2 (CONSIDER)</a>
+      <a class="nav-item nav-sub" href="#exp3-cyclic">Cyclic Encoding</a>
       <a class="nav-item nav-sub" href="#exp3-vif">VIF Collinearity</a>
     </div>
   </div>
@@ -485,6 +486,7 @@
     <div class="nav-group-items" id="nav-analytics">
       <a class="nav-item nav-sub" href="#model-selection">Overfit-Aware Selection</a>
       <a class="nav-item nav-sub" href="#error-decomposition">Error Regime Decomposition</a>
+      <a class="nav-item nav-sub" href="#comp-cod-diagnostic">Comp COD Diagnostic</a>
     </div>
   </div>
 
@@ -502,7 +504,7 @@
 <div id="main-content">
   <div class="page-header">
     <h1>Wastewater Treatment — Unified Modeling Report</h1>
-    <p class="meta">Generated 2026-04-18 14:06 &nbsp;·&nbsp;
+    <p class="meta">Generated 2026-04-19 10:57 &nbsp;·&nbsp;
       Experiments 1–3 + Phases 9–11 &nbsp;·&nbsp;
       9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp;
       Train 2021–2024 · Test 2025
@@ -1517,6 +1519,94 @@
   </div>
 </details>
   
+<details class="exp-details" id="exp3-cyclic">
+  <summary><span class="fold-icon">▶</span> Methodology — Cyclical Encoding of Calendar Features</summary>
+  <div class="exp-body">
+
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <h4 style="margin:0 0 0.6rem">The Discontinuity Problem with Raw Integer Encoding</h4>
+      <p class="meta">
+        <code>month</code> (1–12) and <code>day_of_week</code> (0–6) are cyclic: December is
+        adjacent to January, and Sunday wraps back to Monday. As raw integers, a linear model
+        treats the gap between month 12 and month 1 as <em>11 units</em> — the largest possible
+        distance — creating a spurious discontinuity at the year boundary. The fitted coefficient
+        forces a monotone trend across the full 1–12 range and cannot capture the seasonal
+        "U-shape" or mid-year peaks that several effluent targets exhibit. Tree models (RF, GB,
+        XGB) are unaffected because their splits are ordinal and learned independently per node;
+        the discontinuity never enters their loss.
+      </p>
+    </div>
+
+    <div class="obs-card" style="border-left:4px solid #5BAD6F;margin-top:1rem">
+      <h4 style="margin:0 0 0.6rem">Encoding Formula</h4>
+      <p class="meta">Two orthogonal projections onto the unit circle replace each integer feature.
+         Together, (sin, cos) uniquely identify any cycle position while preserving wrap-around
+         topology: December and January are geometrically close, not 11 units apart.</p>
+      <div style="overflow-x:auto">
+      <table style="font-size:0.88em;max-width:640px">
+        <thead><tr>
+          <th>Original feature</th><th>Period</th>
+          <th>sin column</th><th>cos column</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><code>month</code> (1–12)</td><td>12</td>
+            <td><code>month_sin = sin(2π × month / 12)</code></td>
+            <td><code>month_cos = cos(2π × month / 12)</code></td>
+          </tr>
+          <tr>
+            <td><code>day_of_week</code> (0–6)</td><td>7</td>
+            <td><code>dow_sin = sin(2π × dow / 7)</code></td>
+            <td><code>dow_cos = cos(2π × dow / 7)</code></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="meta" style="margin-top:0.6rem">
+        The raw <code>month</code> and <code>day_of_week</code> columns are dropped before
+        training; the 4 cyclic columns take their place, adding zero rows of missingness.
+        The <code>year</code> column is kept as-is (not cyclic — it encodes genuine secular trend).
+      </p>
+    </div>
+
+    <div class="obs-card" style="border-left:4px solid #e67e22;margin-top:1rem">
+      <h4 style="margin:0 0 0.6rem">Scope and Interpretation Caveat</h4>
+      <p class="meta">
+        Cyclic encoding is applied <strong>only in Exp3-S2 linear models</strong>
+        (OLS, Ridge, ElasticNet). All prior experiments (Exp1, Exp2, Exp3 Sub-1) and all
+        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9–11) use raw
+        integer encoding.
+      </p>
+      <p class="meta">
+        Exp3-S2 also introduces new CONSIDER-tier features absent from Exp3-S1, so the two
+        experiments are <strong>not a controlled A/B test</strong> for encoding alone. Any R²
+        difference in the table below reflects the combined effect of the broader feature set
+        <em>and</em> the encoding change.
+      </p>
+    </div>
+
+    <details class="inner-fold" style="margin-top:1rem">
+      <summary><span class="fold-icon">▶</span>
+        Exp3-S1 (raw integers) vs Exp3-S2 (cyclic) — Linear Model Avg Test R² (all 8 targets)
+      </summary>
+      <div style="overflow-x:auto;margin-top:0.6rem">
+      <table style="font-size:0.88em;max-width:560px">
+        <thead><tr>
+          <th>Experiment</th><th>Model</th>
+          <th>Calendar encoding</th><th>Avg Test R²</th>
+        </tr></thead>
+        <tbody><tr><td>Exp3-S1</td><td>OLS</td><td>Raw integer (1–12 / 0–6)</td><td style="color:#e74c3c;font-weight:bold">-0.297</td></tr><tr><td>Exp3-S1</td><td>Ridge</td><td>Raw integer (1–12 / 0–6)</td><td style="color:#e67e22;font-weight:bold">0.039</td></tr><tr><td>Exp3-S1</td><td>ElNet</td><td>Raw integer (1–12 / 0–6)</td><td style="color:#e67e22;font-weight:bold">0.138</td></tr><tr><td>Exp3-S2</td><td>OLS</td><td>Cyclic sin/cos (4 columns)</td><td style="color:#e74c3c;font-weight:bold">-0.472</td></tr><tr><td>Exp3-S2</td><td>Ridge</td><td>Cyclic sin/cos (4 columns)</td><td style="color:#f1c40f;font-weight:bold">0.308</td></tr><tr><td>Exp3-S2</td><td>ElNet</td><td>Cyclic sin/cos (4 columns)</td><td style="color:#f1c40f;font-weight:bold">0.291</td></tr></tbody>
+      </table>
+      </div>
+      <p class="meta" style="margin-top:0.5rem;font-size:0.8em;color:var(--text-muted)">
+        A controlled run of Exp3-S2 features with raw-integer encoding was not performed.
+        Isolating the encoding contribution would require a dedicated ablation run.
+      </p>
+    </details>
+
+  </div>
+</details>
+  
 <div class="data-cost-div">
   <h5>📉 Data Cost vs Performance Gain (E3-S1 → E3-S2)</h5>
   <p class="meta">The row cost is <strong>justified on 4/8 targets</strong> — R² gains exceed +0.02 for the majority. The CONSIDER-tier features add meaningful signal despite the smaller training set.</p>
@@ -1543,6 +1633,26 @@
       less reliable for such features.
     </p>
     <p class="meta">Global across all 8 datasets: <strong style="color:#e74c3c">25 HIGH (VIF&gt;10)</strong> · <strong style="color:#f39c12">57 MODERATE (VIF 5–10)</strong>. Concentrated in Sec Sed vs Sec Clarifier pairs (adjacent measurements of the same parameter) and Aeration SVI (mathematically derived from SV30/MLSS). ElasticNet handles collinearity via L1 penalty — this explains why ElNet outperforms OLS/Ridge on composite targets. OLS/Ridge coefficients are directly inflated by collinear pairs.</p>
+<div class="obs-card" style="margin:12px 0;padding:14px 18px">
+  <strong style="font-size:13px">How to act on high VIF</strong>
+  <ol style="margin:8px 0 0 18px;font-size:12px;line-height:1.8">
+    <li><strong>Check the collinear pairs table first</strong> (inside each dataset fold below).
+        VIF alone tells you <em>that</em> a feature is inflated; the pairs table tells you
+        <em>which other feature</em> is causing it.</li>
+    <li><strong>Multiple HIGH features ≠ remove all.</strong>
+        If 5 features are HIGH but the pairs table shows 2 pairs + 1 hub, you only need to
+        drop 3 features (one from each pair + the hub), not all 5.</li>
+    <li><strong>Within a collinear pair, drop the one with:</strong>
+        higher VIF, higher missingness cost, or lower MI score with the target —
+        whichever is less informative domain-wise.</li>
+    <li><strong>Hub pattern:</strong> if one feature appears in many pairs (e.g. SVI),
+        dropping just that one hub resolves multiple HIGH VIFs simultaneously.</li>
+    <li><strong>Tree models (RF, XGB) are unaffected</strong> — collinearity only harms
+        OLS/Ridge coefficient stability. ElasticNet auto-handles it via L1 shrinkage.
+        VIF-based removal is primarily relevant before fitting OLS or Ridge.</li>
+    <li><strong>After dropping,</strong> re-fit and check that VIF &lt; 10 for remaining features.</li>
+  </ol>
+</div>
     
 <details class="inner-fold">
   <summary><span class="fold-icon">▶</span> Grab Bod
@@ -1554,6 +1664,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Aeration SVI (New)</td><td style="color:#e74c3c;font-weight:bold">12.26</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SV30 (ml/L, New)</td><td style="color:#e74c3c;font-weight:bold">10.94</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.98</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.76</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#f39c12;font-weight:normal">9.73</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration MLSS (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">9.37</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, New)</td><td style="color:#f39c12;font-weight:normal">7.74</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">7.30</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.60</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#f39c12;font-weight:normal">6.27</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.13</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#f39c12;font-weight:normal">5.96</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.57</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.19</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">4.57</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">4.18</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">3.99</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.64</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.38</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">2.86</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Sludge Totalizer (m3)</td><td style="color:#2ecc71;font-weight:normal">2.20</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">2.04</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.98</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.61</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Grab)</td><td style="color:#2ecc71;font-weight:normal">1.28</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 5 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Aeration SVI (Existing)<br><span style="color:#888;font-size:10px">MI=0.186 · cost=0%</span></td><td>Aeration SVI (New)<br><span style="color:#888;font-size:10px">MI=0.184 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.908</td><td style="color:#aaa;font-size:11px">drop <em>Aeration SVI (New)</em><br><span style="color:#666;font-size:10px">MI 0.184 vs 0.186 — lower MI with target</span></td></tr><tr><td>Aeration DO (mg/L, Existing)<br><span style="color:#888;font-size:10px">MI=0.292 · cost=11.5%</span></td><td>Aeration DO (mg/L, New)<br><span style="color:#888;font-size:10px">MI=0.229 · cost=11.6%</span></td><td style="color:#f39c12;font-weight:bold">0.899</td><td style="color:#aaa;font-size:11px">drop <em>Aeration DO (mg/L, New)</em><br><span style="color:#666;font-size:10px">MI 0.229 vs 0.292 — lower MI with target</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.280 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.373 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.896</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.280 vs 0.373 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.388 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.556 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.873</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.388 vs 0.556 — lower MI with target</span></td></tr><tr><td>Sec Clarifier RAS<br><span style="color:#888;font-size:10px">MI=0.193 · cost=0%</span></td><td>Sec Sed RAS (New)<br><span style="color:#888;font-size:10px">MI=0.174 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.852</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed RAS (New)</em><br><span style="color:#666;font-size:10px">MI 0.174 vs 0.193 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1566,6 +1693,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">8.88</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">8.70</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.91</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.59</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#2ecc71;font-weight:normal">4.99</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#2ecc71;font-weight:normal">4.96</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#2ecc71;font-weight:normal">3.74</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#2ecc71;font-weight:normal">3.47</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">3.27</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">3.15</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.08</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">2.94</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">2.62</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.57</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">1.46</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.23</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Grab)</td><td style="color:#2ecc71;font-weight:normal">1.16</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 2 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.094 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.188 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.887</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.094 vs 0.188 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.142 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.102 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.869</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed BOD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.102 vs 0.142 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1578,6 +1722,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Aeration SVI (New)</td><td style="color:#e74c3c;font-weight:bold">13.20</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SV30 (ml/L, New)</td><td style="color:#e74c3c;font-weight:bold">12.65</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#e74c3c;font-weight:bold">10.10</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">10.03</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.95</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration MLSS (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">9.72</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, New)</td><td style="color:#f39c12;font-weight:normal">8.45</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">8.15</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.73</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#f39c12;font-weight:normal">6.41</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.14</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#f39c12;font-weight:normal">5.97</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.58</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.20</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration pH (New)</td><td style="color:#2ecc71;font-weight:normal">4.81</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">4.65</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">4.56</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">4.20</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration pH (Existing)</td><td style="color:#2ecc71;font-weight:normal">4.07</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.97</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.68</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">2.93</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Sludge Totalizer (m3)</td><td style="color:#2ecc71;font-weight:normal">2.40</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power GE (KW)</td><td style="color:#2ecc71;font-weight:normal">2.28</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary BOD (mg/L)</td><td style="color:#2ecc71;font-weight:normal">2.21</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">2.13</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">2.00</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.62</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Grab)</td><td style="color:#2ecc71;font-weight:normal">1.30</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 5 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Aeration SVI (New)<br><span style="color:#888;font-size:10px">MI=0.197 · cost=0%</span></td><td>Aeration SVI (Existing)<br><span style="color:#888;font-size:10px">MI=0.185 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.908</td><td style="color:#aaa;font-size:11px">drop <em>Aeration SVI (Existing)</em><br><span style="color:#666;font-size:10px">MI 0.185 vs 0.197 — lower MI with target</span></td></tr><tr><td>Aeration DO (mg/L, Existing)<br><span style="color:#888;font-size:10px">MI=0.301 · cost=11.5%</span></td><td>Aeration DO (mg/L, New)<br><span style="color:#888;font-size:10px">MI=0.278 · cost=11.6%</span></td><td style="color:#f39c12;font-weight:bold">0.900</td><td style="color:#aaa;font-size:11px">drop <em>Aeration DO (mg/L, New)</em><br><span style="color:#666;font-size:10px">MI 0.278 vs 0.301 — lower MI with target</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.246 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.265 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.896</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.246 vs 0.265 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.386 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.443 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.873</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.386 vs 0.443 — lower MI with target</span></td></tr><tr><td>Sec Clarifier RAS<br><span style="color:#888;font-size:10px">MI=0.167 · cost=0%</span></td><td>Sec Sed RAS (New)<br><span style="color:#888;font-size:10px">MI=0.148 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.852</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed RAS (New)</em><br><span style="color:#666;font-size:10px">MI 0.148 vs 0.167 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1590,6 +1751,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#e74c3c;font-weight:bold">16.97</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#e74c3c;font-weight:bold">15.07</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">11.90</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">11.80</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">10.45</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">8.58</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#f39c12;font-weight:normal">5.22</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration pH (New)</td><td style="color:#f39c12;font-weight:normal">5.09</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">4.92</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, New)</td><td style="color:#2ecc71;font-weight:normal">4.62</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration pH (Existing)</td><td style="color:#2ecc71;font-weight:normal">4.41</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">4.20</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#2ecc71;font-weight:normal">3.79</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.67</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#2ecc71;font-weight:normal">3.62</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.13</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">2.77</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Grab)</td><td style="color:#2ecc71;font-weight:normal">2.57</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">2.33</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">2.07</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">1.67</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.59</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#2ecc71;font-weight:normal">1.47</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 5 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.069 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.105 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.942</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier BOD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.069 vs 0.105 — lower MI with target</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.025 · cost=0%</span></td><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.095 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.934</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.025 vs 0.095 — lower MI with target</span></td></tr><tr><td>Sec Clarifier COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.080 · cost=0%</span></td><td>Sec Sed COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.027 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.896</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed COD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.027 vs 0.080 — lower MI with target</span></td></tr><tr><td>Sec Clarifier pH<br><span style="color:#888;font-size:10px">MI=0.534 · cost=0%</span></td><td>Sec Sed pH<br><span style="color:#888;font-size:10px">MI=0.527 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.875</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed pH</em><br><span style="color:#666;font-size:10px">MI 0.527 vs 0.534 — lower MI with target</span></td></tr><tr><td>Aeration pH (Existing)<br><span style="color:#888;font-size:10px">MI=0.307 · cost=0%</span></td><td>Aeration pH (New)<br><span style="color:#888;font-size:10px">MI=0.293 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.860</td><td style="color:#aaa;font-size:11px">drop <em>Aeration pH (New)</em><br><span style="color:#666;font-size:10px">MI 0.293 vs 0.307 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1602,6 +1780,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">12.25</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SVI (New)</td><td style="color:#e74c3c;font-weight:bold">11.57</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">10.75</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration MLSS (mg/L, Existing)</td><td style="color:#e74c3c;font-weight:bold">10.28</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SV30 (ml/L, New)</td><td style="color:#e74c3c;font-weight:bold">10.15</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#f39c12;font-weight:normal">8.99</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">8.87</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, New)</td><td style="color:#f39c12;font-weight:normal">8.69</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.90</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.79</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#f39c12;font-weight:normal">6.40</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#f39c12;font-weight:normal">6.13</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.33</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">5.22</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">4.34</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">4.14</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">3.95</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.64</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.25</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">2.88</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Sludge Totalizer (m3)</td><td style="color:#2ecc71;font-weight:normal">2.67</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power GE (KW)</td><td style="color:#2ecc71;font-weight:normal">2.62</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration pH (Existing)</td><td style="color:#2ecc71;font-weight:normal">2.44</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">2.30</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.81</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.71</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Composite)</td><td style="color:#2ecc71;font-weight:normal">1.23</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 4 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Aeration DO (mg/L, Existing)<br><span style="color:#888;font-size:10px">MI=0.262 · cost=11.5%</span></td><td>Aeration DO (mg/L, New)<br><span style="color:#888;font-size:10px">MI=0.205 · cost=11.6%</span></td><td style="color:#f39c12;font-weight:bold">0.909</td><td style="color:#aaa;font-size:11px">drop <em>Aeration DO (mg/L, New)</em><br><span style="color:#666;font-size:10px">MI 0.205 vs 0.262 — lower MI with target</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.214 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.356 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.902</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.214 vs 0.356 — lower MI with target</span></td></tr><tr><td>Aeration SVI (Existing)<br><span style="color:#888;font-size:10px">MI=0.229 · cost=0%</span></td><td>Aeration SVI (New)<br><span style="color:#888;font-size:10px">MI=0.183 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.891</td><td style="color:#aaa;font-size:11px">drop <em>Aeration SVI (New)</em><br><span style="color:#666;font-size:10px">MI 0.183 vs 0.229 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.339 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.472 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.883</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.339 vs 0.472 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1614,6 +1809,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">10.76</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.80</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.22</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">6.19</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#2ecc71;font-weight:normal">4.92</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#2ecc71;font-weight:normal">4.85</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#2ecc71;font-weight:normal">3.71</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#2ecc71;font-weight:normal">3.43</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">3.22</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">3.07</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.03</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">2.81</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">2.79</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.53</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">1.53</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.26</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Composite)</td><td style="color:#2ecc71;font-weight:normal">1.10</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 2 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.084 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.165 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.893</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.084 vs 0.165 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.151 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.180 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.877</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.151 vs 0.180 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1626,6 +1838,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">18.53</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">16.44</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#e74c3c;font-weight:bold">10.33</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#f39c12;font-weight:normal">9.97</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SVI (New)</td><td style="color:#f39c12;font-weight:normal">9.15</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.10</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.01</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">8.56</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">8.05</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration MLSS (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">7.43</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#f39c12;font-weight:normal">7.33</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, New)</td><td style="color:#f39c12;font-weight:normal">7.11</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#f39c12;font-weight:normal">5.91</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">4.46</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">4.40</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">4.09</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Sludge Totalizer (m3)</td><td style="color:#2ecc71;font-weight:normal">3.94</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.63</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">3.58</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.55</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet PO4/TP (mg/L, Grab)</td><td style="color:#2ecc71;font-weight:normal">3.31</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration pH (Existing)</td><td style="color:#2ecc71;font-weight:normal">2.98</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">2.02</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power GE (KW)</td><td style="color:#2ecc71;font-weight:normal">1.99</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet Total Coliform (CFU/100ml, Grab)</td><td style="color:#2ecc71;font-weight:normal">1.77</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">1.56</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Composite)</td><td style="color:#2ecc71;font-weight:normal">1.21</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 6 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.273 · cost=0%</span></td><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.296 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.913</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.273 vs 0.296 — lower MI with target</span></td></tr><tr><td>Aeration SVI (Existing)<br><span style="color:#888;font-size:10px">MI=0.191 · cost=0%</span></td><td>Aeration SVI (New)<br><span style="color:#888;font-size:10px">MI=0.157 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.909</td><td style="color:#aaa;font-size:11px">drop <em>Aeration SVI (New)</em><br><span style="color:#666;font-size:10px">MI 0.157 vs 0.191 — lower MI with target</span></td></tr><tr><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.490 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.375 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.893</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed BOD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.375 vs 0.490 — lower MI with target</span></td></tr><tr><td>Aeration DO (mg/L, New)<br><span style="color:#888;font-size:10px">MI=0.251 · cost=11.6%</span></td><td>Aeration DO (mg/L, Existing)<br><span style="color:#888;font-size:10px">MI=0.240 · cost=11.5%</span></td><td style="color:#f39c12;font-weight:bold">0.889</td><td style="color:#aaa;font-size:11px">drop <em>Aeration DO (mg/L, Existing)</em><br><span style="color:#666;font-size:10px">MI 0.240 vs 0.251 — lower MI with target</span></td></tr><tr><td>Sec Clarifier RAS<br><span style="color:#888;font-size:10px">MI=0.190 · cost=0%</span></td><td>Sec Sed RAS (New)<br><span style="color:#888;font-size:10px">MI=0.166 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.869</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed RAS (New)</em><br><span style="color:#666;font-size:10px">MI 0.166 vs 0.190 — lower MI with target</span></td></tr><tr><td>Sec Clarifier COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.216 · cost=0%</span></td><td>Sec Sed COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.201 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.852</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed COD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.201 vs 0.216 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
 <details class="inner-fold">
@@ -1638,6 +1867,23 @@
       <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
       <tbody><tr><td>Sec Clarifier TSS (mg/L)</td><td style="color:#e74c3c;font-weight:bold">21.20</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">18.62</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed TSS (mg/L)</td><td style="color:#e74c3c;font-weight:bold">18.40</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier BOD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">17.91</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Clarifier COD (mg/L)</td><td style="color:#e74c3c;font-weight:bold">12.29</td><td><span style="color:#e74c3c;font-size:11px">HIGH</span></td></tr><tr><td>Sec Sed COD (mg/L)</td><td style="color:#f39c12;font-weight:normal">9.34</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SVI (New)</td><td style="color:#f39c12;font-weight:normal">9.12</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SV30 (ml/L, New)</td><td style="color:#f39c12;font-weight:normal">7.33</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, Existing)</td><td style="color:#f39c12;font-weight:normal">7.27</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration DO (mg/L, New)</td><td style="color:#f39c12;font-weight:normal">7.11</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Aeration SVI (Existing)</td><td style="color:#f39c12;font-weight:normal">5.67</td><td><span style="color:#f39c12;font-size:11px">MODERATE</span></td></tr><tr><td>Sec Sed pH</td><td style="color:#2ecc71;font-weight:normal">4.94</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">4.73</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Sed RAS (New)</td><td style="color:#2ecc71;font-weight:normal">3.85</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Sec Clarifier RAS</td><td style="color:#2ecc71;font-weight:normal">3.57</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration SV30 (ml/L, Existing)</td><td style="color:#2ecc71;font-weight:normal">3.57</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet BOD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">3.19</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet TSS (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">2.96</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Aeration pH (Existing)</td><td style="color:#2ecc71;font-weight:normal">2.49</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet COD (mg/L, Composite)</td><td style="color:#2ecc71;font-weight:normal">2.43</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Power Total (KW)</td><td style="color:#2ecc71;font-weight:normal">1.88</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Primary Clarifier pH</td><td style="color:#2ecc71;font-weight:normal">1.52</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Flow (MLD)</td><td style="color:#2ecc71;font-weight:normal">1.51</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr><tr><td>Inlet pH (Composite)</td><td style="color:#2ecc71;font-weight:normal">1.37</td><td><span style="color:#2ecc71;font-size:11px">OK</span></td></tr></tbody>
     </table>
+    
+<details class="inner-fold" style="margin-top:8px">
+  <summary><span class="fold-icon">▶</span>
+    Collinear pairs (|r| ≥ 0.85) — 6 found
+  </summary>
+  <div class="fold-body">
+    <p class="meta">Each row is one pair whose Pearson |r| exceeds 0.85.
+    Suggestion priority: (1) domain logic — drop mathematically derived features first;
+    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
+    (3) MI with target — drop lower mutual information;
+    (4) VIF — tiebreaker only.</p>
+    <table class="summary-table" style="font-size:12px;max-width:720px">
+      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
+      <tbody><tr><td>Sec Clarifier BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.075 · cost=0%</span></td><td>Sec Sed BOD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.074 · cost=0%</span></td><td style="color:#e74c3c;font-weight:bold">0.958</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed BOD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.074 vs 0.075 — lower MI with target</span></td></tr><tr><td>Sec Clarifier TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.042 · cost=0%</span></td><td>Sec Sed TSS (mg/L)<br><span style="color:#888;font-size:10px">MI=0.022 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.935</td><td style="color:#aaa;font-size:11px">drop <em>Sec Sed TSS (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.022 vs 0.042 — lower MI with target</span></td></tr><tr><td>Aeration DO (mg/L, Existing)<br><span style="color:#888;font-size:10px">MI=0.286 · cost=11.5%</span></td><td>Aeration DO (mg/L, New)<br><span style="color:#888;font-size:10px">MI=0.188 · cost=11.6%</span></td><td style="color:#f39c12;font-weight:bold">0.905</td><td style="color:#aaa;font-size:11px">drop <em>Aeration DO (mg/L, New)</em><br><span style="color:#666;font-size:10px">MI 0.188 vs 0.286 — lower MI with target</span></td></tr><tr><td>Sec Clarifier COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.037 · cost=0%</span></td><td>Sec Sed COD (mg/L)<br><span style="color:#888;font-size:10px">MI=0.045 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.894</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier COD (mg/L)</em><br><span style="color:#666;font-size:10px">MI 0.037 vs 0.045 — lower MI with target</span></td></tr><tr><td>Aeration SVI (New)<br><span style="color:#888;font-size:10px">MI=0.192 · cost=0%</span></td><td>Aeration SVI (Existing)<br><span style="color:#888;font-size:10px">MI=0.177 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.875</td><td style="color:#aaa;font-size:11px">drop <em>Aeration SVI (Existing)</em><br><span style="color:#666;font-size:10px">MI 0.177 vs 0.192 — lower MI with target</span></td></tr><tr><td>Sec Clarifier pH<br><span style="color:#888;font-size:10px">MI=0.173 · cost=0%</span></td><td>Sec Sed pH<br><span style="color:#888;font-size:10px">MI=0.195 · cost=0%</span></td><td style="color:#f39c12;font-weight:bold">0.869</td><td style="color:#aaa;font-size:11px">drop <em>Sec Clarifier pH</em><br><span style="color:#666;font-size:10px">MI 0.173 vs 0.195 — lower MI with target</span></td></tr></tbody>
+    </table>
+  </div>
+</details>
   </div>
 </details>
   </div>
@@ -2569,6 +2815,149 @@ Initially sorted within each target group by naive Test R² (descending). Click 
 <tr><td></td><td>Q3 (train [7.0,7.1])</td><td class='num'>41</td><td class='num' style=''>0.127</td><td class='num'>0.188</td><td class='num' style=''>-0.047</td><td class='num'>0.340</td></tr>
 <tr><td></td><td>Q4 (train [7.1,7.9])</td><td class='num'>5</td><td class='num' style='color:#f1c40f'>0.175</td><td class='num'>0.197</td><td class='num' style='color:#e74c3c;font-weight:600'>0.073</td><td class='num'>-0.600</td></tr>
 </tbody></table>
+</section>
+<section id="comp-cod-diagnostic">
+  <h1 class="section-title">Comp COD — Persistent Failure Diagnostic</h1>
+  <p class="section-intro">
+    Effluent COD (Composite) is the only target where <em>no model generalises</em> across any
+    experiment or phase (best Test R² = 0.108 across 15 experiment variants).
+    Phase 9 Voting MAE doubled from 8.7 mg/L (2024 in-sample) to 18.1 mg/L (2025 test).
+    Variance is not collapsed (σ-ratio = 0.78), which rules out the low-variance artefact
+    that drives negative R² in Comp pH and Comp TSS. This section documents the distribution
+    shift, the performance panorama across every experiment, and the evidence for a
+    2025 process change as the likely root cause.
+  </p>
+
+  
+<div class="obs-card" style="border-left:4px solid #e74c3c;margin-bottom:1rem">
+  <h4 style="margin:0 0 0.8rem">2025 Distribution Shift vs Training (2021–2024)</h4>
+  <div style="display:flex;gap:2rem;flex-wrap:wrap">
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#e67e22">45%</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        of 2025 values within<br>training IQR
+        [35.0, 66.0] mg/L
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#e74c3c">12%</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        of 2025 values above<br>training P75 (66.0 mg/L)
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#2ecc71">0.31σ</div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        2025 mean shift relative<br>to training std
+      </div>
+    </div>
+    <div style="text-align:center;min-width:130px">
+      <div style="font-size:1.8em;font-weight:bold;color:#e74c3c">
+        41.1 mg/L
+      </div>
+      <div style="font-size:0.8em;color:var(--text-muted)">
+        2025 mean<br>(train mean: 57.3 mg/L)
+      </div>
+    </div>
+  </div>
+</div>
+  
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> Per-Year Distribution Statistics</summary>
+  <div style="overflow-x:auto;margin-top:0.6rem">
+  <table style="font-size:0.88em">
+    <thead><tr>
+      <th>Year</th><th>n</th><th>Mean</th><th>Std</th>
+      <th>Min</th><th>P25</th><th>P75</th><th>Max</th>
+    </tr></thead>
+    <tbody>
+      <tr><td><strong>2022</strong></td><td>292</td><td style="color:var(--text);font-weight:normal">78.5</td><td>87.6</td><td>14.0</td><td>42.0</td><td>86.2</td><td>957.0</td></tr><tr><td><strong>2023</strong></td><td>331</td><td style="color:var(--text);font-weight:normal">45.3</td><td>19.4</td><td>15.0</td><td>32.0</td><td>56.0</td><td>142.0</td></tr><tr><td><strong>2024</strong></td><td>350</td><td style="color:var(--text);font-weight:normal">51.1</td><td>17.8</td><td>17.0</td><td>36.0</td><td>62.0</td><td>102.0</td></tr><tr><td><strong>2025 ★</strong></td><td>329</td><td style="color:var(--text);font-weight:bold">41.1</td><td>19.2</td><td>11.0</td><td>27.0</td><td>51.0</td><td>110.0</td></tr>
+      <tr style="border-top:2px solid var(--border);font-style:italic;color:var(--text-muted)">
+        <td>Train 2021–2024</td>
+        <td>973</td>
+        <td>57.3</td><td>52.3</td>
+        <td>14.0</td>
+        <td>35.0</td><td>66.0</td>
+        <td>957.0</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="meta" style="font-size:0.8em;color:var(--text-muted);margin-top:0.4rem">
+    Red mean = year mean deviates by &gt;1σ from training mean.
+    Orange = 0.5–1σ shift. 2025 (★) is the test set.
+  </p>
+</details>
+  
+<details class="inner-fold" style="margin-top:1rem">
+  <summary><span class="fold-icon">▶</span>
+    Best Comp COD Result per Experiment (15 experiments, 9 model families)
+  </summary>
+  <div style="overflow-x:auto;margin-top:0.6rem">
+  <table style="font-size:0.88em;max-width:500px">
+    <thead><tr>
+      <th>Experiment</th><th>Best Model</th><th>Test R²</th><th>R² Gap</th>
+    </tr></thead>
+    <tbody><tr><td>Exp1</td><td>RF</td><td style="color:#e74c3c;font-weight:bold">-0.282</td><td class="gap-bad">0.548</td></tr><tr><td>Exp1-FS</td><td>ElNet</td><td style="color:#e74c3c;font-weight:bold">-0.584</td><td class="gap-bad">0.585</td></tr><tr><td>E2-S1</td><td>XGB</td><td style="color:#e74c3c;font-weight:bold">-0.118</td><td class="gap-bad">0.870</td></tr><tr><td>E2-S1-FS</td><td>GB</td><td style="color:#e67e22;font-weight:bold">0.052</td><td class="gap-bad">0.674</td></tr><tr><td>E2-S2</td><td>GB</td><td style="color:#e74c3c;font-weight:bold">-0.121</td><td class="gap-bad">1.028</td></tr><tr><td>E2-S2-FS</td><td>XGB</td><td style="color:#e67e22;font-weight:bold">0.063</td><td class="gap-bad">0.611</td></tr><tr><td>E3-S1</td><td>XGB</td><td style="color:#e74c3c;font-weight:bold">-0.061</td><td class="gap-bad">0.963</td></tr><tr><td>E3-S1-FS</td><td>XGB</td><td style="color:#e67e22;font-weight:bold">0.063</td><td class="gap-bad">0.611</td></tr><tr><td>E3-S2</td><td>ElNet</td><td style="color:#e74c3c;font-weight:bold">-0.024</td><td class="gap-bad">0.409</td></tr><tr><td>P9-ANN</td><td>ANN</td><td style="color:#e74c3c;font-weight:bold">-0.281</td><td class="gap-bad">0.935</td></tr><tr><td>P9-Vote</td><td>Voting</td><td style="color:#e74c3c;font-weight:bold">-0.305</td><td class="gap-bad">0.930</td></tr><tr><td>P9-Stack</td><td>Stacking</td><td style="color:#e74c3c;font-weight:bold">-0.106</td><td class="gap-bad">0.688</td></tr><tr><td>P10-FE</td><td>Ridge</td><td style="color:#e74c3c;font-weight:bold">-0.008</td><td class="gap-bad">0.621</td></tr><tr><td>P10b-FE</td><td>Ridge</td><td style="color:#e74c3c;font-weight:bold">-0.051</td><td class="gap-bad">0.653</td></tr><tr><td>P11</td><td>ElNet</td><td style="color:#e67e22;font-weight:bold">0.108 <span style="font-size:0.75em;color:#f1c40f">★ best</span></td><td class="gap-bad">0.367</td></tr></tbody>
+  </table>
+  </div>
+  <p class="meta" style="margin-top:0.5rem;font-size:0.8em;color:var(--text-muted)">
+    Global best Test R² across all experiments: <strong>0.108</strong>.
+    Every regularisation strategy, feature set expansion, and engineering approach
+    has been tried; none breaks through to meaningful generalisation on 2025.
+  </p>
+</details>
+
+  <div class="obs-card" style="border-left:4px solid #e74c3c;margin-top:1.5rem">
+    <h4 style="margin:0 0 0.8rem">Root Cause Analysis</h4>
+
+    <p class="meta"><strong style="color:#e74c3c">1. Genuine 2025 process change — not a
+      modelling artefact.</strong>
+      MAE doubled (8.7 → 18.1 mg/L) while σ-ratio = 0.78, confirming the 2025 test set has
+      comparable variance to training. The model is not hitting a low-variance wall —
+      it is predicting the wrong values. This is the signature of a non-stationarity in
+      the plant's COD removal mechanism that was absent during the 2021–2024 training window.
+    </p>
+
+    <p class="meta"><strong style="color:#e67e22">2. Inlet COD is a weak proxy for effluent
+      COD under the current conditions.</strong>
+      Composite effluent COD depends on secondary treatment efficiency, which is governed by
+      MLSS, SVI, and aeration conditions — features with 35–50% missingness on composite rows
+      (CONSIDER tier). When these are absent, the model falls back to inlet + flow, whose MI
+      with effluent Comp COD is low (&lt;0.15 on training data).
+    </p>
+
+    <p class="meta"><strong style="color:#e67e22">3. Small composite sample size amplifies
+      memorisation.</strong>
+      Composite targets have only ~515–633 training rows after dropna. With 17–32 features
+      the effective rows-per-feature ratio is 16–37 — below the commonly cited heuristic of 50.
+      Even heavily regularised models (ElNet α=10) risk encoding 2022-era COD spikes that
+      do not recur in 2025.
+    </p>
+
+    <p class="meta"><strong style="color:#f1c40f">4. Feature engineering and temporal lags
+      do not help.</strong>
+      Phase 10 full FE: best R² = −0.008 (Ridge). Phase 10b selective FE: best = −0.051.
+      Phase 11 temporal lags: best = +0.107 (ElNet, Phase 11) but 2025 MAE remains ~17 mg/L.
+      Every additional feature increases the risk of learning training-specific patterns without
+      improving generalisation.
+    </p>
+
+    <p class="meta"><strong style="color:#4A90D9">5. Recommended next steps.</strong>
+      (a) <strong>Flag Comp COD predictions as unreliable</strong> in any operational dashboard
+      until 2025 data is incorporated into training.
+      (b) <strong>Collect causal features</strong> with higher priority: secondary sludge age
+      (SRT), MLSS, and effluent turbidity have high missingness now but directly govern COD
+      removal — their availability on composite measurement days would be the single highest
+      leverage improvement.
+      (c) <strong>Retrain once ≥ 90 new 2025 rows are available</strong> (roughly 3 months of
+      composite measurements) and test whether the new regime is stable enough for a combined
+      2021–2025 model.
+      (d) As an interim measure, <strong>a shallow decision tree (max depth 3) trained only
+      on 2024–2025 data</strong> is likely to outperform any model trained on the full
+      2021–2024 window for near-term operational use.
+    </p>
+  </div>
 </section>
 </div>
 

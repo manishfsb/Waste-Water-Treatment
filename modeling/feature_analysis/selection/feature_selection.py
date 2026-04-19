@@ -40,10 +40,11 @@ from sklearn.feature_selection import mutual_info_regression
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
+PROJECT_ROOT = os.path.dirname(MODELING_DIR)
 RF_MODELS    = os.path.join(MODELING_DIR, "models", "non_linear", "baseline", "rf", "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
 
-sys.path.insert(0, MODELING_DIR)
+sys.path.insert(0, PROJECT_ROOT)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 # ── Feature sets (must match non_linear_modeling.py exactly) ──────────────────
