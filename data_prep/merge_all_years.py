@@ -1,5 +1,5 @@
 """
-Merge extracted lab report data from 2020 CSV + 2021–2025 JSON into a single Excel file.
+Merge extracted lab report data from 2020 CSV + 2021-2025 JSON into a single Excel file.
 
 Output: 21-25/All_Years_Merged.xlsx
   - One header row (no month/year banners between rows)
@@ -20,9 +20,9 @@ from openpyxl.utils import get_column_letter
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ── Column schema ──────────────────────────────────────────────────────────────
-# Only columns present in ALL years (2021 Jul–Dec JSON + 2022–2025 JSON).
+# Only columns present in ALL years (2021 Jul-Dec JSON + 2022-2025 JSON).
 # Composite fields are null for 2021 (has_composite=False) and often null for
-# individual days in 2022-2025 — they are included so the merged file stays
+# individual days in 2022-2025 - they are included so the merged file stays
 # useful for analysis.
 COLUMNS = [
     ("Date",                                   "date"),
@@ -110,7 +110,7 @@ def load_json_year(year):
     """Load all months from the year's all_months.json, return list of day dicts."""
     path = os.path.join(BASE_DIR, "raw_data", str(year), "extracted_data", "all_months.json")
     if not os.path.exists(path):
-        print(f"  WARNING: {path} not found — skipping {year}.")
+        print(f"  WARNING: {path} not found - skipping {year}.")
         return []
     with open(path) as f:
         all_months = json.load(f)
@@ -131,7 +131,7 @@ def load_csv(csv_path):
     CSV columns: Date, Q_IN, IN_BOD, IN_COD, IN_TSS, IN_pH, PC, PF, O_BOD, O_COD, O_TSS
 
     PC is the daily NEA power consumption in MWh → multiply ×1000 to get KW.
-    PF (power/flow ratio) is already in KW/ML — used directly.
+    PF (power/flow ratio) is already in KW/ML - used directly.
     """
     import csv
     from datetime import datetime
@@ -190,10 +190,10 @@ def load_csv(csv_path):
 
 def merge_all_rows():
     """
-    Merge rows in chronological order: 2020 CSV → 2021–2025 JSON.
+    Merge rows in chronological order: 2020 CSV → 2021-2025 JSON.
 
-    The CSV spans Oct 2020 – Jun 2022 so it overlaps with 2021 Jul–Dec and
-    2022 Jan–Jun JSON data. JSON always takes priority for overlapping dates
+    The CSV spans Oct 2020 - Jun 2022 so it overlaps with 2021 Jul-Dec and
+    2022 Jan-Jun JSON data. JSON always takes priority for overlapping dates
     since it carries more attributes (power_ge, composite samples, etc.).
     """
     CSV_PATH = os.path.join(BASE_DIR, "raw_data", "2020", "RAW.csv")
@@ -223,7 +223,7 @@ def merge_all_rows():
 def write_excel(rows, output_path):
     wb = Workbook()
     ws = wb.active
-    ws.title = "All Years 2020–2025"
+    ws.title = "All Years 2020-2025"
     ws.freeze_panes = "B2"
 
     num_cols = len(COLUMNS)
@@ -289,7 +289,7 @@ def write_excel(rows, output_path):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("Merging all years (2021–2025)...")
+    print("Merging all years (2021-2025)...")
     rows = merge_all_rows()
     output = os.path.join(BASE_DIR, "All_Years_Merged.xlsx")
     write_excel(rows, output)

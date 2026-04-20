@@ -1,5 +1,5 @@
 """
-phase10b_modeling.py — Feature Engineering (Grab only) for Phase 10b.
+phase10b_modeling.py - Feature Engineering (Grab only) for Phase 10b.
 
 Addresses the Phase 10 finding that feature engineering (log + interaction + flags)
 caused catastrophic overfitting on composite targets (e.g. Comp TSS gap +3.80) due to
@@ -187,8 +187,8 @@ def _scatter_plot(y_train, y_train_pred, y_test, y_test_pred,
         ax.scatter(yt, yp, alpha=0.55, s=18, color=color)
         ax.set_xlabel("Actual", fontsize=9)
         ax.set_ylabel("Predicted", fontsize=9)
-        ax.set_title(f"{label} — R²={r2:+.3f}", fontsize=9)
-    fig.suptitle(f"{model_tag} — {name}", fontsize=10)
+        ax.set_title(f"{label} - R²={r2:+.3f}", fontsize=9)
+    fig.suptitle(f"{model_tag} - {name}", fontsize=10)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_scatter.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
@@ -204,7 +204,7 @@ def _timeseries_plot(df_full, target, y_pred_full, name, model_tag, run):
     if pd.notna(split_date):
         ax.axvline(split_date, color="#F0B849", lw=1.2, linestyle="--",
                    alpha=0.7, label="Train | Test")
-    ax.set_title(f"{model_tag} — {target}", fontsize=9)
+    ax.set_title(f"{model_tag} - {target}", fontsize=9)
     ax.legend(fontsize=7)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_timeseries.png")
@@ -232,7 +232,7 @@ def _learning_curve_plot(model, X_train, y_train, name, model_tag, run):
     ax.axhline(0, color="white", lw=0.6, linestyle="--", alpha=0.4)
     ax.set_xlabel("Training examples", fontsize=9)
     ax.set_ylabel("R²", fontsize=9)
-    ax.set_title(f"Learning Curve — {model_tag} — {name}", fontsize=9)
+    ax.set_title(f"Learning Curve - {model_tag} - {name}", fontsize=9)
     ax.legend(fontsize=8)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_lc.png")
@@ -406,7 +406,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
 def main():
     run = _next_run(RESULTS_FILE)
-    print(f"=== Phase 10b — Feature Engineering (Grab only) — Run {run} ===")
+    print(f"=== Phase 10b - Feature Engineering (Grab only) - Run {run} ===")
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}")
 
     all_records = []

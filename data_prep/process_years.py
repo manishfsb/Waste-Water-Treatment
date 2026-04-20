@@ -102,18 +102,18 @@ def detect_columns(ws):
     Auto-detect all column positions from sheet headers.
 
     Grab (non-composite) columns:
-      inlet_ph/bod/cod/tss   — "Raw Sewage" (no COMPOSITE, no FLOW) in row 5
-      effluent_ph/bod/cod/tss — "CHLORINE CONTACT TANK" (no COMPOSITE, OUTLET, FLOW) in row 4
+      inlet_ph/bod/cod/tss   - "Raw Sewage" (no COMPOSITE, no FLOW) in row 5
+      effluent_ph/bod/cod/tss - "CHLORINE CONTACT TANK" (no COMPOSITE, OUTLET, FLOW) in row 4
 
     Composite columns (null when absent):
-      inlet_*_comp   — "Raw Sewage" + COMPOSITE (no FLOW) in row 5
-      effluent_*_comp — "CHLORINE" + COMPOSITE in row 4
+      inlet_*_comp   - "Raw Sewage" + COMPOSITE (no FLOW) in row 5
+      effluent_*_comp - "CHLORINE" + COMPOSITE in row 4
 
     Intermediate stage columns (row 4 section headers):
-      grit_tss                — "GRIT" section
-      primary_ph/tss/bod/cod/sludge_totalizer — "PRIMARY CLARIFIER" section
-      secondary_ph/tss/bod/cod/ras            — "SECONDARY CLARIFIER" section
-      sec_sed_ph/tss/bod/cod/ras_new          — "SECONDARY SEDIMENTATION" section
+      grit_tss                - "GRIT" section
+      primary_ph/tss/bod/cod/sludge_totalizer - "PRIMARY CLARIFIER" section
+      secondary_ph/tss/bod/cod/ras            - "SECONDARY CLARIFIER" section
+      sec_sed_ph/tss/bod/cod/ras_new          - "SECONDARY SEDIMENTATION" section
 
     Extended inlet fields (between inlet and grit sections, row 6 scan):
       inlet_tkn, inlet_og, inlet_po4, inlet_total_coliform, inlet_fecal_coliform
@@ -388,7 +388,7 @@ def extract_month(year, month_name, filename):
     year_dir = os.path.join(BASE_DIR, str(year))
     filepath = os.path.join(year_dir, filename)
     if not os.path.exists(filepath):
-        print(f"    WARNING: {filename} not found – skipping.")
+        print(f"    WARNING: {filename} not found - skipping.")
         return None
 
     wb = openpyxl.load_workbook(filepath, data_only=True)
@@ -589,8 +589,8 @@ def write_ctrl_row(ws, row, control_limits, col_offset=1):
     lbl.alignment = CENTER; lbl.border = thin_border()
     for ci, (_, jkey) in enumerate(DISPLAY_COLS[1:], start=1):
         ck = CTRL_KEYS.get(jkey)
-        v = control_limits.get(ck, "—") if ck else "—"
-        cell = ws.cell(row=row, column=col_offset + ci, value=v if v is not None else "—")
+        v = control_limits.get(ck, "-") if ck else "-"
+        cell = ws.cell(row=row, column=col_offset + ci, value=v if v is not None else "-")
         style_ctrl(cell)
     return row + 1
 
@@ -651,7 +651,7 @@ def generate_excel(year, all_months_data):
 
     ws_all.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     tc = ws_all.cell(row=1, column=1,
-        value=f"{year} Lab Report – Extracted Data ({first_month}–{last_month})")
+        value=f"{year} Lab Report - Extracted Data ({first_month}-{last_month})")
     tc.font = Font(name="Calibri", bold=True, size=13, color="FFFFFF")
     tc.fill = HDR_MAIN
     tc.alignment = CENTER
@@ -676,7 +676,7 @@ def generate_excel(year, all_months_data):
 
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
         tc = ws.cell(row=1, column=1,
-            value=f"{year} Lab Report – {month_labels[mk]} (Extracted Data)")
+            value=f"{year} Lab Report - {month_labels[mk]} (Extracted Data)")
         tc.font = Font(name="Calibri", bold=True, size=13, color="FFFFFF")
         tc.fill = HDR_MAIN
         tc.alignment = CENTER
@@ -776,7 +776,7 @@ def verify_chain(year, all_months_data):
             if len(errors) > 5:
                 print(f"      ... and {len(errors)-5} more")
         else:
-            print(f"    {month_name}: {matched} days — OK")
+            print(f"    {month_name}: {matched} days - OK")
 
     print(f"  → {year} total: {total_days} days, {total_errors} discrepancies")
     return total_errors
@@ -800,4 +800,4 @@ if __name__ == "__main__":
         grand_total_errors += errs
 
     print(f"\n{'='*60}")
-    print(f"ALL DONE – grand total discrepancies: {grand_total_errors}")
+    print(f"ALL DONE - grand total discrepancies: {grand_total_errors}")

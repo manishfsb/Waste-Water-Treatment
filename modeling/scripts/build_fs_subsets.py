@@ -1,5 +1,5 @@
 """
-build_fs_subsets.py — Create feature-selected subset Excel files.
+build_fs_subsets.py - Create feature-selected subset Excel files.
 
 Reads feature_importance.xlsx (Phase 5 output) and builds new subset files
 that use only Core + Useful features (normalised perm importance >= 0.03),
@@ -7,9 +7,9 @@ dropping Weak features. Because dropna() is applied to fewer columns, more
 rows are retained compared to the baseline subsets.
 
 Outputs (mirroring baseline naming):
-  experiment1_fs/                 — Experiment 1 subset files (no data/ subdir)
-  experiment2_s1_fs/data/         — Experiment 2 Sub-1 subset files
-  experiment2_s2_fs/data/         — Experiment 2 Sub-2 subset files
+  experiment1_fs/                 - Experiment 1 subset files (no data/ subdir)
+  experiment2_s1_fs/data/         - Experiment 2 Sub-1 subset files
+  experiment2_s2_fs/data/         - Experiment 2 Sub-2 subset files
 
 Row-count comparison (baseline vs feature-selected) is printed for each dataset.
 
@@ -37,14 +37,14 @@ EXP2S1_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp
 EXP2S2_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2")
 
 # ── Feature selection threshold ────────────────────────────────────────────────
-FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03–0.07); drop Weak (< 0.03)
+FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03-0.07); drop Weak (< 0.03)
 
 # ── Registry ───────────────────────────────────────────────────────────────────
 # (exp_label, variant, dataset_name, output_dir, baseline_dir, target, min_year)
 # exp_label and variant must match feature_importance.xlsx exactly.
 # min_year matches the baseline subset creation in stage1_modeling.py.
 REGISTRY = [
-    # Experiment 1 — Grab
+    # Experiment 1 - Grab
     ("Experiment 1", "Grab", "stage1_grab_BOD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
     ("Experiment 1", "Grab", "stage1_grab_COD",
@@ -53,7 +53,7 @@ REGISTRY = [
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
     ("Experiment 1", "Grab", "stage1_grab_pH",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent pH (Grab)", 2021),
-    # Experiment 1 — Composite
+    # Experiment 1 - Composite
     ("Experiment 1", "Composite", "stage1_comp_BOD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
     ("Experiment 1", "Composite", "stage1_comp_COD",
@@ -62,7 +62,7 @@ REGISTRY = [
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent TSS (mg/L, Composite)", 2022),
     ("Experiment 1", "Composite", "stage1_comp_pH",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent pH (Composite)", 2022),
-    # Experiment 2 Sub-1 — Grab
+    # Experiment 2 Sub-1 - Grab
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_BOD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_COD",
@@ -71,7 +71,7 @@ REGISTRY = [
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_pH",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent pH (Grab)", 2020),
-    # Experiment 2 Sub-1 — Composite
+    # Experiment 2 Sub-1 - Composite
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_BOD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_COD",
@@ -80,7 +80,7 @@ REGISTRY = [
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent TSS (mg/L, Composite)", 2022),
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_pH",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent pH (Composite)", 2022),
-    # Experiment 2 Sub-2 — Grab
+    # Experiment 2 Sub-2 - Grab
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_BOD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_COD",
@@ -89,7 +89,7 @@ REGISTRY = [
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_pH",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent pH (Grab)", 2020),
-    # Experiment 2 Sub-2 — Composite
+    # Experiment 2 Sub-2 - Composite
     ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_BOD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
     ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_COD",
@@ -102,7 +102,7 @@ REGISTRY = [
 
 
 def main():
-    print("build_fs_subsets.py — Feature-Selected Subset Creation")
+    print("build_fs_subsets.py - Feature-Selected Subset Creation")
     print("=" * 60)
     print(f"Threshold: perm_imp_norm >= {FS_THRESHOLD} (Core + Useful)")
     print()
@@ -113,12 +113,12 @@ def main():
     raw["year"]        = raw["Date"].dt.year
     raw["month"]       = raw["Date"].dt.month
     raw["day_of_week"] = raw["Date"].dt.dayofweek
-    print(f"  {len(raw)} total rows, {raw['year'].min()}–{raw['year'].max()}")
+    print(f"  {len(raw)} total rows, {raw['year'].min()}-{raw['year'].max()}")
     print()
 
     # ── Load feature importance ────────────────────────────────────────────────
     fi = pd.read_excel(FI_FILE)
-    print(f"Loaded feature_importance.xlsx — {len(fi)} feature×target rows")
+    print(f"Loaded feature_importance.xlsx - {len(fi)} feature×target rows")
     print()
 
     # ── Create output directories ──────────────────────────────────────────────
@@ -141,7 +141,7 @@ def main():
         selected = fi.loc[mask, "feature"].tolist()
 
         if not selected:
-            print(f"  WARNING: no features above threshold — skipping")
+            print(f"  WARNING: no features above threshold - skipping")
             continue
 
         n_all   = fi.loc[(fi["experiment"] == exp) & (fi["variant"] == variant) &
@@ -158,7 +158,7 @@ def main():
 
         missing_cols = [c for c in cols_needed if c not in sub.columns]
         if missing_cols:
-            print(f"  WARNING: columns missing from source data: {missing_cols} — skipping")
+            print(f"  WARNING: columns missing from source data: {missing_cols} - skipping")
             continue
 
         sub = sub[cols_needed].copy()

@@ -1,9 +1,9 @@
 """
-linear_modeling_exp3_s1.py — OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 subsets.
+linear_modeling_exp3_s1.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 subsets.
 
 Identical training protocol to all prior linear modeling scripts.
 Differences:
-  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py —
+  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py -
     Exp2 Sub-2 baseline + ADD-tier candidate features per target)
   - Feature list is inferred from each file's columns at load time
   - Writes all artifacts to linear_modeling_exp3_s1/ (results.xlsx, models/, plots/)
@@ -68,12 +68,12 @@ def _e3s1(name):
 
 # (experiment_label, dataset_id, file_path, target)
 DATASETS = [
-    # ── Experiment 3 Sub-1 — Grab ─────────────────────────────────────────────
+    # ── Experiment 3 Sub-1 - Grab ─────────────────────────────────────────────
     ("Exp3-S1", "Exp3S1_Grab_BOD", _e3s1("s1_stage3_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
     ("Exp3-S1", "Exp3S1_Grab_COD", _e3s1("s1_stage3_grab_COD"), "Effluent COD (mg/L, Grab)"),
     ("Exp3-S1", "Exp3S1_Grab_TSS", _e3s1("s1_stage3_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
     ("Exp3-S1", "Exp3S1_Grab_pH",  _e3s1("s1_stage3_grab_pH"),  "Effluent pH (Grab)"),
-    # ── Experiment 3 Sub-1 — Composite ───────────────────────────────────────
+    # ── Experiment 3 Sub-1 - Composite ───────────────────────────────────────
     ("Exp3-S1", "Exp3S1_Comp_BOD", _e3s1("s1_stage3_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
     ("Exp3-S1", "Exp3S1_Comp_COD", _e3s1("s1_stage3_comp_COD"), "Effluent COD (mg/L, Composite)"),
     ("Exp3-S1", "Exp3S1_Comp_TSS", _e3s1("s1_stage3_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
@@ -135,12 +135,12 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     test_df = df[df["year"] == TEST_YEAR]
 
     if len(test_df) == 0:
-        print(f"  WARNING: no {TEST_YEAR} rows — skipping {ds_id}")
+        print(f"  WARNING: no {TEST_YEAR} rows - skipping {ds_id}")
         return None, None
 
     missing = [f for f in features if f not in df.columns]
     if missing:
-        print(f"  WARNING: missing columns {missing} — skipping {ds_id}")
+        print(f"  WARNING: missing columns {missing} - skipping {ds_id}")
         return None, None
 
     X_train = train_df[features].values
@@ -181,7 +181,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_ols] = np.round(ols.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ols},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
-    print(f"    OLS    — Train R²: {results['OLS_train_R2']:+.3f} | "
+    print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
           f"RMSE: {results['OLS_test_RMSE']:.3f}")
 
@@ -203,7 +203,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_ridge] = np.round(ridge.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ridge},
                 os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
-    print(f"    Ridge  — Train R²: {results['Ridge_train_R2']:+.3f} | "
+    print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | "
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
           f"α={results['Ridge_alpha']}")
 
@@ -226,7 +226,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_elnet] = np.round(elnet.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": elnet},
                 os.path.join(MODELS_DIR, f"{ds_id}_ElNet_run_{run}.pkl"))
-    print(f"    ElNet  — Train R²: {results['ElNet_train_R2']:+.3f} | "
+    print(f"    ElNet  - Train R²: {results['ElNet_train_R2']:+.3f} | "
           f"Test R²: {results['ElNet_test_R2']:+.3f} | "
           f"α={results['ElNet_alpha']}, l1={results['ElNet_l1_ratio']}")
 
@@ -284,7 +284,7 @@ def _plot_r2_barchart(df_results: pd.DataFrame, run: int):
         ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
         ax.set_xticks(x); ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
         ax.set_ylabel("Test R²", fontsize=11)
-        ax.set_title(f"{exp}  |  Test R² Comparison — Feature Selected (run {run})", fontsize=12)
+        ax.set_title(f"{exp}  |  Test R² Comparison - Feature Selected (run {run})", fontsize=12)
         ax.legend(fontsize=9)
         ax.set_ylim(bottom=min(-0.15, sub[["OLS_test_R2","Ridge_test_R2","ElNet_test_R2"]].min().min() - 0.05))
         plt.tight_layout()
@@ -304,7 +304,7 @@ def _plot_rmse_barchart(df_results: pd.DataFrame, run: int):
         ax.bar(x + w, sub["ElNet_test_RMSE"],  w, label="ElNet", color=MODEL_COLORS["ElNet"])
         ax.set_xticks(x); ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
         ax.set_ylabel("Test RMSE", fontsize=11)
-        ax.set_title(f"{exp}  |  Test RMSE Comparison — Feature Selected (run {run})", fontsize=12)
+        ax.set_title(f"{exp}  |  Test RMSE Comparison - Feature Selected (run {run})", fontsize=12)
         ax.legend(fontsize=9)
         plt.tight_layout()
         path = os.path.join(PLOTS_DIR, f"{exp}_rmse_comparison_run_{run}.png")
@@ -334,7 +334,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Linear Modeling (Feature Selected) — Run {run}")
+    print(f"Linear Modeling (Feature Selected) - Run {run}")
     print(f"Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElasticNet\n")
 
     all_results = []
@@ -345,7 +345,7 @@ def main():
         print(f"  Target: {target}")
 
         if not os.path.exists(path):
-            print(f"  WARNING: file not found — {path}")
+            print(f"  WARNING: file not found - {path}")
             continue
 
         # Infer feature list from the file's columns
@@ -362,7 +362,7 @@ def main():
         all_results.append(results)
 
     if not all_results:
-        print("No results produced — check warnings above.")
+        print("No results produced - check warnings above.")
         return
 
     df_results = pd.DataFrame(all_results)

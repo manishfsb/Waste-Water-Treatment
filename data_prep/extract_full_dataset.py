@@ -1,8 +1,8 @@
 """
 Extract the complete feature set from all monthly lab report Excel files
-(2021 Jul–Dec, 2022–2025) and the 2020 RAW.csv, producing All_Years_Full.xlsx.
+(2021 Jul-Dec, 2022-2025) and the 2020 RAW.csv, producing All_Years_Full.xlsx.
 
-This script is standalone — it does NOT modify any existing files
+This script is standalone - it does NOT modify any existing files
 (process_years.py, extract_data.py, merge_all_years.py, JSON files, or
 All_Years_Merged.xlsx).
 
@@ -14,7 +14,7 @@ New columns vs All_Years_Merged.xlsx:
   Effluent: O&G, NH3-N, Total Coliform, Fecal Coliform
 
 Source priority for overlapping dates: Excel files > 2020 RAW.csv
-2021 Jan–Jun has no lab report Excel files — those rows come from the CSV only
+2021 Jan-Jun has no lab report Excel files - those rows come from the CSV only
 (limited columns; all new fields will be NaN for those dates).
 """
 
@@ -113,7 +113,7 @@ COLUMNS = [
     ("Power / Flow (KW/ML)",                        "power_per_flow"),
     # Operational
     ("Flow (MLD)",                                  "flow"),
-    # Inlet — grab
+    # Inlet - grab
     ("Inlet pH (Grab)",                             "inlet_ph"),
     ("Inlet BOD (mg/L, Grab)",                      "inlet_bod"),
     ("Inlet COD (mg/L, Grab)",                      "inlet_cod"),
@@ -123,7 +123,7 @@ COLUMNS = [
     ("Inlet PO4/TP (mg/L, Grab)",                   "inlet_po4"),
     ("Inlet Total Coliform (CFU/100ml, Grab)",      "inlet_total_coliform"),
     ("Inlet Fecal Coliform (CFU/100ml, Grab)",      "inlet_fecal_coliform"),
-    # Inlet — composite (null for 2021)
+    # Inlet - composite (null for 2021)
     ("Inlet pH (Composite)",                        "inlet_ph_comp"),
     ("Inlet BOD (mg/L, Composite)",                 "inlet_bod_comp"),
     ("Inlet COD (mg/L, Composite)",                 "inlet_cod_comp"),
@@ -148,21 +148,21 @@ COLUMNS = [
     ("Sec Sed BOD (mg/L)",                          "sec_sed_bod"),
     ("Sec Sed COD (mg/L)",                          "sec_sed_cod"),
     ("Sec Sed RAS (New)",                           "sec_sed_ras_new"),
-    # Aeration — existing tank
+    # Aeration - existing tank
     ("Aeration pH (Existing)",                      "aer_exist_ph"),
     ("Aeration DO (mg/L, Existing)",                "aer_exist_do"),
     ("Aeration MLSS (mg/L, Existing)",              "aer_exist_mlss"),
     ("Aeration MLVSS (mg/L, Existing)",             "aer_exist_mlvss"),
     ("Aeration SV30 (ml/L, Existing)",              "aer_exist_sv30"),
     ("Aeration SVI (Existing)",                     "aer_exist_svi"),
-    # Aeration — new tank
+    # Aeration - new tank
     ("Aeration pH (New)",                           "aer_new_ph"),
     ("Aeration DO (mg/L, New)",                     "aer_new_do"),
     ("Aeration MLSS (mg/L, New)",                   "aer_new_mlss"),
     ("Aeration MLVSS (mg/L, New)",                  "aer_new_mlvss"),
     ("Aeration SV30 (ml/L, New)",                   "aer_new_sv30"),
     ("Aeration SVI (New)",                          "aer_new_svi"),
-    # Effluent — grab
+    # Effluent - grab
     ("Effluent pH (Grab)",                          "effluent_ph"),
     ("Effluent BOD (mg/L, Grab)",                   "effluent_bod"),
     ("Effluent COD (mg/L, Grab)",                   "effluent_cod"),
@@ -172,7 +172,7 @@ COLUMNS = [
     ("Effluent NH3-N (mg/L)",                       "effluent_nh3"),
     ("Effluent Total Coliform (CFU/100ml)",         "effluent_total_coliform"),
     ("Effluent Fecal Coliform (CFU/100ml)",         "effluent_fecal_coliform"),
-    # Effluent — composite (null for 2021)
+    # Effluent - composite (null for 2021)
     ("Effluent pH (Composite)",                     "effluent_ph_comp"),
     ("Effluent BOD (mg/L, Composite)",              "effluent_bod_comp"),
     ("Effluent COD (mg/L, Composite)",              "effluent_cod_comp"),
@@ -449,7 +449,7 @@ def detect_columns(ws, month_label=""):
         (aer_new_ph, aer_new_do, aer_new_mlss,
          aer_new_mlvss, aer_new_sv30, aer_new_svi) = extract_aer_params(aer_new_start)
 
-    # ── Effluent — grab CCT ────────────────────────────────────────────────────
+    # ── Effluent - grab CCT ────────────────────────────────────────────────────
     # r4: 'CHLORINE CONTACT TANK' without 'COMPOSITE', 'OUTLET', 'FLOW'
     grab_cct_col = find_section_col(r4, ("CHLORINE",), ("COMPOSITE", "OUTLET", "FLOW"))
     eff_ph = eff_bod = eff_cod = eff_tss = eff_frc = None
@@ -467,7 +467,7 @@ def detect_columns(ws, month_label=""):
         eff_tss = p["eff_tss"]
         eff_frc = p["eff_frc"]
 
-    # ── Effluent — composite CCT ───────────────────────────────────────────────
+    # ── Effluent - composite CCT ───────────────────────────────────────────────
     comp_cct_col = find_section_col(r4, ("CHLORINE", "COMPOSITE"))
     eff_ph_comp = eff_bod_comp = eff_cod_comp = eff_tss_comp = None
     if comp_cct_col:
@@ -592,7 +592,7 @@ def extract_month(year, month_name, filename):
     """
     filepath = os.path.join(BASE_DIR, "raw_data", str(year), filename)
     if not os.path.exists(filepath):
-        print(f"    WARNING: {filename} not found — skipping.")
+        print(f"    WARNING: {filename} not found - skipping.")
         return []
 
     wb = openpyxl.load_workbook(filepath, data_only=True)
@@ -613,7 +613,7 @@ def extract_month(year, month_name, filename):
             if s in ("AVG", "REMARKS:", ""):
                 break
             if s == "AVERAGE":
-                continue   # weekly average row — skip, keep reading
+                continue   # weekly average row - skip, keep reading
             break           # any other string → end of data
         if not isinstance(date_cell, datetime):
             break
@@ -768,7 +768,7 @@ def col_fill(jkey):
 def write_excel(rows, output_path):
     wb = Workbook()
     ws = wb.active
-    ws.title = "All Years 2020–2025 Full"
+    ws.title = "All Years 2020-2025 Full"
     ws.freeze_panes = "B2"
 
     num_cols = len(COLUMNS)
@@ -833,7 +833,7 @@ def write_excel(rows, output_path):
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("Extracting full dataset (2020–2025)...\n")
+    print("Extracting full dataset (2020-2025)...\n")
     rows = collect_all_rows()
     output = os.path.join(BASE_DIR, "raw_data", "All_Years_Full.xlsx")
     print(f"\nWriting {len(rows)} rows to {output}...")

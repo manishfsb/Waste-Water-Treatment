@@ -1,5 +1,5 @@
 """
-feature_selection.py — Phase 5: Feature importance ranking and selection.
+feature_selection.py - Phase 5: Feature importance ranking and selection.
 
 For each experiment × target:
   - Loads the tuned RF best_estimator_ (from non_linear_modeling/rf/models/)
@@ -9,12 +9,12 @@ For each experiment × target:
 
 Recommendation logic (per experiment, averaged across all targets in that experiment):
   - "Core"   : mean normalised perm-imp ≥ 0.08  → keep without question
-  - "Useful" : mean normalised perm-imp 0.03–0.07 → context-dependent
+  - "Useful" : mean normalised perm-imp 0.03-0.07 → context-dependent
   - "Weak"   : mean normalised perm-imp < 0.03  → candidate for removal
 
 Outputs (all in modeling/feature_selection/):
-  plots/  — heatmaps per experiment variant
-  feature_importance.xlsx — full flat table of all metrics
+  plots/  - heatmaps per experiment variant
+  feature_importance.xlsx - full flat table of all metrics
   report_feature_selection_run_1.html
 
 Usage (from project root):
@@ -79,7 +79,7 @@ def _sub(stage_dir, name):
 # ── Registry ──────────────────────────────────────────────────────────────────
 # (exp_label, variant_label, model_name, subset_path, features, target)
 REGISTRY = [
-    # Experiment 1 — grab
+    # Experiment 1 - grab
     ("Experiment 1", "Grab", "stage1_grab_BOD",
      _sub("experiment1","stage1_grab_BOD"), S1_GRAB, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 1", "Grab", "stage1_grab_COD",
@@ -88,7 +88,7 @@ REGISTRY = [
      _sub("experiment1","stage1_grab_TSS"), S1_GRAB, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 1", "Grab", "stage1_grab_pH",
      _sub("experiment1","stage1_grab_pH"),  S1_GRAB, "Effluent pH (Grab)"),
-    # Experiment 1 — composite
+    # Experiment 1 - composite
     ("Experiment 1", "Composite", "stage1_comp_BOD",
      _sub("experiment1","stage1_comp_BOD"), S1_COMP, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 1", "Composite", "stage1_comp_COD",
@@ -97,7 +97,7 @@ REGISTRY = [
      _sub("experiment1","stage1_comp_TSS"), S1_COMP, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 1", "Composite", "stage1_comp_pH",
      _sub("experiment1","stage1_comp_pH"),  S1_COMP, "Effluent pH (Composite)"),
-    # Experiment 2 Sub-1 — grab
+    # Experiment 2 Sub-1 - grab
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_BOD",
      _sub("experiment2_s1","stage2_p1_grab_BOD"), S2P1, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_COD",
@@ -106,7 +106,7 @@ REGISTRY = [
      _sub("experiment2_s1","stage2_p1_grab_TSS"), S2P1, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_pH",
      _sub("experiment2_s1","stage2_p1_grab_pH"),  S2P1, "Effluent pH (Grab)"),
-    # Experiment 2 Sub-1 — composite
+    # Experiment 2 Sub-1 - composite
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_BOD",
      _sub("experiment2_s1","stage2_p1_comp_BOD"), S2P1, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_COD",
@@ -115,7 +115,7 @@ REGISTRY = [
      _sub("experiment2_s1","stage2_p1_comp_TSS"), S2P1, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_pH",
      _sub("experiment2_s1","stage2_p1_comp_pH"),  S2P1, "Effluent pH (Composite)"),
-    # Experiment 2 Sub-2 — grab
+    # Experiment 2 Sub-2 - grab
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_BOD",
      _sub("experiment2_s2","stage2_p2_grab_BOD"), S2P2_GRAB, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_COD",
@@ -124,7 +124,7 @@ REGISTRY = [
      _sub("experiment2_s2","stage2_p2_grab_TSS"), S2P2_GRAB, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_pH",
      _sub("experiment2_s2","stage2_p2_grab_pH"),  S2P2_GRAB, "Effluent pH (Grab)"),
-    # Experiment 2 Sub-2 — composite
+    # Experiment 2 Sub-2 - composite
     ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_BOD",
      _sub("experiment2_s2","stage2_p2_comp_BOD"), S2P2_COMP, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_COD",
@@ -310,9 +310,9 @@ def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str
     useful_f = [r["feat_short"] for _, r in sub_s.iterrows() if USEFUL_THRESH <= r["perm_imp_norm"] < CORE_THRESH]
     weak_f   = [r["feat_short"] for _, r in sub_s.iterrows() if r["perm_imp_norm"] < USEFUL_THRESH]
     rec_line = (
-        f"<span class='tier-core'>Core ({len(core_f)}): {', '.join(core_f) or '—'}</span> &nbsp;|&nbsp; "
+        f"<span class='tier-core'>Core ({len(core_f)}): {', '.join(core_f) or '-'}</span> &nbsp;|&nbsp; "
         f"<span class='tier-useful'>Useful ({len(useful_f)})</span> &nbsp;|&nbsp; "
-        f"<span class='tier-weak'>Weak ({len(weak_f)}): {', '.join(weak_f) or '—'}</span>"
+        f"<span class='tier-weak'>Weak ({len(weak_f)}): {', '.join(weak_f) or '-'}</span>"
     )
 
     rows = ""
@@ -366,7 +366,7 @@ def _variant_section(exp: str, variant: str, sub: pd.DataFrame,
     <span class='tier-useful'>Useful</span> ≥ {USEFUL_THRESH} &nbsp;|&nbsp;
     <span class='tier-weak'>Weak ✗</span> &lt; {USEFUL_THRESH}.<br>
     Recommendations are shown per target below. Temporal features 🕐 (month, day_of_week, year)
-    reflect seasonality — not a process-controllable variable.
+    reflect seasonality - not a process-controllable variable.
     """
 
     hm_img = f'<img src="{_b64(heatmap_path)}" alt="heatmap">' if heatmap_path and os.path.exists(heatmap_path) else ""
@@ -382,13 +382,13 @@ def _variant_section(exp: str, variant: str, sub: pd.DataFrame,
     sec_id = f"{exp.replace(' ','-')}-{variant}"
     return f"""
     <div class="exp-card" id="{sec_id}">
-      <h2>{exp} — {variant} Effluent</h2>
+      <h2>{exp} - {variant} Effluent</h2>
       <div class="obs">{obs}</div>
 
       <h3>Feature × Target Importance Heatmap</h3>
       <p style="font-size:0.8rem;color:var(--text-meta);margin:0 0 8px">
         Normalised permutation importance (sums to 1.0 per target column).
-        Computed on training data (2020–2024). Higher = more impact on model predictions.
+        Computed on training data (2020-2024). Higher = more impact on model predictions.
       </p>
       <div class="plot-box wide" style="max-width:900px">{hm_img}</div>
 
@@ -456,7 +456,7 @@ REPORT_CSS = dark_mode_css("""
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    print("Phase 5 — Feature Selection")
+    print("Phase 5 - Feature Selection")
     print("=" * 60)
 
     all_rows = []
@@ -475,7 +475,7 @@ def main():
     print(f"\nSaved: {xlsx_path}")
 
     # Step 2: group into report sections
-    # Group key: (experiment, variant)  — but Exp2S1 grab+comp share same features → one section
+    # Group key: (experiment, variant)  - but Exp2S1 grab+comp share same features → one section
     groups = [
         ("Experiment 1",       "Grab"),
         ("Experiment 1",       "Composite"),
@@ -497,7 +497,7 @@ def main():
 
         # Heatmap
         hm_path = make_heatmap(sub,
-            f"Normalised Permutation Importance — {exp} ({variant})",
+            f"Normalised Permutation Importance - {exp} ({variant})",
             f"{tag}_heatmap.png")
 
         # Per-target bar charts
@@ -506,7 +506,7 @@ def main():
             ts    = _tgt_short(tgt)
             bpath = make_bar_chart(
                 sub[sub["target"] == tgt].copy(),
-                f"Feature Importance — {_tgt_short(tgt)}",
+                f"Feature Importance - {_tgt_short(tgt)}",
                 f"{tag}_{ts}_bar.png")
             bar_paths[ts] = bpath
 
@@ -518,17 +518,17 @@ def main():
     intro = """
     <div style="margin:10px 0 20px;padding:12px 16px;background:var(--obs-bg);
                 border-radius:8px;font-size:0.88rem;color:var(--text)">
-      <strong>Phase 5 — Feature Selection:</strong> Feature importance computed using
-      three complementary metrics: (1) <strong>RF Permutation Importance</strong> — how much
+      <strong>Phase 5 - Feature Selection:</strong> Feature importance computed using
+      three complementary metrics: (1) <strong>RF Permutation Importance</strong> - how much
       model accuracy drops when a feature is randomly shuffled (computed on training data,
       n_repeats=20, more reliable than impurity importance); (2) <strong>Mutual Information</strong>
-      — detects both linear and non-linear feature–target associations; (3)
-      <strong>Pearson / Spearman r</strong> — linear and monotonic correlation.
+      - detects both linear and non-linear feature-target associations; (3)
+      <strong>Pearson / Spearman r</strong> - linear and monotonic correlation.
       Models used are the tuned RF best_estimators from Phase 3.<br><br>
       <strong>Interpretation:</strong> Permutation importance is the primary ranking signal.
       A feature scoring near zero has little causal or predictive value for the trained model.
       Temporal features (month, day_of_week, year) capture seasonal patterns but are not
-      process-controllable — they are flagged separately (🕐) for interpretation.
+      process-controllable - they are flagged separately (🕐) for interpretation.
     </div>"""
 
     html = f"""<!DOCTYPE html>
@@ -536,14 +536,14 @@ def main():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phase 5 — Feature Selection | Run 1</title>
+  <title>Phase 5 - Feature Selection | Run 1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>{REPORT_CSS}</style>
   {DARK_MODE_JS}
 </head>
 <body>
-  <h1>Phase 5 — Feature Importance &amp; Selection
+  <h1>Phase 5 - Feature Importance &amp; Selection
     <span class="run-badge">Run 1</span>
   </h1>
   <div class="ts">Generated {ts_str} &nbsp;|&nbsp; Based on tuned RF models (Phase 3)</div>

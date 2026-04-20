@@ -1,13 +1,13 @@
 """
-build_exp4_s2_subsets.py — Create Experiment 4 Sub-2 datasets.
+build_exp4_s2_subsets.py - Create Experiment 4 Sub-2 datasets.
 
 Experiment 4 Sub-2 hypothesis: within the Exp4-S1 feature set, apply automated
 iterative VIF pruning (threshold = 10) to remove intra-group collinear features.
-The pruning runs on training rows only (2020–2024) so no 2025 data leaks into
+The pruning runs on training rows only (2020-2024) so no 2025 data leaks into
 the feature selection decision.
 
 VIF excluded from analysis (always kept in dataset):
-  - month, day_of_week, year  — temporal/categorical, not subject to VIF
+  - month, day_of_week, year  - temporal/categorical, not subject to VIF
 
 Starting pool per target = the Exp4-S1 feature set for that target
 (Exp3-S2 minus SVI, (New) aeration columns, Sec Sed columns).
@@ -164,7 +164,7 @@ def build_subset(raw: pd.DataFrame, target: str, variant: str,
     train_mask = sub["year"].isin(TRAIN_YEARS)
     train_sub  = sub[train_mask][pool].dropna()
     if len(train_sub) < 30:
-        print(f"  WARNING: only {len(train_sub)} training rows with complete pool — skipping VIF")
+        print(f"  WARNING: only {len(train_sub)} training rows with complete pool - skipping VIF")
         surviving = pool
         dropped_info = []
         final_vifs = {}
@@ -201,7 +201,7 @@ def main():
     raw["month"]       = raw["Date"].dt.month
     raw["day_of_week"] = raw["Date"].dt.dayofweek
     raw["year"]        = raw["Date"].dt.year
-    print(f"  {len(raw)} rows, {int(raw['year'].min())}–{int(raw['year'].max())}")
+    print(f"  {len(raw)} rows, {int(raw['year'].min())}-{int(raw['year'].max())}")
 
     # Load Exp4-S1 row counts for delta comparison
     s1_counts = {}
@@ -222,8 +222,8 @@ def main():
         out_path = os.path.join(OUT_DIR, f"e4_s2_{stem}.xlsx")
         result["df"].to_excel(out_path, index=False)
 
-        n_s1 = s1_counts.get(stem, "—")
-        delta = (result["n_rows"] - n_s1) if isinstance(n_s1, int) else "—"
+        n_s1 = s1_counts.get(stem, "-")
+        delta = (result["n_rows"] - n_s1) if isinstance(n_s1, int) else "-"
         delta_str = f"+{delta}" if isinstance(delta, int) and delta >= 0 else str(delta)
 
         print(f"  Surviving features ({result['n_surviving']}): {result['surviving']}")

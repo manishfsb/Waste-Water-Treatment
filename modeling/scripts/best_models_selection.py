@@ -1,19 +1,19 @@
 """
-best_models_selection.py — Reinterpret leaderboard under overfitting-aware rules.
+best_models_selection.py - Reinterpret leaderboard under overfitting-aware rules.
 
 Re-ranks every (target, experiment) row in the unified results using three
 complementary rules instead of raw max(Test R²):
 
-  1. Naive:            argmax(R2_test)                                  — current rule
-  2. Gap-adjusted:     argmax(R2_test − λ · max(0, R2_gap − τ))         — penalise overfit
+  1. Naive:            argmax(R2_test)                                  - current rule
+  2. Gap-adjusted:     argmax(R2_test − λ · max(0, R2_gap − τ))         - penalise overfit
                          where τ=0.10 (tolerated gap), λ=0.5
   3. One-SE rule:      among models within δ=0.05 R² of the top,
                          pick the smallest |R2_gap|
   4. Pareto frontier:  models not dominated in (R2_test↑, |R2_gap|↓)
 
 Outputs:
-  reports/best_models_selection.xlsx   — per-target comparison table
-  reports/best_models_selection.html   — dark-mode HTML panel
+  reports/best_models_selection.xlsx   - per-target comparison table
+  reports/best_models_selection.html   - dark-mode HTML panel
 
 Run:  .venv/bin/python3 21-25/modeling/scripts/best_models_selection.py
 """
@@ -33,7 +33,7 @@ PROJECT_ROOT = os.path.dirname(MODELING_DIR)
 REPORTS_DIR  = os.path.join(MODELING_DIR, "reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# Reuse the unified loader — single source of truth for schema harmonisation.
+# Reuse the unified loader - single source of truth for schema harmonisation.
 sys.path.insert(0, SCRIPT_DIR)
 from generate_unified_report import (           # noqa: E402
     load_all_data, TARGETS_ORDERED, TARGET_SHORT, EXP_CHART_ORDER,
@@ -42,10 +42,10 @@ sys.path.insert(0, PROJECT_ROOT)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 # ── Selection-rule parameters ──────────────────────────────────────────────────
-GAP_TOLERANCE  = 0.10   # τ — gaps below this are not penalised
-GAP_PENALTY    = 0.50   # λ — weight on excess gap
-ONE_SE_MARGIN  = 0.05   # δ — R² margin counted as "equivalent"
-                        #     0.03 was too tight: SE(R²) ≈ 0.05–0.07 at n_test≈200,
+GAP_TOLERANCE  = 0.10   # τ - gaps below this are not penalised
+GAP_PENALTY    = 0.50   # λ - weight on excess gap
+ONE_SE_MARGIN  = 0.05   # δ - R² margin counted as "equivalent"
+                        #     0.03 was too tight: SE(R²) ≈ 0.05-0.07 at n_test≈200,
                         #     so a 0.03 gap is well within measurement noise.
 
 
@@ -148,7 +148,7 @@ def build_per_experiment(df_all: pd.DataFrame) -> pd.DataFrame:
 
 def build_global(df_all: pd.DataFrame) -> pd.DataFrame:
     """
-    Global winner per target across ALL experiments/phases — the real
+    Global winner per target across ALL experiments/phases - the real
     'production pick' question.
     """
     recs = []
@@ -170,7 +170,7 @@ def build_global(df_all: pd.DataFrame) -> pd.DataFrame:
 
 def _cell(val, d=3):
     if pd.isna(val):
-        return "—"
+        return "-"
     if isinstance(val, (int, np.integer)):
         return str(int(val))
     return f"{val:.{d}f}"
@@ -203,9 +203,9 @@ def _row_state(r):
     """Classify a result row and return (state_str, info_html).
 
     state_str:
-      'agree_ok'  — gap-adj == naive AND |gap| < 0.25  (green or yellow gap)
-      'agree_bad' — gap-adj == naive AND |gap| >= 0.25 (red gap, no better alt)
-      'disagree'  — gap-adj picks a different model
+      'agree_ok'  - gap-adj == naive AND |gap| < 0.25  (green or yellow gap)
+      'agree_bad' - gap-adj == naive AND |gap| >= 0.25 (red gap, no better alt)
+      'disagree'  - gap-adj picks a different model
     """
     gadj   = str(r.get("gadj_model", ""))
     naive  = str(r.get("naive_model", ""))
@@ -216,23 +216,23 @@ def _row_state(r):
         if gap_abs >= 0.25:
             state = "agree_bad"
             info_html = (
-                "<strong>All rules agree — but the overfitting gap is large.</strong><br><br>"
+                "<strong>All rules agree - but the overfitting gap is large.</strong><br><br>"
                 "Naive, gap-adjusted, and one-SE rules all select the same model, "
                 "because no alternative achieves comparable accuracy with a smaller gap. "
                 f"However, the train/test gap is "
                 f"<span style='color:#e74c3c;font-weight:600'>{gap:+.3f}</span> "
-                f"(|gap| ≥ 0.25 — red zone). "
+                f"(|gap| ≥ 0.25 - red zone). "
                 "The model is likely memorising training patterns. "
                 "Monitor performance on fresh data, especially during high-flow or "
                 "winter regimes where distribution shift is most pronounced."
             )
         else:
             state = "agree_ok"
-            gap_str   = f"{gap:+.3f}" if not pd.isna(gap) else "—"
+            gap_str   = f"{gap:+.3f}" if not pd.isna(gap) else "-"
             gap_color = "#2ecc71" if gap_abs < 0.10 else "#f1c40f"
             thresh    = "well within tolerance (green)" if gap_abs < 0.10 else "within tolerance (yellow)"
             info_html = (
-                "<strong>All selection rules agree — safe pick.</strong><br><br>"
+                "<strong>All selection rules agree - safe pick.</strong><br><br>"
                 "The naive winner also passes the gap-adjusted test: gap = "
                 f"<span style='color:{gap_color};font-weight:600'>{gap_str}</span> "
                 f"({thresh}). "
@@ -244,22 +244,22 @@ def _row_state(r):
         state = "disagree"
         gadj_r2  = r.get("gadj_R2",  float("nan"))
         gadj_gap = r.get("gadj_gap", float("nan"))
-        gap_str  = f"{gap:+.3f}"     if not pd.isna(gap)      else "—"
-        gr2_str  = f"{gadj_r2:+.3f}" if not pd.isna(gadj_r2)  else "—"
-        gg_str   = f"{gadj_gap:+.3f}" if not pd.isna(gadj_gap) else "—"
+        gap_str  = f"{gap:+.3f}"     if not pd.isna(gap)      else "-"
+        gr2_str  = f"{gadj_r2:+.3f}" if not pd.isna(gadj_r2)  else "-"
+        gg_str   = f"{gadj_gap:+.3f}" if not pd.isna(gadj_gap) else "-"
         gg_color = ("#2ecc71" if (not pd.isna(gadj_gap) and abs(gadj_gap) < 0.10) else
                     "#f1c40f" if (not pd.isna(gadj_gap) and abs(gadj_gap) < 0.25) else "#e74c3c")
         info_html = (
-            "<strong>Rules disagree — gap-adjusted recommends a different model.</strong>"
+            "<strong>Rules disagree - gap-adjusted recommends a different model.</strong>"
             "<br><br>"
             f"<em>Naive winner:</em> {naive} "
             f"(R² = {_cell(r.get('naive_R2'))}, "
             f"gap = <span style='color:#e74c3c;font-weight:600'>{gap_str}</span>) "
-            "— overfit flag.<br>"
+            "- overfit flag.<br>"
             f"<em>Gap-adjusted:</em> {gadj} "
             f"(R² = {gr2_str}, "
             f"gap = <span style='color:{gg_color};font-weight:600'>{gg_str}</span>) "
-            "— preferred for deployment.<br><br>"
+            "- preferred for deployment.<br><br>"
             "The gap-adjusted model trades a small R² reduction for a much smaller "
             "overfitting gap, suggesting better generalisation on out-of-distribution data."
         )
@@ -476,7 +476,7 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 gadj_bg = "background:rgba(74,144,217,0.12);"
 
             def _fmt_st(val_str, is_same):
-                if is_same and val_str and val_str != "—":
+                if is_same and val_str and val_str != "-":
                     return f"<s style='color:var(--text-muted);opacity:0.6'>{val_str}</s>"
                 return val_str
 
@@ -700,7 +700,7 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "All rules agree, gap ≤ 0.25</span>"
         "<span><span class='sel-state-swatch' "
         "style='background:rgba(231,76,60,0.35)'></span>"
-        "All rules agree, gap &gt; 0.25 — caution</span>"
+        "All rules agree, gap &gt; 0.25 - caution</span>"
         "<span><span class='sel-state-swatch' "
         "style='background:rgba(74,144,217,0.35)'></span>"
         "Gap-adj picks a different model (blue = recommended)</span>"
@@ -712,15 +712,15 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         f"<style>{SEL_CSS}</style>",
         "<div class='rule-card-sel'>",
         "  <h4>Why re-rank?</h4>",
-        "  <p>On this dataset (n_test ≈ 160–280 for the held-out 2025 year), "
+        "  <p>On this dataset (n_test ≈ 160-280 for the held-out 2025 year), "
         "Test R² alone is noisy. A model with R²=0.43 and gap=0.88 is not "
-        "equivalent to one with R²=0.40 and gap=0.02 — the former is memorising.</p>",
+        "equivalent to one with R²=0.40 and gap=0.02 - the former is memorising.</p>",
         "  <h4>Rules applied</h4>",
         f"  <p><strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
         "Penalises overfit beyond a 10-pt tolerance.</p>",
         f"  <p><strong>One-SE rule:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|.</p>",
         "  <p><strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓).</p>",
-        "  <p><strong>RMSE and MAE</strong> are shown alongside R² for each rule's winner — "
+        "  <p><strong>RMSE and MAE</strong> are shown alongside R² for each rule's winner - "
         "they carry the same ranking as R² within a target but are operationally interpretable "
         "(mg/L for BOD/COD/TSS, pH units for pH).</p>",
         "</div>",
@@ -741,7 +741,7 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         legend,
         "<p style='color:var(--text-muted);font-size:12px'>",
         "Initially sorted within each target group by naive Test R² (descending). "
-        "Click column headers to re-sort within groups — the Experiment column follows "
+        "Click column headers to re-sort within groups - the Experiment column follows "
         "canonical experiment order (Exp1 → Exp1-FS → Exp2-Sub1 → … → Phase11). "
         "Click ⓘ on any Gap-adj winner cell for selection reasoning.</p>",
         "<div class='sel-tbl-wrap'>",
@@ -791,7 +791,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "All rules agree, gap ≤ 0.25</span>"
         "<span><span class='sel-state-swatch' "
         "style='background:rgba(231,76,60,0.35)'></span>"
-        "All rules agree, gap &gt; 0.25 — caution</span>"
+        "All rules agree, gap &gt; 0.25 - caution</span>"
         "<span><span class='sel-state-swatch' "
         "style='background:rgba(74,144,217,0.35)'></span>"
         "Gap-adj picks a different model (blue = recommended)</span>"
@@ -800,7 +800,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
 
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
-        f"<title>Best Models — Overfitting-Aware Selection</title>",
+        f"<title>Best Models - Overfitting-Aware Selection</title>",
         f"<style>{css}</style></head><body>",
         _SEL_OVERLAY_HTML,
         "<div class='container'>",
@@ -808,7 +808,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         f"<p style='color:var(--text-muted)'>Generated {ts}</p>",
         "<div class='rule-card'>",
         "  <h4>Why re-rank?</h4>",
-        "  <p>On this dataset (n_test ≈ 160–280 for one held-out year), "
+        "  <p>On this dataset (n_test ≈ 160-280 for one held-out year), "
         "Test R² alone is noisy and treats a 0.43 / 0.88 model as equivalent "
         "to a 0.40 / 0.42 model. The former is memorising.</p>",
         "  <h4>Rules applied</h4>",
@@ -834,7 +834,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         legend,
         "<p style='color:var(--text-muted); font-size:12px'>"
         "Sorted within each target group by naive Test R² (descending). "
-        "Click column headers to re-sort within groups — Experiment column follows "
+        "Click column headers to re-sort within groups - Experiment column follows "
         "canonical order (Exp1 → Phase11). "
         "Click ⓘ on any Gap-adj winner for selection reasoning.</p>",
         "<div style='overflow-x:auto'>",

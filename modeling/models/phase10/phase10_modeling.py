@@ -1,14 +1,14 @@
 """
-phase10_modeling.py — Feature Engineering + Model Re-run for Phase 10.
+phase10_modeling.py - Feature Engineering + Model Re-run for Phase 10.
 
 Loads Experiment 3 Sub-2 datasets and engineers three types of new features
 in-memory (no new xlsx files created):
-  1. Log transforms  (log1p) — concentration columns & coliform
-  2. Interaction terms (A×B) — domain-relevant pairs (inlet×secondary, BOD×flow, etc.)
-  3. Outlier indicator flags (binary IQR) — IQR computed from train split only
+  1. Log transforms  (log1p) - concentration columns & coliform
+  2. Interaction terms (A×B) - domain-relevant pairs (inlet×secondary, BOD×flow, etc.)
+  3. Outlier indicator flags (binary IQR) - IQR computed from train split only
 
 Models trained: ElNet, Ridge, RF, Voting (RF + Ridge + ElNet ensemble).
-Stacking excluded — showed instability on composite targets in Phase 9.
+Stacking excluded - showed instability on composite targets in Phase 9.
 
 Outputs:
   - phase10/results.xlsx
@@ -83,7 +83,7 @@ RF_PARAMS = dict(
 
 # ── Feature engineering constants ─────────────────────────────────────────────
 
-# 1. Log transforms — applied to skewed concentration columns (log1p handles zeros)
+# 1. Log transforms - applied to skewed concentration columns (log1p handles zeros)
 LOG_COL_NAMES = {
     "Inlet BOD (mg/L, Grab)":                "log_Inlet_BOD_Grab",
     "Inlet COD (mg/L, Grab)":                "log_Inlet_COD_Grab",
@@ -102,7 +102,7 @@ LOG_COL_NAMES = {
 }
 # NOT log-transformed: pH columns, Flow (MLD), Power, DO, MLSS, SVI, SV30
 
-# 2. Interaction terms — domain-meaningful products (A × B)
+# 2. Interaction terms - domain-meaningful products (A × B)
 #    Each tuple: (col_A, col_B, output_col_name)
 #    Grab and Composite share the same output name for same-physics interactions.
 INTERACTION_PAIRS = [
@@ -122,7 +122,7 @@ INTERACTION_PAIRS = [
     ("Aeration DO (mg/L, Existing)","Aeration MLSS (mg/L, Existing)", "inter_DO_x_MLSS"),
 ]
 
-# 3. Outlier indicator flags — 1 if > Q3 + 1.5×IQR (IQR from train only)
+# 3. Outlier indicator flags - 1 if > Q3 + 1.5×IQR (IQR from train only)
 FLAG_COL_NAMES = {
     "Inlet BOD (mg/L, Grab)":      "flag_Inlet_BOD_Grab",
     "Inlet COD (mg/L, Grab)":      "flag_Inlet_COD_Grab",
@@ -152,7 +152,7 @@ def engineer_features(df: pd.DataFrame, train_mask: pd.Series):
     Parameters
     ----------
     df         : DataFrame AFTER initial dropna (base cols only, no NaNs).
-    train_mask : Boolean Series (True = training rows). Used for IQR — no leakage.
+    train_mask : Boolean Series (True = training rows). Used for IQR - no leakage.
 
     Returns
     -------
@@ -178,7 +178,7 @@ def engineer_features(df: pd.DataFrame, train_mask: pd.Series):
             df_eng[dst] = df_eng[col_a] * df_eng[col_b]
             n_inter += 1
 
-    # 3. Outlier flags — IQR from train only
+    # 3. Outlier flags - IQR from train only
     for src, dst in FLAG_COL_NAMES.items():
         if src in df_eng.columns:
             train_vals = df_eng.loc[train_mask, src]
@@ -231,8 +231,8 @@ def _scatter_plot(y_train, y_train_pred, y_test, y_test_pred,
         ax.scatter(yt, yp, alpha=0.55, s=18, color=color)
         ax.set_xlabel("Actual", fontsize=9)
         ax.set_ylabel("Predicted", fontsize=9)
-        ax.set_title(f"{label} — R²={r2:+.3f}", fontsize=9)
-    fig.suptitle(f"{model_tag} — {name}", fontsize=10)
+        ax.set_title(f"{label} - R²={r2:+.3f}", fontsize=9)
+    fig.suptitle(f"{model_tag} - {name}", fontsize=10)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_scatter.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
@@ -249,7 +249,7 @@ def _timeseries_plot(df_full, target, y_pred_full, name, model_tag, run):
     if pd.notna(split_date):
         ax.axvline(split_date, color="#F0B849", lw=1.2, linestyle="--",
                    alpha=0.7, label="Train | Test")
-    ax.set_title(f"{model_tag} — {target}", fontsize=9)
+    ax.set_title(f"{model_tag} - {target}", fontsize=9)
     ax.legend(fontsize=7)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_timeseries.png")
@@ -282,7 +282,7 @@ def _learning_curve_plot(model, X_train, y_train, name, model_tag, run):
     ax.axhline(0, color="white", lw=0.6, linestyle="--", alpha=0.4)
     ax.set_xlabel("Training examples", fontsize=9)
     ax.set_ylabel("R²", fontsize=9)
-    ax.set_title(f"Learning Curve — {model_tag} — {name}", fontsize=9)
+    ax.set_title(f"Learning Curve - {model_tag} - {name}", fontsize=9)
     ax.legend(fontsize=8)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_lc.png")
@@ -389,7 +389,7 @@ def train_dataset(ds: dict, run: int) -> list:
     base_feats = infer_features(df_raw, target)
     df_clean   = df_raw[["Date"] + base_feats + [target]].dropna()
 
-    # Step 2: train mask — computed BEFORE engineering (IQR leakage prevention)
+    # Step 2: train mask - computed BEFORE engineering (IQR leakage prevention)
     train_mask = df_clean["Date"].dt.year < 2025
 
     # Step 3: engineer features in-memory
@@ -482,7 +482,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
 def main():
     run = _next_run(RESULTS_FILE)
-    print(f"=== Phase 10 — Feature Engineering (log + interaction + flag) — Run {run} ===")
+    print(f"=== Phase 10 - Feature Engineering (log + interaction + flag) - Run {run} ===")
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}")
 
     all_records = []

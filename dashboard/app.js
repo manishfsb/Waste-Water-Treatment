@@ -1,6 +1,6 @@
 /**
- * WWTP Lab Report Dashboard — App Logic
- * Multi-year (2021–2025), dynamic month dropdown, composite toggle.
+ * WWTP Lab Report Dashboard - App Logic
+ * Multi-year (2021-2025), dynamic month dropdown, composite toggle.
  */
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -19,107 +19,115 @@ const MONTH_LABELS = {
 
 // Treatment stage configs for each parameter (grab only)
 const STAGE_FIELDS = {
-    ph:  { stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
-           fields: ['inlet_ph', 'primary_ph', 'secondary_ph', 'sec_sed_ph', 'effluent_ph'],
-           inletCompKey: 'inlet_ph_comp', effluentCompKey: 'effluent_ph_comp' },
-    bod: { stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
-           fields: ['inlet_bod', 'primary_bod', 'secondary_bod', 'sec_sed_bod', 'effluent_bod'],
-           inletCompKey: 'inlet_bod_comp', effluentCompKey: 'effluent_bod_comp' },
-    cod: { stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
-           fields: ['inlet_cod', 'primary_cod', 'secondary_cod', 'sec_sed_cod', 'effluent_cod'],
-           inletCompKey: 'inlet_cod_comp', effluentCompKey: 'effluent_cod_comp' },
-    tss: { stages: ['Inlet', 'Grit', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
-           fields: ['inlet_tss', 'grit_tss', 'primary_tss', 'secondary_tss', 'sec_sed_tss', 'effluent_tss'],
-           inletCompKey: 'inlet_tss_comp', effluentCompKey: 'effluent_tss_comp' },
+    ph: {
+        stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
+        fields: ['inlet_ph', 'primary_ph', 'secondary_ph', 'sec_sed_ph', 'effluent_ph'],
+        inletCompKey: 'inlet_ph_comp', effluentCompKey: 'effluent_ph_comp'
+    },
+    bod: {
+        stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
+        fields: ['inlet_bod', 'primary_bod', 'secondary_bod', 'sec_sed_bod', 'effluent_bod'],
+        inletCompKey: 'inlet_bod_comp', effluentCompKey: 'effluent_bod_comp'
+    },
+    cod: {
+        stages: ['Inlet', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
+        fields: ['inlet_cod', 'primary_cod', 'secondary_cod', 'sec_sed_cod', 'effluent_cod'],
+        inletCompKey: 'inlet_cod_comp', effluentCompKey: 'effluent_cod_comp'
+    },
+    tss: {
+        stages: ['Inlet', 'Grit', 'Primary', 'Secondary', 'Sec. Sed.', 'Effluent'],
+        fields: ['inlet_tss', 'grit_tss', 'primary_tss', 'secondary_tss', 'sec_sed_tss', 'effluent_tss'],
+        inletCompKey: 'inlet_tss_comp', effluentCompKey: 'effluent_tss_comp'
+    },
 };
 
 // Stage series for monthly parameter trend charts (grab only)
 const MONTHLY_STAGE_SERIES = {
     ph: [
-        { key: 'inlet_ph',     label: 'Inlet',     color: '#2563eb' },
-        { key: 'primary_ph',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'inlet_ph', label: 'Inlet', color: '#2563eb' },
+        { key: 'primary_ph', label: 'Primary', color: '#7c3aed' },
         { key: 'secondary_ph', label: 'Secondary', color: '#16a34a' },
-        { key: 'sec_sed_ph',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_ph',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'sec_sed_ph', label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_ph', label: 'Effluent', color: '#dc2626' },
     ],
     bod: [
-        { key: 'inlet_bod',     label: 'Inlet',     color: '#2563eb' },
-        { key: 'primary_bod',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'inlet_bod', label: 'Inlet', color: '#2563eb' },
+        { key: 'primary_bod', label: 'Primary', color: '#7c3aed' },
         { key: 'secondary_bod', label: 'Secondary', color: '#16a34a' },
-        { key: 'sec_sed_bod',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_bod',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'sec_sed_bod', label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_bod', label: 'Effluent', color: '#dc2626' },
     ],
     cod: [
-        { key: 'inlet_cod',     label: 'Inlet',     color: '#2563eb' },
-        { key: 'primary_cod',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'inlet_cod', label: 'Inlet', color: '#2563eb' },
+        { key: 'primary_cod', label: 'Primary', color: '#7c3aed' },
         { key: 'secondary_cod', label: 'Secondary', color: '#16a34a' },
-        { key: 'sec_sed_cod',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_cod',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'sec_sed_cod', label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_cod', label: 'Effluent', color: '#dc2626' },
     ],
     tss: [
-        { key: 'inlet_tss',     label: 'Inlet',     color: '#2563eb' },
-        { key: 'grit_tss',      label: 'Grit',      color: '#0891b2' },
-        { key: 'primary_tss',   label: 'Primary',   color: '#7c3aed' },
+        { key: 'inlet_tss', label: 'Inlet', color: '#2563eb' },
+        { key: 'grit_tss', label: 'Grit', color: '#0891b2' },
+        { key: 'primary_tss', label: 'Primary', color: '#7c3aed' },
         { key: 'secondary_tss', label: 'Secondary', color: '#16a34a' },
-        { key: 'sec_sed_tss',   label: 'Sec. Sed.', color: '#d97706' },
-        { key: 'effluent_tss',  label: 'Effluent',  color: '#dc2626' },
+        { key: 'sec_sed_tss', label: 'Sec. Sed.', color: '#d97706' },
+        { key: 'effluent_tss', label: 'Effluent', color: '#dc2626' },
     ],
 };
 
 // Composite series appended when composite toggle is ON
 const MONTHLY_COMP_SERIES = {
-    ph:  [
-        { key: 'inlet_ph_comp',    label: 'Inlet (Comp)',    baseColor: '#2563eb' },
+    ph: [
+        { key: 'inlet_ph_comp', label: 'Inlet (Comp)', baseColor: '#2563eb' },
         { key: 'effluent_ph_comp', label: 'Effluent (Comp)', baseColor: '#dc2626' },
     ],
     bod: [
-        { key: 'inlet_bod_comp',    label: 'Inlet (Comp)',    baseColor: '#2563eb' },
+        { key: 'inlet_bod_comp', label: 'Inlet (Comp)', baseColor: '#2563eb' },
         { key: 'effluent_bod_comp', label: 'Effluent (Comp)', baseColor: '#dc2626' },
     ],
     cod: [
-        { key: 'inlet_cod_comp',    label: 'Inlet (Comp)',    baseColor: '#2563eb' },
+        { key: 'inlet_cod_comp', label: 'Inlet (Comp)', baseColor: '#2563eb' },
         { key: 'effluent_cod_comp', label: 'Effluent (Comp)', baseColor: '#dc2626' },
     ],
     tss: [
-        { key: 'inlet_tss_comp',    label: 'Inlet (Comp)',    baseColor: '#2563eb' },
+        { key: 'inlet_tss_comp', label: 'Inlet (Comp)', baseColor: '#2563eb' },
         { key: 'effluent_tss_comp', label: 'Effluent (Comp)', baseColor: '#dc2626' },
     ],
 };
 
-const LIMIT_INLET_COLOR    = '#f59e0b';
+const LIMIT_INLET_COLOR = '#f59e0b';
 const LIMIT_EFFLUENT_COLOR = '#7c3aed';
 
 const LIMIT_LINE_DATA = {
-    ph:  { inlet: { value: null, label: 'Inlet pH: 6.0–9.0' },       effluent: { value: null, label: 'Effluent pH: 6.5–8.0' } },
-    bod: { inlet: { value: 300,  label: 'Inlet limit: 300 mg/L' },    effluent: { value: 10,   label: 'Effluent limit: 10 mg/L' } },
-    cod: { inlet: { value: 800,  label: 'Inlet limit: 800 mg/L' },    effluent: { value: 250,  label: 'Effluent limit: 250 mg/L' } },
-    tss: { inlet: { value: 400,  label: 'Inlet limit: 400 mg/L' },    effluent: { value: 10,   label: 'Effluent limit: 10 mg/L' } },
+    ph: { inlet: { value: null, label: 'Inlet pH: 6.0-9.0' }, effluent: { value: null, label: 'Effluent pH: 6.5-8.0' } },
+    bod: { inlet: { value: 300, label: 'Inlet limit: 300 mg/L' }, effluent: { value: 10, label: 'Effluent limit: 10 mg/L' } },
+    cod: { inlet: { value: 800, label: 'Inlet limit: 800 mg/L' }, effluent: { value: 250, label: 'Effluent limit: 250 mg/L' } },
+    tss: { inlet: { value: 400, label: 'Inlet limit: 400 mg/L' }, effluent: { value: 10, label: 'Effluent limit: 10 mg/L' } },
 };
 
 // Missing-value groups (grab)
 const MISSING_GROUPS_GRAB = [
-    { label: 'pH',    color: '#2563eb', fields: ['inlet_ph', 'primary_ph', 'secondary_ph', 'sec_sed_ph', 'effluent_ph'] },
-    { label: 'BOD',   color: '#9333ea', fields: ['inlet_bod', 'primary_bod', 'secondary_bod', 'sec_sed_bod', 'effluent_bod'] },
-    { label: 'COD',   color: '#16a34a', fields: ['inlet_cod', 'primary_cod', 'secondary_cod', 'sec_sed_cod', 'effluent_cod'] },
-    { label: 'TSS',   color: '#d97706', fields: ['inlet_tss', 'grit_tss', 'primary_tss', 'secondary_tss', 'sec_sed_tss', 'effluent_tss'] },
-    { label: 'FRC',   color: '#0891b2', fields: ['effluent_frc'] },
-    { label: 'Flow',  color: '#6b7280', fields: ['flow'] },
+    { label: 'pH', color: '#2563eb', fields: ['inlet_ph', 'primary_ph', 'secondary_ph', 'sec_sed_ph', 'effluent_ph'] },
+    { label: 'BOD', color: '#9333ea', fields: ['inlet_bod', 'primary_bod', 'secondary_bod', 'sec_sed_bod', 'effluent_bod'] },
+    { label: 'COD', color: '#16a34a', fields: ['inlet_cod', 'primary_cod', 'secondary_cod', 'sec_sed_cod', 'effluent_cod'] },
+    { label: 'TSS', color: '#d97706', fields: ['inlet_tss', 'grit_tss', 'primary_tss', 'secondary_tss', 'sec_sed_tss', 'effluent_tss'] },
+    { label: 'FRC', color: '#0891b2', fields: ['effluent_frc'] },
+    { label: 'Flow', color: '#6b7280', fields: ['flow'] },
     { label: 'Power', color: '#374151', fields: ['power_nea', 'power_ge', 'power_total'] },
 ];
 
-// Missing-value groups (composite) — shown only when has_composite is true
+// Missing-value groups (composite) - shown only when has_composite is true
 const MISSING_GROUPS_COMP = [
-    { label: 'pH (Comp)',  color: '#93c5fd', fields: ['inlet_ph_comp',  'effluent_ph_comp']  },
+    { label: 'pH (Comp)', color: '#93c5fd', fields: ['inlet_ph_comp', 'effluent_ph_comp'] },
     { label: 'BOD (Comp)', color: '#c4b5fd', fields: ['inlet_bod_comp', 'effluent_bod_comp'] },
     { label: 'COD (Comp)', color: '#86efac', fields: ['inlet_cod_comp', 'effluent_cod_comp'] },
     { label: 'TSS (Comp)', color: '#fcd34d', fields: ['inlet_tss_comp', 'effluent_tss_comp'] },
 ];
 
 const COMPLIANCE_PARAMS = [
-    { key: 'effluent_ph',  label: 'pH',   type: 'range', min: 6.5, max: 8.0 },
-    { key: 'effluent_bod', label: 'BOD₅', type: 'max',   limit: 10 },
-    { key: 'effluent_cod', label: 'COD',  type: 'max',   limit: 250 },
-    { key: 'effluent_tss', label: 'TSS',  type: 'max',   limit: 10 },
+    { key: 'effluent_ph', label: 'pH', type: 'range', min: 6.5, max: 8.0 },
+    { key: 'effluent_bod', label: 'BOD₅', type: 'max', limit: 10 },
+    { key: 'effluent_cod', label: 'COD', type: 'max', limit: 250 },
+    { key: 'effluent_tss', label: 'TSS', type: 'max', limit: 10 },
 ];
 
 const DAY_COLORS = [
@@ -168,8 +176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Start in EDA view ────────────────────────────────────────────────────
     await initEdaView();
 
-    // ── Operational view setup (lazy — only wire selects, don't render yet) ──
-    const yearSelect  = document.getElementById('year-select');
+    // ── Operational view setup (lazy - only wire selects, don't render yet) ──
+    const yearSelect = document.getElementById('year-select');
     const monthSelect = document.getElementById('month-select');
 
     yearSelect.addEventListener('change', async () => {
@@ -232,14 +240,14 @@ function toggleComposite(canvasId) {
 
     // Re-render the affected chart
     const paramMap = {
-        'chart-ph':         () => { renderDailyTrend('chart-ph',  'ph',  monthData, 'pH');    initDayPicker('chart-ph',  monthData.days, monthData.month); },
-        'chart-bod':        () => { renderDailyTrend('chart-bod', 'bod', monthData, 'mg/L');  initDayPicker('chart-bod', monthData.days, monthData.month); },
-        'chart-cod':        () => { renderDailyTrend('chart-cod', 'cod', monthData, 'mg/L');  initDayPicker('chart-cod', monthData.days, monthData.month); },
-        'chart-tss':        () => { renderDailyTrend('chart-tss', 'tss', monthData, 'mg/L');  initDayPicker('chart-tss', monthData.days, monthData.month); },
-        'chart-monthly-ph':  () => { renderMonthlyParam('chart-monthly-ph',  'ph',  'pH',    monthData); initStagePicker('chart-monthly-ph',  MONTHLY_STAGE_SERIES['ph'].map(s => s.label),  'ph');  },
-        'chart-monthly-bod': () => { renderMonthlyParam('chart-monthly-bod', 'bod', 'mg/L',  monthData); initStagePicker('chart-monthly-bod', MONTHLY_STAGE_SERIES['bod'].map(s => s.label), 'bod'); },
-        'chart-monthly-cod': () => { renderMonthlyParam('chart-monthly-cod', 'cod', 'mg/L',  monthData); initStagePicker('chart-monthly-cod', MONTHLY_STAGE_SERIES['cod'].map(s => s.label), 'cod'); },
-        'chart-monthly-tss': () => { renderMonthlyParam('chart-monthly-tss', 'tss', 'mg/L',  monthData); initStagePicker('chart-monthly-tss', MONTHLY_STAGE_SERIES['tss'].map(s => s.label), 'tss'); },
+        'chart-ph': () => { renderDailyTrend('chart-ph', 'ph', monthData, 'pH'); initDayPicker('chart-ph', monthData.days, monthData.month); },
+        'chart-bod': () => { renderDailyTrend('chart-bod', 'bod', monthData, 'mg/L'); initDayPicker('chart-bod', monthData.days, monthData.month); },
+        'chart-cod': () => { renderDailyTrend('chart-cod', 'cod', monthData, 'mg/L'); initDayPicker('chart-cod', monthData.days, monthData.month); },
+        'chart-tss': () => { renderDailyTrend('chart-tss', 'tss', monthData, 'mg/L'); initDayPicker('chart-tss', monthData.days, monthData.month); },
+        'chart-monthly-ph': () => { renderMonthlyParam('chart-monthly-ph', 'ph', 'pH', monthData); initStagePicker('chart-monthly-ph', MONTHLY_STAGE_SERIES['ph'].map(s => s.label), 'ph'); },
+        'chart-monthly-bod': () => { renderMonthlyParam('chart-monthly-bod', 'bod', 'mg/L', monthData); initStagePicker('chart-monthly-bod', MONTHLY_STAGE_SERIES['bod'].map(s => s.label), 'bod'); },
+        'chart-monthly-cod': () => { renderMonthlyParam('chart-monthly-cod', 'cod', 'mg/L', monthData); initStagePicker('chart-monthly-cod', MONTHLY_STAGE_SERIES['cod'].map(s => s.label), 'cod'); },
+        'chart-monthly-tss': () => { renderMonthlyParam('chart-monthly-tss', 'tss', 'mg/L', monthData); initStagePicker('chart-monthly-tss', MONTHLY_STAGE_SERIES['tss'].map(s => s.label), 'tss'); },
     };
 
     if (paramMap[canvasId]) paramMap[canvasId]();
@@ -266,17 +274,17 @@ function renderAll(month) {
 
     updateCompToggles(!!data.has_composite);
 
-    renderDailyTrend('chart-ph',  'ph',  data, 'pH');    initDayPicker('chart-ph',  data.days, data.month);
-    renderDailyTrend('chart-bod', 'bod', data, 'mg/L');  initDayPicker('chart-bod', data.days, data.month);
-    renderDailyTrend('chart-cod', 'cod', data, 'mg/L');  initDayPicker('chart-cod', data.days, data.month);
-    renderDailyTrend('chart-tss', 'tss', data, 'mg/L');  initDayPicker('chart-tss', data.days, data.month);
+    renderDailyTrend('chart-ph', 'ph', data, 'pH'); initDayPicker('chart-ph', data.days, data.month);
+    renderDailyTrend('chart-bod', 'bod', data, 'mg/L'); initDayPicker('chart-bod', data.days, data.month);
+    renderDailyTrend('chart-cod', 'cod', data, 'mg/L'); initDayPicker('chart-cod', data.days, data.month);
+    renderDailyTrend('chart-tss', 'tss', data, 'mg/L'); initDayPicker('chart-tss', data.days, data.month);
 
     renderFlowChart(data);
     renderPowerChart(data);
     renderPowerFlowChart(data);
     renderMissingChart(data);
 
-    renderMonthlyParam('chart-monthly-ph',  'ph',  'pH',   data); initStagePicker('chart-monthly-ph',  MONTHLY_STAGE_SERIES['ph'].map(s => s.label),  'ph');
+    renderMonthlyParam('chart-monthly-ph', 'ph', 'pH', data); initStagePicker('chart-monthly-ph', MONTHLY_STAGE_SERIES['ph'].map(s => s.label), 'ph');
     renderMonthlyParam('chart-monthly-bod', 'bod', 'mg/L', data); initStagePicker('chart-monthly-bod', MONTHLY_STAGE_SERIES['bod'].map(s => s.label), 'bod');
     renderMonthlyParam('chart-monthly-cod', 'cod', 'mg/L', data); initStagePicker('chart-monthly-cod', MONTHLY_STAGE_SERIES['cod'].map(s => s.label), 'cod');
     renderMonthlyParam('chart-monthly-tss', 'tss', 'mg/L', data); initStagePicker('chart-monthly-tss', MONTHLY_STAGE_SERIES['tss'].map(s => s.label), 'tss');
@@ -371,7 +379,7 @@ function renderDailyTrend(canvasId, paramKey, monthData, yLabel) {
         };
         annotations['effluent_band'] = {
             type: 'box', yMin: 6.5, yMax: 8.0,
-            backgroundColor: 'rgba(124,58,237,0.08)', borderColor: 'rgba(124,58,237,0.6)', borderWidth: 1.5, borderDash: [5,3],
+            backgroundColor: 'rgba(124,58,237,0.08)', borderColor: 'rgba(124,58,237,0.6)', borderWidth: 1.5, borderDash: [5, 3],
         };
     } else {
         if (limitInfo.inlet.value !== null) {
@@ -934,15 +942,15 @@ function applyStageVisibility(canvasId) {
         const monthKey = document.getElementById('month-select').value;
         const hasComp = allData[monthKey]?.has_composite && compositeState[canvasId];
         const compCount = hasComp ? 2 : 0;
-        chart.setDatasetVisibility(seriesCount + compCount,     inletVisible);
+        chart.setDatasetVisibility(seriesCount + compCount, inletVisible);
         chart.setDatasetVisibility(seriesCount + compCount + 1, effluentVisible);
 
         const annotations = chart.options.plugins.annotation.annotations;
         if (paramKey === 'ph') {
-            if (annotations.inlet_band)    annotations.inlet_band.display    = inletVisible;
+            if (annotations.inlet_band) annotations.inlet_band.display = inletVisible;
             if (annotations.effluent_band) annotations.effluent_band.display = effluentVisible;
         } else {
-            if (annotations.inlet_limit)    annotations.inlet_limit.display    = inletVisible;
+            if (annotations.inlet_limit) annotations.inlet_limit.display = inletVisible;
             if (annotations.effluent_limit) annotations.effluent_limit.display = effluentVisible;
         }
     }
@@ -985,7 +993,7 @@ function renderComplianceGrid(monthData) {
         COMPLIANCE_PARAMS.forEach(param => {
             const val = day[param.key];
             if (val === null || val === undefined) {
-                html += '<td class="no-data">—</td>';
+                html += '<td class="no-data">-</td>';
             } else {
                 const pass = param.type === 'range'
                     ? val >= param.min && val <= param.max
@@ -1009,7 +1017,7 @@ function renderComplianceGrid(monthData) {
             return param.type === 'range' ? val >= param.min && val <= param.max : val <= param.limit;
         });
 
-        const withData  = results.filter(r => r !== null);
+        const withData = results.filter(r => r !== null);
         const passCount = withData.filter(Boolean).length;
         const pct = withData.length > 0 ? Math.round(passCount / withData.length * 100) : null;
 
@@ -1018,7 +1026,7 @@ function renderComplianceGrid(monthData) {
             .map(day => `${formatDateLong(day.date, monthData.month)}, ${monthData.year}`);
 
         const pctClass = pct === null ? 'cs-nodata' : pct === 100 ? 'cs-pass' : 'cs-fail';
-        const pctStr   = pct !== null ? `${pct}%` : '—';
+        const pctStr = pct !== null ? `${pct}%` : '-';
 
         summaryHtml += `<div class="compliance-summary-row">`;
         summaryHtml += `<span class="cs-label">${param.label}</span>`;
@@ -1045,8 +1053,8 @@ function renderEfficiencyChart(monthData) {
 
     const params = [
         { label: 'BOD₅', inKey: 'inlet_bod', outKey: 'effluent_bod', color: '#2563eb' },
-        { label: 'COD',  inKey: 'inlet_cod', outKey: 'effluent_cod', color: '#6b7280' },
-        { label: 'TSS',  inKey: 'inlet_tss', outKey: 'effluent_tss', color: '#1a1a1a' },
+        { label: 'COD', inKey: 'inlet_cod', outKey: 'effluent_cod', color: '#6b7280' },
+        { label: 'TSS', inKey: 'inlet_tss', outKey: 'effluent_tss', color: '#1a1a1a' },
     ];
 
     const datasets = params.map(p => {
@@ -1107,11 +1115,11 @@ function formatDateLong(dateStr, monthName) {
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let currentView = 'eda';
-let edaDays     = [];
-let edaCharts   = {};
+let edaDays = [];
+let edaCharts = {};
 
-const EDA_SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
-                          'Jul','Aug','Sep','Oct','Nov','Dec'];
+const EDA_SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const EDA_YEAR_COLORS = {
     2021: '#e41a1c', 2022: '#377eb8', 2023: '#4daf4a',
@@ -1122,23 +1130,23 @@ const EDA_YEAR_COLORS = {
 
 function switchToEda() {
     currentView = 'eda';
-    document.getElementById('eda-view').style.display          = 'block';
-    document.getElementById('operational-view').style.display  = 'none';
+    document.getElementById('eda-view').style.display = 'block';
+    document.getElementById('operational-view').style.display = 'none';
     document.getElementById('eda-controls-inline').style.display = '';
-    document.getElementById('op-controls-inline').style.display  = 'none';
-    document.getElementById('view-toggle-btn').textContent     = 'Operational Dashboard \u2192';
+    document.getElementById('op-controls-inline').style.display = 'none';
+    document.getElementById('view-toggle-btn').textContent = 'Operational Dashboard \u2192';
 }
 
 async function switchToOperational() {
     currentView = 'operational';
-    document.getElementById('eda-view').style.display          = 'none';
-    document.getElementById('operational-view').style.display  = 'block';
+    document.getElementById('eda-view').style.display = 'none';
+    document.getElementById('operational-view').style.display = 'block';
     document.getElementById('eda-controls-inline').style.display = 'none';
-    document.getElementById('op-controls-inline').style.display  = '';
-    document.getElementById('view-toggle-btn').textContent     = '\u2190 EDA Overview';
+    document.getElementById('op-controls-inline').style.display = '';
+    document.getElementById('view-toggle-btn').textContent = '\u2190 EDA Overview';
 
     // Load & render operational view if not done yet
-    const yearSelect  = document.getElementById('year-select');
+    const yearSelect = document.getElementById('year-select');
     const monthSelect = document.getElementById('month-select');
     if (Object.keys(allData).length === 0) {
         await loadAllData(yearSelect.value);
@@ -1180,13 +1188,15 @@ function edaMonthlyAvg(days, field) {
         if (d[field] !== null && d[field] !== undefined) groups[ym].push(d[field]);
     }
     const labels = Object.keys(groups).sort();
-    return { labels, values: labels.map(ym => {
-        const arr = groups[ym];
-        return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-    })};
+    return {
+        labels, values: labels.map(ym => {
+            const arr = groups[ym];
+            return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+        })
+    };
 }
 
-/** Seasonal average (by calendar month 1–12) across all years */
+/** Seasonal average (by calendar month 1-12) across all years */
 function edaSeasonalAvg(days, field) {
     const groups = Array.from({ length: 12 }, () => []);
     for (const d of days) {
@@ -1207,7 +1217,7 @@ function edaMissingPct(days, field) {
 /** Annual average for a specific year */
 function edaAnnualAvg(days, field, year) {
     const arr = days.filter(d => d._year === year && d[field] !== null && d[field] !== undefined)
-                    .map(d => d[field]);
+        .map(d => d[field]);
     return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 }
 
@@ -1220,10 +1230,10 @@ function edaFmtYM(ym) {
 // ─── Compliance helper ─────────────────────────────────────────────────────────
 
 const EDA_COMPLIANCE = [
-    { key: 'effluent_ph',  label: 'pH',  type: 'range', min: 6.5, max: 8.0  },
-    { key: 'effluent_bod', label: 'BOD', type: 'max',   limit: 10            },
-    { key: 'effluent_cod', label: 'COD', type: 'max',   limit: 250           },
-    { key: 'effluent_tss', label: 'TSS', type: 'max',   limit: 10            },
+    { key: 'effluent_ph', label: 'pH', type: 'range', min: 6.5, max: 8.0 },
+    { key: 'effluent_bod', label: 'BOD', type: 'max', limit: 10 },
+    { key: 'effluent_cod', label: 'COD', type: 'max', limit: 250 },
+    { key: 'effluent_tss', label: 'TSS', type: 'max', limit: 10 },
 ];
 
 function edaCompliancePct(days, year, param) {
@@ -1265,7 +1275,7 @@ function renderEdaMissing(days) {
     // Sort descending
     const order = pcts.map((v, i) => i).sort((a, b) => pcts[b] - pcts[a]);
     const sortedLabels = order.map(i => labels[i]);
-    const sortedPcts   = order.map(i => pcts[i]);
+    const sortedPcts = order.map(i => pcts[i]);
     const colors = sortedPcts.map(p => {
         if (p >= 50) return '#e11d48';
         if (p >= 20) return '#d97706';
@@ -1295,8 +1305,10 @@ function renderEdaMissing(days) {
                 tooltip: { callbacks: { label: i => ` ${i.parsed.x.toFixed(1)}% missing` } },
             },
             scales: {
-                x: { min: 0, max: dynamicMax, title: { display: true, text: '% Missing', font: { size: 11 } },
-                     grid: { color: '#f0f0f0' } },
+                x: {
+                    min: 0, max: dynamicMax, title: { display: true, text: '% Missing', font: { size: 11 } },
+                    grid: { color: '#f0f0f0' }
+                },
                 y: { grid: { display: false }, ticks: { font: { size: 10 } } },
             },
         },
@@ -1340,24 +1352,24 @@ function createHatchPattern(color) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = color + '33';
     ctx.fillRect(0, 0, 8, 8);
-    
+
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, 8);
     ctx.lineTo(8, 0);
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.moveTo(-1, 1);
     ctx.lineTo(1, -1);
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.moveTo(7, 9);
     ctx.lineTo(9, 7);
     ctx.stroke();
-    
+
     return ctx.createPattern(canvas, 'repeat');
 }
 
@@ -1521,29 +1533,39 @@ function renderEdaFlow(days) {
     const ctx = document.getElementById('eda-flow').getContext('2d');
     edaCharts['eda-flow'] = new Chart(ctx, {
         type: 'line',
-        data: { labels: labels.map(edaFmtYM), datasets: [
-            {
-                label: 'Avg Flow (MLD)', data: values,
-                borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.07)',
-                fill: true, borderWidth: 2,
-                pointRadius: 2, tension: 0.3, spanGaps: true,
-            },
-            {
-                label: 'Capacity: 32.4 MLD', data: [],
-                borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                pointRadius: 0, isLimit: true,
-            },
-        ]},
+        data: {
+            labels: labels.map(edaFmtYM), datasets: [
+                {
+                    label: 'Avg Flow (MLD)', data: values,
+                    borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.07)',
+                    fill: true, borderWidth: 2,
+                    pointRadius: 2, tension: 0.3, spanGaps: true,
+                },
+                {
+                    label: 'Capacity: 32.4 MLD', data: [],
+                    borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                    pointRadius: 0, isLimit: true,
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'top',
-                    labels: { filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
-                              font: { size: 11 }, boxWidth: 24 } },
-                annotation: { annotations: { cap: {
-                    type: 'line', yMin: 32.4, yMax: 32.4,
-                    borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                }}},
+                legend: {
+                    display: true, position: 'top',
+                    labels: {
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        font: { size: 11 }, boxWidth: 24
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        cap: {
+                            type: 'line', yMin: 32.4, yMax: 32.4,
+                            borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                        }
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12, autoSkip: true } },
@@ -1560,29 +1582,39 @@ function renderEdaPower(days) {
     const ctx = document.getElementById('eda-power').getContext('2d');
     edaCharts['eda-power'] = new Chart(ctx, {
         type: 'line',
-        data: { labels: labels.map(edaFmtYM), datasets: [
-            {
-                label: 'Avg Power/Flow (KW/ML)', data: values,
-                borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.06)',
-                fill: true, borderWidth: 2,
-                pointRadius: 2, tension: 0.3, spanGaps: true,
-            },
-            {
-                label: 'Baseline: 482.02 KW/ML', data: [],
-                borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                pointRadius: 0, isLimit: true,
-            },
-        ]},
+        data: {
+            labels: labels.map(edaFmtYM), datasets: [
+                {
+                    label: 'Avg Power/Flow (KW/ML)', data: values,
+                    borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.06)',
+                    fill: true, borderWidth: 2,
+                    pointRadius: 2, tension: 0.3, spanGaps: true,
+                },
+                {
+                    label: 'Baseline: 482.02 KW/ML', data: [],
+                    borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                    pointRadius: 0, isLimit: true,
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'top',
-                    labels: { filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
-                              font: { size: 11 }, boxWidth: 24 } },
-                annotation: { annotations: { baseline: {
-                    type: 'line', yMin: 482.02, yMax: 482.02,
-                    borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                }}},
+                legend: {
+                    display: true, position: 'top',
+                    labels: {
+                        filter: (item, data) => data.datasets[item.datasetIndex]?.isLimit === true,
+                        font: { size: 11 }, boxWidth: 24
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        baseline: {
+                            type: 'line', yMin: 482.02, yMax: 482.02,
+                            borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                        }
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12, autoSkip: true } },
@@ -1602,27 +1634,39 @@ function renderEdaInlet(days) {
     const ctx = document.getElementById('eda-inlet').getContext('2d');
     edaCharts['eda-inlet'] = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets: [
-            { label: 'BOD (mg/L)',  data: bod.values, borderColor: '#2563eb', backgroundColor: 'transparent',
-              borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'COD/5 (mg/L)', data: cod.values.map(v => v !== null ? v / 5 : null),
-              borderColor: '#9333ea', backgroundColor: 'transparent',
-              borderWidth: 1.5, borderDash: [4, 3], pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'TSS (mg/L)',  data: tss.values, borderColor: '#d97706', backgroundColor: 'transparent',
-              borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true },
-        ]},
+        data: {
+            labels, datasets: [
+                {
+                    label: 'BOD (mg/L)', data: bod.values, borderColor: '#2563eb', backgroundColor: 'transparent',
+                    borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'COD/5 (mg/L)', data: cod.values.map(v => v !== null ? v / 5 : null),
+                    borderColor: '#9333ea', backgroundColor: 'transparent',
+                    borderWidth: 1.5, borderDash: [4, 3], pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'TSS (mg/L)', data: tss.values, borderColor: '#d97706', backgroundColor: 'transparent',
+                    borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 20 } },
-                tooltip: { callbacks: { label: item => {
-                    const label = item.dataset.label;
-                    const v = item.parsed.y;
-                    if (v === null || isNaN(v)) return `${label}: ⚠ No data`;
-                    // COD was divided by 5 for display
-                    const raw = label.includes('COD') ? (v * 5).toFixed(1) : v.toFixed(1);
-                    return label.includes('COD') ? `COD: ${raw} mg/L (÷5 for scale)` : `${label}: ${raw}`;
-                }}},
+                tooltip: {
+                    callbacks: {
+                        label: item => {
+                            const label = item.dataset.label;
+                            const v = item.parsed.y;
+                            if (v === null || isNaN(v)) return `${label}: ⚠ No data`;
+                            // COD was divided by 5 for display
+                            const raw = label.includes('COD') ? (v * 5).toFixed(1) : v.toFixed(1);
+                            return label.includes('COD') ? `COD: ${raw} mg/L (÷5 for scale)` : `${label}: ${raw}`;
+                        }
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12, autoSkip: true } },
@@ -1642,39 +1686,57 @@ function renderEdaEffluent(days) {
     const ctx = document.getElementById('eda-effluent').getContext('2d');
     edaCharts['eda-effluent'] = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets: [
-            { label: 'BOD (mg/L)',  data: bod.values, borderColor: '#2563eb', backgroundColor: 'transparent',
-              borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'COD/10 (mg/L)', data: cod.values.map(v => v !== null ? v / 10 : null),
-              borderColor: '#9333ea', backgroundColor: 'transparent',
-              borderWidth: 1.5, borderDash: [4, 3], pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'TSS (mg/L)',  data: tss.values, borderColor: '#d97706', backgroundColor: 'transparent',
-              borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            {
-                label: 'BOD/TSS limit: 10 mg/L', data: [],
-                borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                pointRadius: 0, isLimit: true,
-            },
-        ]},
+        data: {
+            labels, datasets: [
+                {
+                    label: 'BOD (mg/L)', data: bod.values, borderColor: '#2563eb', backgroundColor: 'transparent',
+                    borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'COD/10 (mg/L)', data: cod.values.map(v => v !== null ? v / 10 : null),
+                    borderColor: '#9333ea', backgroundColor: 'transparent',
+                    borderWidth: 1.5, borderDash: [4, 3], pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'TSS (mg/L)', data: tss.values, borderColor: '#d97706', backgroundColor: 'transparent',
+                    borderWidth: 2, pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'BOD/TSS limit: 10 mg/L', data: [],
+                    borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                    pointRadius: 0, isLimit: true,
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'top',
-                    labels: { filter: (item, data) => {
-                        const ds = data.datasets[item.datasetIndex];
-                        return ds?.isLimit === true || !ds?.isLimit;
-                    }, font: { size: 11 }, boxWidth: 20 } },
-                tooltip: { callbacks: { label: item => {
-                    if (item.dataset.isLimit) return null;
-                    const label = item.dataset.label;
-                    const v = item.parsed.y;
-                    if (v === null || isNaN(v)) return `${label}: ⚠ No data`;
-                    const raw = label.includes('COD') ? (v * 10).toFixed(1) : v.toFixed(1);
-                    return label.includes('COD') ? `COD: ${raw} mg/L (÷10 for scale)` : `${label}: ${raw}`;
-                }}},
-                annotation: { annotations: {
-                    bod_lim: { type: 'line', yMin: 10, yMax: 10, borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4] },
-                }},
+                legend: {
+                    display: true, position: 'top',
+                    labels: {
+                        filter: (item, data) => {
+                            const ds = data.datasets[item.datasetIndex];
+                            return ds?.isLimit === true || !ds?.isLimit;
+                        }, font: { size: 11 }, boxWidth: 20
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: item => {
+                            if (item.dataset.isLimit) return null;
+                            const label = item.dataset.label;
+                            const v = item.parsed.y;
+                            if (v === null || isNaN(v)) return `${label}: ⚠ No data`;
+                            const raw = label.includes('COD') ? (v * 10).toFixed(1) : v.toFixed(1);
+                            return label.includes('COD') ? `COD: ${raw} mg/L (÷10 for scale)` : `${label}: ${raw}`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        bod_lim: { type: 'line', yMin: 10, yMax: 10, borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4] },
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12, autoSkip: true } },
@@ -1716,32 +1778,48 @@ function renderEdaRemoval(days) {
     const ctx = document.getElementById('eda-removal').getContext('2d');
     edaCharts['eda-removal'] = new Chart(ctx, {
         type: 'line',
-        data: { labels: labels.map(edaFmtYM), datasets: [
-            { label: 'BOD %', data: labels.map(ym => avg(groups[ym].bod)),
-              borderColor: '#2563eb', backgroundColor: 'transparent', borderWidth: 2,
-              pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'COD %', data: labels.map(ym => avg(groups[ym].cod)),
-              borderColor: '#9333ea', backgroundColor: 'transparent', borderWidth: 2,
-              pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: 'TSS %', data: labels.map(ym => avg(groups[ym].tss)),
-              borderColor: '#d97706', backgroundColor: 'transparent', borderWidth: 2,
-              pointRadius: 1.5, tension: 0.3, spanGaps: true },
-            { label: '95% target', data: [], borderColor: '#16a34a', borderWidth: 1.5,
-              borderDash: [6, 4], pointRadius: 0, isLimit: true },
-        ]},
+        data: {
+            labels: labels.map(edaFmtYM), datasets: [
+                {
+                    label: 'BOD %', data: labels.map(ym => avg(groups[ym].bod)),
+                    borderColor: '#2563eb', backgroundColor: 'transparent', borderWidth: 2,
+                    pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'COD %', data: labels.map(ym => avg(groups[ym].cod)),
+                    borderColor: '#9333ea', backgroundColor: 'transparent', borderWidth: 2,
+                    pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: 'TSS %', data: labels.map(ym => avg(groups[ym].tss)),
+                    borderColor: '#d97706', backgroundColor: 'transparent', borderWidth: 2,
+                    pointRadius: 1.5, tension: 0.3, spanGaps: true
+                },
+                {
+                    label: '95% target', data: [], borderColor: '#16a34a', borderWidth: 1.5,
+                    borderDash: [6, 4], pointRadius: 0, isLimit: true
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 20 } },
-                tooltip: { callbacks: { label: i => {
-                    if (i.dataset.isLimit) return null;
-                    const v = i.parsed.y;
-                    return v === null || isNaN(v) ? `${i.dataset.label}: ⚠ No data`
-                                                  : `${i.dataset.label}: ${v.toFixed(1)}%`;
-                }}},
-                annotation: { annotations: {
-                    t95: { type: 'line', yMin: 95, yMax: 95, borderColor: '#16a34a', borderWidth: 1.5, borderDash: [6, 4] },
-                }},
+                tooltip: {
+                    callbacks: {
+                        label: i => {
+                            if (i.dataset.isLimit) return null;
+                            const v = i.parsed.y;
+                            return v === null || isNaN(v) ? `${i.dataset.label}: ⚠ No data`
+                                : `${i.dataset.label}: ${v.toFixed(1)}%`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        t95: { type: 'line', yMin: 95, yMax: 95, borderColor: '#16a34a', borderWidth: 1.5, borderDash: [6, 4] },
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12, autoSkip: true } },
@@ -1775,18 +1853,26 @@ function renderEdaCompliance(days) {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-                tooltip: { callbacks: { label: i => {
-                    const v = i.parsed.y;
-                    return v === null ? `${i.dataset.label}: No data` : `${i.dataset.label}: ${v.toFixed(1)}%`;
-                }}},
-                annotation: { annotations: {
-                    full: { type: 'line', yMin: 80, yMax: 80, borderColor: '#6b7280', borderWidth: 1, borderDash: [4, 3] },
-                }},
+                tooltip: {
+                    callbacks: {
+                        label: i => {
+                            const v = i.parsed.y;
+                            return v === null ? `${i.dataset.label}: No data` : `${i.dataset.label}: ${v.toFixed(1)}%`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        full: { type: 'line', yMin: 80, yMax: 80, borderColor: '#6b7280', borderWidth: 1, borderDash: [4, 3] },
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                y: { min: 0, max: 100, title: { display: true, text: '% Days Compliant', font: { size: 11 } },
-                     grid: { color: '#f0f0f0' } },
+                y: {
+                    min: 0, max: 100, title: { display: true, text: '% Days Compliant', font: { size: 11 } },
+                    grid: { color: '#f0f0f0' }
+                },
             },
         },
     });
@@ -1795,47 +1881,53 @@ function renderEdaCompliance(days) {
 // 8. Seasonal pattern (flow + power/flow by calendar month)
 function renderEdaSeasonal(days) {
     edaDestroy('eda-seasonal');
-    const flowSeasonal  = edaSeasonalAvg(days, 'flow');
+    const flowSeasonal = edaSeasonalAvg(days, 'flow');
     const powerSeasonal = edaSeasonalAvg(days, 'power_per_flow');
     const ctx = document.getElementById('eda-seasonal').getContext('2d');
     edaCharts['eda-seasonal'] = new Chart(ctx, {
         type: 'bar',
-        data: { labels: EDA_SHORT_MONTHS, datasets: [
-            {
-                label: 'Avg Flow (MLD)',
-                data: flowSeasonal,
-                backgroundColor: '#2563eb55',
-                borderColor: '#2563eb',
-                borderWidth: 1.5,
-                borderRadius: 3,
-                yAxisID: 'yFlow',
-            },
-            {
-                label: 'Avg Power/Flow (KW/ML)',
-                data: powerSeasonal,
-                type: 'line',
-                borderColor: '#7c3aed',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: 3,
-                tension: 0.3,
-                yAxisID: 'yPower',
-            },
-        ]},
+        data: {
+            labels: EDA_SHORT_MONTHS, datasets: [
+                {
+                    label: 'Avg Flow (MLD)',
+                    data: flowSeasonal,
+                    backgroundColor: '#2563eb55',
+                    borderColor: '#2563eb',
+                    borderWidth: 1.5,
+                    borderRadius: 3,
+                    yAxisID: 'yFlow',
+                },
+                {
+                    label: 'Avg Power/Flow (KW/ML)',
+                    data: powerSeasonal,
+                    type: 'line',
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.3,
+                    yAxisID: 'yPower',
+                },
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 16 } },
-                tooltip: { callbacks: { label: i => {
-                    const v = i.parsed.y;
-                    const unit = i.dataset.yAxisID === 'yFlow' ? 'MLD' : 'KW/ML';
-                    return `${i.dataset.label}: ${v !== null && !isNaN(v) ? v.toFixed(1) : '—'} ${unit}`;
-                }}},
+                tooltip: {
+                    callbacks: {
+                        label: i => {
+                            const v = i.parsed.y;
+                            const unit = i.dataset.yAxisID === 'yFlow' ? 'MLD' : 'KW/ML';
+                            return `${i.dataset.label}: ${v !== null && !isNaN(v) ? v.toFixed(1) : '-'} ${unit}`;
+                        }
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                yFlow:  { position: 'left',  title: { display: true, text: 'MLD',    font: { size: 11 } }, grace: '5%', grid: { color: '#f0f0f0' } },
-                yPower: { position: 'right', title: { display: true, text: 'KW/ML',  font: { size: 11 } }, grace: '5%', grid: { display: false } },
+                yFlow: { position: 'left', title: { display: true, text: 'MLD', font: { size: 11 } }, grace: '5%', grid: { color: '#f0f0f0' } },
+                yPower: { position: 'right', title: { display: true, text: 'KW/ML', font: { size: 11 } }, grace: '5%', grid: { display: false } },
             },
         },
     });
@@ -1846,11 +1938,11 @@ function renderEdaAnnual(days) {
     edaDestroy('eda-annual');
     const years = [2020, 2021, 2022, 2023, 2024, 2025];
     const params = [
-        { key: 'inlet_bod',    label: 'Inlet BOD',    limit: 300  },
-        { key: 'inlet_tss',    label: 'Inlet TSS',    limit: 400  },
-        { key: 'effluent_bod', label: 'Effluent BOD', limit: 10   },
-        { key: 'effluent_cod', label: 'Effluent COD', limit: 250  },
-        { key: 'effluent_tss', label: 'Effluent TSS', limit: 10   },
+        { key: 'inlet_bod', label: 'Inlet BOD', limit: 300 },
+        { key: 'inlet_tss', label: 'Inlet TSS', limit: 400 },
+        { key: 'effluent_bod', label: 'Effluent BOD', limit: 10 },
+        { key: 'effluent_cod', label: 'Effluent COD', limit: 250 },
+        { key: 'effluent_tss', label: 'Effluent TSS', limit: 10 },
     ];
     const paramColors = ['#2563eb', '#0891b2', '#16a34a', '#9333ea', '#d97706'];
     const ctx = document.getElementById('eda-annual').getContext('2d');
@@ -1874,23 +1966,33 @@ function renderEdaAnnual(days) {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-                tooltip: { callbacks: { label: i => {
-                    const v = i.parsed.y;
-                    const p = params[i.datasetIndex];
-                    const raw = v !== null ? (v / 100 * p.limit).toFixed(1) : '—';
-                    return v === null ? `${i.dataset.label}: No data`
-                                     : `${i.dataset.label}: ${v.toFixed(1)}% of limit (${raw} mg/L)`;
-                }}},
-                annotation: { annotations: {
-                    limit100: { type: 'line', yMin: 100, yMax: 100,
-                                borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
-                                label: { content: 'Control limit', display: true, position: 'end', font: { size: 10 } } },
-                }},
+                tooltip: {
+                    callbacks: {
+                        label: i => {
+                            const v = i.parsed.y;
+                            const p = params[i.datasetIndex];
+                            const raw = v !== null ? (v / 100 * p.limit).toFixed(1) : '-';
+                            return v === null ? `${i.dataset.label}: No data`
+                                : `${i.dataset.label}: ${v.toFixed(1)}% of limit (${raw} mg/L)`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        limit100: {
+                            type: 'line', yMin: 100, yMax: 100,
+                            borderColor: '#dc2626', borderWidth: 1.5, borderDash: [6, 4],
+                            label: { content: 'Control limit', display: true, position: 'end', font: { size: 10 } }
+                        },
+                    }
+                },
             },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                y: { min: 0, title: { display: true, text: '% of Control Limit', font: { size: 11 } },
-                     grid: { color: '#f0f0f0' } },
+                y: {
+                    min: 0, title: { display: true, text: '% of Control Limit', font: { size: 11 } },
+                    grid: { color: '#f0f0f0' }
+                },
             },
         },
     });

@@ -1,8 +1,8 @@
 """
-non_linear_modeling_exp4_s2.py — RF, GB, XGBoost on Experiment 4 Sub-2 subsets.
+non_linear_modeling_exp4_s2.py - RF, GB, XGBoost on Experiment 4 Sub-2 subsets.
 
 Experiment 4 Phase 2: iterative VIF pruning (threshold=10) applied to the
-Exp4-S1 feature pool. Surviving features: 5–10 per target (all pH features,
+Exp4-S1 feature pool. Surviving features: 5-10 per target (all pH features,
 MLSS, Inlet BOD/COD, and one of Flow/Power dropped).
 
 Row gain vs Exp4-S1: +47 to +293 rows (removed high-missingness correlated
@@ -158,12 +158,12 @@ def train_one(experiment, name, subset_path, features, target,
 
     test = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
-        print(f"    SKIP — no test rows for {TEST_YEAR}"); return None, None
+        print(f"    SKIP - no test rows for {TEST_YEAR}"); return None, None
 
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} — tuning...",
+    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} - tuning...",
           end="", flush=True)
 
     search = search_factory()
@@ -222,7 +222,7 @@ def run_model(model_tag, search_factory):
     os.makedirs(os.path.join(model_dir, "plots"),  exist_ok=True)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} Exp4-S2 — run {run}")
+    print(f"  {model_tag} Exp4-S2 - run {run}")
     print(f"{'='*65}")
 
     all_rows = []
@@ -230,7 +230,7 @@ def run_model(model_tag, search_factory):
     for experiment, name, subset_path, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
-            print(f"    SKIP — file not found: {subset_path}"); continue
+            print(f"    SKIP - file not found: {subset_path}"); continue
 
         df_peek  = pd.read_excel(subset_path, nrows=0)
         features = infer_features(df_peek, target)

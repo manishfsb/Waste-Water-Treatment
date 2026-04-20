@@ -1,26 +1,26 @@
 """
-non_linear_modeling.py — Unified tree-ensemble training with hyperparameter tuning.
+non_linear_modeling.py - Unified tree-ensemble training with hyperparameter tuning.
 
 Trains Random Forest, Gradient Boosting, and XGBoost using the same CV protocol
 as linear_modeling.py (GridSearchCV / TimeSeriesSplit n_splits=3, scored on
 neg_root_mean_squared_error) for a fair apples-to-apples comparison.
 
-  Experiment 1          — Inlet features only          (grab + composite)
-  Experiment 2 Sub-1    — Secondary features only       (grab + composite)
-  Experiment 2 Sub-2    — Inlet + Secondary features    (grab + composite)
+  Experiment 1          - Inlet features only          (grab + composite)
+  Experiment 2 Sub-1    - Secondary features only       (grab + composite)
+  Experiment 2 Sub-2    - Inlet + Secondary features    (grab + composite)
 
-Train = 2020–2024 (2020 rows included where available)  |  Test = 2025
+Train = 2020-2024 (2020 rows included where available)  |  Test = 2025
 
 Tuned parameters (via cross-validation):
-  RF  — max_depth [4,6,8,None], min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
-  GB  — max_depth [2,3,4,5],    min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
-  XGB — max_depth [2,3,4,5],    min_child_weight [5,10,20],
+  RF  - max_depth [4,6,8,None], min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
+  GB  - max_depth [2,3,4,5],    min_samples_leaf [5,10,20]         GridSearchCV  (12 combos)
+  XGB - max_depth [2,3,4,5],    min_child_weight [5,10,20],
          reg_alpha [0,0.1,1],    reg_lambda [0.5,1,5]              RandomizedSearchCV (n_iter=30)
 
 Fixed (architectural / learning-rate schedule):
-  All — n_estimators=300
-  GB/XGB — learning_rate=0.05, subsample=0.8
-  XGB    — colsample_bytree=0.8
+  All - n_estimators=300
+  GB/XGB - learning_rate=0.05, subsample=0.8
+  XGB    - colsample_bytree=0.8
 
 Outputs per model (rf / gb / xgb):
   non_linear_modeling/{model}/results.xlsx
@@ -119,7 +119,7 @@ S2P2_COMP = COMP_INLET + SEC_COLS + COMMON
 # ── Model registry ─────────────────────────────────────────────────────────────
 # (experiment_label, model_name, subset_path, features, target)
 REGISTRY = [
-    # Experiment 1 — grab
+    # Experiment 1 - grab
     ("Experiment 1", "stage1_grab_BOD", _sub("experiment1", "stage1_grab_BOD"),
      S1_GRAB, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 1", "stage1_grab_COD", _sub("experiment1", "stage1_grab_COD"),
@@ -128,7 +128,7 @@ REGISTRY = [
      S1_GRAB, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 1", "stage1_grab_pH",  _sub("experiment1", "stage1_grab_pH"),
      S1_GRAB, "Effluent pH (Grab)"),
-    # Experiment 1 — composite
+    # Experiment 1 - composite
     ("Experiment 1", "stage1_comp_BOD", _sub("experiment1", "stage1_comp_BOD"),
      S1_COMP, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 1", "stage1_comp_COD", _sub("experiment1", "stage1_comp_COD"),
@@ -137,7 +137,7 @@ REGISTRY = [
      S1_COMP, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 1", "stage1_comp_pH",  _sub("experiment1", "stage1_comp_pH"),
      S1_COMP, "Effluent pH (Composite)"),
-    # Experiment 2 Sub-1 — grab
+    # Experiment 2 Sub-1 - grab
     ("Experiment 2 Sub-1", "stage2_p1_grab_BOD",
      _sub("experiment2_s1","stage2_p1_grab_BOD"), S2P1, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_COD",
@@ -146,7 +146,7 @@ REGISTRY = [
      _sub("experiment2_s1","stage2_p1_grab_TSS"), S2P1, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_pH",
      _sub("experiment2_s1","stage2_p1_grab_pH"),  S2P1, "Effluent pH (Grab)"),
-    # Experiment 2 Sub-1 — composite
+    # Experiment 2 Sub-1 - composite
     ("Experiment 2 Sub-1", "stage2_p1_comp_BOD",
      _sub("experiment2_s1","stage2_p1_comp_BOD"), S2P1, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_COD",
@@ -155,7 +155,7 @@ REGISTRY = [
      _sub("experiment2_s1","stage2_p1_comp_TSS"), S2P1, "Effluent TSS (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_pH",
      _sub("experiment2_s1","stage2_p1_comp_pH"),  S2P1, "Effluent pH (Composite)"),
-    # Experiment 2 Sub-2 — grab
+    # Experiment 2 Sub-2 - grab
     ("Experiment 2 Sub-2", "stage2_p2_grab_BOD",
      _sub("experiment2_s2","stage2_p2_grab_BOD"), S2P2_GRAB, "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_COD",
@@ -164,7 +164,7 @@ REGISTRY = [
      _sub("experiment2_s2","stage2_p2_grab_TSS"), S2P2_GRAB, "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_pH",
      _sub("experiment2_s2","stage2_p2_grab_pH"),  S2P2_GRAB, "Effluent pH (Grab)"),
-    # Experiment 2 Sub-2 — composite
+    # Experiment 2 Sub-2 - composite
     ("Experiment 2 Sub-2", "stage2_p2_comp_BOD",
      _sub("experiment2_s2","stage2_p2_comp_BOD"), S2P2_COMP, "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "stage2_p2_comp_COD",
@@ -242,7 +242,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS[model_tag], edgecolor="white")
     ax.set_xlabel("Feature importance (impurity)", fontsize=9)
-    ax.set_title(f"{model_tag} | {name}\nFeature importance — best-CV model (run {run})", fontsize=10)
+    ax.set_title(f"{model_tag} | {name}\nFeature importance - best-CV model (run {run})", fontsize=10)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
@@ -266,13 +266,13 @@ def train_one(experiment, name, subset_path, features, target,
 
     test = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
-        print(f"    SKIP — no test rows for {TEST_YEAR}")
+        print(f"    SKIP - no test rows for {TEST_YEAR}")
         return None, None
 
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    n_train={len(train)} n_test={len(test)} — tuning...", end="", flush=True)
+    print(f"    n_train={len(train)} n_test={len(test)} - tuning...", end="", flush=True)
 
     # ── Hyperparameter search ─────────────────────────────────────────────────
     search = search_factory()
@@ -335,7 +335,7 @@ def run_model(model_tag, search_factory):
     run        = _run_number(model_dir)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} — run {run}  (tuned via GridSearchCV / TimeSeriesSplit n=3)")
+    print(f"  {model_tag} - run {run}  (tuned via GridSearchCV / TimeSeriesSplit n=3)")
     print(f"{'='*65}")
 
     all_rows  = []
@@ -344,7 +344,7 @@ def run_model(model_tag, search_factory):
     for experiment, name, subset_path, features, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
-            print(f"    SKIP — file not found: {subset_path}"); continue
+            print(f"    SKIP - file not found: {subset_path}"); continue
 
         row, plots = train_one(experiment, name, subset_path, features, target,
                                model_tag, search_factory, run, model_dir)

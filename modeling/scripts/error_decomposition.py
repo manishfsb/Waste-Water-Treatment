@@ -1,5 +1,5 @@
 """
-error_decomposition.py — Decompose 2025 residuals by operational regime.
+error_decomposition.py - Decompose 2025 residuals by operational regime.
 
 For each target we take the stored Phase 9 Voting predictions from the
 Experiment 3 Sub-2 dataset files (column `predicted_Voting_run_1`) and
@@ -10,14 +10,14 @@ decompose 2025 residuals along four regime axes:
   3. Season             (DJF / MAM / JJA / SON)
   4. Inlet load         (quartiles of upstream Inlet BOD on TRAINING set)
 
-The regime thresholds are fit ONLY on training data and applied to 2025 —
+The regime thresholds are fit ONLY on training data and applied to 2025 -
 this prevents regime definitions from being biased by 2025's own distribution.
 
 For each cell we report n, MAE, RMSE, mean bias, and naive-R²
 (1 − SSE/SST where SST uses the per-cell mean of y_true).
 The aim is operational: identify whether model failure concentrates in
 a handful of regimes (e.g. high-flow storm days, weekends, specific months)
-rather than being uniform — which reframes "Comp COD is broken" as
+rather than being uniform - which reframes "Comp COD is broken" as
 "Comp COD is broken specifically under regime X".
 
 Outputs:
@@ -55,7 +55,7 @@ TARGETS = [
     ("s2_stage3_comp_pH",  "Effluent pH (Composite)",        "Inlet pH (Composite)"),
 ]
 
-MODEL_COL = "predicted_Voting_run_1"     # Phase 9 ensemble artefact — present in all s2 files
+MODEL_COL = "predicted_Voting_run_1"     # Phase 9 ensemble artefact - present in all s2 files
 SEASON_MAP = {12:"DJF",1:"DJF",2:"DJF", 3:"MAM",4:"MAM",5:"MAM",
               6:"JJA",7:"JJA",8:"JJA",  9:"SON",10:"SON",11:"SON"}
 
@@ -179,13 +179,13 @@ def decompose_target(name: str, target: str, inlet_col: str) -> pd.DataFrame:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _fmt(v, d=3):
-    if pd.isna(v): return "—"
+    if pd.isna(v): return "-"
     if isinstance(v, (int, np.integer)): return str(int(v))
     return f"{v:.{d}f}"
 
 
 def _bias_color(bias, overall_mae):
-    """Red if |bias| exceeds half the overall MAE — systematic shift."""
+    """Red if |bias| exceeds half the overall MAE - systematic shift."""
     if pd.isna(bias) or pd.isna(overall_mae) or overall_mae == 0:
         return ""
     return "color:#e74c3c;font-weight:600" if abs(bias) > 0.5 * overall_mae else ""
@@ -219,15 +219,15 @@ def render_html(all_results: pd.DataFrame) -> str:
 
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
-        "<title>2025 Residuals — Regime Decomposition</title>",
+        "<title>2025 Residuals - Regime Decomposition</title>",
         f"<style>{css}</style></head><body><div class='container'>",
         "<h1>2025 Residual Decomposition by Operational Regime</h1>",
         f"<p class='note'>Generated {ts}. Model: <code>{MODEL_COL}</code> "
         "(Phase 9 Voting = ElNet+RF+XGB). Quartile thresholds fitted on "
-        "training years (2021–2024) and applied to 2025.</p>",
+        "training years (2021-2024) and applied to 2025.</p>",
         "<div class='rule-card note'>",
         "<strong>How to read:</strong> The OVERALL row is the baseline. "
-        "Cells where MAE is &gt; 1.75× baseline are red — error concentrates "
+        "Cells where MAE is &gt; 1.75× baseline are red - error concentrates "
         "in that regime. Bias coloured when |bias| &gt; 0.5 × overall MAE "
         "(systematic over/under-prediction).</div>",
     ]
@@ -296,8 +296,8 @@ def section_html(all_results: pd.DataFrame) -> str:
     note = (
         "<p style='color:var(--text-muted);font-size:12px;margin:0 0 12px'>"
         f"Model: <code>{MODEL_COL}</code> (Phase 9 Voting = ElNet+RF+XGB). "
-        "Quartile thresholds fitted on training years (2021–2024) and applied to 2025. "
-        "Cells where MAE is &gt;1.75× baseline are red — error concentrates in that regime. "
+        "Quartile thresholds fitted on training years (2021-2024) and applied to 2025. "
+        "Cells where MAE is &gt;1.75× baseline are red - error concentrates in that regime. "
         "Bias coloured when |bias| &gt; 0.5 × overall MAE (systematic over/under-prediction).</p>"
     )
 

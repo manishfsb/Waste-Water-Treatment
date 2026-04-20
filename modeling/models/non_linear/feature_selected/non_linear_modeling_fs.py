@@ -1,5 +1,5 @@
 """
-non_linear_modeling_fs.py — RF, GB, XGBoost on feature-selected subsets.
+non_linear_modeling_fs.py - RF, GB, XGBoost on feature-selected subsets.
 
 Identical training protocol to non_linear_modeling_baseline/non_linear_modeling.py.
 Differences:
@@ -72,7 +72,7 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 # ── Registry ───────────────────────────────────────────────────────────────────
 # (experiment_label, model_name, subset_path, target)
 REGISTRY = [
-    # Experiment 1 — Grab
+    # Experiment 1 - Grab
     ("Experiment 1", "stage1_grab_BOD",
      _sub("experiment1_fs", "stage1_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
     ("Experiment 1", "stage1_grab_COD",
@@ -81,7 +81,7 @@ REGISTRY = [
      _sub("experiment1_fs", "stage1_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
     ("Experiment 1", "stage1_grab_pH",
      _sub("experiment1_fs", "stage1_grab_pH"),  "Effluent pH (Grab)"),
-    # Experiment 1 — Composite
+    # Experiment 1 - Composite
     ("Experiment 1", "stage1_comp_BOD",
      _sub("experiment1_fs", "stage1_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
     ("Experiment 1", "stage1_comp_COD",
@@ -90,7 +90,7 @@ REGISTRY = [
      _sub("experiment1_fs", "stage1_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
     ("Experiment 1", "stage1_comp_pH",
      _sub("experiment1_fs", "stage1_comp_pH"),  "Effluent pH (Composite)"),
-    # Experiment 2 Sub-1 — Grab
+    # Experiment 2 Sub-1 - Grab
     ("Experiment 2 Sub-1", "stage2_p1_grab_BOD",
      _sub("experiment2_s1_fs", "stage2_p1_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_COD",
@@ -99,7 +99,7 @@ REGISTRY = [
      _sub("experiment2_s1_fs", "stage2_p1_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-1", "stage2_p1_grab_pH",
      _sub("experiment2_s1_fs", "stage2_p1_grab_pH"),  "Effluent pH (Grab)"),
-    # Experiment 2 Sub-1 — Composite
+    # Experiment 2 Sub-1 - Composite
     ("Experiment 2 Sub-1", "stage2_p1_comp_BOD",
      _sub("experiment2_s1_fs", "stage2_p1_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_COD",
@@ -108,7 +108,7 @@ REGISTRY = [
      _sub("experiment2_s1_fs", "stage2_p1_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
     ("Experiment 2 Sub-1", "stage2_p1_comp_pH",
      _sub("experiment2_s1_fs", "stage2_p1_comp_pH"),  "Effluent pH (Composite)"),
-    # Experiment 2 Sub-2 — Grab
+    # Experiment 2 Sub-2 - Grab
     ("Experiment 2 Sub-2", "stage2_p2_grab_BOD",
      _sub("experiment2_s2_fs", "stage2_p2_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_COD",
@@ -117,7 +117,7 @@ REGISTRY = [
      _sub("experiment2_s2_fs", "stage2_p2_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
     ("Experiment 2 Sub-2", "stage2_p2_grab_pH",
      _sub("experiment2_s2_fs", "stage2_p2_grab_pH"),  "Effluent pH (Grab)"),
-    # Experiment 2 Sub-2 — Composite
+    # Experiment 2 Sub-2 - Composite
     ("Experiment 2 Sub-2", "stage2_p2_comp_BOD",
      _sub("experiment2_s2_fs", "stage2_p2_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
     ("Experiment 2 Sub-2", "stage2_p2_comp_COD",
@@ -194,7 +194,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS[model_tag], edgecolor="white")
     ax.set_xlabel("Feature importance (impurity)", fontsize=9)
-    ax.set_title(f"{model_tag} | {name}\nFeature importance — best-CV model (run {run})",
+    ax.set_title(f"{model_tag} | {name}\nFeature importance - best-CV model (run {run})",
                  fontsize=10)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
@@ -215,13 +215,13 @@ def train_one(experiment, name, subset_path, features, target,
 
     test = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
-        print(f"    SKIP — no test rows for {TEST_YEAR}")
+        print(f"    SKIP - no test rows for {TEST_YEAR}")
         return None, None
 
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} — tuning...",
+    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} - tuning...",
           end="", flush=True)
 
     search = search_factory()
@@ -285,7 +285,7 @@ def run_model(model_tag, search_factory):
     os.makedirs(os.path.join(model_dir, "plots"),  exist_ok=True)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} (Feature Selected) — run {run}")
+    print(f"  {model_tag} (Feature Selected) - run {run}")
     print(f"{'='*65}")
 
     all_rows  = []
@@ -294,7 +294,7 @@ def run_model(model_tag, search_factory):
     for experiment, name, subset_path, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
-            print(f"    SKIP — file not found: {subset_path}"); continue
+            print(f"    SKIP - file not found: {subset_path}"); continue
 
         # Infer feature list from the file's columns
         df_peek  = pd.read_excel(subset_path, nrows=0)

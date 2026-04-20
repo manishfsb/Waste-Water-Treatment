@@ -1,15 +1,15 @@
 """
-phase11_modeling.py — Lag / rolling features + log-transformed targets.
+phase11_modeling.py - Lag / rolling features + log-transformed targets.
 
 Two modeling changes layered on Exp3-S2 datasets:
 
-  1. TEMPORAL FEATURES — for each continuous base feature we add:
+  1. TEMPORAL FEATURES - for each continuous base feature we add:
        shift(1), shift(3), shift(7)      (previous observations)
        rolling(7D).mean()                (calendar-aware 7-day mean)
      Added only to continuous features (inlets, Flow, Power, secondary, aeration).
      Calendar features (month/day_of_week/year) are left untouched.
 
-  2. LOG-TRANSFORMED TARGETS — BOD/COD/TSS are right-skewed non-negative
+  2. LOG-TRANSFORMED TARGETS - BOD/COD/TSS are right-skewed non-negative
      concentrations. We fit on log1p(y) and back-transform predictions with
      Duan's smearing estimator:
             ŷ = expm1(μ_log) * mean(exp(resid_log))
@@ -113,13 +113,13 @@ def build_temporal_features(df: pd.DataFrame, target: str) -> pd.DataFrame:
     adjacent leakage. Scope is limited to upstream inlets + hydraulic/energy
     drivers so that the feature-to-sample ratio stays tractable on small
     composite datasets (n_train ≈ 290). Aeration/secondary columns are left
-    as-is — they already reflect smoothed operational state.
+    as-is - they already reflect smoothed operational state.
     """
     df = df.sort_values("Date").reset_index(drop=True).copy()
     date_idx = pd.DatetimeIndex(df["Date"])
 
     # Only expand columns matching these substrings (case-insensitive).
-    # This caps engineered features at ~20–28 per target instead of ~100.
+    # This caps engineered features at ~20-28 per target instead of ~100.
     TEMPORAL_KEYS = ("inlet", "flow (mld)", "power total")
 
     def _is_temporal(c: str) -> bool:
@@ -336,8 +336,8 @@ def _scatter_plot(y_train, y_train_pred, y_test, y_test_pred,
         ax.plot([lo, hi], [lo, hi], "w--", lw=0.8, alpha=0.5)
         ax.scatter(yt, yp, alpha=0.55, s=18, color=color)
         ax.set_xlabel("Actual"); ax.set_ylabel("Predicted")
-        ax.set_title(f"{label} — R²={r2:+.3f}", fontsize=9)
-    fig.suptitle(f"{model_tag} — {name}", fontsize=10)
+        ax.set_title(f"{label} - R²={r2:+.3f}", fontsize=9)
+    fig.suptitle(f"{model_tag} - {name}", fontsize=10)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_scatter.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
@@ -503,7 +503,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
 def main():
     run = _next_run()
-    print(f"=== Phase 11 — Temporal features + Log-y — Run {run} ===")
+    print(f"=== Phase 11 - Temporal features + Log-y - Run {run} ===")
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}\n")
 
     all_records = []

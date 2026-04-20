@@ -1,10 +1,10 @@
 """
-ensemble_modeling_phase9.py — Voting and Stacking ensembles for Phase 9.
+ensemble_modeling_phase9.py - Voting and Stacking ensembles for Phase 9.
 
 Uses Experiment 3 Sub-2 datasets. Builds two ensemble strategies:
-  1. Voting  — VotingRegressor: ElNet + RF + XGBoost (equal weights)
+  1. Voting  - VotingRegressor: ElNet + RF + XGBoost (equal weights)
              (replaces original Ridge+ElNet+RF which had L2 redundancy)
-  2. Stacking — Walk-forward stacking with TimeSeriesSplit OOF
+  2. Stacking - Walk-forward stacking with TimeSeriesSplit OOF
              Base: ElNet + RF + XGBoost → Meta: Ridge
              (replaces KFold-based StackingRegressor which had look-ahead bias)
 
@@ -13,7 +13,7 @@ Changes vs run 1:
   - Stacking: replaced KFold StackingRegressor with manual walk-forward OOF
     using TimeSeriesSplit(n_splits=5). Only past data is used when generating
     OOF predictions for each sample. First ~1/6 of training samples (no OOF fold
-    coverage) are excluded from meta-learner training — no look-ahead bias.
+    coverage) are excluded from meta-learner training - no look-ahead bias.
   - Diagnostics: added y_train_std, y_test_std, MAE_2024, NRMSE_test columns
     to results for R²-vs-variance diagnosis (esp. Composite COD).
 
@@ -174,8 +174,8 @@ def _scatter_plot(y_train, y_train_pred, y_test, y_test_pred,
         ax.scatter(yt, yp, alpha=0.55, s=18, color=color)
         ax.set_xlabel("Actual", fontsize=9)
         ax.set_ylabel("Predicted", fontsize=9)
-        ax.set_title(f"{label} — R²={r2:+.3f}", fontsize=9)
-    fig.suptitle(f"{model_tag} — {name}", fontsize=10)
+        ax.set_title(f"{label} - R²={r2:+.3f}", fontsize=9)
+    fig.suptitle(f"{model_tag} - {name}", fontsize=10)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_scatter.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
@@ -192,7 +192,7 @@ def _timeseries_plot(df_full, target, y_pred_full, name, model_tag, run):
     if pd.notna(split_date):
         ax.axvline(split_date, color="#F0B849", lw=1.2, linestyle="--",
                    alpha=0.7, label="Train | Test")
-    ax.set_title(f"{model_tag} — {target}", fontsize=9)
+    ax.set_title(f"{model_tag} - {target}", fontsize=9)
     ax.legend(fontsize=7)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_timeseries.png")
@@ -225,7 +225,7 @@ def _learning_curve_plot(model, X_train, y_train, name, model_tag, run):
     ax.axhline(0, color="white", lw=0.6, linestyle="--", alpha=0.4)
     ax.set_xlabel("Training examples", fontsize=9)
     ax.set_ylabel("R²", fontsize=9)
-    ax.set_title(f"Learning Curve — {model_tag} — {name}", fontsize=9)
+    ax.set_title(f"Learning Curve - {model_tag} - {name}", fontsize=9)
     ax.legend(fontsize=8)
     plt.tight_layout()
     path = os.path.join(PLOTS_DIR, f"{name}_{model_tag}_run_{run}_lc.png")
@@ -536,7 +536,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
 def main():
     run = _next_run(RESULTS_FILE)
-    print(f"=== Phase 9 — Ensemble Models (Voting + Stacking) — Run {run} ===")
+    print(f"=== Phase 9 - Ensemble Models (Voting + Stacking) - Run {run} ===")
     print(f"  Voting:   ElNet + RF + XGB (equal weights)")
     print(f"  Stacking: ElNet + RF + XGB base → Ridge meta (walk-forward OOF)")
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}\n")

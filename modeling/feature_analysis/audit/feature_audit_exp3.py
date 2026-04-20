@@ -1,27 +1,27 @@
 """
-feature_audit_exp3.py — Phase 6: Candidate feature audit for Experiment 3.
+feature_audit_exp3.py - Phase 6: Candidate feature audit for Experiment 3.
 
 For every numeric column NOT already in the Experiment 2 Sub-2 feature set,
-this script computes — per target:
+this script computes - per target:
 
   - Pairwise missingness %  : rows where this feature is NaN, given target is present
   - Marginal row cost       : additional rows lost when adding this feature on top of
                               the Experiment 2 Sub-2 drop-na baseline (the operationally
-                              relevant cost — pairwise alone can be misleading)
+                              relevant cost - pairwise alone can be misleading)
   - Pearson r, Spearman ρ   : computed on the pairwise-complete rows only
   - Mutual Information (MI) : model-agnostic signal estimate
   - Recommendation tier     : ADD / CONSIDER / LOW / SKIP / REDUNDANT
 
 Tier logic (uses marginal row cost, not raw missingness):
-  ADD       — MI ≥ 0.20 and marginal cost ≤ 20 %
-  CONSIDER  — MI ≥ 0.15 and marginal cost ≤ 35 %, OR MI ≥ 0.25 and cost ≤ 50 %
-  LOW       — MI ≥ 0.05
-  SKIP      — MI < 0.05
-  REDUNDANT — known collinear with a feature already in the baseline
+  ADD       - MI ≥ 0.20 and marginal cost ≤ 20 %
+  CONSIDER  - MI ≥ 0.15 and marginal cost ≤ 35 %, OR MI ≥ 0.25 and cost ≤ 50 %
+  LOW       - MI ≥ 0.05
+  SKIP      - MI < 0.05
+  REDUNDANT - known collinear with a feature already in the baseline
 
 Outputs (all in modeling/feature_audit_exp3/):
-  plots/                              — signal-vs-cost scatter per target (8 PNG)
-  feature_audit.xlsx                  — flat table of all metrics
+  plots/                              - signal-vs-cost scatter per target (8 PNG)
+  feature_audit.xlsx                  - flat table of all metrics
   report_feature_audit_exp3_run_N.html
 
 Usage (from project root):
@@ -117,37 +117,37 @@ FEATURE_GROUPS = {
     "Power GE (KW)":                         "Power & Flow",
     "Power NEA (KW)":                        "Power & Flow",
     "Power / Flow (KW/ML)":                  "Power & Flow",
-    "Inlet pH (Composite)":                  "Inlet — Composite",
-    "Inlet BOD (mg/L, Composite)":           "Inlet — Composite",
-    "Inlet COD (mg/L, Composite)":           "Inlet — Composite",
-    "Inlet TSS (mg/L, Composite)":           "Inlet — Composite",
-    "Inlet pH (Grab)":                       "Inlet — Grab",
-    "Inlet BOD (mg/L, Grab)":                "Inlet — Grab",
-    "Inlet COD (mg/L, Grab)":                "Inlet — Grab",
-    "Inlet TSS (mg/L, Grab)":                "Inlet — Grab",
-    "Inlet TKN/NH3-N (mg/L, Grab)":          "Inlet — Specialty",
-    "Inlet O&G (mg/L, Grab)":                "Inlet — Specialty",
-    "Inlet PO4/TP (mg/L, Grab)":             "Inlet — Specialty",
-    "Inlet Total Coliform (CFU/100ml, Grab)": "Inlet — Specialty",
-    "Inlet Fecal Coliform (CFU/100ml, Grab)": "Inlet — Specialty",
+    "Inlet pH (Composite)":                  "Inlet - Composite",
+    "Inlet BOD (mg/L, Composite)":           "Inlet - Composite",
+    "Inlet COD (mg/L, Composite)":           "Inlet - Composite",
+    "Inlet TSS (mg/L, Composite)":           "Inlet - Composite",
+    "Inlet pH (Grab)":                       "Inlet - Grab",
+    "Inlet BOD (mg/L, Grab)":                "Inlet - Grab",
+    "Inlet COD (mg/L, Grab)":                "Inlet - Grab",
+    "Inlet TSS (mg/L, Grab)":                "Inlet - Grab",
+    "Inlet TKN/NH3-N (mg/L, Grab)":          "Inlet - Specialty",
+    "Inlet O&G (mg/L, Grab)":                "Inlet - Specialty",
+    "Inlet PO4/TP (mg/L, Grab)":             "Inlet - Specialty",
+    "Inlet Total Coliform (CFU/100ml, Grab)": "Inlet - Specialty",
+    "Inlet Fecal Coliform (CFU/100ml, Grab)": "Inlet - Specialty",
     "Grit Classifier TSS (mg/L)":            "Primary Treatment",
     "Primary Clarifier pH":                  "Primary Treatment",
     "Primary TSS (mg/L)":                    "Primary Treatment",
     "Primary BOD (mg/L)":                    "Primary Treatment",
     "Primary COD (mg/L)":                    "Primary Treatment",
     "Primary Sludge Totalizer (m3)":         "Primary Treatment",
-    "Aeration DO (mg/L, Existing)":          "Aeration — DO",
-    "Aeration DO (mg/L, New)":               "Aeration — DO",
-    "Aeration MLSS (mg/L, Existing)":        "Aeration — Biomass",
-    "Aeration MLVSS (mg/L, Existing)":       "Aeration — Biomass",
-    "Aeration SV30 (ml/L, Existing)":        "Aeration — Biomass",
-    "Aeration SVI (Existing)":               "Aeration — Biomass",
-    "Aeration MLSS (mg/L, New)":             "Aeration — Biomass",
-    "Aeration MLVSS (mg/L, New)":            "Aeration — Biomass",
-    "Aeration SV30 (ml/L, New)":             "Aeration — Biomass",
-    "Aeration SVI (New)":                    "Aeration — Biomass",
-    "Aeration pH (Existing)":               "Aeration — pH",
-    "Aeration pH (New)":                    "Aeration — pH",
+    "Aeration DO (mg/L, Existing)":          "Aeration - DO",
+    "Aeration DO (mg/L, New)":               "Aeration - DO",
+    "Aeration MLSS (mg/L, Existing)":        "Aeration - Biomass",
+    "Aeration MLVSS (mg/L, Existing)":       "Aeration - Biomass",
+    "Aeration SV30 (ml/L, Existing)":        "Aeration - Biomass",
+    "Aeration SVI (Existing)":               "Aeration - Biomass",
+    "Aeration MLSS (mg/L, New)":             "Aeration - Biomass",
+    "Aeration MLVSS (mg/L, New)":            "Aeration - Biomass",
+    "Aeration SV30 (ml/L, New)":             "Aeration - Biomass",
+    "Aeration SVI (New)":                    "Aeration - Biomass",
+    "Aeration pH (Existing)":               "Aeration - pH",
+    "Aeration pH (New)":                    "Aeration - pH",
 }
 
 # ── Tier colours (for plots and report) ─────────────────────────────────────────
@@ -157,9 +157,9 @@ TIER_COLORS = {
     "LOW":       "#d08030",
     "SKIP":      "#c04040",
     "REDUNDANT": "#888888",
-    "—":         "#555555",
+    "-":         "#555555",
 }
-TIER_SORT = {"ADD": 0, "CONSIDER": 1, "LOW": 2, "SKIP": 3, "REDUNDANT": 4, "—": 5}
+TIER_SORT = {"ADD": 0, "CONSIDER": 1, "LOW": 2, "SKIP": 3, "REDUNDANT": 4, "-": 5}
 
 
 # ── Tier logic ───────────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ def _tier(feat, mi, marginal_cost_pct):
     if feat in REDUNDANT:
         return "REDUNDANT"
     if mi is None:
-        return "—"
+        return "-"
     if mi >= 0.20 and marginal_cost_pct <= 20:
         return "ADD"
     if (mi >= 0.15 and marginal_cost_pct <= 35) or (mi >= 0.25 and marginal_cost_pct <= 50):
@@ -179,7 +179,7 @@ def _tier(feat, mi, marginal_cost_pct):
 
 def _signal_type(p, sp):
     if p is None or sp is None:
-        return "—"
+        return "-"
     ap, asp = abs(p), abs(sp)
     if ap >= 0.6 and asp >= 0.6:
         return "Linear & monotonic"
@@ -203,7 +203,7 @@ def load_data():
     df["month"]       = df["Date"].dt.month
     df["day_of_week"] = df["Date"].dt.dayofweek
     df["year"]        = df["Date"].dt.year
-    print(f"  {len(df)} rows, {df['year'].min():.0f}–{df['year'].max():.0f}")
+    print(f"  {len(df)} rows, {df['year'].min():.0f}-{df['year'].max():.0f}")
     return df
 
 
@@ -414,14 +414,14 @@ def _b64(path):
 def _tier_badge(t):
     bg = {
         "ADD":       "#d4edda", "CONSIDER": "#fff3cd", "LOW":       "#fde8d0",
-        "SKIP":      "#f8d7da", "REDUNDANT": "#e2e3e5", "—":        "#f0f0f0",
+        "SKIP":      "#f8d7da", "REDUNDANT": "#e2e3e5", "-":        "#f0f0f0",
     }
     fg = {
         "ADD":       "#155724", "CONSIDER": "#7d5400", "LOW":       "#7a3800",
-        "SKIP":      "#721c24", "REDUNDANT": "#3a3a3a", "—":        "#888",
+        "SKIP":      "#721c24", "REDUNDANT": "#3a3a3a", "-":        "#888",
     }
     label = {"ADD": "Add", "CONSIDER": "Consider", "LOW": "Low priority",
-             "SKIP": "Skip", "REDUNDANT": "Redundant — drop", "—": "—"}
+             "SKIP": "Skip", "REDUNDANT": "Redundant - drop", "-": "-"}
     b, f = bg.get(t, "#eee"), fg.get(t, "#333")
     l = label.get(t, t)
     return (f'<span style="background:{b};color:{f};padding:2px 7px;'
@@ -430,20 +430,20 @@ def _tier_badge(t):
 
 def _fmt_num(v, decimals=3):
     if v is None or (isinstance(v, float) and np.isnan(v)):
-        return "<span style='color:#666'>—</span>"
+        return "<span style='color:#666'>-</span>"
     return f"{v:.{decimals}f}"
 
 
 def _fmt_pct(v, warn_above=35):
     if v is None or (isinstance(v, float) and np.isnan(v)):
-        return "<span style='color:#666'>—</span>"
+        return "<span style='color:#666'>-</span>"
     clr = "#c04040" if v > warn_above else ("#d08030" if v > 20 else "#a0d0a0")
     return f"<span style='color:{clr};font-weight:600'>{v:.1f}%</span>"
 
 
 def _fmt_mi(v):
     if v is None or (isinstance(v, float) and np.isnan(v)):
-        return "<span style='color:#666'>—</span>"
+        return "<span style='color:#666'>-</span>"
     clr = ("#2ecc71" if v >= 0.30 else "#f0c040" if v >= 0.15
            else "#d08030" if v >= 0.05 else "#c04040")
     return f"<span style='color:{clr};font-weight:600'>{v:.3f}</span>"
@@ -470,7 +470,7 @@ def _feature_table(sub):
                               f'→ prefer <em>{pref}</em>. {reason}</span>')
         rows_html += f"""<tr>
           <td style="{TD}">{r['feature']}{redundant_note}</td>
-          <td style="{TD}">{r.get('group','—')}</td>
+          <td style="{TD}">{r.get('group','-')}</td>
           <td style="{TD_C}">{_tier_badge(r['tier'])}</td>
           <td style="{TD_C}">{_fmt_mi(r['mi'])}</td>
           <td style="{TD_C}">{_fmt_num(r['pearson'])}</td>
@@ -523,16 +523,16 @@ def _summary_table(stats_df, candidates):
         grp = FEATURE_GROUPS.get(feat, "Other")
         cells = ""
         for tgt, *_ in TARGETS:
-            t = row.get(tgt, "—")
+            t = row.get(tgt, "-")
             if not isinstance(t, str):
-                t = "—"
+                t = "-"
             bg = {
                 "ADD": "#0d3b1f", "CONSIDER": "#2e2800", "LOW": "#2e1800",
-                "SKIP": "#2e0f0f", "REDUNDANT": "#1a1a1a", "—": "#1a1a1a"
+                "SKIP": "#2e0f0f", "REDUNDANT": "#1a1a1a", "-": "#1a1a1a"
             }.get(t, "#1a1a1a")
             fg = TIER_COLORS.get(t, "#555")
             lbl_short = {"ADD": "Add", "CONSIDER": "Cns.", "LOW": "Low",
-                         "SKIP": "Skip", "REDUNDANT": "Rdnt", "—": "—"}.get(t, t)
+                         "SKIP": "Skip", "REDUNDANT": "Rdnt", "-": "-"}.get(t, t)
             cells += (f'<td style="{TD};background:{bg};color:{fg};'
                       f'font-weight:600;font-size:0.73rem">{lbl_short}</td>')
         body += f'<tr><td style="{TD_L}">{feat}</td><td style="{TD};color:#888;font-size:0.73rem">{grp}</td>{cells}</tr>'
@@ -581,7 +581,7 @@ def build_report(stats_df, plot_paths, run):
             ("Consider",        "#fff3cd", "#7d5400"),
             ("Low priority",    "#fde8d0", "#7a3800"),
             ("Skip",            "#f8d7da", "#721c24"),
-            ("Redundant — drop","#e2e3e5", "#3a3a3a"),
+            ("Redundant - drop","#e2e3e5", "#3a3a3a"),
         ]
     )
 
@@ -591,11 +591,11 @@ def build_report(stats_df, plot_paths, run):
       Sub-2) are worth adding for Experiment 3, balancing predictive signal against the
       row-loss cost of including them.<br><br>
 
-      <strong>Two missingness metrics are reported</strong> — they answer different questions:<br>
+      <strong>Two missingness metrics are reported</strong> - they answer different questions:<br>
       <ul style="margin:6px 0 6px 16px;line-height:1.7">
-        <li><strong>Pairwise miss%</strong> — what fraction of target rows have this feature
+        <li><strong>Pairwise miss%</strong> - what fraction of target rows have this feature
             missing? Measures raw data coverage for the feature in isolation.</li>
-        <li><strong>Marginal cost%</strong> — how many additional rows are lost when this
+        <li><strong>Marginal cost%</strong> - how many additional rows are lost when this
             feature is added to the existing Experiment 2 Sub-2 <code>dropna</code>?
             This is the operationally relevant number: if Exp2 already filters out rows
             due to other missing columns, a new feature with correlated missingness may
@@ -606,15 +606,15 @@ def build_report(stats_df, plot_paths, run):
       MI as the signal measure:<br>
       <div class="tier-legend" style="margin-top:8px">{tier_legend}</div>
       <ul style="margin:6px 0 6px 16px;line-height:1.7;font-size:0.84rem">
-        <li><strong>Add</strong>      — MI ≥ 0.20 and marginal cost ≤ 20%</li>
-        <li><strong>Consider</strong> — MI ≥ 0.15 &amp; cost ≤ 35%, or MI ≥ 0.25 &amp; cost ≤ 50%</li>
-        <li><strong>Low priority</strong> — MI ≥ 0.05 (weak signal or high cost)</li>
-        <li><strong>Skip</strong>     — MI &lt; 0.05</li>
-        <li><strong>Redundant</strong>— known collinear with a baseline feature (from EDA)</li>
+        <li><strong>Add</strong>      - MI ≥ 0.20 and marginal cost ≤ 20%</li>
+        <li><strong>Consider</strong> - MI ≥ 0.15 &amp; cost ≤ 35%, or MI ≥ 0.25 &amp; cost ≤ 50%</li>
+        <li><strong>Low priority</strong> - MI ≥ 0.05 (weak signal or high cost)</li>
+        <li><strong>Skip</strong>     - MI &lt; 0.05</li>
+        <li><strong>Redundant</strong>- known collinear with a baseline feature (from EDA)</li>
       </ul>
 
       <strong>Signal is estimated on pairwise-complete rows</strong> (rows where both the
-      target and this feature are present), so the MI/correlation numbers are honest —
+      target and this feature are present), so the MI/correlation numbers are honest -
       they are not inflated or deflated by imputed values.
     </div>"""
 
@@ -623,7 +623,7 @@ def build_report(stats_df, plot_paths, run):
     summary_tbl = _summary_table(stats_df, candidates)
 
     summary_section = f"""
-    <h2>Summary — all targets</h2>
+    <h2>Summary - all targets</h2>
     <p style="font-size:0.83rem;color:var(--text-muted)">
       Each cell shows the recommendation tier for that (feature, target) pair.
       Features sorted by best tier across all targets.
@@ -682,12 +682,12 @@ def build_report(stats_df, plot_paths, run):
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Feature Audit — Experiment 3 Candidates (run {run})</title>
+  <title>Feature Audit - Experiment 3 Candidates (run {run})</title>
   <style>{CSS}</style>
   {DARK_MODE_JS}
 </head>
 <body>
-  <h1>Feature Audit — Experiment 3 Candidates</h1>
+  <h1>Feature Audit - Experiment 3 Candidates</h1>
   <p class="meta">Run {run} &nbsp;·&nbsp; Generated {now}</p>
   {intro_card}
   {summary_section}
@@ -721,7 +721,7 @@ def _next_run():
 # ── Main ─────────────────────────────────────────────────────────────────────────
 def main():
     run = _next_run()
-    print(f"\nFeature Audit — Experiment 3 Candidates  (run {run})")
+    print(f"\nFeature Audit - Experiment 3 Candidates  (run {run})")
     print("=" * 60)
 
     df         = load_data()

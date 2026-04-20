@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wastewater Treatment Plant Dashboard</title>
     <meta name="description"
-        content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends 2020–2025.">
+        content="Lab report dashboard for Kathmandu WWTP (Project 10M170), visualizing daily and monthly water quality trends 2020-2025.">
     <link rel="stylesheet" href="index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script
@@ -60,10 +60,11 @@
                         <div class="eda-insight">
                             <strong>Composite columns have the highest structural missingness.</strong>
                             Composite sampling was introduced in 2022, so all composite fields are absent for
-                            the entire 2020 and 2021 datasets (full years). Even within 2022–2025, composite tests are not
-                            conducted every day, keeping missing rates at 30–50% for those columns.
-                            <strong>Pre-processing:</strong> Do not impute composite fields for 2020–2021 — treat
-                            them as a separate analytical layer. For 2022–2025, impute cautiously or use
+                            the entire 2020 and 2021 datasets (full years). Even within 2022-2025, composite tests are
+                            not
+                            conducted every day, keeping missing rates at 30-50% for those columns.
+                            <strong>Pre-processing:</strong> Do not impute composite fields for 2020-2021 - treat
+                            them as a separate analytical layer. For 2022-2025, impute cautiously or use
                             indicator features.
                         </div>
                     </div>
@@ -105,33 +106,36 @@
 
                     <!-- Effluent distribution charts -->
                     <div class="chart-card chart-card-wide">
-                        <h3>Effluent Distributions — Grab Samples (BOD, COD, TSS, pH)</h3>
+                        <h3>Effluent Distributions - Grab Samples (BOD, COD, TSS, pH)</h3>
                         <div class="chart-wrapper eda-chart-img">
                             <img src="../eda_plots/04b_effluent_distributions_grab.png"
-                                 alt="Effluent grab sample distributions by year"
-                                 class="eda-dist-img">
+                                alt="Effluent grab sample distributions by year" class="eda-dist-img">
                         </div>
                         <div class="eda-insight">
                             BOD and TSS are tightly clustered well below their 10 mg/L limits on most days,
                             confirming good treatment performance. COD shows a wider spread with a heavier right tail.
-                            Year-on-year shifts in violin width or median position indicate changes in treatment quality or load.
+                            Year-on-year shifts in violin width or median position indicate changes in treatment quality
+                            or load.
                             2020 data covers only part of the year (92 days).
                         </div>
                     </div>
 
                     <div class="chart-card chart-card-wide">
-                        <h3>Effluent Distributions — Composite Samples (BOD, COD, TSS, pH)</h3>
+                        <h3>Effluent Distributions - Composite Samples (BOD, COD, TSS, pH)</h3>
                         <div class="chart-wrapper eda-chart-img">
                             <img src="../eda_plots/04b_effluent_distributions_comp.png"
-                                 alt="Effluent composite sample distributions by year"
-                                 class="eda-dist-img">
+                                alt="Effluent composite sample distributions by year" class="eda-dist-img">
                         </div>
                         <div class="eda-insight">
-                            <strong>Composite sampling started in 2022</strong>, so 2020 and 2021 are absent from these panels — this is expected, not missing data.
-                            Composite samples are 24-hour pooled averages, which tend to show narrower distributions than grab samples
+                            <strong>Composite sampling started in 2022</strong>, so 2020 and 2021 are absent from these
+                            panels - this is expected, not missing data.
+                            Composite samples are 24-hour pooled averages, which tend to show narrower distributions
+                            than grab samples
                             because short-duration spikes are averaged out over the day.
-                            Where composite and grab medians diverge, it suggests intra-day variability in treatment performance.
-                            This mismatch is one reason composite effluent targets are harder to predict from point-in-time secondary clarifier readings.
+                            Where composite and grab medians diverge, it suggests intra-day variability in treatment
+                            performance.
+                            This mismatch is one reason composite effluent targets are harder to predict from
+                            point-in-time secondary clarifier readings.
                         </div>
                     </div>
 
@@ -146,12 +150,12 @@
                         <h3>Inlet Flow &mdash; Monthly Average (MLD)</h3>
                         <div class="chart-wrapper"><canvas id="eda-flow"></canvas></div>
                         <div class="eda-insight">
-                            <strong>Strong monsoon signal (June–September):</strong> Monthly average flow rises
-                            40–60% above the dry-season baseline each year, driven by stormwater infiltration
+                            <strong>Strong monsoon signal (June-September):</strong> Monthly average flow rises
+                            40-60% above the dry-season baseline each year, driven by stormwater infiltration
                             into the sewage network during Nepal's monsoon. The design capacity of 32.4 MLD
                             provides a useful upper bound for outlier detection.
                             <strong>Pre-processing:</strong> Add a binary <em>monsoon</em> flag
-                            (1 = June–September) or include calendar month as a feature — both will
+                            (1 = June-September) or include calendar month as a feature - both will
                             capture a large share of flow variance.
                         </div>
                     </div>
@@ -161,9 +165,9 @@
                         <div class="eda-insight">
                             <strong>Inverse relationship with flow:</strong> Power/flow (KW/ML) spikes in dry
                             months because fixed energy loads are divided by smaller treated volumes. Values
-                            frequently exceed the 482 KW/ML design baseline in January–May.
+                            frequently exceed the 482 KW/ML design baseline in January-May.
                             <strong>Note:</strong> 2021 data covers only NEA grid power (no gas engine record)
-                            — consider flagging this as a distinct measurement regime if power is a model
+                            - consider flagging this as a distinct measurement regime if power is a model
                             feature.
                         </div>
                     </div>
@@ -179,10 +183,10 @@
                         <div class="chart-wrapper"><canvas id="eda-inlet"></canvas></div>
                         <div class="eda-insight">
                             <strong>Concentration-dilution trade-off:</strong> Inlet BOD and COD peak during
-                            dry months (January–May) when wastewater is less diluted, then drop during the
+                            dry months (January-May) when wastewater is less diluted, then drop during the
                             monsoon as flow increases. TSS is more erratic and sensitive to storm events.
                             <strong>Outlier note:</strong> Very high BOD (&gt;600 mg/L) or COD (&gt;2000 mg/L)
-                            days are likely genuine extreme events, not errors — retain but flag them.
+                            days are likely genuine extreme events, not errors - retain but flag them.
                         </div>
                     </div>
                     <div class="chart-card">
@@ -192,7 +196,7 @@
                             <strong>Generally good treatment:</strong> Effluent BOD and TSS stay within the
                             10 mg/L limit on most days. Effluent COD shows greater variability with periodic
                             exceedances of the 250 mg/L limit, particularly at high load. Note that effluent
-                            pH (not shown here — different scale) is typically well within 6.5–8.0. Missing
+                            pH (not shown here - different scale) is typically well within 6.5-8.0. Missing
                             effluent data is more common in earlier years due to incomplete records.
                         </div>
                     </div>
@@ -208,10 +212,10 @@
                         <div class="chart-wrapper"><canvas id="eda-removal"></canvas></div>
                         <div class="eda-insight">
                             <strong>BOD and TSS removal consistently exceed 95%,</strong> meeting design
-                            targets across all years. COD removal averages 90–97% and is more variable
+                            targets across all years. COD removal averages 90-97% and is more variable
                             month-to-month, especially during high-load periods.
                             <strong>Data quality flag:</strong> Days showing removal below 0% (effluent
-                            &gt; inlet) or above 100% are measurement or recording errors — exclude or
+                            &gt; inlet) or above 100% are measurement or recording errors - exclude or
                             winsorise them before training any predictive model.
                         </div>
                     </div>
@@ -223,7 +227,7 @@
                             years. pH and TSS compliance are generally high and stable. BOD compliance
                             is strong but dips in high-load months.
                             <strong>Interpretation caveat:</strong> Lower compliance figures in 2021 may
-                            partly reflect missing measurement data rather than genuine exceedances — always
+                            partly reflect missing measurement data rather than genuine exceedances - always
                             examine the data-availability rate alongside pass/fail counts.
                         </div>
                     </div>
@@ -239,11 +243,11 @@
                         <div class="chart-wrapper"><canvas id="eda-seasonal"></canvas></div>
                         <div class="eda-insight">
                             <strong>Calendar month explains a large share of variance</strong> in flow,
-                            power efficiency, and inlet concentrations. The wet season (June–September) drives
-                            higher flow and lower concentrations; the dry season (October–May) shows the
+                            power efficiency, and inlet concentrations. The wet season (June-September) drives
+                            higher flow and lower concentrations; the dry season (October-May) shows the
                             opposite. Year-over-year patterns are broadly consistent, making seasonal
                             decomposition a viable pre-processing step.
-                            <strong>Recommendation:</strong> Include <em>month</em> (1–12) or a
+                            <strong>Recommendation:</strong> Include <em>month</em> (1-12) or a
                             wet/dry indicator as a feature in any predictive model.
                         </div>
                     </div>
@@ -255,7 +259,7 @@
                             limit). This chart lets you compare parameters on a single scale.
                             Inlet parameters hovering near 100% indicate the raw sewage is close to the
                             design load; effluent parameters well below 100% confirm treatment is effective.
-                            <strong>Watch for year-on-year drift</strong> in any parameter trending upward —
+                            <strong>Watch for year-on-year drift</strong> in any parameter trending upward -
                             this may signal catchment changes or equipment aging.
                         </div>
                     </div>

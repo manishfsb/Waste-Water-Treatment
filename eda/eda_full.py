@@ -3,16 +3,16 @@ Full EDA for All_Years_Full.xlsx.
 
 Reads 21-25/All_Years_Full.xlsx (60 columns, 1918 rows) and generates:
 
-  1.  missing_new_columns     — coverage heatmap for the 24 new columns by month
-  2.  pearson_vs_spearman     — side-by-side feature correlations vs effluent targets
-  3.  mutual_information      — MI scores per feature per target (bar charts)
-  4.  feature_scatter_grids   — top features × each effluent target scatter grids
-  5.  aeration_timeseries     — DO / MLSS / SVI time series for both tanks
-  6.  cross_stage_heatmap     — all features × effluent targets (Pearson + Spearman)
-  7.  stage_removal           — BOD/COD/TSS concentrations at each treatment stage
-  8.  do_vs_effluent          — aeration DO threshold vs effluent BOD / COD
-  9.  svi_mlss_vs_tss         — SVI / MLSS vs effluent TSS scatter
-  10. linearity_residuals     — Ridge residuals: linearity diagnostic per target
+  1.  missing_new_columns     - coverage heatmap for the 24 new columns by month
+  2.  pearson_vs_spearman     - side-by-side feature correlations vs effluent targets
+  3.  mutual_information      - MI scores per feature per target (bar charts)
+  4.  feature_scatter_grids   - top features × each effluent target scatter grids
+  5.  aeration_timeseries     - DO / MLSS / SVI time series for both tanks
+  6.  cross_stage_heatmap     - all features × effluent targets (Pearson + Spearman)
+  7.  stage_removal           - BOD/COD/TSS concentrations at each treatment stage
+  8.  do_vs_effluent          - aeration DO threshold vs effluent BOD / COD
+  9.  svi_mlss_vs_tss         - SVI / MLSS vs effluent TSS scatter
+  10. linearity_residuals     - Ridge residuals: linearity diagnostic per target
 
 Outputs: eda/plots/  (PNG files)
          eda/eda_full_report.html
@@ -98,15 +98,15 @@ NEW_COLUMNS = [
     "Effluent Fecal Coliform (CFU/100ml)",
 ]
 
-# Short labels for axes — written to be self-explanatory without domain knowledge
+# Short labels for axes - written to be self-explanatory without domain knowledge
 SHORT = {
     # Power / Operational
-    "Power GE (KW)":                          "Power — Gas Engine (KW)",
-    "Power NEA (KW)":                         "Power — NEA Grid (KW)",
-    "Power Total (KW)":                       "Power — Total (KW)",
+    "Power GE (KW)":                          "Power - Gas Engine (KW)",
+    "Power NEA (KW)":                         "Power - NEA Grid (KW)",
+    "Power Total (KW)":                       "Power - Total (KW)",
     "Power / Flow (KW/ML)":                   "Power per Flow (KW/ML)",
     "Flow (MLD)":                             "Flow (MLD)",
-    # Inlet — grab
+    # Inlet - grab
     "Inlet pH (Grab)":                        "Inlet pH (Grab)",
     "Inlet BOD (mg/L, Grab)":                "Inlet BOD (Grab)",
     "Inlet COD (mg/L, Grab)":                "Inlet COD (Grab)",
@@ -116,7 +116,7 @@ SHORT = {
     "Inlet PO4/TP (mg/L, Grab)":             "Inlet PO4/TP (Grab)",
     "Inlet Total Coliform (CFU/100ml, Grab)": "Inlet Total Coliform (Grab)",
     "Inlet Fecal Coliform (CFU/100ml, Grab)": "Inlet Fecal Coliform (Grab)",
-    # Inlet — composite
+    # Inlet - composite
     "Inlet pH (Composite)":                   "Inlet pH (Composite)",
     "Inlet BOD (mg/L, Composite)":           "Inlet BOD (Composite)",
     "Inlet COD (mg/L, Composite)":           "Inlet COD (Composite)",
@@ -141,21 +141,21 @@ SHORT = {
     "Sec Sed BOD (mg/L)":                    "Sec Sedimentation BOD",
     "Sec Sed COD (mg/L)":                    "Sec Sedimentation COD",
     "Sec Sed RAS (New)":                     "Sec Sedimentation RAS",
-    # Aeration — existing tank
+    # Aeration - existing tank
     "Aeration pH (Existing)":                "Aeration pH (Existing Tank)",
     "Aeration DO (mg/L, Existing)":          "Aeration DO (Existing Tank)",
     "Aeration MLSS (mg/L, Existing)":        "Aeration MLSS (Existing Tank)",
     "Aeration MLVSS (mg/L, Existing)":       "Aeration MLVSS (Existing Tank)",
     "Aeration SV30 (ml/L, Existing)":        "Aeration SV30 (Existing Tank)",
     "Aeration SVI (Existing)":               "Aeration SVI (Existing Tank)",
-    # Aeration — new tank
+    # Aeration - new tank
     "Aeration pH (New)":                     "Aeration pH (New Tank)",
     "Aeration DO (mg/L, New)":               "Aeration DO (New Tank)",
     "Aeration MLSS (mg/L, New)":             "Aeration MLSS (New Tank)",
     "Aeration MLVSS (mg/L, New)":            "Aeration MLVSS (New Tank)",
     "Aeration SV30 (ml/L, New)":             "Aeration SV30 (New Tank)",
     "Aeration SVI (New)":                    "Aeration SVI (New Tank)",
-    # Effluent — grab
+    # Effluent - grab
     "Effluent pH (Grab)":                    "Effluent pH (Grab)",
     "Effluent BOD (mg/L, Grab)":             "Effluent BOD (Grab)",
     "Effluent COD (mg/L, Grab)":             "Effluent COD (Grab)",
@@ -165,7 +165,7 @@ SHORT = {
     "Effluent NH3-N (mg/L)":                "Effluent NH3-N",
     "Effluent Total Coliform (CFU/100ml)":   "Effluent Total Coliform",
     "Effluent Fecal Coliform (CFU/100ml)":   "Effluent Fecal Coliform",
-    # Effluent — composite
+    # Effluent - composite
     "Effluent pH (Composite)":               "Effluent pH (Composite)",
     "Effluent BOD (mg/L, Composite)":        "Effluent BOD (Composite)",
     "Effluent COD (mg/L, Composite)":        "Effluent COD (Composite)",
@@ -212,12 +212,12 @@ def pearson_spearman(df, features, target):
     return pd.DataFrame(rows).set_index("feature")
 
 
-# ── Chart 1: Missing data — all columns ───────────────────────────────────────
+# ── Chart 1: Missing data - all columns ───────────────────────────────────────
 
 # Ordered column groups for the missing-data heatmap rows
 _COL_SECTIONS = [
     ("Power & Operational", [
-        "Power — Gas Engine (KW)", "Power — NEA Grid (KW)", "Power — Total (KW)",
+        "Power - Gas Engine (KW)", "Power - NEA Grid (KW)", "Power - Total (KW)",
         "Power per Flow (KW/ML)", "Flow (MLD)",
     ]),
     ("Inlet (Grab)", [
@@ -241,12 +241,12 @@ _COL_SECTIONS = [
         "Sec Sedimentation pH", "Sec Sedimentation TSS", "Sec Sedimentation BOD",
         "Sec Sedimentation COD", "Sec Sedimentation RAS",
     ]),
-    ("Aeration — Existing Tank", [
+    ("Aeration - Existing Tank", [
         "Aeration pH (Existing Tank)", "Aeration DO (Existing Tank)",
         "Aeration MLSS (Existing Tank)", "Aeration MLVSS (Existing Tank)",
         "Aeration SV30 (Existing Tank)", "Aeration SVI (Existing Tank)",
     ]),
-    ("Aeration — New Tank", [
+    ("Aeration - New Tank", [
         "Aeration pH (New Tank)", "Aeration DO (New Tank)",
         "Aeration MLSS (New Tank)", "Aeration MLVSS (New Tank)",
         "Aeration SV30 (New Tank)", "Aeration SVI (New Tank)",
@@ -265,7 +265,7 @@ _COL_SECTIONS = [
 
 
 def plot_missing_all(df):
-    print("1. Missing data — all columns...")
+    print("1. Missing data - all columns...")
 
     # Build short-name → original-name reverse map
     rev = {v: k for k, v in SHORT.items()}
@@ -304,7 +304,7 @@ def plot_missing_all(df):
         cbar_kws={"label": "% days with data", "shrink": 0.5},
         yticklabels=labels,
     )
-    ax.set_title("Data coverage (%) — all columns, by month  (darker green = more complete)",
+    ax.set_title("Data coverage (%) - all columns, by month  (darker green = more complete)",
                  fontsize=13, fontweight="bold", pad=10)
     ax.set_xlabel("Month", fontsize=10)
     ax.set_ylabel("")
@@ -317,7 +317,7 @@ def plot_missing_all(df):
                 ha="right", va="top", fontsize=7.5, color="#444",
                 fontweight="bold", transform=ax.get_yaxis_transform())
 
-    # Sparse x-axis labels — every 6 months
+    # Sparse x-axis labels - every 6 months
     xlabels = [t.get_text() for t in ax.get_xticklabels()]
     step = max(1, len(xlabels) // 12)
     ax.set_xticks(np.arange(0, len(xlabels), step) + 0.5)
@@ -353,7 +353,7 @@ def _pearson_spearman_one(df, target, feats, filename):
     ax.set_xlim(-1, 1)
     ax.set_xlabel("Correlation coefficient  (−1 = perfect negative, +1 = perfect positive)",
                   fontsize=9)
-    ax.set_title(f"Pearson vs Spearman — {s(target)}\n"
+    ax.set_title(f"Pearson vs Spearman - {s(target)}\n"
                  "Features ranked by |Spearman r| (strongest at top)",
                  fontsize=11, fontweight="bold")
     ax.legend(fontsize=9, loc="lower right")
@@ -432,7 +432,7 @@ def _mi_one(df, target, feats, filename):
     ax.barh(range(n), mi_series.values, color=colors, alpha=0.85)
     ax.set_yticks(range(n))
     ax.set_yticklabels(short_feats, fontsize=8)
-    ax.set_title(f"Mutual Information scores — {s(target)}\n"
+    ax.set_title(f"Mutual Information scores - {s(target)}\n"
                  "Features ranked by MI score  (red bars = top 25%)",
                  fontsize=11, fontweight="bold")
     ax.set_xlabel("Mutual Information score  (higher = more predictive, regardless of relationship shape)",
@@ -491,7 +491,7 @@ def plot_mutual_information(df):
 # ── Chart 4: Feature vs target scatter grids ──────────────────────────────────
 
 def compute_top_ridge_features(df):
-    """Return {target: feature_name} — the feature with the largest Ridge |coef| per target."""
+    """Return {target: feature_name} - the feature with the largest Ridge |coef| per target."""
     feats    = feature_cols(df)
     usable   = [f for f in feats if f in df.columns]
     train_df = df[df["Date"].dt.year.isin([2021, 2022, 2023, 2024])]
@@ -546,7 +546,7 @@ def plot_ridge_coefficients(df):
         ax.axvline(0, color="black", linewidth=0.8, linestyle="-")
         ax.set_xlabel("Ridge coefficient (StandardScaler scale)", fontsize=9)
         ax.set_title(
-            f"Ridge coefficient weights — {s(tgt)}\n"
+            f"Ridge coefficient weights - {s(tgt)}\n"
             "Top 10 features by |coefficient|  •  "
             "Blue = positive relationship  •  Red = inverse",
             fontsize=10, fontweight="bold"
@@ -555,7 +555,7 @@ def plot_ridge_coefficients(df):
         # Dim note about multicollinearity
         fig.text(
             0.01, 0.01,
-            "⚠  Correlated features share weight — individual bars understate importance of "
+            "⚠  Correlated features share weight - individual bars understate importance of "
             "collinear groups.  These weights reflect what Ridge relied on, not general feature importance.",
             fontsize=7.5, color="#666", style="italic"
         )
@@ -566,7 +566,7 @@ def plot_ridge_coefficients(df):
 
 
 def plot_scatter_grids(df, all_mi, top_ridge_feats=None):
-    """top_ridge_feats: dict {target: feature_name} — subplot for that feature gets an orange border."""
+    """top_ridge_feats: dict {target: feature_name} - subplot for that feature gets an orange border."""
     print("4. Feature scatter grids...")
     paths = []
     feats = feature_cols(df)
@@ -625,7 +625,7 @@ def plot_scatter_grids(df, all_mi, top_ridge_feats=None):
         for ax in list(axes_flat)[len(top_feats):]:
             ax.set_visible(False)
 
-        # Legend (years) — one shared legend
+        # Legend (years) - one shared legend
         handles = [plt.Line2D([0], [0], marker="o", color="w",
                                markerfacecolor=YEAR_COLOURS[yr], markersize=6)
                    for yr in sorted(YEAR_COLOURS)]
@@ -656,7 +656,7 @@ def plot_aeration_timeseries(df):
     ]
 
     fig, axes = plt.subplots(3, 1, figsize=(18, 12), sharex=True)
-    fig.suptitle("Aeration Tank — DO / MLSS / SVI over time",
+    fig.suptitle("Aeration Tank - DO / MLSS / SVI over time",
                  fontsize=13, fontweight="bold")
 
     for ax, (col_e, col_n, ylabel, threshold) in zip(axes, params):
@@ -731,7 +731,7 @@ def plot_cross_stage_heatmap(df):
         f"{n_hidden} column{'s' if n_hidden != 1 else ''} below threshold hidden"
     )
 
-    # ── Compact figure (square matrix — no need to be huge) ────────────────────
+    # ── Compact figure (square matrix - no need to be huge) ────────────────────
     cell = max(0.55, min(1.0, 14.0 / n_shown))   # cell size in inches
     side = max(8, n_shown * cell)
     side = min(side, 20)                          # cap at 20 inches
@@ -758,7 +758,7 @@ def plot_cross_stage_heatmap(df):
         ax.set_xlabel(""); ax.set_ylabel("")
 
     fig.suptitle(
-        "Full correlation matrix — all features & targets vs each other\n" + subtitle,
+        "Full correlation matrix - all features & targets vs each other\n" + subtitle,
         fontsize=11, fontweight="bold",
     )
     plt.tight_layout(rect=[0, 0, 1, 0.97])
@@ -783,7 +783,7 @@ def plot_cross_stage_heatmap(df):
     pairs.sort(key=lambda x: x[4], reverse=True)   # sort by max |r|
 
     def _rfmt(v):
-        if pd.isna(v): return "—"
+        if pd.isna(v): return "-"
         clr = "#C0392B" if abs(v) >= 0.75 else ("#E07B20" if abs(v) >= 0.5 else "")
         sign = "+" if v > 0 else ""
         txt  = f"{sign}{v:.2f}"
@@ -821,7 +821,7 @@ def plot_cross_stage_heatmap(df):
             else:
                 tgt_cc.append(pair)
         else:
-            # one is a target — normalise so the target is always cb for label purposes
+            # one is a target - normalise so the target is always cb for label purposes
             tgt_col = ca if a_tgt else cb
             if tgt_col in GRAB_TGT_SHORT:
                 feat_grab.append(pair)
@@ -911,7 +911,7 @@ def plot_cross_stage_heatmap(df):
                         color:#8aa8cc;letter-spacing:0.01em'>
           Features vs Features &mdash; {len(feat_feat)} pair{'s' if len(feat_feat) != 1 else ''}
           &nbsp;<span style='font-size:0.78rem;color:#556070;font-weight:400'>
-            (collinearity — check these before linear modelling)</span>
+            (collinearity - check these before linear modelling)</span>
         </summary>
         {feat_feat_block}
       </details>""" if feat_feat else ""
@@ -969,7 +969,7 @@ def plot_stage_removal(df):
     stage_labels = ["Inlet", "Primary\nClarifier", "Sec\nClarifier", "Sec\nSed", "Effluent"]
 
     fig, axes = plt.subplots(1, 3, figsize=(20, 7))
-    fig.suptitle("Concentration at each treatment stage — median ± IQR (2021–2025)",
+    fig.suptitle("Concentration at each treatment stage - median ± IQR (2021-2025)",
                  fontsize=13, fontweight="bold")
 
     for ax, (param, cols) in zip(axes, params):
@@ -1082,7 +1082,7 @@ def plot_svi_mlss_vs_tss(df):
 # ── Chart 10: Ridge residuals (linearity diagnostic) ─────────────────────────
 
 def plot_linearity_residuals(df):
-    """Return {"grab": {target: path}, "comp": {target: path}} — one 1×3 figure per target."""
+    """Return {"grab": {target: path}, "comp": {target: path}} - one 1×3 figure per target."""
     print("10. Linearity residuals (Ridge)...")
     feats = feature_cols(df)
     usable_feats = [f for f in feats if f in df.columns]
@@ -1098,7 +1098,7 @@ def plot_linearity_residuals(df):
         te = test_df[usable_feats  + [target]].dropna()
 
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-        fig.suptitle(f"Ridge residuals — {s(target)}\n"
+        fig.suptitle(f"Ridge residuals - {s(target)}\n"
                      "(random scatter = linear relationship; patterns = non-linearity)",
                      fontsize=11, fontweight="bold")
 
@@ -1127,14 +1127,14 @@ def plot_linearity_residuals(df):
         ax = axes[0]
         ax.scatter(yhat_tr, resid_tr, color="#2171B5", alpha=0.3, s=12)
         ax.axhline(0, color="red", linewidth=1)
-        ax.set_xlabel("Fitted values — Ridge predictions on training set")
+        ax.set_xlabel("Fitted values - Ridge predictions on training set")
         ax.set_ylabel("Residuals (actual − predicted)")
         ax.set_title("Residuals vs Fitted", fontsize=10, fontweight="bold")
         ax.grid(alpha=0.3)
 
         # Panel B: residuals over time
         ax = axes[1]
-        ax.scatter(tr.index, resid_tr, color="#2171B5", alpha=0.3, s=8, label="Train 2021–2024")
+        ax.scatter(tr.index, resid_tr, color="#2171B5", alpha=0.3, s=8, label="Train 2021-2024")
         if len(te) > 0:
             yhat_te  = ridge.predict(X_te_s)
             resid_te = y_te - yhat_te
@@ -1331,7 +1331,7 @@ def plot_op_removal_efficiency(df):
         axes[1][j].axhline(90, color="orange", lw=1, linestyle="--")
         axes[1][j].axhline(95, color="red",    lw=1, linestyle="--")
 
-    fig.suptitle("Treatment Removal Efficiency — BOD, COD, TSS",
+    fig.suptitle("Treatment Removal Efficiency - BOD, COD, TSS",
                  fontsize=12, fontweight="bold")
     fig.tight_layout()
     return save(fig, "12c_op_removal_efficiency")
@@ -1373,7 +1373,7 @@ def plot_op_compliance(df):
         ax.legend(fontsize=7, loc="lower left")
 
     axes[-1].set_xlabel("Month")
-    fig.suptitle("Monthly Compliance Rate (%) — Effluent Parameters",
+    fig.suptitle("Monthly Compliance Rate (%) - Effluent Parameters",
                  fontsize=12, fontweight="bold")
     fig.tight_layout()
     return save(fig, "12d_op_compliance")
@@ -1436,7 +1436,7 @@ def plot_op_seasonal_heatmap(df):
                 linewidths=0.5, annot_kws={"size": 8},
                 cbar_kws={"label": "Normalised value"})
     ax.set_xticklabels(_MONTH_NAMES, rotation=0)
-    ax.set_title("Seasonal Heatmap — Monthly Average (annotated with actual values)",
+    ax.set_title("Seasonal Heatmap - Monthly Average (annotated with actual values)",
                  fontsize=12, fontweight="bold")
     fig.tight_layout()
     return save(fig, "12f_op_seasonal_heatmap")
@@ -1457,12 +1457,12 @@ def build_observations(df):
     tstdf  = df[df["Date"].dt.year == 2025]
     obs    = {}
 
-    # ── S1: Ridge metrics — one observation block per target ─────────────────
+    # ── S1: Ridge metrics - one observation block per target ─────────────────
     def _ridge_metrics(tgt):
         """Fit Ridge, return a dict of metrics for one target."""
         # ── Row count accounting ─────────────────────────────────────────────
         n_total        = len(df)
-        n_train_tgt    = int(trndf[tgt].notna().sum())   # rows with target in 2021–2024
+        n_train_tgt    = int(trndf[tgt].notna().sum())   # rows with target in 2021-2024
         n_test_tgt     = int(tstdf[tgt].notna().sum())   # rows with target in 2025
         n_feats        = len(usable)
 
@@ -1509,9 +1509,9 @@ def build_observations(df):
 
     def _s1_obs_for(m):
         """Build observation HTML for a single target's Ridge metrics dict."""
-        r2_te_s   = f"{m['r2_te']:.3f}"   if "r2_te"   in m else "—"
-        rmse_te_s = f"{m['rmse_te']:.2f}" if "rmse_te" in m else "—"
-        gap_s     = f"{m['gap']:.3f}"     if "gap"     in m else "—"
+        r2_te_s   = f"{m['r2_te']:.3f}"   if "r2_te"   in m else "-"
+        rmse_te_s = f"{m['rmse_te']:.2f}" if "rmse_te" in m else "-"
+        gap_s     = f"{m['gap']:.3f}"     if "gap"     in m else "-"
         r2_color  = "#C0392B" if m.get("r2_te", 1) < 0 else "#27AE60"
         gap_color = ("#C0392B" if m.get("gap", 0) > 0.15
                      else "#27AE60" if m.get("gap", 0) < 0.05
@@ -1522,7 +1522,7 @@ def build_observations(df):
             f"padding-left:10px;color:var(--text)'>"
             f"<strong>Rows used for this model:</strong>&nbsp; "
             f"{m['n_total']:,} total rows in dataset &nbsp;→&nbsp; "
-            f"{m['n_train_tgt']:,} rows with target present in 2021–2024 &nbsp;→&nbsp; "
+            f"{m['n_train_tgt']:,} rows with target present in 2021-2024 &nbsp;→&nbsp; "
             f"<strong>{m['n_train_used']:,} rows used for Ridge training</strong> "
             f"({m['n_dropped_train']:,} dropped, {m['pct_dropped']:.1f}%). "
             f"&nbsp; Test (2025): {m['n_test_used']:,} rows."
@@ -1551,11 +1551,11 @@ def build_observations(df):
         if m.get("r2_te", 1) < 0:
             bullets.append(
                 "<li><strong>Negative test R²:</strong> Ridge performs worse than predicting "
-                "the training mean — it adds no predictive value on 2025 data.</li>")
+                "the training mean - it adds no predictive value on 2025 data.</li>")
         elif m.get("gap", 0) > 0.15:
             bullets.append(
                 "<li><strong>Notable R² gap:</strong> Train and test R² diverge significantly, "
-                "suggesting the linear pattern learned from 2021–2024 does not fully transfer "
+                "suggesting the linear pattern learned from 2021-2024 does not fully transfer "
                 "to 2025 conditions.</li>")
 
         if abs(m.get("funnel", 0)) > 0.20:
@@ -1563,14 +1563,14 @@ def build_observations(df):
             bullets.append(
                 f"<li><strong>Potential heteroscedasticity</strong> (Spearman r = {m['funnel']:.2f} "
                 f"between |residuals| and fitted values): error {direction} with the predicted value. "
-                "This is a standalone statistical test on the training residuals — unrelated to the "
+                "This is a standalone statistical test on the training residuals - unrelated to the "
                 "feature correlations in Section 2. Inspect the Residuals vs Fitted panel above "
                 "to judge whether this is visually apparent.</li>")
 
         bullets.append(
             f"<li><strong>Top relied-on feature:</strong> <em>{m['top']}</em> carries the largest "
             "Ridge coefficient magnitude. If this feature has a curved relationship with the target "
-            "Its scatter panel is highlighted with an orange border in Section 2 — check it "
+            "Its scatter panel is highlighted with an orange border in Section 2 - check it "
             "for curvature or fan shapes.</li>")
 
         ul = "<ul>" + "".join(bullets) + "</ul>" if bullets else ""
@@ -1582,7 +1582,7 @@ def build_observations(df):
         if m:
             obs["s1"][tgt] = _s1_obs_for(m)
 
-    # ── S2: Pearson vs Spearman — per-target blocks ───────────────────────────
+    # ── S2: Pearson vs Spearman - per-target blocks ───────────────────────────
     def _ps_block(tgt):
         sub = df[usable + [tgt]].dropna()
         if len(sub) < 20:
@@ -1607,22 +1607,22 @@ def build_observations(df):
             f"<tbody>{tbl}</tbody></table>"
             f"<p style='font-size:0.87em;margin:4px 0 0 0'>"
             f"{pct_nl:.0f}% of all {len(usable)} features show |Spearman| &gt; |Pearson| "
-            f"by more than 0.10 — suggesting predominantly curved or non-monotonic "
+            f"by more than 0.10 - suggesting predominantly curved or non-monotonic "
             f"relationships for this target.</p>"
         )
 
     s2_general = (
         "<ul style='margin-top:4px'>"
-        "<li><strong>Positive Gap (red):</strong> Spearman exceeds Pearson — the relationship "
+        "<li><strong>Positive Gap (red):</strong> Spearman exceeds Pearson - the relationship "
         "is curved (logarithmic, exponential, or step-like). A linear model undervalues these "
         "features.</li>"
         "<li><strong>Negative Gap:</strong> Extreme outliers inflate Pearson while Spearman is "
         "unaffected. These features may appear deceptively important in a linear model.</li>"
         "<li><strong>Both magnitudes small:</strong> Low Pearson AND Spearman does not mean "
-        "uninformative — check Mutual Information in Section 4, which detects non-monotonic "
+        "uninformative - check Mutual Information in Section 4, which detects non-monotonic "
         "patterns that rank correlation misses entirely.</li>"
         "<li><strong>Ridge failure context:</strong> When most top-ranked features show positive "
-        "gaps, a linear model systematically mis-specifies their contributions — consistent with "
+        "gaps, a linear model systematically mis-specifies their contributions - consistent with "
         "the Ridge residual patterns in Section 1.</li>"
         "</ul>"
     )
@@ -1633,7 +1633,7 @@ def build_observations(df):
         "general": s2_general,
     }
 
-    # ── S3: Mutual Information — per-target blocks ────────────────────────────
+    # ── S3: Mutual Information - per-target blocks ────────────────────────────
     def _mi_block(tgt):
         sub = df[usable + [tgt]].dropna()
         if len(sub) < 20:
@@ -1662,7 +1662,7 @@ def build_observations(df):
             nonlin_note = (
                 f"<p style='font-size:0.87em;color:#C0392B;margin:6px 0'>"
                 f"⚠ <strong>Non-monotonic (top-quartile MI, |Spearman| &lt; 0.30):</strong> "
-                f"{names} — real predictive signal, but only exploitable by non-linear models.</p>"
+                f"{names} - real predictive signal, but only exploitable by non-linear models.</p>"
             )
         return (
             "<table style='width:auto;min-width:500px;font-size:0.88em'>"
@@ -1674,11 +1674,11 @@ def build_observations(df):
     s3_general = (
         "<ul style='margin-top:4px'>"
         "<li><strong>High MI, low |Spearman|:</strong> The feature has a real but non-monotonic "
-        "relationship with the target — an optimal range, a threshold, or seasonal interaction "
+        "relationship with the target - an optimal range, a threshold, or seasonal interaction "
         "that rank correlation misses entirely.</li>"
-        "<li><strong>High MI and high |Spearman|:</strong> The most reliable predictors — strong "
+        "<li><strong>High MI and high |Spearman|:</strong> The most reliable predictors - strong "
         "signal regardless of model family.</li>"
-        "<li><strong>Near-zero MI:</strong> Strong candidates for exclusion — they add noise "
+        "<li><strong>Near-zero MI:</strong> Strong candidates for exclusion - they add noise "
         "without information.</li>"
         "</ul>"
     )
@@ -1693,7 +1693,7 @@ def build_observations(df):
     obs["s4"] = (
         "<ul>"
         "<li><strong>What a good linear scatter looks like:</strong> Points cluster tightly around "
-        "the dashed regression line without systematic deviation. All year colours (2021–2025) align "
+        "the dashed regression line without systematic deviation. All year colours (2021-2025) align "
         "on the same band. A linear model would perform well for features showing this pattern.</li>"
         "<li><strong>Curved scatter (non-linearity):</strong> If points form a concave or convex arc "
         "around the regression line, the relationship is non-linear. A linear model will "
@@ -1708,12 +1708,12 @@ def build_observations(df):
         "Consider whether year (or a seasonal proxy) should be included as a feature.</li>"
         "<li><strong>Isolated outliers:</strong> Extreme points far from the main cloud may be "
         "measurement errors, equipment failures, or genuine process upsets. They inflate Pearson "
-        "correlation while leaving Spearman unaffected — one reason to cross-check both metrics. "
+        "correlation while leaving Spearman unaffected - one reason to cross-check both metrics. "
         "Investigate high-leverage days before finalising the feature set.</li>"
         "<li><strong>Cross-reference with Sections 3 and 4:</strong> The scatter plots show the "
         "top 15 features by Mutual Information. Features identified as non-monotonic in Section 4 "
         "(high MI, low Spearman) may show no obvious pattern in a simple scatter but still carry "
-        "information — look for cluster-based structure or threshold behaviour rather than a "
+        "information - look for cluster-based structure or threshold behaviour rather than a "
         "clean monotonic trend.</li>"
         "</ul>"
     )
@@ -1739,7 +1739,7 @@ def build_observations(df):
             stage_mean_corr[stage_name] = float(np.mean(vals))
     ranked = sorted(stage_mean_corr.items(), key=lambda x: x[1], reverse=True)
     rank_li = "".join(
-        f"<li><strong>{sn}</strong> — mean |Pearson r| across grab targets = {v:.3f}</li>"
+        f"<li><strong>{sn}</strong> - mean |Pearson r| across grab targets = {v:.3f}</li>"
         for sn, v in ranked
     )
 
@@ -1747,23 +1747,23 @@ def build_observations(df):
         f"<p><strong>Treatment stage ranking by mean |Pearson r| with effluent grab targets:</strong></p>"
         f"<ol style='margin:4px 0 12px 20px'>{rank_li}</ol>"
         "<ul>"
-        "<li><strong>Strong inlet–effluent correlations</strong> indicate that incoming load "
-        "variation propagates directly to the final effluent — the treatment process cannot fully "
+        "<li><strong>Strong inlet-effluent correlations</strong> indicate that incoming load "
+        "variation propagates directly to the final effluent - the treatment process cannot fully "
         "buffer large fluctuations in feed concentration. Features from high-ranking stages are "
         "likely to be retained through feature selection regardless of model type.</li>"
         "<li><strong>Intermediate stage correlations</strong> (e.g., secondary clarifier parameters) "
-        "may be weaker because daily grab samples do not account for hydraulic retention time lag — "
-        "the effluent quality on a given day may reflect the inlet load from 12–24 hours earlier. "
+        "may be weaker because daily grab samples do not account for hydraulic retention time lag - "
+        "the effluent quality on a given day may reflect the inlet load from 12-24 hours earlier. "
         "A lagged feature (e.g., inlet BOD lagged by 1 day) may be more informative than same-day "
         "measurements and is worth testing during feature engineering.</li>"
         "<li><strong>Comparing Pearson vs Spearman panels:</strong> Cells where Spearman is "
-        "notably darker than Pearson identify stage–target combinations where the relationship is "
+        "notably darker than Pearson identify stage-target combinations where the relationship is "
         "curved or non-monotonic. These are the cells that most strongly justify using Random Forest "
-        "over a linear model — Ridge would underestimate the influence of those stage parameters.</li>"
+        "over a linear model - Ridge would underestimate the influence of those stage parameters.</li>"
         "<li><strong>Cross-stage correlations:</strong> Strong correlations between inlet and "
         "intermediate-stage parameters (e.g., inlet BOD vs secondary clarifier BOD) are expected "
         "due to the sequential treatment process. If intermediate measurements are not always "
-        "available, inlet measurements alone may be sufficient predictors — a consideration for "
+        "available, inlet measurements alone may be sufficient predictors - a consideration for "
         "imputation strategy when intermediate columns have lower coverage.</li>"
         "</ul>"
     )
@@ -1783,18 +1783,18 @@ def build_observations(df):
         f"<li><strong>High coverage (≥ 80%, {len(high_cols)} columns):</strong> These columns are "
         f"suitable for direct use as features or targets with minimal imputation. Core grab-sample "
         f"parameters and most secondary-stage measurements fall in this tier.</li>"
-        f"<li><strong>Medium coverage (50–80%, {len(med_cols)} columns):</strong> {med_list}. "
+        f"<li><strong>Medium coverage (50-80%, {len(med_cols)} columns):</strong> {med_list}. "
         f"These columns provide useful signal but will reduce the effective training sample size "
         f"when used together (row-wise dropna). Evaluate whether imputation (forward-fill, median) "
         f"is justified or whether the column should be treated as an optional feature.</li>"
         f"<li><strong>Low coverage (&lt; 50%, {len(low_cols)} columns):</strong> {low_list}. "
         f"Using these as features will substantially shrink the training set. Consider either "
-        f"excluding them from the base feature set or imputing with care — forward-fill is "
+        f"excluding them from the base feature set or imputing with care - forward-fill is "
         f"appropriate for readings that are stable over days (e.g., MLVSS); random missingness "
         f"benefits more from median imputation.</li>"
         f"<li><strong>Temporal gap patterns:</strong> The monthly heatmap reveals whether gaps "
         f"are clustered in specific years or spread randomly. Systematic gaps in 2021 for composite "
-        f"columns (expected — composite sampling began in 2022) are predictable and do not "
+        f"columns (expected - composite sampling began in 2022) are predictable and do not "
         f"constitute a data quality issue. Random scattered gaps may reflect recording lapses "
         f"and are better candidates for imputation than structured missingness.</li>"
         f"<li><strong>Impact on modelling:</strong> For features with medium-to-low coverage, "
@@ -1819,7 +1819,7 @@ def build_observations(df):
             f"mg/L, P10 = {do_v.quantile(0.10):.2f}, P90 = {do_v.quantile(0.90):.2f} mg/L). "
             f"{'Frequent sub-threshold events' if pct_below > 10 else 'Occasional sub-threshold events'} "
             f"are expected to coincide with elevated effluent BOD and COD due to insufficient "
-            f"aerobic mineralisation — confirmed in Section 9.</li>"
+            f"aerobic mineralisation - confirmed in Section 9.</li>"
         )
     if svi_col in df.columns:
         svi_v = df[svi_col].dropna()
@@ -1827,13 +1827,13 @@ def build_observations(df):
             f"<li><strong>Sludge settleability (SVI):</strong> Median SVI = {svi_v.median():.0f} ml/g, "
             f"P90 = {svi_v.quantile(0.90):.0f} ml/g. "
             f"{'Values regularly exceed 150 ml/g (bulking threshold), indicating episodic poor settleability.' if svi_v.quantile(0.75) > 150 else 'Most values are below the 150 ml/g bulking threshold, but episodic spikes occur.'} "
-            f"These spikes are likely to appear as outliers in effluent TSS — visible in Section 10.</li>"
+            f"These spikes are likely to appear as outliers in effluent TSS - visible in Section 10.</li>"
         )
     if mlss_col in df.columns:
         mlss_v = df[mlss_col].dropna()
         mlss_note = (
             f"<li><strong>Biomass concentration (MLSS):</strong> Median MLSS = {mlss_v.median():.0f} mg/L "
-            f"(Existing tank, range = {mlss_v.quantile(0.10):.0f}–{mlss_v.quantile(0.90):.0f} mg/L). "
+            f"(Existing tank, range = {mlss_v.quantile(0.10):.0f}-{mlss_v.quantile(0.90):.0f} mg/L). "
             f"Sustained low MLSS periods indicate washout risk; very high MLSS combined with low DO "
             f"creates oxygen limitation conditions. Both extremes degrade effluent quality non-linearly, "
             f"making MLSS a candidate non-linear feature for Random Forest.</li>"
@@ -1846,8 +1846,8 @@ def build_observations(df):
         f"{mlss_note}"
         "<li><strong>Divergence between Existing and New tanks:</strong> If the two tanks track "
         "differently over time, they may operate under different aeration regimes. The MI and "
-        "correlation charts in Sections 2–3 show which tank's parameters rank higher for each "
-        "target — it may be worth including features from both tanks and letting feature selection "
+        "correlation charts in Sections 2-3 show which tank's parameters rank higher for each "
+        "target - it may be worth including features from both tanks and letting feature selection "
         "decide which is more predictive.</li>"
         "<li><strong>Seasonal patterns:</strong> If DO dips or SVI spikes cluster in specific "
         "months (e.g., summer months with higher organic load or temperature effects on biological "
@@ -1879,8 +1879,8 @@ def build_observations(df):
 
     rem_tbl = ""
     for r in removal_rows:
-        i_cv_s = f"{r['i_cv']:.2f}" if r["i_cv"] is not None else "—"
-        e_cv_s = f"{r['e_cv']:.2f}" if r["e_cv"] is not None else "—"
+        i_cv_s = f"{r['i_cv']:.2f}" if r["i_cv"] is not None else "-"
+        e_cv_s = f"{r['e_cv']:.2f}" if r["e_cv"] is not None else "-"
         rem_tbl += (
             f"<tr><td><strong>{r['param']}</strong></td>"
             f"<td>{r['i_med']:.1f}</td><td>{r['e_med']:.2f}</td>"
@@ -1895,7 +1895,7 @@ def build_observations(df):
     if amp_params:
         amp_note = (
             f"<li><strong>Amplified variability in effluent:</strong> For {', '.join(amp_params)}, "
-            "the effluent IQR/median ratio exceeds the inlet ratio — secondary treatment "
+            "the effluent IQR/median ratio exceeds the inlet ratio - secondary treatment "
             "<em>amplifies</em> concentration variability rather than just reducing it. "
             "This occurs because biological treatment is sensitive to operating conditions "
             "(DO, MLSS, HRT), which fluctuate independently of inlet load. "
@@ -1911,20 +1911,20 @@ def build_observations(df):
         f"</tr></thead><tbody>{rem_tbl}</tbody></table>"
         "<ul>"
         "<li><strong>IQR/median (relative variability):</strong> A ratio above 0.5 indicates high "
-        "day-to-day variability. Compare inlet vs effluent ratios — if effluent variability is "
+        "day-to-day variability. Compare inlet vs effluent ratios - if effluent variability is "
         "comparable to or higher than inlet variability, the treatment process itself is introducing "
         "noise, not just attenuating the inlet signal. This process-driven variability is what "
         "the model needs to explain.</li>"
         "<li><strong>Where most removal occurs:</strong> The log-scale stage plot shows whether "
         "Primary Clarifier or Secondary stages dominate removal. The stage responsible for the "
         "largest single drop is also likely to produce the most variability in effluent quality "
-        "when it under-performs — making its upstream parameters (e.g., primary TSS, aeration DO) "
+        "when it under-performs - making its upstream parameters (e.g., primary TSS, aeration DO) "
         "the most important features for prediction.</li>"
         f"{amp_note}"
         "<li><strong>Compliance risk days:</strong> The median effluent is typically well below "
         "regulatory thresholds, but the P90 values (visible from the IQR shading in the chart) "
         "may reach compliance limits on some days. Understanding what combination of conditions "
-        "drives those exceedance days is the primary modelling objective — and it is better served "
+        "drives those exceedance days is the primary modelling objective - and it is better served "
         "by a non-linear model capable of identifying the multi-condition thresholds that lead to "
         "exceedances, rather than a linear model that only sees average effects.</li>"
         "</ul>"
@@ -1956,8 +1956,8 @@ def build_observations(df):
     do_tbl = ""
     threshold_effects = []
     for r in do_corr_rows:
-        mb = f"{r['mean_below']:.1f}" if r["mean_below"] is not None else "—"
-        ma = f"{r['mean_above']:.1f}" if r["mean_above"] is not None else "—"
+        mb = f"{r['mean_below']:.1f}" if r["mean_below"] is not None else "-"
+        ma = f"{r['mean_above']:.1f}" if r["mean_above"] is not None else "-"
         do_tbl += (
             f"<tr><td>{r['lbl']}</td>"
             f"<td style='color:#2171B5'>{r['pearson']:+.3f}</td>"
@@ -1993,16 +1993,16 @@ def build_observations(df):
         f"<ul>"
         f"{thr_note}"
         "<li><strong>Overall correlation direction:</strong> A negative Pearson/Spearman value "
-        "confirms that higher DO is associated with lower effluent concentrations — aerobic "
+        "confirms that higher DO is associated with lower effluent concentrations - aerobic "
         "treatment is working as expected. The question is whether this relationship is linear "
         "(a fixed slope per mg/L of DO) or threshold-based (a step-change below 0.5 mg/L).</li>"
         "<li><strong>Pearson vs Spearman gap:</strong> If |Spearman| &gt; |Pearson|, the "
-        "DO–effluent relationship is curved or step-like. This is direct evidence that the "
-        "0.5 mg/L threshold acts as a breakpoint rather than a linear slope — a structure "
+        "DO-effluent relationship is curved or step-like. This is direct evidence that the "
+        "0.5 mg/L threshold acts as a breakpoint rather than a linear slope - a structure "
         "that Ridge cannot capture but Random Forest handles through splits.</li>"
         "<li><strong>TSS vs BOD/COD:</strong> TSS is controlled primarily by sedimentation "
-        "(SVI, MLSS) rather than aeration chemistry, so a weaker DO–TSS correlation than "
-        "DO–BOD/COD is expected. If DO still correlates with TSS, it may be through an indirect "
+        "(SVI, MLSS) rather than aeration chemistry, so a weaker DO-TSS correlation than "
+        "DO-BOD/COD is expected. If DO still correlates with TSS, it may be through an indirect "
         "pathway: poor DO → elevated MLSS/SVI → particles carry over to effluent.</li>"
         "</ul>"
     )
@@ -2052,7 +2052,7 @@ def build_observations(df):
     else:
         useful_note = (
             "<li><strong>Weak direct correlations:</strong> SVI and MLSS show weak rank correlations "
-            "with effluent TSS at daily resolution. This does not mean they are uninformative — "
+            "with effluent TSS at daily resolution. This does not mean they are uninformative - "
             "check the MI chart in Section 3. A non-monotonic pattern (e.g., TSS spikes only "
             "above a SVI bulking threshold) would produce near-zero Spearman but positive MI.</li>"
         )
@@ -2070,13 +2070,13 @@ def build_observations(df):
         "is efficient and TSS is limited by other factors; above a bulking threshold (often cited "
         "at SVI ≥ 150 ml/g) TSS rises sharply. A linear model misses this inflection point.</li>"
         "<li><strong>Curved Spearman &gt; Pearson:</strong> If Spearman exceeds Pearson by more "
-        "than 0.08 (flagged in red above), the settleability–TSS relationship is non-proportional. "
-        "This is independent confirmation — beyond Sections 1–3 — that non-linear models are "
+        "than 0.08 (flagged in red above), the settleability-TSS relationship is non-proportional. "
+        "This is independent confirmation - beyond Sections 1-3 - that non-linear models are "
         "more appropriate for TSS prediction specifically.</li>"
         "<li><strong>MLSS vs SVI trade-off:</strong> Very high MLSS increases the sludge blanket "
         "depth and extends settling time requirements. If MLSS shows a stronger correlation than "
         "SVI, it may indicate that biomass concentration (rather than individual particle "
-        "settleability) is the binding constraint — which would point to HRT or wasting rate "
+        "settleability) is the binding constraint - which would point to HRT or wasting rate "
         "as the key operational variable to control effluent TSS.</li>"
         "</ul>"
     )
@@ -2098,7 +2098,7 @@ def _fold(summary, content_html, open_by_default=False):
     """Return a <details> foldable block.
     The ▶ icon is wrapped in .fold-icon so CSS can rotate it when open.
     JS (added at end of body) dynamically swaps the hint text.
-    Strip any caller-supplied hint like '(click to expand)' — it's added automatically.
+    Strip any caller-supplied hint like '(click to expand)' - it's added automatically.
     """
     import re as _re
     label = _re.sub(r"\s*\(click to expand\)", "", summary, flags=_re.IGNORECASE).strip()
@@ -2132,10 +2132,10 @@ def build_suggestions(df):
     Section 11 of the report.
 
     Framework:
-      Q1 — Is there any signal?  → MI score
-      Q2 — What kind of signal?  → Pearson + Spearman pattern
-      Q3 — What does it cost?    → missingness %
-      Q4 — Is it redundant?      → known collinear pairs
+      Q1 - Is there any signal?  → MI score
+      Q2 - What kind of signal?  → Pearson + Spearman pattern
+      Q3 - What does it cost?    → missingness %
+      Q4 - Is it redundant?      → known collinear pairs
     """
     print("11. Feature suggestions (Experiment 3)...")
 
@@ -2180,7 +2180,7 @@ def build_suggestions(df):
             "High collinearity with MLSS (Pearson = 0.871, Spearman = 0.892). Same logic as Existing tank."
         ),
     }
-    # Note: Power GE is NOT redundant with Power Total (P=0.159) — separate pump system.
+    # Note: Power GE is NOT redundant with Power Total (P=0.159) - separate pump system.
     # Aeration pH Existing / New are correlated (P=0.839) but kept separately as
     # the two tanks can operate at different set-points.
     # Aeration DO Existing / New are correlated (P=0.769) but tank-level DO differences
@@ -2191,11 +2191,11 @@ def build_suggestions(df):
         ("Power &amp; Flow", [
             "Power GE (KW)", "Power NEA (KW)", "Power / Flow (KW/ML)",
         ]),
-        ("Inlet — Composite", [
+        ("Inlet - Composite", [
             "Inlet pH (Composite)", "Inlet BOD (mg/L, Composite)",
             "Inlet COD (mg/L, Composite)", "Inlet TSS (mg/L, Composite)",
         ]),
-        ("Inlet — Specialty", [
+        ("Inlet - Specialty", [
             "Inlet TKN/NH3-N (mg/L, Grab)", "Inlet O&G (mg/L, Grab)",
             "Inlet PO4/TP (mg/L, Grab)",
             "Inlet Total Coliform (CFU/100ml, Grab)",
@@ -2206,16 +2206,16 @@ def build_suggestions(df):
             "Primary TSS (mg/L)", "Primary BOD (mg/L)",
             "Primary COD (mg/L)", "Primary Sludge Totalizer (m3)",
         ]),
-        ("Aeration — DO", [
+        ("Aeration - DO", [
             "Aeration DO (mg/L, Existing)", "Aeration DO (mg/L, New)",
         ]),
-        ("Aeration — Biomass &amp; Settling", [
+        ("Aeration - Biomass &amp; Settling", [
             "Aeration MLSS (mg/L, Existing)", "Aeration MLVSS (mg/L, Existing)",
             "Aeration SV30 (ml/L, Existing)", "Aeration SVI (Existing)",
             "Aeration MLSS (mg/L, New)", "Aeration MLVSS (mg/L, New)",
             "Aeration SV30 (ml/L, New)", "Aeration SVI (New)",
         ]),
-        ("Aeration — pH", [
+        ("Aeration - pH", [
             "Aeration pH (Existing)", "Aeration pH (New)",
         ]),
     ]
@@ -2224,7 +2224,7 @@ def build_suggestions(df):
     def _signal_type(p, sp):
         """Classify relationship type from Pearson + Spearman."""
         if p is None or sp is None:
-            return "—"
+            return "-"
         ap, asp = abs(p), abs(sp)
         if ap >= 0.6 and asp >= 0.6:
             return "Linear &amp; monotonic"
@@ -2233,7 +2233,7 @@ def build_suggestions(df):
         if ap < 0.35 and asp >= 0.6:
             return "Non-linear monotonic (S&gg;P)"
         if ap >= 0.35 and asp >= 0.35:
-            return "Moderate — linear + monotonic"
+            return "Moderate - linear + monotonic"
         if asp >= 0.30:
             return "Weakly monotonic"
         if ap >= 0.30:
@@ -2245,7 +2245,7 @@ def build_suggestions(df):
         if feat in REDUNDANT:
             return "REDUNDANT"
         if mi is None:
-            return "—"
+            return "-"
         if mi >= 0.20 and miss_pct <= 35:
             return "ADD"
         if (mi >= 0.15 and miss_pct <= 35) or (mi >= 0.25 and miss_pct <= 55):
@@ -2259,8 +2259,8 @@ def build_suggestions(df):
         "CONSIDER":  "Consider",
         "LOW":       "Low priority",
         "SKIP":      "Skip",
-        "REDUNDANT": "Redundant — drop",
-        "—":         "—",
+        "REDUNDANT": "Redundant - drop",
+        "-":         "-",
     }
     TIER_CLR = {
         "ADD":       ("#0d3b1f", "#2ecc71"),
@@ -2268,7 +2268,7 @@ def build_suggestions(df):
         "LOW":       ("#2e1800", "#d08030"),
         "SKIP":      ("#2e0f0f", "#c04040"),
         "REDUNDANT": ("#1a1a1a", "#666666"),
-        "—":         ("#1a1a1a", "#555555"),
+        "-":         ("#1a1a1a", "#555555"),
     }
 
     # ── Grab targets ──────────────────────────────────────────────────────────
@@ -2291,7 +2291,7 @@ def build_suggestions(df):
             miss_pct = round((1 - n / n_total) * 100, 1)
             if n < 20:
                 feat_stats[feat] = dict(n=n, miss_pct=miss_pct, p=None, sp=None,
-                                        mi=None, tier="—", signal="—")
+                                        mi=None, tier="-", signal="-")
                 continue
             pr, _  = stats.pearsonr(pair[feat], pair[tgt])
             sr, _  = stats.spearmanr(pair[feat], pair[tgt])
@@ -2304,16 +2304,16 @@ def build_suggestions(df):
         all_stats[tgt] = feat_stats
 
     # ── HTML helpers ──────────────────────────────────────────────────────────
-    # Light-theme table styles (white/grey/black — sits inside dark report card)
+    # Light-theme table styles (white/grey/black - sits inside dark report card)
     TH    = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem"
     TH_C  = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem"
     TD_BASE = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
 
-    TIER_SORT = {"ADD": 0, "CONSIDER": 1, "LOW": 2, "SKIP": 3, "REDUNDANT": 4, "—": 5}
+    TIER_SORT = {"ADD": 0, "CONSIDER": 1, "LOW": 2, "SKIP": 3, "REDUNDANT": 4, "-": 5}
 
     def _val(v, is_pct=False):
         if v is None:
-            return "<span style='color:#999'>—</span>"
+            return "<span style='color:#999'>-</span>"
         if is_pct:
             clr = "#721c24" if v > 40 else ("#7a3800" if v > 20 else "#1a1a1a")
             return f"<span style='color:{clr}'>{v:.1f}%</span>"
@@ -2321,16 +2321,16 @@ def build_suggestions(df):
 
     def _mi_fmt(v):
         if v is None:
-            return "<span style='color:#999'>—</span>"
+            return "<span style='color:#999'>-</span>"
         clr = ("#155724" if v >= 0.30 else
                "#7d5400" if v >= 0.15 else
                "#7a3800" if v >= 0.05 else "#721c24")
         return f"<span style='color:{clr};font-weight:600'>{v:.3f}</span>"
 
     def _corr_fmt(v):
-        """Plain dark text — no colour coding; let MI carry the signal story."""
+        """Plain dark text - no colour coding; let MI carry the signal story."""
         if v is None:
-            return "<span style='color:#999'>—</span>"
+            return "<span style='color:#999'>-</span>"
         sign = "+" if v > 0 else ""
         return f"{sign}{v:.3f}"
 
@@ -2342,10 +2342,10 @@ def build_suggestions(df):
             "LOW":       ("background:#fde8d0;color:#7a3800;border:1px solid #f5c6a0"),
             "SKIP":      ("background:#f8d7da;color:#721c24;border:1px solid #f5c6cb"),
             "REDUNDANT": ("background:#e2e3e5;color:#3a3a3a;border:1px solid #d3d3d3"),
-            "—":         ("background:#f0f0f0;color:#888;border:1px solid #ddd"),
+            "-":         ("background:#f0f0f0;color:#888;border:1px solid #ddd"),
         }
         label = TIER_LABEL.get(t, t)
-        st    = styles.get(t, styles["—"])
+        st    = styles.get(t, styles["-"])
         return (f"<span style='{st};padding:2px 7px;border-radius:3px;"
                 f"font-size:0.75rem;font-weight:600;white-space:nowrap'>{label}</span>")
 
@@ -2404,7 +2404,7 @@ def build_suggestions(df):
         skip_feats = [f for f, v in feat_stats.items() if v["tier"] == "SKIP"]
         redundant_feats = [f for f in REDUNDANT if f in feat_stats]
 
-        # ADD bullets — grouped by signal type where patterns emerge
+        # ADD bullets - grouped by signal type where patterns emerge
         if add_feats:
             # Check for DO threshold pattern
             do_feats = [(f, v) for f, v in add_feats
@@ -2414,9 +2414,9 @@ def build_suggestions(df):
             for feat, v in non_do_add:
                 sig_note = ""
                 if v["signal"] == "Linear &amp; monotonic":
-                    sig_note = "strong linear and monotonic signal — reliable for both linear and non-linear models"
+                    sig_note = "strong linear and monotonic signal - reliable for both linear and non-linear models"
                 elif "Non-linear" in v["signal"] or "S&gg;P" in v["signal"]:
-                    sig_note = "monotonic but curved (Spearman > Pearson) — benefits non-linear models more than linear"
+                    sig_note = "monotonic but curved (Spearman > Pearson) - benefits non-linear models more than linear"
                 elif "Moderate" in v["signal"]:
                     sig_note = "moderate linear + monotonic signal"
                 else:
@@ -2436,14 +2436,14 @@ def build_suggestions(df):
                     f"<li><strong>Aeration DO (Existing &amp; New)</strong>: "
                     f"MI = {'/'.join(do_mis)} but Pearson and Spearman are both weak "
                     f"(&lt; 0.20). This is the hallmark of a <em>threshold / non-monotonic</em> "
-                    f"relationship — Section 9 confirms that BOD and TSS spike disproportionately "
+                    f"relationship - Section 9 confirms that BOD and TSS spike disproportionately "
                     f"when DO falls below ~0.5&nbsp;mg/L. A linear model will miss this entirely; "
                     f"a tree model will find the split automatically. "
                     f"Missingness: {'/'.join(do_miss)}. Strongly recommended for Experiment 3 "
                     f"with non-linear models.</li>"
                 )
 
-        # CONSIDER bullets — highlight only those with non-trivial MI
+        # CONSIDER bullets - highlight only those with non-trivial MI
         for feat, v in consider_feats[:5]:  # cap at 5 to keep narrative concise
             miss_note = (f"high missingness ({v['miss_pct']:.1f}%) means imputation is required "
                          f"and should be validated" if v["miss_pct"] > 40
@@ -2454,13 +2454,13 @@ def build_suggestions(df):
                 f"{miss_note.capitalize()}. Include if imputation quality is acceptable.</li>"
             )
 
-        # LOW-priority features — single grouped bullet
+        # LOW-priority features - single grouped bullet
         if low_feats:
             lf_names = ", ".join(f"<em>{f}</em>" for f, _ in low_feats[:8])
             bullets.append(
                 f"<li><strong>Low priority</strong>: {lf_names}"
                 + (f" and {len(low_feats)-8} more" if len(low_feats) > 8 else "")
-                + ". MI scores between 0.05 and 0.15. Marginal signal — include only "
+                + ". MI scores between 0.05 and 0.15. Marginal signal - include only "
                   "if they are already imputed cheaply alongside stronger features.</li>"
             )
 
@@ -2469,7 +2469,7 @@ def build_suggestions(df):
             sk_names = ", ".join(f"<em>{f}</em>" for f in skip_feats)
             bullets.append(
                 f"<li><strong>Skip</strong>: {sk_names}. "
-                f"MI ≈ 0 — no detectable statistical relationship with this target. "
+                f"MI ≈ 0 - no detectable statistical relationship with this target. "
                 f"Adding them only increases noise and imputation burden.</li>"
             )
 
@@ -2528,12 +2528,12 @@ def build_suggestions(df):
         legend = """
         <p style='font-size:0.76rem;color:#666;margin:6px 0 0'>
           MI: <span style='color:#155724;font-weight:600'>green ≥ 0.30</span>
-          &nbsp;·&nbsp; <span style='color:#7d5400;font-weight:600'>amber 0.15–0.29</span>
-          &nbsp;·&nbsp; <span style='color:#7a3800;font-weight:600'>orange 0.05–0.14</span>
+          &nbsp;·&nbsp; <span style='color:#7d5400;font-weight:600'>amber 0.15-0.29</span>
+          &nbsp;·&nbsp; <span style='color:#7a3800;font-weight:600'>orange 0.05-0.14</span>
           &nbsp;·&nbsp; <span style='color:#721c24;font-weight:600'>red &lt; 0.05</span>
           &nbsp;·&nbsp; Pearson and Spearman r shown as plain values (no colour coding).
           Miss% in <span style='color:#721c24;font-weight:600'>red</span> &gt; 40%,
-          <span style='color:#7a3800;font-weight:600'>orange</span> 21–40%.
+          <span style='color:#7a3800;font-weight:600'>orange</span> 21-40%.
         </p>"""
 
         narrative_html = _narrative(tgt, feat_stats)
@@ -2547,7 +2547,7 @@ def build_suggestions(df):
     <span class='fold-icon' style='display:inline-block;transition:transform 0.2s'>&#9654;</span>
     {label}
     <span style='font-size:0.78rem;font-weight:400;color:#5a7a9a;margin-left:4px'>
-      — {n_total} rows with target present (training + test combined)
+      - {n_total} rows with target present (training + test combined)
     </span>
   </summary>
   <div style='padding:14px'>
@@ -2569,14 +2569,14 @@ def build_suggestions(df):
 secondary clarifier/sedimentation columns + COMMON). Each feature is evaluated against
 four questions:</p>
 <ol style='margin:6px 0 10px;padding-left:1.4em;font-size:0.92rem'>
-  <li><strong>Is there any signal?</strong> — Mutual Information (MI) score, computed on rows
+  <li><strong>Is there any signal?</strong> - Mutual Information (MI) score, computed on rows
       where both the feature and target are present.</li>
-  <li><strong>What kind of signal?</strong> — Pearson (linear) vs Spearman (monotonic) pattern,
+  <li><strong>What kind of signal?</strong> - Pearson (linear) vs Spearman (monotonic) pattern,
       classified into relationship types that indicate which model class will benefit.</li>
-  <li><strong>What does it cost?</strong> — Missingness % after filtering to rows where the
+  <li><strong>What does it cost?</strong> - Missingness % after filtering to rows where the
       target is present. High missingness means imputation is required before this feature
       can be used.</li>
-  <li><strong>Is it redundant?</strong> — Known collinear pairs identified from the
+  <li><strong>Is it redundant?</strong> - Known collinear pairs identified from the
       Section&nbsp;5 Features&#8209;vs&#8209;Features table.</li>
 </ol>
 <p style='font-size:0.87rem;color:#7a9ab8'>
@@ -2605,7 +2605,7 @@ def build_html(data):
       operational (dict year/month/removal/compliance/power/heatmap)
     """
     obs = data.get("obs", {})
-    title = "EDA Full Report — All_Years_Full.xlsx"
+    title = "EDA Full Report - All_Years_Full.xlsx"
 
     CSS = dark_mode_css("""
     body  { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 0; }
@@ -2696,14 +2696,14 @@ def build_html(data):
     """)
 
     TARGET_LABELS = {
-        "Effluent BOD (mg/L, Grab)":        "Effluent BOD — Grab sample",
-        "Effluent COD (mg/L, Grab)":        "Effluent COD — Grab sample",
-        "Effluent TSS (mg/L, Grab)":        "Effluent TSS — Grab sample",
-        "Effluent pH (Grab)":               "Effluent pH — Grab sample",
-        "Effluent BOD (mg/L, Composite)":   "Effluent BOD — Composite sample",
-        "Effluent COD (mg/L, Composite)":   "Effluent COD — Composite sample",
-        "Effluent TSS (mg/L, Composite)":   "Effluent TSS — Composite sample",
-        "Effluent pH (Composite)":          "Effluent pH — Composite sample",
+        "Effluent BOD (mg/L, Grab)":        "Effluent BOD - Grab sample",
+        "Effluent COD (mg/L, Grab)":        "Effluent COD - Grab sample",
+        "Effluent TSS (mg/L, Grab)":        "Effluent TSS - Grab sample",
+        "Effluent pH (Grab)":               "Effluent pH - Grab sample",
+        "Effluent BOD (mg/L, Composite)":   "Effluent BOD - Composite sample",
+        "Effluent COD (mg/L, Composite)":   "Effluent COD - Composite sample",
+        "Effluent TSS (mg/L, Composite)":   "Effluent TSS - Composite sample",
+        "Effluent pH (Composite)":          "Effluent pH - Composite sample",
     }
 
     # Stable anchor slugs for each effluent target (used in sidebar nav + section folds)
@@ -2719,10 +2719,10 @@ def build_html(data):
     }
 
     SCATTER_LABELS = {
-        "Effluent BOD (mg/L, Grab)":  "4a — Effluent BOD (Grab)",
-        "Effluent COD (mg/L, Grab)":  "4b — Effluent COD (Grab)",
-        "Effluent TSS (mg/L, Grab)":  "4c — Effluent TSS (Grab)",
-        "Effluent pH (Grab)":         "4d — Effluent pH (Grab)",
+        "Effluent BOD (mg/L, Grab)":  "4a - Effluent BOD (Grab)",
+        "Effluent COD (mg/L, Grab)":  "4b - Effluent COD (Grab)",
+        "Effluent TSS (mg/L, Grab)":  "4c - Effluent TSS (Grab)",
+        "Effluent pH (Grab)":         "4d - Effluent pH (Grab)",
     }
 
     PEARSON_INTERP = """
@@ -2730,27 +2730,27 @@ def build_html(data):
     <h4>How to read this chart</h4>
     <p>Each feature has two horizontal bars:</p>
     <ul>
-      <li><strong style="color:#2171B5">Blue — Pearson r</strong>: measures the
+      <li><strong style="color:#2171B5">Blue - Pearson r</strong>: measures the
           <em>linear</em> relationship. It assumes that as the feature increases by one
           unit, the target increases by a fixed amount.</li>
-      <li><strong style="color:#FD8D3C">Orange — Spearman r</strong>: measures the
+      <li><strong style="color:#FD8D3C">Orange - Spearman r</strong>: measures the
           <em>rank / monotonic</em> relationship. It only asks whether the two variables
           move in the same direction, regardless of whether the relationship is a straight
           line or a curve.</li>
     </ul>
     <p><strong>What the gap between the two bars tells you:</strong></p>
     <ul>
-      <li><strong>Blue ≈ Orange, both sizable</strong> — the relationship is
+      <li><strong>Blue ≈ Orange, both sizable</strong> - the relationship is
           approximately linear. A linear model handles this well.</li>
-      <li><strong>Orange noticeably longer than Blue</strong> — the relationship is
+      <li><strong>Orange noticeably longer than Blue</strong> - the relationship is
           monotonic but <em>curved</em> (e.g., logarithmic, exponential, or step-like).
           As one variable increases the other consistently rises or falls, but not
           proportionally. Linear models will underestimate the strength of this feature;
           non-linear models (RF) capture it naturally.</li>
-      <li><strong>Blue noticeably longer than Orange</strong> — a few extreme outliers
+      <li><strong>Blue noticeably longer than Orange</strong> - a few extreme outliers
           are boosting the linear correlation. Spearman is more robust to outliers.
           Investigate whether those points are genuine or measurement errors.</li>
-      <li><strong>Both bars small</strong> — this feature has little direct predictive
+      <li><strong>Both bars small</strong> - this feature has little direct predictive
           power for this target, or the relationship is complex and non-monotonic.
           Check the Mutual Information chart, which can detect non-monotonic patterns.</li>
     </ul>
@@ -2764,15 +2764,15 @@ def build_html(data):
     <h4>How to read this chart</h4>
     <p><strong>Mutual Information (MI)</strong> measures how much knowing a feature
        reduces uncertainty about the target. Unlike Pearson or Spearman, it is
-       completely model-agnostic — it detects linear, curved, step-function, and even
+       completely model-agnostic - it detects linear, curved, step-function, and even
        fully non-monotonic dependencies.</p>
     <ul>
-      <li><strong>High MI + high Spearman</strong> — strong, monotonic relationship.
+      <li><strong>High MI + high Spearman</strong> - strong, monotonic relationship.
           Both linear and non-linear models benefit from this feature.</li>
-      <li><strong>High MI + low Spearman</strong> — the relationship is important but
+      <li><strong>High MI + low Spearman</strong> - the relationship is important but
           non-monotonic (e.g., there is an optimal range). Only non-linear models can
           exploit this. This is the clearest signal that RF is needed.</li>
-      <li><strong>Low MI</strong> — the feature contributes little to predicting this
+      <li><strong>Low MI</strong> - the feature contributes little to predicting this
           target and is a candidate for exclusion in feature selection.</li>
     </ul>
     <p>Red bars mark the top 25% of features by MI score for this target.</p>
@@ -2830,7 +2830,7 @@ def build_html(data):
     <li class="nav-s"><a href="#s8">8. Stage Removal</a></li>
     <li class="nav-s"><a href="#s9">9. DO vs Effluent</a></li>
     <li class="nav-s"><a href="#s10">10. Settleability vs TSS</a></li>
-    <li class="nav-s"><a href="#s11">11. Feature Suggestions — Exp 3</a></li>
+    <li class="nav-s"><a href="#s11">11. Feature Suggestions - Exp 3</a></li>
     <li class="nav-s"><a class="nav-toggle" href="#s12">12. Operational Overview</a>
       <ul class="nav-children">
         <li class="nav-t"><a href="#s12-year">Distributions by Year</a></li>
@@ -2857,7 +2857,7 @@ def build_html(data):
 <div id="main-content">
 <h1>{title}</h1>
 <p>Full exploratory data analysis on the enriched 60-column dataset
-(<code>All_Years_Full.xlsx</code>, 1918 daily rows, 2020–2025).
+(<code>All_Years_Full.xlsx</code>, 1918 daily rows, 2020-2025).
 Sections are ordered by relevance to the key question:
 <strong>are non-linear models (Random Forest) justified over linear ones?</strong>
 Use the navigation panel on the left to jump to any section or individual target.</p>
@@ -2866,16 +2866,16 @@ Use the navigation panel on the left to jump to any section or individual target
     # ── Section 1: Ridge residuals ──────────────────────────────────────────────
     parts.append("""<div class="card" id="s1">
 <h2><span class="badge badge-decision">Model selection</span>
-1. Ridge residuals — linearity diagnostic</h2>
+1. Ridge residuals - linearity diagnostic</h2>
 <p>A Ridge regression model (α = 1, StandardScaler) is trained on process features
-(2021–2024) and tested on 2025.
+(2021-2024) and tested on 2025.
 Three residual plots are shown per effluent target:</p>
 <ul>
-  <li><strong>Residuals vs Fitted</strong> — a random horizontal band around zero
+  <li><strong>Residuals vs Fitted</strong> - a random horizontal band around zero
       means linear assumptions hold; any curve, funnel, or pattern means they do not.</li>
-  <li><strong>Residuals vs Time</strong> — systematic drift or seasonality that the
+  <li><strong>Residuals vs Time</strong> - systematic drift or seasonality that the
       linear model cannot capture (blue = train, red = 2025 test).</li>
-  <li><strong>Residuals vs Top Feature</strong> — if residuals correlate with the
+  <li><strong>Residuals vs Top Feature</strong> - if residuals correlate with the
       feature most relied upon by Ridge, the relationship is non-linear.</li>
 </ul>
 """)
@@ -2896,25 +2896,25 @@ Three residual plots are shown per effluent target:</p>
             if slug:
                 content += f'<a id="{section_id}-{slug}" style="display:block;position:relative;top:-80px;visibility:hidden"></a>\n'
 
-            # 1 — residual diagnostic plots
+            # 1 - residual diagnostic plots
             content += img_tag(resid_path)
 
-            # 2 — coefficient bar chart (foldable, collapsed by default)
+            # 2 - coefficient bar chart (foldable, collapsed by default)
             if coef_path:
                 coef_note = (
                     "<p style='font-size:0.82em;color:#666;margin:4px 0 0 0;font-style:italic'>"
                     "Coefficients are on the StandardScaler scale (unit-free). "
-                    "Correlated features split weight between them — individual bars "
+                    "Correlated features split weight between them - individual bars "
                     "understate the importance of collinear groups. "
                     "Use Mutual Information (Section 4) for model-agnostic feature ranking."
                     "</p>"
                 )
                 content += _fold(
-                    "▶ Coefficient weights — what Ridge relied on (top 10)",
+                    "▶ Coefficient weights - what Ridge relied on (top 10)",
                     img_tag(coef_path) + coef_note
                 )
 
-            # 3 — per-target observations
+            # 3 - per-target observations
             if tgt_obs:
                 content += _obs(tgt_obs)
 
@@ -2966,7 +2966,7 @@ Three residual plots are shown per effluent target:</p>
 <p>Top 15 features (ranked by Mutual Information) plotted against each effluent target.
 Points are coloured by year. The dashed black line is the linear regression fit.
 The subplot highlighted in <strong style="color:#E07B20">orange</strong> is the feature
-with the highest Ridge coefficient magnitude — the variable Section 1 residuals rely on most.
+with the highest Ridge coefficient magnitude - the variable Section 1 residuals rely on most.
 Look for curvature, fan shapes, or year-cluster separation in that panel first.</p>
 {_obs(s4_obs)}
 {scatter_folds}
@@ -3028,10 +3028,10 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
     cross_img  = cross_data[0] if isinstance(cross_data, tuple) else cross_data
     cross_tbl  = cross_data[1] if isinstance(cross_data, tuple) else ""
     parts.append(f"""<div class="card" id="s5">
-<h2>5. Full correlation matrix — features &amp; targets</h2>
+<h2>5. Full correlation matrix - features &amp; targets</h2>
 <p>All process features <em>and</em> all eight effluent targets correlated against
 each other. Features below the threshold (|Pearson| and |Spearman| both &lt; 0.5 for
-every pair) are hidden. This reveals both <strong>feature–target signal</strong>
+every pair) are hidden. This reveals both <strong>feature-target signal</strong>
 (which inputs associate with which outputs) and <strong>inter-feature collinearity</strong>
 (which inputs carry redundant information).
 Top = Pearson, Bottom = Spearman.
@@ -3045,10 +3045,10 @@ Diagonal self-correlations are excluded.</p>
 
     # ── Section 6: Missing data ────────────────────────────────────────────────
     parts.append(f"""<div class="card" id="s6">
-<h2>6. Data coverage — all columns</h2>
+<h2>6. Data coverage - all columns</h2>
 <p>Monthly data coverage (% of days with a recorded value) for every column in
 the dataset, grouped by treatment stage. White = no data; darker green = complete.
-Use this to understand where gaps fall before modelling — columns with very low
+Use this to understand where gaps fall before modelling - columns with very low
 coverage may need imputation or exclusion depending on the missing-data pattern.</p>
 {img_tag(data.get("missing_all"))}
 {_obs(obs.get("s6", ""))}
@@ -3059,10 +3059,10 @@ coverage may need imputation or exclusion depending on the missing-data pattern.
     parts.append(f"""<div class="card" id="s7">
 <h2>7. Aeration tank time series</h2>
 <p>Dissolved Oxygen (DO), Mixed Liquor Suspended Solids (MLSS), and Sludge Volume
-Index (SVI) for the Existing (blue) and New (orange) aeration tanks over 2021–2025.
+Index (SVI) for the Existing (blue) and New (orange) aeration tanks over 2021-2025.
 The dashed red line on DO marks the 0.5 mg/L minimum required for aerobic treatment.
 Extended periods below this threshold are expected to correspond to poorer effluent
-quality — visible in the scatter charts of Section 9.</p>
+quality - visible in the scatter charts of Section 9.</p>
 {img_tag(data.get("aeration_ts"))}
 {_obs(obs.get("s7", ""))}
 </div>
@@ -3085,8 +3085,8 @@ variability exists at each stage.</p>
 <h2>9. Aeration DO vs effluent quality</h2>
 <p>Scatter plots of Aeration DO (Existing Tank) against effluent BOD, COD, and TSS.
 The dashed red line marks the DO = 0.5 mg/L minimum threshold.
-A sharp degradation in effluent quality <em>below</em> the threshold — rather than a
-smooth linear decline — would be strong evidence for a threshold / step non-linearity
+A sharp degradation in effluent quality <em>below</em> the threshold - rather than a
+smooth linear decline - would be strong evidence for a threshold / step non-linearity
 that RF can capture but a linear model cannot.</p>
 {img_tag(data.get("do_effluent"))}
 {_obs(obs.get("s9", ""))}
@@ -3117,40 +3117,40 @@ candidates for the feature selection pool.</p>
 and month-over-month patterns, removal efficiency, compliance rates, and power efficiency.
 All use grab-sample effluent columns.</p>
 
-<h3 id="s12-year">12a — Annual distributions by parameter</h3>
+<h3 id="s12-year">12a - Annual distributions by parameter</h3>
 <p>Box plots (IQR + 1.5×IQR whiskers) for each core parameter, one box per year.
 Compliance limit lines are drawn in red/orange where applicable.
 Colour scheme is consistent with year palettes used throughout the report.</p>
 {img_tag(op.get("year"))}
 
-<h3 id="s12-month">12b — Seasonal distributions by calendar month</h3>
+<h3 id="s12-month">12b - Seasonal distributions by calendar month</h3>
 <p>Box plots of flow, inlet, and effluent parameters aggregated over all years by month.
-Look for the monsoon signal (Jun–Sep) in flow and inlet load, and for how effluent
+Look for the monsoon signal (Jun-Sep) in flow and inlet load, and for how effluent
 quality follows or lags the inlet.</p>
 {img_tag(op.get("month"))}
 
-<h3 id="s12-removal">12c — Removal efficiency (BOD, COD, TSS)</h3>
+<h3 id="s12-removal">12c - Removal efficiency (BOD, COD, TSS)</h3>
 <p>Top row: 7-day rolling removal efficiency time series. Orange/red dashed lines mark
 90% and 95% removal targets. Bottom row: box plots of daily removal % by year.
 2022 anomaly (high inlet concentrations) should appear as elevated removal variance.</p>
 {img_tag(op.get("removal"))}
 
-<h3 id="s12-compliance">12d — Monthly compliance rate</h3>
+<h3 id="s12-compliance">12d - Monthly compliance rate</h3>
 <p>Green area = fraction of daily measurements that met the discharge standard.
 Grey area = fraction of missing readings. Orange dashed line at 80% pass rate.
 Drops in compliance often coincide with monsoon high-flow months or 2022 upsets.</p>
 {img_tag(op.get("compliance"))}
 
-<h3 id="s12-power">12e — Power efficiency vs. flow</h3>
+<h3 id="s12-power">12e - Power efficiency vs. flow</h3>
 <p>Scatter of Power/Flow (KWh/ML) vs. daily flow (MLD), coloured by year.
 The red dashed line is the regulatory limit of 482 KWh/ML.
 A downward trend indicates better energy efficiency at higher flows (economies of scale).</p>
 {img_tag(op.get("power"))}
 
-<h3 id="s12-heatmap">12f — Seasonal heatmap (monthly averages)</h3>
+<h3 id="s12-heatmap">12f - Seasonal heatmap (monthly averages)</h3>
 <p>Monthly average of each parameter, colour-normalised per row so within-year
 seasonal patterns are visible across different units. Actual values are annotated
-in each cell. Jun–Sep monsoon months should appear distinctly in flow and inlet load.</p>
+in each cell. Jun-Sep monsoon months should appear distinctly in flow and inlet load.</p>
 {img_tag(op.get("heatmap"))}
 </div>
 """)

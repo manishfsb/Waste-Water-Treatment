@@ -1,5 +1,5 @@
 """
-linear_modeling_exp4_s2.py — OLS, Ridge, and ElasticNet on Experiment 4 Sub-2 subsets.
+linear_modeling_exp4_s2.py - OLS, Ridge, and ElasticNet on Experiment 4 Sub-2 subsets.
 
 Experiment 4 Phase 2 hypothesis: automated iterative VIF pruning (threshold=10)
 within the Exp4-S1 feature pool further reduces multicollinearity, improving
@@ -8,9 +8,9 @@ feature matrix.
 
 Dropped vs Exp4-S1 (per target, by VIF pruning):
   - All pH features (Inlet pH, Sec Clarifier pH, Aeration pH, Primary Clarifier pH)
-    removed — VIF 600–2400, perfectly correlated across plant
-  - Inlet BOD, Inlet COD removed from most targets — VIF 18–34
-  - MLSS removed — VIF 30–36 (SV30 survives as proxy for biomass)
+    removed - VIF 600-2400, perfectly correlated across plant
+  - Inlet BOD, Inlet COD removed from most targets - VIF 18-34
+  - MLSS removed - VIF 30-36 (SV30 survives as proxy for biomass)
   - Flow or Power Total removed (correlated pair)
 
 Gain: +47 to +293 additional rows vs Exp4-S1 (dropped high-missingness features
@@ -139,12 +139,12 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     test_df = df[df["year"] == TEST_YEAR]
 
     if len(test_df) == 0:
-        print(f"  WARNING: no {TEST_YEAR} rows — skipping {ds_id}")
+        print(f"  WARNING: no {TEST_YEAR} rows - skipping {ds_id}")
         return None, None
 
     missing = [f for f in features if f not in df.columns]
     if missing:
-        print(f"  WARNING: missing columns {missing} — skipping {ds_id}")
+        print(f"  WARNING: missing columns {missing} - skipping {ds_id}")
         return None, None
 
     X_train = train_df[features].values
@@ -192,7 +192,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ols},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
-    print(f"    OLS    — Train R²: {results['OLS_train_R2']:+.3f} | "
+    print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | Gap: {results['OLS_R2_gap']:+.3f}")
 
     # ── Ridge ─────────────────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[f"predicted_Ridge_run_{run}"] = np.round(ridge.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ridge},
                 os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
-    print(f"    Ridge  — Train R²: {results['Ridge_train_R2']:+.3f} | "
+    print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | "
           f"Test R²: {results['Ridge_test_R2']:+.3f} | Gap: {results['Ridge_R2_gap']:+.3f} | "
           f"α={results['Ridge_alpha']}")
 
@@ -234,7 +234,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[f"predicted_ElNet_run_{run}"] = np.round(elnet.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": elnet},
                 os.path.join(MODELS_DIR, f"{ds_id}_ElNet_run_{run}.pkl"))
-    print(f"    ElNet  — Train R²: {results['ElNet_train_R2']:+.3f} | "
+    print(f"    ElNet  - Train R²: {results['ElNet_train_R2']:+.3f} | "
           f"Test R²: {results['ElNet_test_R2']:+.3f} | Gap: {results['ElNet_R2_gap']:+.3f} | "
           f"α={results['ElNet_alpha']}, l1={results['ElNet_l1_ratio']}")
 
@@ -306,7 +306,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Linear Modeling Exp4-S2 (VIF-pruned) — Run {run}")
+    print(f"Linear Modeling Exp4-S2 (VIF-pruned) - Run {run}")
     print(f"Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElasticNet\n")
 
     all_results = []
@@ -316,7 +316,7 @@ def main():
         print(f"[{experiment}]  {ds_id}  |  Target: {target}")
 
         if not os.path.exists(path):
-            print(f"  WARNING: file not found — {path}"); continue
+            print(f"  WARNING: file not found - {path}"); continue
 
         df_peek  = pd.read_excel(path, nrows=0)
         features = infer_features(df_peek, target)
@@ -331,7 +331,7 @@ def main():
         all_results.append(results)
 
     if not all_results:
-        print("No results produced — check warnings above."); return
+        print("No results produced - check warnings above."); return
 
     df_results = pd.DataFrame(all_results)
     print(f"\n{'='*60}\nGenerating summary plots...")

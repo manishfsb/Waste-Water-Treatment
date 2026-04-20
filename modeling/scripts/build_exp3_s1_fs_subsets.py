@@ -1,5 +1,5 @@
 """
-build_exp3_s1_fs_subsets.py — Create feature-selected subset Excel files for Exp3 Sub-1.
+build_exp3_s1_fs_subsets.py - Create feature-selected subset Excel files for Exp3 Sub-1.
 
 Reads feature_importance_exp3_s1.xlsx (output of feature_selection_exp3_s1.py) and builds
 new subset files that use only Core + Useful features (normalised perm importance >= 0.03),
@@ -7,7 +7,7 @@ dropping Weak features. Because dropna() is applied to fewer columns, more rows 
 compared to the Exp3-S1 baseline subsets.
 
 Outputs:
-  datasets/experiment3/sub_exp1/feature_selected_datasets/  — 8 xlsx files
+  datasets/experiment3/sub_exp1/feature_selected_datasets/  - 8 xlsx files
 
 Row-count comparison (Exp3-S1 baseline vs feature-selected) is printed for each dataset.
 
@@ -31,7 +31,7 @@ FS_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1",
 BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1")
 
 # ── Feature selection threshold ────────────────────────────────────────────────
-FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03–0.07); drop Weak (< 0.03)
+FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03-0.07); drop Weak (< 0.03)
 
 # ── Registry ───────────────────────────────────────────────────────────────────
 # (exp_label, variant, dataset_name, target, min_year)
@@ -48,7 +48,7 @@ REGISTRY = [
 
 
 def main():
-    print("build_exp3_s1_fs_subsets.py — Feature-Selected Subset Creation (Exp3 Sub-1)")
+    print("build_exp3_s1_fs_subsets.py - Feature-Selected Subset Creation (Exp3 Sub-1)")
     print("=" * 70)
     print(f"Threshold: perm_imp_norm >= {FS_THRESHOLD} (Core + Useful)")
     print()
@@ -59,12 +59,12 @@ def main():
     raw["year"]        = raw["Date"].dt.year
     raw["month"]       = raw["Date"].dt.month
     raw["day_of_week"] = raw["Date"].dt.dayofweek
-    print(f"  {len(raw)} total rows, {raw['year'].min()}–{raw['year'].max()}")
+    print(f"  {len(raw)} total rows, {raw['year'].min()}-{raw['year'].max()}")
     print()
 
     # ── Load feature importance ────────────────────────────────────────────────
     fi = pd.read_excel(FI_FILE)
-    print(f"Loaded feature_importance_exp3_s1.xlsx — {len(fi)} feature×target rows")
+    print(f"Loaded feature_importance_exp3_s1.xlsx - {len(fi)} feature×target rows")
     print()
 
     # ── Create output directory ────────────────────────────────────────────────
@@ -86,7 +86,7 @@ def main():
         selected = fi.loc[mask, "feature"].tolist()
 
         if not selected:
-            print(f"  WARNING: no features above threshold — skipping")
+            print(f"  WARNING: no features above threshold - skipping")
             continue
 
         n_all     = fi.loc[(fi["experiment"] == exp) & (fi["variant"] == variant) &
@@ -103,7 +103,7 @@ def main():
 
         missing_cols = [c for c in cols_needed if c not in sub.columns]
         if missing_cols:
-            print(f"  WARNING: columns missing from source data: {missing_cols} — skipping")
+            print(f"  WARNING: columns missing from source data: {missing_cols} - skipping")
             continue
 
         sub = sub[cols_needed].copy()

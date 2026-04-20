@@ -20,7 +20,7 @@ The resulting page:
 # ── CSS custom-property palette ───────────────────────────────────────────────
 # All colour tokens are defined on :root (light) and overridden on [data-theme="dark"].
 # Any rule in the existing CSS that references bg/text/card colours should use
-# these variables — or simply call dark_mode_css() which rewrites the common ones.
+# these variables - or simply call dark_mode_css() which rewrites the common ones.
 
 _VARIABLES = """
 :root {
@@ -42,7 +42,7 @@ _VARIABLES = """
   --details-bdr:  #D0D7E3;
   --summary-hover:#EEF3FA;
   --input-bg:     #FFFFFF;
-  /* Aliases — keep in sync with canonical names above */
+  /* Aliases - keep in sync with canonical names above */
   --card-bg:      #FFFFFF;
   --text-primary: #222222;
   --text-color:   #222222;
@@ -78,7 +78,7 @@ _VARIABLES = """
   --details-bdr:  #2E3450;
   --summary-hover:#1A2238;
   --input-bg:     #23272F;
-  /* Aliases — keep in sync with canonical names above */
+  /* Aliases - keep in sync with canonical names above */
   --card-bg:      #23272F;
   --text-primary: #E2E4E9;
   --text-color:   #E2E4E9;
@@ -118,7 +118,7 @@ _TOGGLE_CSS = """
 #theme-toggle:hover { border-color: var(--text-muted); }
 """
 
-# ── JS — respects OS preference, allows manual override stored in localStorage ─
+# ── JS - respects OS preference, allows manual override stored in localStorage ─
 _TOGGLE_JS = """
 <script>
 (function() {

@@ -1,5 +1,5 @@
 """
-feature_selection_exp3_s1.py — Feature importance ranking for Experiment 3 Sub-1.
+feature_selection_exp3_s1.py - Feature importance ranking for Experiment 3 Sub-1.
 
 For each of the 8 Exp3-S1 targets:
   - Loads the tuned RF best_estimator_ from models/non_linear/exp3_s1/rf/models/
@@ -8,7 +8,7 @@ For each of the 8 Exp3-S1 targets:
   - Applies Core / Useful / Weak tiering (same thresholds as Phase 5)
 
 Outputs (all in feature_analysis/selection/):
-  plots_exp3_s1/   — heatmap + per-target bar charts
+  plots_exp3_s1/   - heatmap + per-target bar charts
   feature_importance_exp3_s1.xlsx
   report_feature_selection_exp3_s1_run_N.html
 
@@ -263,9 +263,9 @@ def _target_details(sub_target: pd.DataFrame, target: str, bar_path: str) -> str
     useful_f = [r["feat_short"] for _, r in sub_s.iterrows() if USEFUL_THRESH <= r["perm_imp_norm"] < CORE_THRESH]
     weak_f   = [r["feat_short"] for _, r in sub_s.iterrows() if r["perm_imp_norm"] < USEFUL_THRESH]
     rec_line = (
-        f"<span class='tier-core'>Core ({len(core_f)}): {', '.join(core_f) or '—'}</span> &nbsp;|&nbsp; "
+        f"<span class='tier-core'>Core ({len(core_f)}): {', '.join(core_f) or '-'}</span> &nbsp;|&nbsp; "
         f"<span class='tier-useful'>Useful ({len(useful_f)})</span> &nbsp;|&nbsp; "
-        f"<span class='tier-weak'>Weak ({len(weak_f)}): {', '.join(weak_f) or '—'}</span>"
+        f"<span class='tier-weak'>Weak ({len(weak_f)}): {', '.join(weak_f) or '-'}</span>"
     )
 
     rows = ""
@@ -337,13 +337,13 @@ def _variant_section(exp: str, variant: str, sub: pd.DataFrame,
     sec_id = f"{exp.replace(' ','-')}-{variant}"
     return f"""
     <div class="exp-card" id="{sec_id}">
-      <h2>{exp} — {variant} Effluent</h2>
+      <h2>{exp} - {variant} Effluent</h2>
       <div class="obs">{obs}</div>
 
       <h3>Feature × Target Importance Heatmap</h3>
       <p style="font-size:0.8rem;color:var(--text-meta);margin:0 0 8px">
         Normalised permutation importance (sums to 1.0 per target column).
-        Computed on training data (2021–2024).
+        Computed on training data (2021-2024).
       </p>
       <div class="plot-box wide" style="max-width:900px">{hm_img}</div>
 
@@ -405,7 +405,7 @@ REPORT_CSS = dark_mode_css("""
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    print("Feature Selection — Experiment 3 Sub-1")
+    print("Feature Selection - Experiment 3 Sub-1")
     print("=" * 60)
 
     run = _rf_run_number()
@@ -417,7 +417,7 @@ def main():
     for exp, variant, name, subset_path, target in REGISTRY:
         print(f"  [{variant}]  {name}")
         if not os.path.exists(subset_path):
-            print(f"    SKIP — file not found: {subset_path}")
+            print(f"    SKIP - file not found: {subset_path}")
             continue
         rows = compute_metrics(exp, variant, name, subset_path, target, run)
         all_rows.extend(rows)
@@ -449,7 +449,7 @@ def main():
         tag = f"Exp3S1_{variant}"
 
         hm_path = make_heatmap(sub,
-            f"Normalised Permutation Importance — Exp3 Sub-1 ({variant})",
+            f"Normalised Permutation Importance - Exp3 Sub-1 ({variant})",
             f"{tag}_heatmap.png")
 
         bar_paths = {}
@@ -457,7 +457,7 @@ def main():
             ts    = _tgt_short(tgt)
             bpath = make_bar_chart(
                 sub[sub["target"] == tgt].copy(),
-                f"Feature Importance — {ts}",
+                f"Feature Importance - {ts}",
                 f"{tag}_{ts}_bar.png")
             bar_paths[ts] = bpath
 
@@ -473,7 +473,7 @@ def main():
     intro = f"""
     <div style="margin:10px 0 20px;padding:12px 16px;background:var(--obs-bg);
                 border-radius:8px;font-size:0.88rem;color:var(--text)">
-      <strong>Experiment 3 Sub-1 — Feature Selection:</strong> Feature importance computed
+      <strong>Experiment 3 Sub-1 - Feature Selection:</strong> Feature importance computed
       on the Exp3 Sub-1 subsets (Exp2 Sub-2 baseline + ADD-tier candidate features).
       RF permutation importance (n_repeats=20) is the primary ranking signal, supported by
       mutual information and Pearson/Spearman correlations.<br><br>
@@ -487,14 +487,14 @@ def main():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feature Selection — Experiment 3 Sub-1 | Run {report_run}</title>
+  <title>Feature Selection - Experiment 3 Sub-1 | Run {report_run}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>{REPORT_CSS}</style>
   {DARK_MODE_JS}
 </head>
 <body>
-  <h1>Feature Selection — Experiment 3 Sub-1
+  <h1>Feature Selection - Experiment 3 Sub-1
     <span class="run-badge">Run {report_run}</span>
   </h1>
   <div class="ts">Generated {ts_str} &nbsp;|&nbsp; Based on tuned RF models (Exp3-S1 run {run})</div>

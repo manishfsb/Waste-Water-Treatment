@@ -1,5 +1,5 @@
 """
-build_exp3_subsets.py — Create Experiment 3 subset files (Sub-1 and Sub-2).
+build_exp3_subsets.py - Create Experiment 3 subset files (Sub-1 and Sub-2).
 
 Reads feature_audit_exp3/feature_audit.xlsx to get per-target ADD and CONSIDER
 feature tiers, then builds two sets of 8 datasets from All_Years_Full.xlsx:
@@ -92,7 +92,7 @@ def main():
     raw["day_of_week"] = raw["Date"].dt.dayofweek
     raw["year"]        = raw["Date"].dt.year
     n_total = len(raw)
-    print(f"  {n_total} total rows, {int(raw['year'].min())}–{int(raw['year'].max())}")
+    print(f"  {n_total} total rows, {int(raw['year'].min())}-{int(raw['year'].max())}")
 
     # ── Load audit tiers ─────────────────────────────────────────────────────────
     print(f"\nLoading {AUDIT_FILE} ...")
@@ -144,9 +144,9 @@ def main():
             pct_kept_s1=round(n_s1 / n_allyears * 100, 1) if n_allyears else 0,
             pct_kept_s2=round(n_s2 / n_allyears * 100, 1) if n_allyears else 0,
             s1_vs_exp2=(f"+{n_s1-n_exp2}" if n_exp2 and n_s1 >= n_exp2
-                        else str(n_s1-n_exp2) if n_exp2 else "—"),
+                        else str(n_s1-n_exp2) if n_exp2 else "-"),
             s2_vs_exp2=(f"+{n_s2-n_exp2}" if n_exp2 and n_s2 >= n_exp2
-                        else str(n_s2-n_exp2) if n_exp2 else "—"),
+                        else str(n_s2-n_exp2) if n_exp2 else "-"),
             add_note="(same as Exp2 Sub-2)" if len(add_feats) == 0 else "",
         ))
 
@@ -161,7 +161,7 @@ def main():
         print(f"  S2 rows (baseline + ADD + CONSIDER) : {n_s2}  "
               f"(kept {n_s2/n_allyears*100:.1f}%,  dropped {n_allyears-n_s2})")
         if len(add_feats) == 0:
-            print(f"  ⚠  No ADD features — S1 is identical to Exp2 Sub-2 baseline")
+            print(f"  ⚠  No ADD features - S1 is identical to Exp2 Sub-2 baseline")
 
     # ── Summary table ────────────────────────────────────────────────────────────
     print("\n")
@@ -175,7 +175,7 @@ def main():
     print("-" * 95)
     for r in summary_rows:
         stem = r['target'].replace("Effluent ", "").replace(" (mg/L, ", " ").replace(")", "")
-        exp2_str = str(r['n_exp2']) if r['n_exp2'] else "—"
+        exp2_str = str(r['n_exp2']) if r['n_exp2'] else "-"
         print(f"{stem:<28} {r['n_allyears']:>7} {exp2_str:>7} "
               f"{r['n_s1']:>8} {r['pct_kept_s1']:>8.1f}% {r['s1_vs_exp2']:>11}  "
               f"{r['n_s2']:>8} {r['pct_kept_s2']:>8.1f}% {r['s2_vs_exp2']:>11}  "

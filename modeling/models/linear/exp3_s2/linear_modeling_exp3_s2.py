@@ -1,5 +1,5 @@
 """
-linear_modeling_exp3_s2.py — OLS, Ridge, and ElasticNet on Experiment 3 Sub-2 subsets.
+linear_modeling_exp3_s2.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-2 subsets.
 
 Identical training protocol to all prior linear modeling scripts.
 Differences vs exp3_s1:
@@ -64,9 +64,9 @@ def _cyclic_features(df: pd.DataFrame) -> tuple:
     """Compute sin/cos encoding of month and day-of-week from Date column.
 
     Returns (array of shape [n, 4], list of 4 feature names).
-    month: 1–12 encoded on a 12-period cycle.
-    day_of_week: 0–6 encoded on a 7-period cycle.
-    closed='left' semantics are not needed here — Date is the calendar date
+    month: 1-12 encoded on a 12-period cycle.
+    day_of_week: 0-6 encoded on a 7-period cycle.
+    closed='left' semantics are not needed here - Date is the calendar date
     of the measurement, not a look-ahead value.
     """
     m = df["Date"].dt.month.values.astype(float)
@@ -87,12 +87,12 @@ def _e3s2(name):
 
 # (experiment_label, dataset_id, file_path, target)
 DATASETS = [
-    # ── Experiment 3 Sub-2 — Grab ─────────────────────────────────────────────
+    # ── Experiment 3 Sub-2 - Grab ─────────────────────────────────────────────
     ("Exp3-S2", "Exp3S2_Grab_BOD", _e3s2("s2_stage3_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
     ("Exp3-S2", "Exp3S2_Grab_COD", _e3s2("s2_stage3_grab_COD"), "Effluent COD (mg/L, Grab)"),
     ("Exp3-S2", "Exp3S2_Grab_TSS", _e3s2("s2_stage3_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
     ("Exp3-S2", "Exp3S2_Grab_pH",  _e3s2("s2_stage3_grab_pH"),  "Effluent pH (Grab)"),
-    # ── Experiment 3 Sub-2 — Composite ───────────────────────────────────────
+    # ── Experiment 3 Sub-2 - Composite ───────────────────────────────────────
     ("Exp3-S2", "Exp3S2_Comp_BOD", _e3s2("s2_stage3_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
     ("Exp3-S2", "Exp3S2_Comp_COD", _e3s2("s2_stage3_comp_COD"), "Effluent COD (mg/L, Composite)"),
     ("Exp3-S2", "Exp3S2_Comp_TSS", _e3s2("s2_stage3_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
@@ -154,12 +154,12 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     test_df = df[df["year"] == TEST_YEAR]
 
     if len(test_df) == 0:
-        print(f"  WARNING: no {TEST_YEAR} rows — skipping {ds_id}")
+        print(f"  WARNING: no {TEST_YEAR} rows - skipping {ds_id}")
         return None, None
 
     missing = [f for f in features if f not in df.columns]
     if missing:
-        print(f"  WARNING: missing columns {missing} — skipping {ds_id}")
+        print(f"  WARNING: missing columns {missing} - skipping {ds_id}")
         return None, None
 
     X_train = train_df[features].values
@@ -212,7 +212,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_ols] = np.round(ols.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ols},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
-    print(f"    OLS    — Train R²: {results['OLS_train_R2']:+.3f} | "
+    print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
           f"RMSE: {results['OLS_test_RMSE']:.3f}")
 
@@ -234,7 +234,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_ridge] = np.round(ridge.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": ridge},
                 os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
-    print(f"    Ridge  — Train R²: {results['Ridge_train_R2']:+.3f} | "
+    print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | "
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
           f"α={results['Ridge_alpha']}")
 
@@ -257,7 +257,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     preds[col_elnet] = np.round(elnet.predict(X_all_sc), 3)
     joblib.dump({"scaler": scaler, "model": elnet},
                 os.path.join(MODELS_DIR, f"{ds_id}_ElNet_run_{run}.pkl"))
-    print(f"    ElNet  — Train R²: {results['ElNet_train_R2']:+.3f} | "
+    print(f"    ElNet  - Train R²: {results['ElNet_train_R2']:+.3f} | "
           f"Test R²: {results['ElNet_test_R2']:+.3f} | "
           f"α={results['ElNet_alpha']}, l1={results['ElNet_l1_ratio']}")
 
@@ -365,7 +365,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Linear Modeling Exp3-S2 — Run {run}")
+    print(f"Linear Modeling Exp3-S2 - Run {run}")
     print(f"Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElasticNet\n")
 
     all_results = []
@@ -376,7 +376,7 @@ def main():
         print(f"  Target: {target}")
 
         if not os.path.exists(path):
-            print(f"  WARNING: file not found — {path}")
+            print(f"  WARNING: file not found - {path}")
             continue
 
         df_peek  = pd.read_excel(path, nrows=0)
@@ -392,7 +392,7 @@ def main():
         all_results.append(results)
 
     if not all_results:
-        print("No results produced — check warnings above.")
+        print("No results produced - check warnings above.")
         return
 
     df_results = pd.DataFrame(all_results)

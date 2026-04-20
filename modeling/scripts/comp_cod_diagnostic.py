@@ -1,12 +1,12 @@
 """
-comp_cod_diagnostic.py — Time-series diagnostic for Effluent COD (mg/L, Composite).
+comp_cod_diagnostic.py - Time-series diagnostic for Effluent COD (mg/L, Composite).
 
 Plots raw daily measurements year-by-year, overlaid with the training-set
-mean ± 1 std band (computed on 2021–2024 only, never 2025).
+mean ± 1 std band (computed on 2021-2024 only, never 2025).
 
 Outputs:
     reports/comp_cod_diagnostic.png
-    reports/comp_cod_diagnostic_monthly.png   — monthly median by year
+    reports/comp_cod_diagnostic_monthly.png   - monthly median by year
 
 Usage:
     .venv/bin/python3 modeling/scripts/comp_cod_diagnostic.py
@@ -104,7 +104,7 @@ for year, grp in df.groupby("year"):
         bbox=dict(boxstyle="round,pad=0.2", fc="#1a1a2e", ec="none", alpha=0.7),
     )
 
-ax.set_title(f"Effluent COD (Composite) — Raw Measurements by Year\n"
+ax.set_title(f"Effluent COD (Composite) - Raw Measurements by Year\n"
              f"Training mean = {train_mean:.1f} mg/L  |  2025 mean = {test[TARGET].mean():.1f} mg/L  "
              f"|  2025 std = {test[TARGET].std():.1f} mg/L",
              fontsize=11, color="white", pad=10)
@@ -157,7 +157,7 @@ for ax, year in zip(axes.flat, years_plot):
         ax.legend(fontsize=7, facecolor="#1a1a2e", edgecolor="#444444",
                   labelcolor="white")
 
-fig.suptitle("Comp COD — Monthly Median by Year  (training mean dashed gold)",
+fig.suptitle("Comp COD - Monthly Median by Year  (training mean dashed gold)",
              fontsize=12, color="white", y=1.01)
 plt.tight_layout()
 out2 = os.path.join(REPORTS_DIR, "comp_cod_diagnostic_monthly.png")
@@ -171,12 +171,12 @@ fig.patch.set_facecolor("#1a1a2e")
 ax.set_facecolor("#1a1a2e")
 
 bins = np.linspace(0, max(df[TARGET].quantile(0.99), 1), 40)
-ax.hist(train[TARGET], bins=bins, color="#4A90D9", alpha=0.6, label=f"Train 2021–{TRAIN_MAX_YEAR} (n={len(train)})")
+ax.hist(train[TARGET], bins=bins, color="#4A90D9", alpha=0.6, label=f"Train 2021-{TRAIN_MAX_YEAR} (n={len(train)})")
 ax.hist(test[TARGET],  bins=bins, color="#D94801", alpha=0.75, label=f"Test 2025 (n={len(test)})")
 ax.axvline(train_mean, color="#4A90D9", lw=1.5, linestyle="--", alpha=0.9)
 ax.axvline(test[TARGET].mean(), color="#D94801", lw=1.5, linestyle="--", alpha=0.9)
 
-ax.set_title(f"Comp COD — Training vs 2025 Distribution\n"
+ax.set_title(f"Comp COD - Training vs 2025 Distribution\n"
              f"Train: μ={train_mean:.1f}, σ={train_std:.1f}  |  "
              f"2025: μ={test[TARGET].mean():.1f}, σ={test[TARGET].std():.1f}",
              fontsize=10, color="white")

@@ -1,5 +1,5 @@
 """
-generate_unified_report.py — Unified HTML report covering all experiments and phases.
+generate_unified_report.py - Unified HTML report covering all experiments and phases.
 
 Reads all results.xlsx files from the modeling directory tree and produces
 a single, navigable HTML report with:
@@ -125,11 +125,11 @@ FEATURE_DESCRIPTIONS = {
         "features": "Inlet pH, Inlet BOD, Inlet COD, Inlet TSS (Grab or Composite) + "
                     "Flow (MLD), Power Total (KW), month, day_of_week, year",
         "rationale": "Baseline: can inlet water quality alone predict effluent quality? "
-                     "Tests the simplest, most operationally available feature set — "
+                     "Tests the simplest, most operationally available feature set - "
                      "no secondary treatment data required.",
     },
     "Exp1-FS": {
-        "label": "Inlet + COMMON — Feature Selected (5–8 features)",
+        "label": "Inlet + COMMON - Feature Selected (5-8 features)",
         "features": "Subset of Exp1 features retained by RF permutation importance "
                     "(importance ≥ 0.03 threshold) and mutual information screening",
         "rationale": "Checks whether pruning the 9-feature set to its most informative "
@@ -143,7 +143,7 @@ FEATURE_DESCRIPTIONS = {
                      "Do downstream process indicators predict effluent better than inlet?",
     },
     "Exp2-Sub1-FS": {
-        "label": "Secondary + COMMON — Feature Selected",
+        "label": "Secondary + COMMON - Feature Selected",
         "features": "Subset of Exp2-S1 secondary + COMMON features after permutation "
                     "importance screening",
         "rationale": "Feature selection on the secondary feature set to remove noisy "
@@ -157,53 +157,53 @@ FEATURE_DESCRIPTIONS = {
                      "joining inlet and secondary data outperforms either alone.",
     },
     "Exp2-Sub2-FS": {
-        "label": "Inlet + Secondary + COMMON — Feature Selected",
+        "label": "Inlet + Secondary + COMMON - Feature Selected",
         "features": "Subset of Exp2-S2 combined features after permutation importance "
                     "and mutual information screening",
         "rationale": "Remove redundant or low-signal features from the full Exp2-S2 set.",
     },
     "Exp3-S1": {
-        "label": "Exp2-S2 + ADD-tier Aeration Features (16–22 features)",
+        "label": "Exp2-S2 + ADD-tier Aeration Features (16-22 features)",
         "features": "Exp2-S2 baseline + ADD-tier features (MI ≥ 0.20, marginal row "
-                    "cost ≤ 20%): MLSS, SV30, SVI, DO, Aeration pH — adds ~3–7 columns",
+                    "cost ≤ 20%): MLSS, SV30, SVI, DO, Aeration pH - adds ~3-7 columns",
         "rationale": "Expand with aeration basin data that shows high mutual information "
                      "and low missingness cost on top of the Exp2-S2 baseline.",
     },
     "Exp3-S1-FS": {
-        "label": "Exp3-S1 — Core + Useful (Feature Selected, 5–8 features)",
+        "label": "Exp3-S1 - Core + Useful (Feature Selected, 5-8 features)",
         "features": "RF permutation importance ≥ 0.03 threshold applied to the "
-                    "full Exp3-S1 feature set → 5–8 features per target",
+                    "full Exp3-S1 feature set → 5-8 features per target",
         "rationale": "Aggressive pruning of the expanded Exp3-S1 set to the most "
                      "predictive features per target. Tests if less is more.",
     },
     "Exp3-S2": {
-        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (20–32 features)",
+        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (20-32 features)",
         "features": "Exp2-S2 + ADD features + CONSIDER-tier (MI ≥ 0.15 & cost ≤ 35%, "
-                    "or MI ≥ 0.25 & cost ≤ 50%) — 20–32 total features per target",
+                    "or MI ≥ 0.25 & cost ≤ 50%) - 20-32 total features per target",
         "rationale": "Full feature expansion per the audit-tier logic. Tests whether "
                      "CONSIDER-tier features help despite higher missingness cost. "
                      "Key question: do regularised linear models benefit from "
                      "additional features even if non-linear models overfit?",
     },
     "Exp4-S1": {
-        "label": "Exp3-S2 minus Derived/Redundant Columns (12–19 features)",
+        "label": "Exp3-S2 minus Derived/Redundant Columns (12-19 features)",
         "features": "Exp3-S2 feature set with three redundant groups removed: "
-                    "(1) Aeration SVI (Existing + New) — derived from SV30/MLSS, zero independent information; "
-                    "(2) All (New) aeration tank columns — cross-tank r=0.74–0.84, Existing tank wins on every BOD/COD/TSS target; "
-                    "(3) All Sec Sedimentation columns — cross-stage r=0.69–0.87, Sec Clarifier wins consistently. "
+                    "(1) Aeration SVI (Existing + New) - derived from SV30/MLSS, zero independent information; "
+                    "(2) All (New) aeration tank columns - cross-tank r=0.74-0.84, Existing tank wins on every BOD/COD/TSS target; "
+                    "(3) All Sec Sedimentation columns - cross-stage r=0.69-0.87, Sec Clarifier wins consistently. "
                     "Remaining: Inlet, COMMON, Existing aeration (MLSS, SV30, DO, pH), Sec Clarifier (pH, TSS, BOD, COD, RAS).",
         "rationale": "Hypothesis: removing collinear and derived features reduces variance inflation and "
                      "improves generalisation, especially on composite targets where Exp3-S2 GB/XGB catastrophically "
-                     "overfit. Phase 1 of Exp4 — Phase 2 will address within-group VIF (MLSS vs SV30, "
+                     "overfit. Phase 1 of Exp4 - Phase 2 will address within-group VIF (MLSS vs SV30, "
                      "Sec Clarifier inter-correlations).",
     },
     "Exp4-S2": {
-        "label": "Exp4-S1 + Iterative VIF Pruning (threshold=10) — 5–10 features",
+        "label": "Exp4-S1 + Iterative VIF Pruning (threshold=10) - 5-10 features",
         "features": "Starting from the Exp4-S1 feature pool, automated iterative VIF pruning "
                     "(drop highest-VIF feature, recompute, repeat until all VIF ≤ 10) run on "
                     "training rows only. Dropped per target: all pH features (Inlet pH, "
-                    "Sec Clarifier pH, Aeration pH, Primary Clarifier pH — VIF 600–2400), "
-                    "Inlet BOD/COD (VIF 18–34), MLSS (SV30 survives as biomass proxy), "
+                    "Sec Clarifier pH, Aeration pH, Primary Clarifier pH - VIF 600-2400), "
+                    "Inlet BOD/COD (VIF 18-34), MLSS (SV30 survives as biomass proxy), "
                     "one of Flow/Power Total. "
                     "Temporal features (month, day_of_week, year) always retained, excluded from VIF. "
                     "Row gain vs Exp4-S1: +47 to +293 rows (dropped features had high missingness).",
@@ -224,7 +224,7 @@ FEATURE_DESCRIPTIONS = {
         "label": "Exp3-S2 Features → Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
         "features": "Same as Exp3-S2 (25 features per target); VotingRegressor averaging "
                     "ElasticNet, RandomForest, and XGBoost with equal weights. "
-                    "Replaces original Ridge+ElNet+RF — Ridge removed because it duplicates "
+                    "Replaces original Ridge+ElNet+RF - Ridge removed because it duplicates "
                     "ElNet's L2 regularisation (redundant voter); XGBoost added for "
                     "structural diversity (gradient boosting vs. bagging vs. linear).",
         "rationale": "Ensemble averaging reduces variance through uncorrelated errors. "
@@ -239,16 +239,16 @@ FEATURE_DESCRIPTIONS = {
                     "TimeSeriesSplit(n_splits=5) OOF generation. "
                     "Base: ElNet + RF + XGBoost. Meta-learner: Ridge (tuned alpha). "
                     "First ~1/6 of training samples excluded from meta-learner training "
-                    "(no OOF fold coverage) — strictly no look-ahead bias. "
+                    "(no OOF fold coverage) - strictly no look-ahead bias. "
                     "Base models retrained on full training set before inference.",
         "rationale": "Replaces original KFold(n_splits=5) StackingRegressor which had "
-                     "look-ahead bias: predicting 2021 data using models trained on 2022–2024. "
+                     "look-ahead bias: predicting 2021 data using models trained on 2022-2024. "
                      "Walk-forward OOF ensures the meta-learner learns how base models "
                      "perform when projecting forward in time. "
                      "Approx. 83% OOF coverage across all targets.",
     },
     "Phase10-FE": {
-        "label": "Exp3-S2 + Full Feature Engineering — All Targets (37–52 features)",
+        "label": "Exp3-S2 + Full Feature Engineering - All Targets (37-52 features)",
         "features": "Exp3-S2 base + log1p transforms of skewed cols + pairwise "
                     "interaction terms (key pairs) + IQR outlier indicator flags; "
                     "applied uniformly to all 8 targets",
@@ -257,21 +257,21 @@ FEATURE_DESCRIPTIONS = {
                      "helps. Hypothesis: log transforms help BOD/COD/TSS (right-skewed).",
     },
     "Phase10b-FE": {
-        "label": "Selective Feature Engineering — Grab: Full FE / Composite: Base Exp3-S2",
-        "features": "Grab targets: full FE (37–52 features each). "
-                    "Composite targets: base Exp3-S2 features only (17–27 features) "
-                    "— no engineering applied to avoid overfitting on small composite n.",
+        "label": "Selective Feature Engineering - Grab: Full FE / Composite: Base Exp3-S2",
+        "features": "Grab targets: full FE (37-52 features each). "
+                    "Composite targets: base Exp3-S2 features only (17-27 features) "
+                    "- no engineering applied to avoid overfitting on small composite n.",
         "rationale": "Addresses Phase 10 finding: FE caused severe overfitting on "
                      "composite datasets (n_train ≈ 290). Selective approach preserves "
                      "FE gains on grab targets while stabilising composites.",
     },
     "Phase11": {
-        "label": "Exp3-S2 + Temporal Lags + log1p Target Transform (50–58 features)",
+        "label": "Exp3-S2 + Temporal Lags + log1p Target Transform (50-58 features)",
         "features": "Base Exp3-S2 features + lag 1/3/7-day + 7-day calendar rolling mean "
-                    "applied to inlet + Flow + Power columns only (~50–58 total features per target). "
+                    "applied to inlet + Flow + Power columns only (~50-58 total features per target). "
                     "BOD/COD/TSS targets log1p-transformed; pH untransformed. "
                     "Back-transform via Duan smearing: expm1(ŷ) × mean(exp(training residuals)).",
-        "rationale": "Daily wastewater quality has temporal autocorrelation — yesterday's "
+        "rationale": "Daily wastewater quality has temporal autocorrelation - yesterday's "
                      "influent predicts today's effluent better than cross-sectional features "
                      "alone. Lag expansion restricted to inlet+Flow+Power columns to avoid "
                      "catastrophic overfitting on composite datasets (n≈290 rows). "
@@ -283,7 +283,7 @@ EXP_INTRO = {
     "Exp1": (
         "Experiment 1 establishes the baseline: how well can <strong>inlet water quality "
         "alone</strong> predict effluent concentrations? This is the simplest and most "
-        "operationally available feature set — no secondary treatment measurements needed. "
+        "operationally available feature set - no secondary treatment measurements needed. "
         "A feature-selected sub-variant is also included to test whether pruning to "
         "the most informative subset improves generalisation."
     ),
@@ -298,16 +298,16 @@ EXP_INTRO = {
         "identified in the Phase 6 feature audit. <strong>Sub-experiment 1</strong> adds "
         "ADD-tier features (high MI, low missingness cost). "
         "<strong>Sub-experiment 2</strong> further adds CONSIDER-tier features to test "
-        "whether more features — at higher missingness cost — still benefit regularised "
+        "whether more features - at higher missingness cost - still benefit regularised "
         "linear models."
     ),
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
         "from Exp3-S2 improves generalisation. "
         "<strong>Sub-experiment 1</strong> manually drops three redundant groups "
-        "(SVI, New aeration, Sec Sed — feature count 12–19). "
+        "(SVI, New aeration, Sec Sed - feature count 12-19). "
         "<strong>Sub-experiment 2</strong> applies automated iterative VIF pruning (threshold=10) "
-        "within the Exp4-S1 feature pool, reducing to 5–10 features per target and gaining "
+        "within the Exp4-S1 feature pool, reducing to 5-10 features per target and gaining "
         "+47 to +293 rows by dropping high-missingness correlated features. "
         "<strong>Overall result: both sub-experiments refuted the pruning hypothesis.</strong> "
         "S1 showed performance degraded universally. S2 confirmed the pattern: "
@@ -317,21 +317,21 @@ EXP_INTRO = {
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
         "which was selected as the richest validated set (ElNet Test R²=0.684 Grab BOD, "
-        "RF 0.504 Grab TSS — new records at the time). "
+        "RF 0.504 Grab TSS - new records at the time). "
         "<br><br>"
         "Three architectures are tested: "
-        "<strong>ANN</strong> (MLPRegressor) — failed; ~470 training samples insufficient for "
+        "<strong>ANN</strong> (MLPRegressor) - failed; ~470 training samples insufficient for "
         "MLP (avg Test R²=−1.12). All targets selected alpha=1.0 (max regularisation). Not recommended. "
         "<br>"
-        "<strong>Voting ensemble</strong> (ElNet + RF + XGBoost, equal weights) — "
+        "<strong>Voting ensemble</strong> (ElNet + RF + XGBoost, equal weights) - "
         "original composition (Ridge+ElNet+RF) was corrected: Ridge duplicates ElNet's L2 "
         "penalty, making two of three voters collinear. XGBoost replaces Ridge for structural "
         "diversity (gradient boosting vs. bagging vs. regularised linear). "
         "All three voters pre-tuned via TimeSeriesSplit GridSearchCV/RandomizedSearchCV. "
         "<br>"
-        "<strong>Stacking ensemble</strong> (ElNet + RF + XGB → Ridge meta, walk-forward OOF) — "
+        "<strong>Stacking ensemble</strong> (ElNet + RF + XGB → Ridge meta, walk-forward OOF) - "
         "original KFold(n_splits=5) stacking had look-ahead bias: 2021 samples were predicted "
-        "using base models trained on 2022–2024 data. Replaced with manual walk-forward OOF "
+        "using base models trained on 2022-2024 data. Replaced with manual walk-forward OOF "
         "using TimeSeriesSplit(n_splits=5): each sample's OOF prediction uses only past data. "
         "~83% OOF coverage per target; first ~17% excluded from meta-learner training."
     ),
@@ -351,7 +351,7 @@ EXP_INTRO = {
         "(which would produce ~128 features on ~290 composite rows)."
         "<br><br>"
         "Key wins: <strong>Grab BOD</strong> (Ridge 0.656, gap −0.095) and "
-        "<strong>Grab COD</strong> (XGB 0.464, gap +0.057 — new Grab COD high with an honest gap). "
+        "<strong>Grab COD</strong> (XGB 0.464, gap +0.057 - new Grab COD high with an honest gap). "
         "Key losses: all composite targets deteriorate, especially Comp TSS (Ridge −1.04, gap +1.82). "
         "Conclusion: temporal features help Grab targets; composites lack the sample size to benefit. "
         "CV_R² and Gap_gen = CV_R² − Test_R² are recorded per model for distribution-shift diagnosis."
@@ -572,7 +572,7 @@ def compute_all_mdae() -> pd.DataFrame:
 
     Returns a DataFrame with columns: exp_key, model, target, MdAE_test.
     Phase 10 and Phase 11 do not store row-level predictions so those phases
-    are absent — MdAE_test will be NaN for them after the merge.
+    are absent - MdAE_test will be NaN for them after the merge.
     """
     import glob, re
     ds_base = os.path.join(MODELING_DIR, "datasets")
@@ -648,7 +648,7 @@ def compute_all_mdae() -> pd.DataFrame:
 
 def _fmt(val, d=3):
     if val is None or (isinstance(val, float) and np.isnan(val)):
-        return "—"
+        return "-"
     return f"{val:.{d}f}"
 
 def _r2_color(val):
@@ -706,9 +706,9 @@ def _dataset_summary(df: pd.DataFrame) -> str:
         if sub.empty:
             continue
         row0 = sub.iloc[0]
-        n_tr = int(row0["n_train"]) if not np.isnan(row0["n_train"]) else "—"
-        n_te = int(row0["n_test"])  if not np.isnan(row0["n_test"])  else "—"
-        n_fe = int(row0["n_features"]) if not np.isnan(row0["n_features"]) else "—"
+        n_tr = int(row0["n_train"]) if not np.isnan(row0["n_train"]) else "-"
+        n_te = int(row0["n_test"])  if not np.isnan(row0["n_test"])  else "-"
+        n_fe = int(row0["n_features"]) if not np.isnan(row0["n_features"]) else "-"
         slug = TARGET_SLUG.get(tgt, "all")
         rows.append(
             f'<tr data-target="{slug}">'
@@ -723,7 +723,7 @@ def _dataset_summary(df: pd.DataFrame) -> str:
   <div class="fold-body">
     <table class="summary-table ds-table">
       <thead><tr>
-        <th>Target</th><th>n_train (2021–2024)</th>
+        <th>Target</th><th>n_train (2021-2024)</th>
         <th>n_test (2025)</th><th>n_features</th>
       </tr></thead>
       <tbody>{"".join(rows)}</tbody>
@@ -758,7 +758,7 @@ def _pick_best(avail, sub):
 
     max_r2 = max(r2_vals.values())
     if max_r2 >= 0:
-        # At least one model beats naive baseline — use R²
+        # At least one model beats naive baseline - use R²
         threshold = max_r2 - 1e-9
         return {m for m, v in r2_vals.items() if v >= threshold}
     else:
@@ -772,10 +772,10 @@ def _pick_best(avail, sub):
 def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
     """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE / MAE / MdAE).
 
-    MdAE (Median Absolute Error) is shown for BOD and TSS targets only — these have
+    MdAE (Median Absolute Error) is shown for BOD and TSS targets only - these have
     severe outlier distributions (up to 9.8% severe outliers in training) where RMSE
     is dominated by spikes. MdAE is the primary reliability metric for those targets.
-    Phase 10 and Phase 11 do not store row-level predictions so MdAE is unavailable (—).
+    Phase 10 and Phase 11 do not store row-level predictions so MdAE is unavailable (-).
 
     Best-model highlighting uses a threshold rule:
       - Any model has R² ≥ 0 → highlight highest R² (★)
@@ -815,7 +815,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         for m in avail:
             msub = sub[sub["model"] == m]
             if msub.empty:
-                cells += "<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>"
+                cells += "<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>"
                 continue
             r2   = msub["R2_test"].values[0]
             gap  = msub["R2_gap"].values[0]
@@ -828,17 +828,17 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
             r2_star   = "★ " if (is_best and not use_rmse_fallback) else ""
             rmse_star = "★ " if (is_best and use_rmse_fallback)     else ""
 
-            # MdAE cell — only for BOD/TSS targets; dash otherwise
+            # MdAE cell - only for BOD/TSS targets; dash otherwise
             if show_mdae and has_mdae:
                 mdae_val = msub["MdAE_test"].values[0]
-                mdae_str = _fmt(mdae_val) if not (isinstance(mdae_val, float) and np.isnan(mdae_val)) else "—"
+                mdae_str = _fmt(mdae_val) if not (isinstance(mdae_val, float) and np.isnan(mdae_val)) else "-"
                 mdae_title = 'title="Primary reliability metric for outlier-prone targets"'
                 mdae_cell = (
                     f'<td style="color:#f1c40f;font-style:italic;" {mdae_title}>'
                     f'{mdae_str}</td>'
                 )
             else:
-                mdae_cell = '<td style="color:var(--text-muted)">—</td>'
+                mdae_cell = '<td style="color:var(--text-muted)">-</td>'
 
             cells += (
                 f'<td style="color:{_r2_color(r2)};{cell_bg}">'
@@ -855,9 +855,9 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         '<p class="table-note">'
         'Test R²: '
         '<span style="color:#2ecc71">≥0.6 strong</span> · '
-        '<span style="color:#52c98a">0.4–0.6 good</span> · '
-        '<span style="color:#f1c40f">0.2–0.4 moderate</span> · '
-        '<span style="color:#e67e22">0–0.2 weak</span> · '
+        '<span style="color:#52c98a">0.4-0.6 good</span> · '
+        '<span style="color:#f1c40f">0.2-0.4 moderate</span> · '
+        '<span style="color:#e67e22">0-0.2 weak</span> · '
         '<span style="color:#e74c3c">&lt;0 fails baseline</span>. '
         'Best per row: <span style="background:rgba(74,144,217,0.20);'
         'padding:1px 4px;border-radius:3px;font-weight:bold">★ highest R²</span> '
@@ -868,14 +868,14 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         '<p class="table-note">'
         'R² Gap (Train − Test): '
         '<span class="gap-good">■ &lt;0.10 OK</span> · '
-        '<span class="gap-warn">■ 0.10–0.25 mild overfit</span> · '
-        '<span class="gap-bad">■ &gt;0.25 severe overfit — treat result with caution</span>.</p>'
+        '<span class="gap-warn">■ 0.10-0.25 mild overfit</span> · '
+        '<span class="gap-bad">■ &gt;0.25 severe overfit - treat result with caution</span>.</p>'
         '<p class="table-note">'
         '<span style="color:#f1c40f;font-style:italic;">MdAE</span> '
-        '(Median Absolute Error) shown for BOD and TSS targets only — RMSE is unreliable '
+        '(Median Absolute Error) shown for BOD and TSS targets only - RMSE is unreliable '
         'for these targets due to severe outlier distributions (up to 9.8% severe outliers '
         'in training data, TSS train max = 1266 mg/L). '
-        'MdAE is the primary reliability metric for BOD/TSS; — indicates predictions not '
+        'MdAE is the primary reliability metric for BOD/TSS; - indicates predictions not '
         'stored at row level (Phase 10 / Phase 11).</p>'
     )
     table = f"""
@@ -965,7 +965,7 @@ def _fs_analysis_div(df_all: pd.DataFrame, full_key: str, fs_key: str) -> str:
         vc, vi, vt = "#e74c3c", "✗", (
             f"Feature selection <strong>hurt</strong> on {len(degraded)}/{n} targets "
             f"(avg Δ = {avg_d:+.3f}). The pruned features were still carrying predictive "
-            f"signal for those targets — consider a higher importance threshold.")
+            f"signal for those targets - consider a higher importance threshold.")
     else:
         vc, vi, vt = "#f39c12", "≈", (
             f"Feature selection produced <strong>mixed results</strong> "
@@ -1029,7 +1029,7 @@ def _data_cost_div(df_all: pd.DataFrame, expanded_key: str, base_key: str) -> st
     base_lbl = EXP_CHART_LABELS.get(base_key, base_key)
     exp_lbl  = EXP_CHART_LABELS.get(expanded_key, expanded_key)
     if justified >= (total + 1) // 2:
-        verdict = (f"The row cost is <strong>justified on {justified}/{total} targets</strong> — "
+        verdict = (f"The row cost is <strong>justified on {justified}/{total} targets</strong> - "
                    f"R² gains exceed +0.02 for the majority. The CONSIDER-tier features add "
                    f"meaningful signal despite the smaller training set.")
     else:
@@ -1080,7 +1080,7 @@ def _load_mi_lookup() -> dict:
 
 def _load_cost_lookup() -> dict:
     """Return {feature: max marginal_cost_pct across targets} from feature_audit.
-    Base features (Inlet + Secondary + COMMON) are not in the audit — they default to 0.0."""
+    Base features (Inlet + Secondary + COMMON) are not in the audit - they default to 0.0."""
     audit_dir = os.path.join(MODELING_DIR, "feature_analysis", "audit")
     fa_path   = os.path.join(audit_dir, "feature_audit.xlsx")
     if not os.path.exists(fa_path):
@@ -1195,20 +1195,20 @@ def _vif_callout() -> str:
             cost_b = cost_lookup.get(feat_b, 0.0)
 
             drop_feat = reason = None
-            # Priority 1: domain logic — drop known derived feature
+            # Priority 1: domain logic - drop known derived feature
             if feat_a in _DERIVED_FROM and feat_b in _DERIVED_FROM[feat_a]:
                 drop_feat = feat_a
                 reason = f"derived from {feat_b.split('(')[0].strip()}"
             elif feat_b in _DERIVED_FROM and feat_a in _DERIVED_FROM[feat_b]:
                 drop_feat = feat_b
                 reason = f"derived from {feat_a.split('(')[0].strip()}"
-            # Priority 2: missingness cost — drop higher-cost feature if gap > 5 pp
+            # Priority 2: missingness cost - drop higher-cost feature if gap > 5 pp
             if drop_feat is None and abs(cost_a - cost_b) > 5.0:
                 drop_feat  = feat_a if cost_a > cost_b else feat_b
                 drop_cost  = cost_a if drop_feat == feat_a else cost_b
                 keep_cost  = cost_b if drop_feat == feat_a else cost_a
                 reason = f"higher missingness cost ({drop_cost:.1f}% vs {keep_cost:.1f}%)"
-            # Priority 3: MI with target — drop lower MI
+            # Priority 3: MI with target - drop lower MI
             if drop_feat is None:
                 if mi_a is not None and mi_b is not None:
                     drop_feat = feat_a if mi_a <= mi_b else feat_b
@@ -1235,11 +1235,11 @@ def _vif_callout() -> str:
         tbl_rows = ""
         for feat, vif_val in vif_rows:
             flag, fc = _vflag(vif_val)
-            vif_str  = f"{vif_val:.2f}" if not (isinstance(vif_val, float) and np.isnan(vif_val)) else "—"
+            vif_str  = f"{vif_val:.2f}" if not (isinstance(vif_val, float) and np.isnan(vif_val)) else "-"
             bold     = "bold" if vif_val > 10 else "normal"
 
             mi_val   = mi_lookup.get((feat, target), None)
-            mi_str   = f"{mi_val:.3f}" if mi_val is not None else "—"
+            mi_str   = f"{mi_val:.3f}" if mi_val is not None else "-"
             cost_val = cost_lookup.get(feat, 0.0)
             cost_str = f"{cost_val:.1f}%" if cost_val > 0 else "0%"
 
@@ -1254,7 +1254,7 @@ def _vif_callout() -> str:
                     )
                 partner_html = "<br>".join(partner_parts)
             else:
-                partner_html = '<span style="color:var(--text-muted)">—</span>'
+                partner_html = '<span style="color:var(--text-muted)">-</span>'
 
             if feat in drop_signals:
                 action_html = (
@@ -1268,7 +1268,7 @@ def _vif_callout() -> str:
                     f'<br><span style="color:var(--text-meta);font-size:10px">retained; {dropped_names} to be dropped</span>'
                 )
             else:
-                action_html = '<span style="color:var(--text-muted)">—</span>'
+                action_html = '<span style="color:var(--text-muted)">-</span>'
 
             tbl_rows += (
                 f'<tr>'
@@ -1315,9 +1315,9 @@ def _vif_callout() -> str:
   <strong style="font-size:13px">Notes on VIF removal</strong>
   <ul style="margin:8px 0 0 18px;font-size:12px;line-height:1.8">
     <li><strong>Hub pattern:</strong> a feature appearing in many "Collinear With" rows (e.g. SVI)
-        is a hub — dropping it alone resolves multiple HIGH VIFs simultaneously.
+        is a hub - dropping it alone resolves multiple HIGH VIFs simultaneously.
         Multiple HIGH flags ≠ remove all; count the distinct hubs first.</li>
-    <li><strong>Tree models (RF, XGB) are unaffected</strong> — collinearity only inflates
+    <li><strong>Tree models (RF, XGB) are unaffected</strong> - collinearity only inflates
         OLS/Ridge coefficient variance. ElasticNet handles it automatically via L1 shrinkage.
         VIF-based removal is relevant only before fitting OLS or Ridge.</li>
   </ul>
@@ -1326,24 +1326,24 @@ def _vif_callout() -> str:
     summary_html = (
         f'<p class="meta">Global across all 8 datasets: '
         f'<strong style="color:#e74c3c">{total_high} HIGH (VIF&gt;10)</strong> · '
-        f'<strong style="color:#f39c12">{total_mod} MODERATE (VIF 5–10)</strong>. '
+        f'<strong style="color:#f39c12">{total_mod} MODERATE (VIF 5-10)</strong>. '
         f'Concentrated in Sec Sed vs Sec Clarifier pairs (adjacent measurements of the same parameter) '
         f'and Aeration SVI (mathematically derived from SV30/MLSS). '
-        f'ElasticNet handles collinearity via L1 penalty — this explains why ElNet outperforms '
+        f'ElasticNet handles collinearity via L1 penalty - this explains why ElNet outperforms '
         f'OLS/Ridge on composite targets. OLS/Ridge coefficients are directly inflated by collinear pairs.</p>'
         f'{action_guide}'
     )
 
     return f"""
 <details class="exp-details" id="exp3-vif">
-  <summary><span class="fold-icon">▶</span> VIF Collinearity Analysis — Exp3-S2 Feature Sets</summary>
+  <summary><span class="fold-icon">▶</span> VIF Collinearity Analysis - Exp3-S2 Feature Sets</summary>
   <div class="exp-body">
     <p class="meta">
       Variance Inflation Factor computed on training rows (year &lt; 2025) after listwise deletion.
       VIF &gt; 10 = problematic collinearity for linear models.
-      VIF 5–10 = moderate.
+      VIF 5-10 = moderate.
       The threshold rule of thumb: VIF &gt; 10 indicates that the variance of a coefficient estimate
-      is inflated by a factor of 10 relative to an orthogonal design — OLS/Ridge predictions are
+      is inflated by a factor of 10 relative to an orthogonal design - OLS/Ridge predictions are
       less reliable for such features.
     </p>
     {summary_html}
@@ -1391,9 +1391,9 @@ def _ann_failure_callout() -> str:
         gap    = row["R2_gap"]
         params = str(row.get("best_params", ""))
         arch   = (params.split("hidden_layer_sizes': ")[1].split(",")[0].rstrip("}").strip()
-                  if "hidden_layer_sizes" in params else "—")
+                  if "hidden_layer_sizes" in params else "-")
         alpha  = (params.split("alpha': ")[1].split("}")[0].strip()
-                  if "alpha" in params else "—")
+                  if "alpha" in params else "-")
         voting = VOTING_R2.get(tgt, float("nan"))
         delta  = r2_te - voting
         status, sc = _aflag(r2_te)
@@ -1437,7 +1437,7 @@ def _ann_failure_callout() -> str:
       <thead>
         <tr>
           <th>Target</th><th>n_train</th><th>n_feat</th>
-          <th title="Training rows ÷ features — MLPs need n/p ≥ 100">n/p</th>
+          <th title="Training rows ÷ features - MLPs need n/p ≥ 100">n/p</th>
           <th>Best arch</th><th>Best α</th>
           <th>Train R²</th><th>Test R²</th><th>R² Gap</th>
           <th>Status</th><th>Δ vs Voting</th>
@@ -1446,8 +1446,8 @@ def _ann_failure_callout() -> str:
       <tbody>{tbl_rows}</tbody>
     </table>
     <p class="table-note">
-      n/p = training rows ÷ features. <span style="color:#e74c3c">Red</span> = n/p &lt; 20 (underdetermined — high overfitting risk).
-      MLPs typically need n/p ≥ 100–200 for stable generalisation on tabular data.
+      n/p = training rows ÷ features. <span style="color:#e74c3c">Red</span> = n/p &lt; 20 (underdetermined - high overfitting risk).
+      MLPs typically need n/p ≥ 100-200 for stable generalisation on tabular data.
       Δ vs Voting = ANN Test R² − Phase 9 Voting Test R².
     </p>
 
@@ -1455,21 +1455,21 @@ def _ann_failure_callout() -> str:
       <summary><span class="fold-icon">▶</span> Root-Cause Analysis</summary>
       <div class="fold-body">
         <p class="meta"><strong style="color:var(--accent-blue)">1. Sample-to-feature ratio.</strong>
-          Worst case: Comp TSS — 290 training rows, 27 features → n/p = 10.7.
+          Worst case: Comp TSS - 290 training rows, 27 features → n/p = 10.7.
           MLPs require far more data than tree ensembles to generalise from small tabular datasets.
-          Typical guidance: n/p ≥ 100–200 for stable MLP generalisation.</p>
+          Typical guidance: n/p ≥ 100-200 for stable MLP generalisation.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">2. Temporal distribution shift.</strong>
-          2025 test data shows different distributional properties than 2021–2024 training data
-          (Q4-Flow and DJF errors 2–3× higher — see Error Regime Decomposition).
+          2025 test data shows different distributional properties than 2021-2024 training data
+          (Q4-Flow and DJF errors 2-3× higher - see Error Regime Decomposition).
           MLPs form highly non-linear decision boundaries that diverge further from shifted data
           than regularised linear models or bagged trees.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">3. Early stopping did not prevent 2025 failure.</strong>
           Early stopping (validation_fraction=0.10, n_iter_no_change=20) monitors in-sample
-          generalisation on the 2021–2024 fold, not 2025 generalisation.
-          Gaps range from +0.41 (Grab COD) to +6.77 (Comp pH) despite early stopping —
+          generalisation on the 2021-2024 fold, not 2025 generalisation.
+          Gaps range from +0.41 (Grab COD) to +6.77 (Comp pH) despite early stopping -
           confirming that early stopping alone cannot address distributional shift.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">4. Network capacity is not the bottleneck.</strong>
-          Best architectures are small — (64,) or (128,) single hidden layer with α=1.0 for 6 of 8 targets.
+          Best architectures are small - (64,) or (128,) single hidden layer with α=1.0 for 6 of 8 targets.
           The grid search found that more capacity hurts; adding layers would worsen the gaps.
           The problem is generalisation, not expressiveness.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">Future conditions for ANN.</strong>
@@ -1489,7 +1489,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
     lin = df_all[df_all["model"].isin(LINEAR_MODELS)].copy()
 
     rows_html = ""
-    for exp_key, enc_label in [("Exp3-S1", "Raw integer (1–12 / 0–6)"),
+    for exp_key, enc_label in [("Exp3-S1", "Raw integer (1-12 / 0-6)"),
                                 ("Exp3-S2", "Cyclic sin/cos (4 columns)")]:
         sub = lin[lin["exp_key"] == exp_key]
         if sub.empty:
@@ -1507,17 +1507,17 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp3-cyclic">
-  <summary><span class="fold-icon">▶</span> Methodology — Cyclical Encoding of Calendar Features</summary>
+  <summary><span class="fold-icon">▶</span> Methodology - Cyclical Encoding of Calendar Features</summary>
   <div class="exp-body">
 
     <div class="obs-card" style="border-left:4px solid #4A90D9">
       <h4 style="margin:0 0 0.6rem">The Discontinuity Problem with Raw Integer Encoding</h4>
       <p class="meta">
-        <code>month</code> (1–12) and <code>day_of_week</code> (0–6) are cyclic: December is
+        <code>month</code> (1-12) and <code>day_of_week</code> (0-6) are cyclic: December is
         adjacent to January, and Sunday wraps back to Monday. As raw integers, a linear model
-        treats the gap between month 12 and month 1 as <em>11 units</em> — the largest possible
-        distance — creating a spurious discontinuity at the year boundary. The fitted coefficient
-        forces a monotone trend across the full 1–12 range and cannot capture the seasonal
+        treats the gap between month 12 and month 1 as <em>11 units</em> - the largest possible
+        distance - creating a spurious discontinuity at the year boundary. The fitted coefficient
+        forces a monotone trend across the full 1-12 range and cannot capture the seasonal
         "U-shape" or mid-year peaks that several effluent targets exhibit. Tree models (RF, GB,
         XGB) are unaffected because their splits are ordinal and learned independently per node;
         the discontinuity never enters their loss.
@@ -1537,12 +1537,12 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
         </tr></thead>
         <tbody>
           <tr>
-            <td><code>month</code> (1–12)</td><td>12</td>
+            <td><code>month</code> (1-12)</td><td>12</td>
             <td><code>month_sin = sin(2π × month / 12)</code></td>
             <td><code>month_cos = cos(2π × month / 12)</code></td>
           </tr>
           <tr>
-            <td><code>day_of_week</code> (0–6)</td><td>7</td>
+            <td><code>day_of_week</code> (0-6)</td><td>7</td>
             <td><code>dow_sin = sin(2π × dow / 7)</code></td>
             <td><code>dow_cos = cos(2π × dow / 7)</code></td>
           </tr>
@@ -1552,7 +1552,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
       <p class="meta" style="margin-top:0.6rem">
         The raw <code>month</code> and <code>day_of_week</code> columns are dropped before
         training; the 4 cyclic columns take their place, adding zero rows of missingness.
-        The <code>year</code> column is kept as-is (not cyclic — it encodes genuine secular trend).
+        The <code>year</code> column is kept as-is (not cyclic - it encodes genuine secular trend).
       </p>
     </div>
 
@@ -1561,7 +1561,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
       <p class="meta">
         Cyclic encoding is applied <strong>only in Exp3-S2 linear models</strong>
         (OLS, Ridge, ElasticNet). All prior experiments (Exp1, Exp2, Exp3 Sub-1) and all
-        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9–11) use raw
+        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9-11) use raw
         integer encoding.
       </p>
       <p class="meta">
@@ -1574,7 +1574,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
 
     <details class="inner-fold" style="margin-top:1rem">
       <summary><span class="fold-icon">▶</span>
-        Exp3-S1 (raw integers) vs Exp3-S2 (cyclic) — Linear Model Avg Test R² (all 8 targets)
+        Exp3-S1 (raw integers) vs Exp3-S2 (cyclic) - Linear Model Avg Test R² (all 8 targets)
       </summary>
       <div style="overflow-x:auto;margin-top:0.6rem">
       <table style="font-size:0.88em;max-width:560px">
@@ -1658,7 +1658,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
     <tbody>
       {year_rows}
       <tr style="border-top:2px solid var(--border);font-style:italic;color:var(--text-muted)">
-        <td>Train 2021–2024</td>
+        <td>Train 2021-2024</td>
         <td>{len(train)}</td>
         <td>{train_mean:.1f}</td><td>{train_std:.1f}</td>
         <td>{train[TARGET_COL].min():.1f}</td>
@@ -1670,7 +1670,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
   </div>
   <p class="meta" style="font-size:0.8em;color:var(--text-muted);margin-top:0.4rem">
     Red mean = year mean deviates by &gt;1σ from training mean.
-    Orange = 0.5–1σ shift. 2025 (★) is the test set.
+    Orange = 0.5-1σ shift. 2025 (★) is the test set.
   </p>
 </details>"""
 
@@ -1687,7 +1687,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
 
             shift_html = f"""
 <div class="obs-card" style="border-left:4px solid #e74c3c;margin-bottom:1rem">
-  <h4 style="margin:0 0 0.8rem">2025 Distribution Shift vs Training (2021–2024)</h4>
+  <h4 style="margin:0 0 0.8rem">2025 Distribution Shift vs Training (2021-2024)</h4>
   <div style="display:flex;gap:2rem;flex-wrap:wrap">
     <div style="text-align:center;min-width:130px">
       <div style="font-size:1.8em;font-weight:bold;color:{iqr_col}">{frac_iqr:.0%}</div>
@@ -1719,7 +1719,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
   </div>
 </div>"""
     else:
-        stats_html = '<div class="info-note">Raw data file not found — distribution stats unavailable.</div>'
+        stats_html = '<div class="info-note">Raw data file not found - distribution stats unavailable.</div>'
 
     # ── Performance panorama across all experiments ───────────────────────
     comp_cod = df_all[df_all["target"] == TARGET_COL].copy()
@@ -1737,7 +1737,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
         gap  = best.get("R2_gap", float("nan"))
         color   = _r2_color(r2)
         gap_cls = _gap_cls(gap)
-        gap_str = _fmt(gap) if not (isinstance(gap, float) and np.isnan(gap)) else "—"
+        gap_str = _fmt(gap) if not (isinstance(gap, float) and np.isnan(gap)) else "-"
         badge = ""
         if r2 == global_max:
             badge = ' <span style="font-size:0.75em;color:#f1c40f">★ best</span>'
@@ -1770,7 +1770,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="comp-cod-diagnostic">
-  <h1 class="section-title">Comp COD — Persistent Failure Diagnostic</h1>
+  <h1 class="section-title">Comp COD - Persistent Failure Diagnostic</h1>
   <p class="section-intro">
     Effluent COD (Composite) is the only target where <em>no model generalises</em> across any
     experiment or phase (best Test R² = {_fmt(global_max)} across {n_exp} experiment variants).
@@ -1788,26 +1788,26 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
   <div class="obs-card" style="border-left:4px solid #e74c3c;margin-top:1.5rem">
     <h4 style="margin:0 0 0.8rem">Root Cause Analysis</h4>
 
-    <p class="meta"><strong style="color:#e74c3c">1. Genuine 2025 process change — not a
+    <p class="meta"><strong style="color:#e74c3c">1. Genuine 2025 process change - not a
       modelling artefact.</strong>
       MAE doubled (8.7 → 18.1 mg/L) while σ-ratio = 0.78, confirming the 2025 test set has
-      comparable variance to training. The model is not hitting a low-variance wall —
+      comparable variance to training. The model is not hitting a low-variance wall -
       it is predicting the wrong values. This is the signature of a non-stationarity in
-      the plant's COD removal mechanism that was absent during the 2021–2024 training window.
+      the plant's COD removal mechanism that was absent during the 2021-2024 training window.
     </p>
 
     <p class="meta"><strong style="color:#e67e22">2. Inlet COD is a weak proxy for effluent
       COD under the current conditions.</strong>
       Composite effluent COD depends on secondary treatment efficiency, which is governed by
-      MLSS, SVI, and aeration conditions — features with 35–50% missingness on composite rows
+      MLSS, SVI, and aeration conditions - features with 35-50% missingness on composite rows
       (CONSIDER tier). When these are absent, the model falls back to inlet + flow, whose MI
       with effluent Comp COD is low (&lt;0.15 on training data).
     </p>
 
     <p class="meta"><strong style="color:#e67e22">3. Small composite sample size amplifies
       memorisation.</strong>
-      Composite targets have only ~515–633 training rows after dropna. With 17–32 features
-      the effective rows-per-feature ratio is 16–37 — below the commonly cited heuristic of 50.
+      Composite targets have only ~515-633 training rows after dropna. With 17-32 features
+      the effective rows-per-feature ratio is 16-37 - below the commonly cited heuristic of 50.
       Even heavily regularised models (ElNet α=10) risk encoding 2022-era COD spikes that
       do not recur in 2025.
     </p>
@@ -1825,14 +1825,14 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
       until 2025 data is incorporated into training.
       (b) <strong>Collect causal features</strong> with higher priority: secondary sludge age
       (SRT), MLSS, and effluent turbidity have high missingness now but directly govern COD
-      removal — their availability on composite measurement days would be the single highest
+      removal - their availability on composite measurement days would be the single highest
       leverage improvement.
       (c) <strong>Retrain once ≥ 90 new 2025 rows are available</strong> (roughly 3 months of
       composite measurements) and test whether the new regime is stable enough for a combined
-      2021–2025 model.
+      2021-2025 model.
       (d) As an interim measure, <strong>a shallow decision tree (max depth 3) trained only
-      on 2024–2025 data</strong> is likely to outperform any model trained on the full
-      2021–2024 window for near-term operational use.
+      on 2024-2025 data</strong> is likely to outperform any model trained on the full
+      2021-2024 window for near-term operational use.
     </p>
   </div>
 </section>"""
@@ -1901,7 +1901,7 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
 
         overfit_flag = ""
         if abs(best["R2_gap"]) > 0.25:
-            overfit_flag = ' <span style="color:#e74c3c;font-size:10px" title="R² gap > 0.25 — possible overfit">⚠ overfit</span>'
+            overfit_flag = ' <span style="color:#e74c3c;font-size:10px" title="R² gap > 0.25 - possible overfit">⚠ overfit</span>'
             overfit_warnings.append(TARGET_SHORT.get(tgt, tgt))
         skipped_note = ""
         if skipped_better:
@@ -1948,7 +1948,7 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
             f'⚠ <strong>Overfitting note:</strong> '
             f'{", ".join(overfit_warnings)} show R² gap &gt; 0.25. '
             f'Best is ranked by Test R² among non-overfit models (gap ≤ 0.25) where available. '
-            f'High-gap winners may reflect the model memorising 2021–2024 patterns absent in 2025 — '
+            f'High-gap winners may reflect the model memorising 2021-2024 patterns absent in 2025 - '
             f'prefer lower-gap alternatives for deployment.</p>'
         )
     criteria_note = (
@@ -2009,7 +2009,7 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     </details>
 
     <details class="inner-fold" open>
-      <summary><span class="fold-icon">▶</span> All Models — Combined Comparison</summary>
+      <summary><span class="fold-icon">▶</span> All Models - Combined Comparison</summary>
       <div class="fold-body">{comp_tbl}{train_tbl}</div>
     </details>
   </div>
@@ -2054,7 +2054,7 @@ def _no_alt_popup_text(tgt: str, naive_compound: str, naive_r2: float,
         gap_note = "No gap data available for window members."
     else:
         gap_note = (
-            f"The smallest |gap| among them is {min_gap_in_window:+.3f} — "
+            f"The smallest |gap| among them is {min_gap_in_window:+.3f} - "
             f"every competitive model carries a substantial overfit gap. "
         )
     conclusion = (
@@ -2067,7 +2067,7 @@ def _no_alt_popup_text(tgt: str, naive_compound: str, naive_r2: float,
 
 
 def _global_leaderboard(df_all: pd.DataFrame) -> str:
-    # Late import — best_models_selection imports from this module, so must be deferred
+    # Late import - best_models_selection imports from this module, so must be deferred
     from best_models_selection import build_global as _build_global  # noqa: E402
     global_picks   = _build_global(df_all)
     gadj_by_target = {row["target"]: row for _, row in global_picks.iterrows()}
@@ -2096,7 +2096,7 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
 
         gpick = gadj_by_target.get(tgt)
         if gpick is not None:
-            gadj_lbl  = str(gpick.get("gadj_model", "—"))
+            gadj_lbl  = str(gpick.get("gadj_model", "-"))
             gadj_r2   = float(gpick.get("gadj_R2",  float("nan")))
             gadj_gap  = float(gpick.get("gadj_gap", float("nan")))
             gadj_rmse = float(gpick.get("gadj_RMSE", float("nan")))
@@ -2105,9 +2105,9 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
             gadj_gap = naive_gap; gadj_rmse = naive_rmse
 
         # Classify this row into three display states:
-        #   • gap_ok       — naive gap is acceptable (< 0.10); no concern, blank right side
-        #   • has_alt      — gap is concerning AND gap-adj picks a DIFFERENT model
-        #   • no_alt       — gap is concerning but gap-adj picks the SAME model (no better option)
+        #   • gap_ok       - naive gap is acceptable (< 0.10); no concern, blank right side
+        #   • has_alt      - gap is concerning AND gap-adj picks a DIFFERENT model
+        #   • no_alt       - gap is concerning but gap-adj picks the SAME model (no better option)
         gap_ok   = naive_gap < 0.10          # positive direction is the concerning one
         has_alt  = (not gap_ok) and (gadj_lbl != naive_compound)
         no_alt   = (not gap_ok) and (gadj_lbl == naive_compound)
@@ -2171,13 +2171,13 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
 
         if limit is not None:
             limit_str = f"{limit:g} mg/L"
-            rmse_pct = f"{(gadj_rmse_val / limit * 100):.1f}%" if not pd.isna(gadj_rmse_val) else "—"
-            mdae_pct = f"{(gadj_mdae_val / limit * 100):.1f}%" if not pd.isna(gadj_mdae_val) else "—"
+            rmse_pct = f"{(gadj_rmse_val / limit * 100):.1f}%" if not pd.isna(gadj_rmse_val) else "-"
+            mdae_pct = f"{(gadj_mdae_val / limit * 100):.1f}%" if not pd.isna(gadj_mdae_val) else "-"
             rmse_col = "#e74c3c" if not pd.isna(gadj_rmse_val) and (gadj_rmse_val / limit) > 0.5 else "var(--text-primary)"
             mdae_col = "#e74c3c" if not pd.isna(gadj_mdae_val) and (gadj_mdae_val / limit) > 0.5 else "var(--text-primary)"
             limit_cells = f"<td class='meta'>{limit_str}</td><td class='meta' style='color:{rmse_col}'>{rmse_pct}</td><td class='meta' style='color:{mdae_col}'>{mdae_pct}</td>"
         else:
-            limit_cells = "<td class='meta'>—</td><td class='meta'>—</td><td class='meta'>—</td>"
+            limit_cells = "<td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td>"
 
         rows.append(
             f'<tr data-target="{slug}">'
@@ -2194,15 +2194,15 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
 
     return f"""
 <div class="card section-card" id="overview-leaderboard">
-  <h2>Global Leaderboard — Best Result Per Target</h2>
+  <h2>Global Leaderboard - Best Result Per Target</h2>
   <p class="meta">
     Left half: the <strong>highest raw Test R²</strong> achieved for each target across all
-    experiments — the naive ceiling.
-    Right half: the <strong>gap-adjusted recommendation</strong> — the best model after
+    experiments - the naive ceiling.
+    Right half: the <strong>gap-adjusted recommendation</strong> - the best model after
     penalising large train/test gaps (see
     <a href="#model-selection">Model Selection</a> for the full rule explanation).
     A <span style="color:#E67E22">⚠</span> in the last column flags targets where the
-    recommended model differs from the naive champion — those are the cases where
+    recommended model differs from the naive champion - those are the cases where
     overfitting matters for deployment.
   </p>
   <div style="overflow-x:auto">
@@ -2444,7 +2444,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
                              "Experiment 1")
     return f"""
 <section id="exp1">
-  <h1 class="section-title">Experiment 1 — Inlet + COMMON</h1>
+  <h1 class="section-title">Experiment 1 - Inlet + COMMON</h1>
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub1}
   {sub2}
@@ -2455,21 +2455,21 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
 
 def build_exp2_section(df_all: pd.DataFrame) -> str:
     sub1   = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1",
-                             "Sub-experiment 1 — Secondary Clarifier + COMMON", open_default=True)
+                             "Sub-experiment 1 - Secondary Clarifier + COMMON", open_default=True)
     fs1div = _fs_analysis_div(df_all, "Exp2-Sub1", "Exp2-Sub1-FS")
     sub1fs = _exp_subsection(df_all, "Exp2-Sub1-FS", "exp2-s1-fs",
-                             "Sub-experiment 1 — Feature Selected", open_default=False)
+                             "Sub-experiment 1 - Feature Selected", open_default=False)
     sub2   = _exp_subsection(df_all, "Exp2-Sub2", "exp2-s2",
-                             "Sub-experiment 2 — Inlet + Secondary + COMMON", open_default=True)
+                             "Sub-experiment 2 - Inlet + Secondary + COMMON", open_default=True)
     fs2div = _fs_analysis_div(df_all, "Exp2-Sub2", "Exp2-Sub2-FS")
     sub2fs = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s2-fs",
-                             "Sub-experiment 2 — Feature Selected", open_default=False)
+                             "Sub-experiment 2 - Feature Selected", open_default=False)
     best = _best_model_box(
         df_all[df_all["exp_key"].isin(["Exp2-Sub1","Exp2-Sub1-FS","Exp2-Sub2","Exp2-Sub2-FS"])],
         "Experiment 2")
     return f"""
 <section id="exp2">
-  <h1 class="section-title">Experiment 2 — Secondary & Combined Features</h1>
+  <h1 class="section-title">Experiment 2 - Secondary & Combined Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
   {sub1}
   {sub1fs}
@@ -2483,12 +2483,12 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
 
 def build_exp3_section(df_all: pd.DataFrame) -> str:
     sub1   = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
-                             "Sub-experiment 1 — ADD-tier Aeration Features", open_default=True)
+                             "Sub-experiment 1 - ADD-tier Aeration Features", open_default=True)
     fs1div = _fs_analysis_div(df_all, "Exp3-S1", "Exp3-S1-FS")
     sub1fs = _exp_subsection(df_all, "Exp3-S1-FS", "exp3-s1-fs",
-                             "Sub-experiment 1 — Feature Selected", open_default=False)
+                             "Sub-experiment 1 - Feature Selected", open_default=False)
     sub2   = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
-                             "Sub-experiment 2 — ADD + CONSIDER-tier Features", open_default=True)
+                             "Sub-experiment 2 - ADD + CONSIDER-tier Features", open_default=True)
     cyclic_div = _cyclic_encoding_callout(df_all)
     cost_div   = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
     vif_div    = _vif_callout()
@@ -2511,7 +2511,7 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
         "Experiment 3")
     return f"""
 <section id="exp3">
-  <h1 class="section-title">Experiment 3 — Expanded Feature Sets</h1>
+  <h1 class="section-title">Experiment 3 - Expanded Feature Sets</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
   {sub1fs}
@@ -2593,7 +2593,7 @@ def _variance_diagnosis_callout() -> str:
         delta_rmse = rmse_2025 - rmse_2024 if (_safe(rmse_2024) and _safe(rmse_2025)) else float("nan")
 
         # Classify: collapse vs genuine failure vs mixed
-        # Variance collapse: σ-ratio < 0.5 AND (MAE ratio < 1.3 — not much absolute change)
+        # Variance collapse: σ-ratio < 0.5 AND (MAE ratio < 1.3 - not much absolute change)
         # Genuine failure: MAE doubled or more regardless of variance
         is_collapse  = _safe(ratio)     and ratio     < 0.5
         is_failure   = _safe(mae_ratio) and mae_ratio > 1.5
@@ -2606,7 +2606,7 @@ def _variance_diagnosis_callout() -> str:
         elif is_collapse and not is_failure:
             dx_class   = "warn"
             badge_col  = "#e67e22"
-            diagnosis  = f"Variance collapse (σ-ratio={_fmt(ratio,2)}) — R² unreliable; check MAE"
+            diagnosis  = f"Variance collapse (σ-ratio={_fmt(ratio,2)}) - R² unreliable; check MAE"
         elif is_failure and not is_collapse:
             dx_class   = "fail"
             badge_col  = "#e74c3c"
@@ -2614,16 +2614,16 @@ def _variance_diagnosis_callout() -> str:
         else:
             dx_class   = "warn"
             badge_col  = "#e67e22"
-            r_str = _fmt(ratio,2) if _safe(ratio) else "—"
-            m_str = _fmt(mae_ratio,1) if _safe(mae_ratio) else "—"
-            diagnosis  = f"Mixed — σ-ratio={r_str}, MAE ×{m_str}"
+            r_str = _fmt(ratio,2) if _safe(ratio) else "-"
+            m_str = _fmt(mae_ratio,1) if _safe(mae_ratio) else "-"
+            diagnosis  = f"Mixed - σ-ratio={r_str}, MAE ×{m_str}"
 
         tgt_short = TARGET_SHORT.get(r["target"], r["target"])
 
         def _delta_cell(val, is_good_if_negative=True):
             """Format a delta value with colour: green if improving, red if degrading."""
             if not _safe(val):
-                return "—"
+                return "-"
             colour = "#2ecc71" if (val < 0) == is_good_if_negative else "#e74c3c"
             sign = "+" if val >= 0 else ""
             return f'<span style="color:{colour}">{sign}{_fmt(val,3)}</span>'
@@ -2635,7 +2635,7 @@ def _variance_diagnosis_callout() -> str:
           <td style="color:#e74c3c">{_fmt(r['R2_test'])}</td>
           <td>{_fmt(y_tr_std, 3)}</td>
           <td>{_fmt(y_te_std, 3)}</td>
-          <td>{"—" if not _safe(ratio) else _fmt(ratio, 2)}</td>
+          <td>{"-" if not _safe(ratio) else _fmt(ratio, 2)}</td>
           <td>{_fmt(mae_2024, 3)}</td>
           <td>{_fmt(mae_2025, 3)}</td>
           <td>{_delta_cell(delta_mae)}</td>
@@ -2648,7 +2648,7 @@ def _variance_diagnosis_callout() -> str:
 
     return f"""
 <div class="obs-card" style="margin:1rem 0;border-left:4px solid #e67e22">
-  <h4 style="margin:0 0 0.6rem">Negative R² Diagnosis — Variance Collapse vs Genuine Failure</h4>
+  <h4 style="margin:0 0 0.6rem">Negative R² Diagnosis - Variance Collapse vs Genuine Failure</h4>
   <p style="font-size:0.85em;color:var(--text-muted);margin:0 0 0.8rem">
     R² = 1 − SS_res/SS_tot. A low-variance 2025 test set (σ-ratio &lt; 0.5) shrinks the
     denominator and forces R² negative even when absolute accuracy is unchanged or improving.
@@ -2701,7 +2701,7 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
             def _fmt_cell(r2, gap, ref_r2):
                 if r2 is None:
-                    return '<td style="color:var(--text-muted)">—</td><td style="color:var(--text-muted)">—</td>'
+                    return '<td style="color:var(--text-muted)">-</td><td style="color:var(--text-muted)">-</td>'
                 r2_str = f"{r2:+.3f}"
                 gap_str = f"{gap:+.3f}"
                 # Colour R2 relative to reference (Exp3-S2)
@@ -2758,14 +2758,14 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
 def build_exp4_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp4-S1", "exp4-s1",
-                           "Sub-experiment 1 — Manual Redundancy Pruning (SVI, New Aeration, Sec Sed)",
+                           "Sub-experiment 1 - Manual Redundancy Pruning (SVI, New Aeration, Sec Sed)",
                            open_default=True)
 
     note_s1 = """
 <div class="info-note" style="border-left-color:#e74c3c">
-  <strong>⚠ Sub-exp 1 finding — manual pruning hypothesis refuted:</strong>
+  <strong>⚠ Sub-exp 1 finding - manual pruning hypothesis refuted:</strong>
   Removing the three feature groups made performance <em>worse</em> across every target and every
-  model. Row counts barely changed (+5–10, &lt;2%) because Sec Sed and Sec Clarifier are
+  model. Row counts barely changed (+5-10, &lt;2%) because Sec Sed and Sec Clarifier are
   collected on the same operational days (co-occurring missingness).
 
   <br><br><strong>Why performance degraded:</strong>
@@ -2778,14 +2778,14 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 </div>"""
 
     sub2 = _exp_subsection(df_all, "Exp4-S2", "exp4-s2",
-                           "Sub-experiment 2 — Automated VIF Pruning (threshold = 10)",
+                           "Sub-experiment 2 - Automated VIF Pruning (threshold = 10)",
                            open_default=True)
 
     note_s2 = """
 <div class="info-note" style="border-left-color:#e67e22">
-  <strong>⚠ Sub-exp 2 finding — VIF pruning also refuted, with nuance:</strong>
+  <strong>⚠ Sub-exp 2 finding - VIF pruning also refuted, with nuance:</strong>
   Automated iterative VIF pruning (drop highest-VIF feature until all VIF ≤ 10) reduced
-  feature sets to 5–10 and unlocked +47 to +293 additional rows by eliminating high-missingness
+  feature sets to 5-10 and unlocked +47 to +293 additional rows by eliminating high-missingness
   correlated features (pH columns, Inlet BOD/COD, MLSS).
 
   <br><br><strong>Row gain is significant for composites:</strong> Comp TSS grew from 448 → 741
@@ -2793,7 +2793,7 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 
   <br><br><strong>But performance still degraded:</strong>
   <ul style="margin:6px 0 0 16px;padding:0">
-    <li><strong>Ridge:</strong> mixed results — Grab BOD Ridge recovered to +0.463 (close to
+    <li><strong>Ridge:</strong> mixed results - Grab BOD Ridge recovered to +0.463 (close to
         Exp4-S1 +0.518), Grab TSS Ridge stable at +0.373. But Comp pH Ridge collapsed to −1.44
         and Comp COD remains unresolved.</li>
     <li><strong>ElNet:</strong> Grab BOD dropped to +0.072 (vs Exp3-S2 +0.684). ElNet relies on
@@ -2804,7 +2804,7 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
         and overfit severely to noise.</li>
   </ul>
 
-  <br><strong>Root cause:</strong> VIF pruning is <em>target-agnostic</em> — it removes features
+  <br><strong>Root cause:</strong> VIF pruning is <em>target-agnostic</em> - it removes features
   that are correlated with other features, regardless of their correlation with the target.
   Inlet BOD predicts Effluent BOD. Sec Clarifier pH predicts Effluent pH. These features have
   high VIF precisely because the plant operates systematically (pH is buffered across all stages),
@@ -2823,7 +2823,7 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="exp4">
-  <h1 class="section-title">Experiment 4 — Collinearity Pruning</h1>
+  <h1 class="section-title">Experiment 4 - Collinearity Pruning</h1>
   <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
   {sub1}
   {note_s1}
@@ -2846,7 +2846,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
     stack_sub = _phase9_model_subsection(
         df_all, "Phase9-Stacking", "p9-stacking",
         "Stacking Ensemble (ElNet + RF + XGB → Ridge, walk-forward OOF)",
-        _badge("CONSISTENT — no leakage", "warn"))
+        _badge("CONSISTENT - no leakage", "warn"))
 
     # Combined comparison across all three
     df_p9 = df_all[df_all["exp_key"].isin(["Phase9-ANN","Phase9-Voting","Phase9-Stacking"])].copy()
@@ -2857,14 +2857,14 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="phase9">
-  <h1 class="section-title">Phase 9 — Advanced Models (Corrected)</h1>
+  <h1 class="section-title">Phase 9 - Advanced Models (Corrected)</h1>
   <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
   {ann_sub}
   {ann_failure}
   {vote_sub}
   {stack_sub}
   <details class="exp-details" id="p9-comparison">
-    <summary><span class="fold-icon">▶</span> Phase 9 — All Models Combined</summary>
+    <summary><span class="fold-icon">▶</span> Phase 9 - All Models Combined</summary>
     <div class="exp-body">{comp_tbl}</div>
   </details>
   {var_dx}
@@ -2901,18 +2901,18 @@ def _phase10_variant(df_all: pd.DataFrame, exp_key: str,
 def build_phase10_section(df_all: pd.DataFrame) -> str:
     full_fe = _phase10_variant(
         df_all, "Phase10-FE", "p10-full",
-        "Phase 10 — Full Feature Engineering (All Targets)",
+        "Phase 10 - Full Feature Engineering (All Targets)",
         _badge("COMPOSITE OVERFIT", "fail"))
     sel_fe = _phase10_variant(
         df_all, "Phase10b-FE", "p10b",
-        "Phase 10b — Selective Feature Engineering (Grab FE / Composite Base)",
+        "Phase 10b - Selective Feature Engineering (Grab FE / Composite Base)",
         _badge("CURRENT BEST", "rec"))
     best = _best_model_box(
         df_all[df_all["exp_key"].isin(["Phase10-FE","Phase10b-FE"])],
         "Phase 10")
     return f"""
 <section id="phase10">
-  <h1 class="section-title">Phase 10 — Feature Engineering</h1>
+  <h1 class="section-title">Phase 10 - Feature Engineering</h1>
   <p class="section-intro">{EXP_INTRO["Phase10"]}</p>
   {full_fe}
   {sel_fe}
@@ -2937,17 +2937,17 @@ def build_phase11_section(df_all: pd.DataFrame) -> str:
   <strong>Phase 11 CV note:</strong> <code>CV_R²</code> and <code>Gap_gen = CV_R² − Test_R²</code>
   are stored in results.xlsx but not shown in the table above (unified schema). They are available
   in the raw <code>models/phase11/results.xlsx</code>. The first TimeSeriesSplit fold trains on
-  ~80 rows with ~55 features, making CV_R² very noisy for Ridge/ElNet — interpret per-fold
-  rather than as a mean. Key finding: Grab COD RF has CV_R²=0.291, Gap_gen=−0.014 — the most
+  ~80 rows with ~55 features, making CV_R² very noisy for Ridge/ElNet - interpret per-fold
+  rather than as a mean. Key finding: Grab COD RF has CV_R²=0.291, Gap_gen=−0.014 - the most
   consistent Grab COD model by cross-validation.
 </div>"""
 
     return f"""
 <section id="phase11">
-  <h1 class="section-title">Phase 11 — Temporal Features + log1p Targets</h1>
+  <h1 class="section-title">Phase 11 - Temporal Features + log1p Targets</h1>
   <p class="section-intro">{EXP_INTRO["Phase11"]}</p>
   <details class="exp-details" open id="p11-detail">
-    <summary><span class="fold-icon">▶</span> Phase 11 — All Models</summary>
+    <summary><span class="fold-icon">▶</span> Phase 11 - All Models</summary>
     <div class="exp-body">
       {feat_html}
       {ds_html}
@@ -3022,7 +3022,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p9">
-      Phase 9 — Advanced <span class="nav-chevron">▾</span>
+      Phase 9 - Advanced <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p9">
       <a class="nav-item nav-sub" href="#p9-ann">ANN</a>
@@ -3035,7 +3035,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p10">
-      Phase 10 — Feature Eng. <span class="nav-chevron">▾</span>
+      Phase 10 - Feature Eng. <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p10">
       <a class="nav-item nav-sub" href="#p10-full">Full FE (P10)</a>
@@ -3045,7 +3045,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p11">
-      Phase 11 — Temporal <span class="nav-chevron">▾</span>
+      Phase 11 - Temporal <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p11">
       <a class="nav-item nav-sub" href="#phase11">Temporal Lags + log1p</a>
@@ -3578,7 +3578,7 @@ def _build_model_selection_section(df_all: pd.DataFrame) -> str:
     tolerance; the <strong>one-SE rule</strong> picks the smallest-gap model within
     0.03 R² of the top; the <strong>Pareto frontier</strong> lists all models not
     dominated on (R²_test ↑, |gap| ↓). RMSE and MAE are shown alongside R² for
-    operational interpretability — they rank identically to R² within a target but
+    operational interpretability - they rank identically to R² within a target but
     carry real units (mg/L or pH) that relate to discharge consent limits.
   </p>
   {inner}
@@ -3607,9 +3607,9 @@ def _build_error_decomposition_section() -> str:
     Decomposes 2025 residuals for the <strong>Phase 9 Voting</strong> (ElNet+RF+XGB)
     model across four operational axes: Flow quartile, Weekday vs Weekend, Season
     (DJF/MAM/JJA/SON), and Inlet Load quartile. Quartile thresholds are fit on the
-    training set (2021–2024) only. Headline finding: error concentrates in
-    <strong>Q4 high-flow</strong> and <strong>DJF winter</strong> regimes (2–3× overall
-    MAE) for every BOD/TSS target — predictions during hydraulic or thermal stress
+    training set (2021-2024) only. Headline finding: error concentrates in
+    <strong>Q4 high-flow</strong> and <strong>DJF winter</strong> regimes (2-3× overall
+    MAE) for every BOD/TSS target - predictions during hydraulic or thermal stress
     should be flagged as low-confidence.
   </p>
   {inner}
@@ -3632,7 +3632,7 @@ def main():
               f"({mdae_df['exp_key'].nunique()} experiments × BOD/TSS targets).")
     else:
         df_all["MdAE_test"] = np.nan
-        print("  No MdAE data found — MdAE column will show — in report.")
+        print("  No MdAE data found - MdAE column will show - in report.")
 
     print("Building HTML sections…")
     print("  Building experiment and phase sections…")
@@ -3668,7 +3668,7 @@ def main():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unified Modeling Report — Wastewater Treatment</title>
+  <title>Unified Modeling Report - Wastewater Treatment</title>
   <style>{css}</style>
   {DARK_MODE_JS}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -3678,11 +3678,11 @@ def main():
 {_sidebar()}
 <div id="main-content">
   <div class="page-header">
-    <h1>Wastewater Treatment — Unified Modeling Report</h1>
+    <h1>Wastewater Treatment - Unified Modeling Report</h1>
     <p class="meta">Generated {ts} &nbsp;·&nbsp;
-      Experiments 1–4 + Phases 9–11 &nbsp;·&nbsp;
+      Experiments 1-4 + Phases 9-11 &nbsp;·&nbsp;
       9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp;
-      Train 2021–2024 · Test 2025
+      Train 2021-2024 · Test 2025
     </p>
   </div>
   {_filter_bar()}

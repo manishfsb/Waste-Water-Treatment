@@ -1,11 +1,11 @@
 """
-non_linear_modeling_exp4_s1.py — RF, GB, XGBoost on Experiment 4 Sub-1 subsets.
+non_linear_modeling_exp4_s1.py - RF, GB, XGBoost on Experiment 4 Sub-1 subsets.
 
 Experiment 4 Phase 1 hypothesis: removing redundant/collinear features from Exp3-S2
 improves generalisation. Dropped vs Exp3-S2:
-  - Aeration SVI (Existing/New)     — derived from SV30/MLSS, zero independent info
-  - All (New) aeration columns      — cross-tank r=0.74-0.84, Existing wins on key targets
-  - All Sec Sedimentation columns   — cross-stage r=0.69-0.87, Sec Clarifier wins consistently
+  - Aeration SVI (Existing/New)     - derived from SV30/MLSS, zero independent info
+  - All (New) aeration columns      - cross-tank r=0.74-0.84, Existing wins on key targets
+  - All Sec Sedimentation columns   - cross-stage r=0.69-0.87, Sec Clarifier wins consistently
 
 All other protocol details identical to prior non-linear scripts.
 
@@ -157,12 +157,12 @@ def train_one(experiment, name, subset_path, features, target,
 
     test = df[df["year"] == TEST_YEAR]
     if len(test) == 0:
-        print(f"    SKIP — no test rows for {TEST_YEAR}"); return None, None
+        print(f"    SKIP - no test rows for {TEST_YEAR}"); return None, None
 
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} — tuning...",
+    print(f"    n_train={len(train)} n_test={len(test)} n_feat={len(features)} - tuning...",
           end="", flush=True)
 
     search = search_factory()
@@ -221,7 +221,7 @@ def run_model(model_tag, search_factory):
     os.makedirs(os.path.join(model_dir, "plots"),  exist_ok=True)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} Exp4-S1 — run {run}")
+    print(f"  {model_tag} Exp4-S1 - run {run}")
     print(f"{'='*65}")
 
     all_rows = []
@@ -229,7 +229,7 @@ def run_model(model_tag, search_factory):
     for experiment, name, subset_path, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
-            print(f"    SKIP — file not found: {subset_path}"); continue
+            print(f"    SKIP - file not found: {subset_path}"); continue
 
         df_peek  = pd.read_excel(subset_path, nrows=0)
         features = infer_features(df_peek, target)
