@@ -117,7 +117,7 @@ _PRED_MODEL_MAP = {
 }
 
 # Phase 9 models live inside Exp3-S2 files but belong to a different exp_key
-_PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Ensemble", "Stacking": "Phase9-Ensemble"}
+_PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phase9-Stacking"}
 
 FEATURE_DESCRIPTIONS = {
     "Exp1": {
@@ -733,40 +733,19 @@ def _dataset_summary(df: pd.DataFrame) -> str:
 
 
 def _pick_best(avail, sub):
-    """
-    Threshold best-model criterion per target row:
-      - Primary:  highest Test R², when at least one model has R² ≥ 0.
-      - Fallback: lowest RMSE_test, when ALL models have R² < 0
-                  (variance collapse makes R² unreliable).
-    Returns a set of model names that qualify as 'best' for this row.
-    """
+    """Returns the model name with the highest Test R² for this target row."""
     r2_vals = {}
-    rmse_vals = {}
     for m in avail:
         msub = sub[sub["model"] == m]
         if msub.empty:
             continue
-        r2   = msub["R2_test"].values[0]
-        rmse = msub["RMSE_test"].values[0]
+        r2 = msub["R2_test"].values[0]
         if not np.isnan(r2):
             r2_vals[m] = r2
-        if not np.isnan(rmse):
-            rmse_vals[m] = rmse
-
     if not r2_vals:
         return set()
-
     max_r2 = max(r2_vals.values())
-    if max_r2 >= 0:
-        # At least one model beats naive baseline - use R²
-        threshold = max_r2 - 1e-9
-        return {m for m, v in r2_vals.items() if v >= threshold}
-    else:
-        # All models fail; fall back to lowest RMSE
-        if not rmse_vals:
-            return set()
-        min_rmse = min(rmse_vals.values())
-        return {m for m, v in rmse_vals.items() if v <= min_rmse + 1e-9}
+    return {m for m, v in r2_vals.items() if v >= max_r2 - 1e-9}
 
 
 def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
@@ -777,9 +756,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
     is dominated by spikes. MdAE is the primary reliability metric for those targets.
     Phase 10 and Phase 11 do not store row-level predictions so MdAE is unavailable (-).
 
-    Best-model highlighting uses a threshold rule:
-      - Any model has R² ≥ 0 → highlight highest R² (★)
-      - All models have R² < 0 → fall back to lowest RMSE (★ in RMSE cell)
+    Best-model highlighting: highest Test R² per target row (★), regardless of sign.
     """
     avail = [m for m in models if m in df["model"].values]
     if not avail:
@@ -806,11 +783,6 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         show_mdae = tgt in MDAE_TARGETS
 
         best_models = _pick_best(avail, sub)
-        r2_vals = {m: sub[sub["model"] == m]["R2_test"].values[0]
-                   for m in avail if m in sub["model"].values}
-        use_rmse_fallback = bool(r2_vals) and max(
-            (v for v in r2_vals.values() if not np.isnan(v)), default=float("-inf")
-        ) < 0
 
         for m in avail:
             msub = sub[sub["model"] == m]
@@ -825,9 +797,6 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
 
             cell_bg = "background:rgba(74,144,217,0.20);font-weight:bold;" if is_best else ""
 
-            r2_star   = "★ " if (is_best and not use_rmse_fallback) else ""
-            rmse_star = "★ " if (is_best and use_rmse_fallback)     else ""
-
             # MdAE cell - only for BOD/TSS targets; dash otherwise
             if show_mdae and has_mdae:
                 mdae_val = msub["MdAE_test"].values[0]
@@ -841,11 +810,9 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
                 mdae_cell = '<td style="color:var(--text-muted)">-</td>'
 
             cells += (
-                f'<td style="color:{_r2_color(r2)};{cell_bg}">'
-                f'{r2_star}{_fmt(r2)}</td>'
+                f'<td style="color:{_r2_color(r2)};{cell_bg}">{"★ " if is_best else ""}{_fmt(r2)}</td>'
                 f'<td class="{_gap_cls(gap)}">{_fmt(gap)}</td>'
-                f'<td style="{cell_bg if use_rmse_fallback else ""}">'
-                f'{rmse_star}{_fmt(rmse)}</td>'
+                f'<td>{_fmt(rmse)}</td>'
                 f'<td>{_fmt(mae)}</td>'
                 f'{mdae_cell}'
             )
@@ -860,11 +827,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         '<span style="color:#e67e22">0-0.2 weak</span> · '
         '<span style="color:#e74c3c">&lt;0 fails baseline</span>. '
         'Best per row: <span style="background:rgba(74,144,217,0.20);'
-        'padding:1px 4px;border-radius:3px;font-weight:bold">★ highest R²</span> '
-        'when any model ≥ 0; '
-        '<span style="background:rgba(74,144,217,0.20);'
-        'padding:1px 4px;border-radius:3px;font-weight:bold">★ lowest RMSE</span> '
-        'when all R² &lt; 0 (variance-collapse fallback).</p>'
+        'padding:1px 4px;border-radius:3px;font-weight:bold">★ highest Test R²</span>.</p>'
         '<p class="table-note">'
         'R² Gap (Train − Test): '
         '<span class="gap-good">■ &lt;0.10 OK</span> · '
@@ -2179,16 +2142,22 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
         else:
             limit_cells = "<td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td>"
 
+        # Embed ⚠ inline into the Naive R² cell when the naive champion is overfit
+        overfit_inline = (
+            ' <span style="color:#E67E22;font-size:11px;vertical-align:super" '
+            'title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span>'
+            if not gap_ok else ""
+        )
         rows.append(
             f'<tr data-target="{slug}">'
             # Naive champion
             f'<td><strong>{TARGET_SHORT.get(tgt, tgt)}</strong></td>'
             f'<td><strong style="color:{mdl_col}">{naive_mdl}</strong></td>'
-            f'<td style="color:{_r2_color(naive_r2)};font-weight:bold">{_fmt(naive_r2)}</td>'
+            f'<td style="color:{_r2_color(naive_r2)};font-weight:bold">{_fmt(naive_r2)}{overfit_inline}</td>'
             f'<td class="{_gap_cls(naive_gap)}">{_fmt(naive_gap)}</td>'
             f'<td class="meta">{_fmt(naive_rmse)}</td>'
             f'<td class="meta" style="font-size:11px">{exp_label}</td>'
-            + right_cells + warn_cell + limit_cells +
+            + right_cells + limit_cells +
             f'</tr>'
         )
 
@@ -2197,13 +2166,11 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
   <h2>Global Leaderboard - Best Result Per Target</h2>
   <p class="meta">
     Left half: the <strong>highest raw Test R²</strong> achieved for each target across all
-    experiments - the naive ceiling.
+    experiments - the naive ceiling. A <span style="color:#E67E22">⚠</span> superscript on the
+    Test R² value flags targets where the naive champion is overfit (gap ≥ 0.10).
     Right half: the <strong>gap-adjusted recommendation</strong> - the best model after
     penalising large train/test gaps (see
     <a href="#model-selection">Model Selection</a> for the full rule explanation).
-    A <span style="color:#E67E22">⚠</span> in the last column flags targets where the
-    recommended model differs from the naive champion - those are the cases where
-    overfitting matters for deployment.
   </p>
   <div style="overflow-x:auto">
   <table class="summary-table leaderboard-table">
@@ -2214,7 +2181,6 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
           Naive champion (highest Test R²)</th>
         <th colspan="4" style="text-align:center;border-bottom:1px solid var(--border-color)">
           Recommended (gap-adjusted)</th>
-        <th rowspan="2">⚠</th>
         <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border-color)">
           Compliance Error (Rec. Model)</th>
       </tr>
@@ -2227,6 +2193,12 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
     <tbody>{"".join(rows)}</tbody>
   </table>
   </div>
+  <p class="meta" style="margin-top:8px;font-size:11px;color:var(--text-muted)">
+    MdAE % Limit is computed from row-level predictions stored in dataset files.
+    Feature Engineering and Temporal Features phases do not store row-level predictions,
+    so MdAE shows <em>-</em> when their models are the recommended choice.
+    BOD/TSS targets only — MdAE is not shown for pH (narrow range) or COD (no discharge limit).
+  </p>
 </div>"""
 
 
@@ -2416,7 +2388,10 @@ def _abstract_section() -> str:
     <li><strong>Baseline (Exp1 & 2):</strong> Established that inlet water quality alone is insufficient for prediction. Secondary clarifier data is essential to achieve meaningful accuracy.</li>
     <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-S2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
     <li><strong>Feature Pruning (Exp4):</strong> Removing collinear features (via VIF or manually) degraded generalisation across the board. The collinear features carry structural signal necessary for decision tree models, while regularised linear models already suppress collinearity automatically.</li>
-    <li><strong>Advanced Methods (Phase 9 & 11):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features (Phase 11) successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
+    <li><strong>Advanced Methods (Ensembles & Temporal):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
+    <li><strong>Practical significance — R² alone is insufficient:</strong> A high Test R² does not guarantee compliance-grade accuracy. Discharge limits for BOD and TSS are 10 mg/L.
+      <strong>Grab BOD</strong> (best R²≈0.69): RMSE ≈ 2 mg/L — roughly 20% of the limit, operationally useful.
+      <strong>Grab TSS</strong> (best R²≈0.64): RMSE ≈ 6 mg/L — roughly 60% of the limit; the model explains variance well but its absolute prediction error is large relative to the compliance threshold. Predictions should be treated as trend indicators rather than compliance certifications for TSS.</li>
   </ul>
 </div>"""
 
@@ -2857,14 +2832,14 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="phase9">
-  <h1 class="section-title">Phase 9 - Advanced Models (Corrected)</h1>
+  <h1 class="section-title">Advanced Methods - ANN &amp; Ensembles</h1>
   <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
   {ann_sub}
   {ann_failure}
   {vote_sub}
   {stack_sub}
   <details class="exp-details" id="p9-comparison">
-    <summary><span class="fold-icon">▶</span> Phase 9 - All Models Combined</summary>
+    <summary><span class="fold-icon">▶</span> Advanced Methods - All Models Combined</summary>
     <div class="exp-body">{comp_tbl}</div>
   </details>
   {var_dx}
@@ -2901,7 +2876,7 @@ def _phase10_variant(df_all: pd.DataFrame, exp_key: str,
 def build_phase10_section(df_all: pd.DataFrame) -> str:
     full_fe = _phase10_variant(
         df_all, "Phase10-FE", "p10-full",
-        "Phase 10 - Full Feature Engineering (All Targets)",
+        "Feature Engineering - Full (All Targets)",
         _badge("COMPOSITE OVERFIT", "fail"))
     sel_fe = _phase10_variant(
         df_all, "Phase10b-FE", "p10b",
@@ -2912,7 +2887,7 @@ def build_phase10_section(df_all: pd.DataFrame) -> str:
         "Phase 10")
     return f"""
 <section id="phase10">
-  <h1 class="section-title">Phase 10 - Feature Engineering</h1>
+  <h1 class="section-title">Feature Engineering</h1>
   <p class="section-intro">{EXP_INTRO["Phase10"]}</p>
   {full_fe}
   {sel_fe}
@@ -2944,10 +2919,10 @@ def build_phase11_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="phase11">
-  <h1 class="section-title">Phase 11 - Temporal Features + log1p Targets</h1>
+  <h1 class="section-title">Temporal Features + log1p Targets</h1>
   <p class="section-intro">{EXP_INTRO["Phase11"]}</p>
   <details class="exp-details" open id="p11-detail">
-    <summary><span class="fold-icon">▶</span> Phase 11 - All Models</summary>
+    <summary><span class="fold-icon">▶</span> Temporal Features - All Models</summary>
     <div class="exp-body">
       {feat_html}
       {ds_html}
@@ -3022,7 +2997,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p9">
-      Phase 9 - Advanced <span class="nav-chevron">▾</span>
+      Advanced Methods <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p9">
       <a class="nav-item nav-sub" href="#p9-ann">ANN</a>
@@ -3035,17 +3010,17 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p10">
-      Phase 10 - Feature Eng. <span class="nav-chevron">▾</span>
+      Feature Engineering <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p10">
-      <a class="nav-item nav-sub" href="#p10-full">Full FE (P10)</a>
-      <a class="nav-item nav-sub" href="#p10b">Selective FE (P10b) ★</a>
+      <a class="nav-item nav-sub" href="#p10-full">Full FE</a>
+      <a class="nav-item nav-sub" href="#p10b">Selective FE ★</a>
     </div>
   </div>
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p11">
-      Phase 11 - Temporal <span class="nav-chevron">▾</span>
+      Temporal Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p11">
       <a class="nav-item nav-sub" href="#phase11">Temporal Lags + log1p</a>
@@ -3061,6 +3036,13 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#error-decomposition">Error Regime Decomposition</a>
       <a class="nav-item nav-sub" href="#comp-cod-diagnostic">Comp COD Diagnostic</a>
     </div>
+  </div>
+
+  <div class="nav-divider"></div>
+  <div class="nav-group">
+    <div class="nav-group-title">Related Reports</div>
+    <a class="nav-item" href="../../eda/eda_full_report.html" target="_blank">↗ EDA Report</a>
+    <a class="nav-item" href="../../eda/operational_overview.html" target="_blank">↗ Operational Overview</a>
   </div>
 
   <div id="running-leaders-panel">

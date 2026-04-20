@@ -1,9 +1,9 @@
 """
 Full EDA for All_Years_Full.xlsx.
 
-Reads 21-25/All_Years_Full.xlsx (60 columns, 1918 rows) and generates:
+Reads raw_data/All_Years_Full.xlsx (60 columns, ~1918 rows) and generates:
 
-  1.  missing_new_columns     - coverage heatmap for the 24 new columns by month
+  1.  missing_new_columns     - coverage heatmap for all columns by month
   2.  pearson_vs_spearman     - side-by-side feature correlations vs effluent targets
   3.  mutual_information      - MI scores per feature per target (bar charts)
   4.  feature_scatter_grids   - top features × each effluent target scatter grids
@@ -13,9 +13,12 @@ Reads 21-25/All_Years_Full.xlsx (60 columns, 1918 rows) and generates:
   8.  do_vs_effluent          - aeration DO threshold vs effluent BOD / COD
   9.  svi_mlss_vs_tss         - SVI / MLSS vs effluent TSS scatter
   10. linearity_residuals     - Ridge residuals: linearity diagnostic per target
+  11. operational_overview    - standalone report: annual/monthly distributions,
+                                removal efficiency, compliance, power vs flow
 
-Outputs: eda/plots/  (PNG files)
-         eda/eda_full_report.html
+Outputs: eda/plots/               (PNG files)
+         eda/eda_full_report.html  (main EDA report — sections 1-11)
+         eda/operational_overview.html  (standalone operational dashboard)
 """
 
 import base64
@@ -23,6 +26,7 @@ import os
 import sys as _sys
 import warnings
 
+_sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modeling"))
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
@@ -45,6 +49,7 @@ BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXCEL_IN  = os.path.join(BASE_DIR, "raw_data", "All_Years_Full.xlsx")
 PLOTS_DIR = os.path.join(BASE_DIR, "eda", "plots")
 REPORT    = os.path.join(BASE_DIR, "eda", "eda_full_report.html")
+OP_REPORT = os.path.join(BASE_DIR, "eda", "operational_overview.html")
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
 # ── Year colour palette (consistent with modeling scripts) ────────────────────
@@ -2589,11 +2594,150 @@ four questions:</p>
 </p>"""
 
     return f"""<div class="card" id="s11">
-<h2>11. Feature Suggestions &mdash; Experiment&nbsp;3 (Grab Effluents)</h2>
+<h2>10. Feature Suggestions &mdash; Experiment&nbsp;3 (Grab Effluents)</h2>
 {intro}
 {target_blocks}
 </div>
 """
+
+
+def build_operational_html(op):
+    """Build a standalone operational overview HTML report.
+
+    op: dict with keys year, month, removal, compliance, power, heatmap
+        (each is a path to a PNG file or None).
+    Writes to OP_REPORT.
+    """
+    CSS = dark_mode_css("""
+    body { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 0; }
+    #main-content { margin-left: 230px; max-width: 1400px; padding: 24px 28px; }
+    h1  { color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 8px;
+          font-size: 1.8em; }
+    h2  { color: #1F4E79; margin-top: 40px; font-size: 1.2em;
+          border-left: 6px solid #2E75B6; padding-left: 12px; }
+    h3  { color: #2E75B6; margin-top: 28px; font-size: 1.05em; }
+    p, ul { max-width: 900px; line-height: 1.7; }
+    .card { padding: 24px 28px; border-radius: 10px; margin-bottom: 28px; }
+    img  { border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+    #sidenav {
+        position: fixed; top: 0; left: 0; width: 220px; height: 100vh;
+        overflow-y: auto; background: var(--bg);
+        border-right: 2px solid var(--border); z-index: 500;
+        font-size: 0.82em; box-shadow: 2px 0 8px rgba(0,0,0,0.08); }
+    #sidenav .nav-header {
+        font-weight: 700; font-size: 1.0em; color: #1F4E79;
+        padding: 14px 14px 10px; border-bottom: 2px solid #2E75B6; }
+    #sidenav ul { list-style: none; margin: 0; padding: 0; }
+    #sidenav a  { display: block; color: #3a7bbf; text-decoration: none;
+                  padding: 5px 14px; white-space: nowrap; overflow: hidden;
+                  text-overflow: ellipsis; }
+    #sidenav a:hover { background: rgba(46,117,182,0.10); color: #1F4E79; }
+    #sidenav .nav-s > a { font-weight: 600; padding: 6px 14px 3px;
+                           border-top: 1px solid var(--border); color: var(--text); }
+    """)
+
+    SIDENAV = """<nav id="sidenav">
+  <div class="nav-header">Operational Overview</div>
+  <ul>
+    <li class="nav-s"><a href="#op-year">Annual Distributions</a></li>
+    <li class="nav-s"><a href="#op-month">Monthly / Seasonal</a></li>
+    <li class="nav-s"><a href="#op-removal">Removal Efficiency</a></li>
+    <li class="nav-s"><a href="#op-compliance">Compliance Over Time</a></li>
+    <li class="nav-s"><a href="#op-power">Power vs. Flow</a></li>
+    <li class="nav-s"><a href="#op-heatmap">Seasonal Heatmap</a></li>
+  </ul>
+  <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+  <div style="padding:4px 14px 8px;font-size:0.78em;color:var(--text-muted,#888);
+              font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">
+    Related Reports
+  </div>
+  <ul>
+    <li><a href="eda_full_report.html" style="font-size:0.88em;">↗ EDA Report</a></li>
+    <li><a href="../modeling/reports/unified_report.html" style="font-size:0.88em;">↗ Unified Modeling Report</a></li>
+  </ul>
+</nav>"""
+
+    body = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Operational Overview — Treatment Plant Performance</title>
+<style>{CSS}</style>
+{DARK_MODE_JS}
+</head>
+<body>
+{SIDENAV}
+<div id="main-content">
+<h1>Operational Overview — Treatment Plant Performance</h1>
+<p>Daily measurements from <code>All_Years_Full.xlsx</code> (2021–2025).
+Six charts covering annual distributions, seasonal patterns, removal efficiency,
+regulatory compliance, and power use. All effluent parameters use grab samples.
+For feature–target modelling context see the
+<a href="eda_full_report.html">EDA Report</a> or the
+<a href="../modeling/reports/unified_report.html">Unified Modeling Report</a>.</p>
+
+<div class="card" id="op-year">
+<h2>Annual distributions by parameter</h2>
+<p>Box plots (IQR + 1.5×IQR whiskers) for each core parameter, one box per year.
+Compliance limit lines are drawn in red/orange where applicable.
+Note the 2022 outlier year — elevated inlet concentrations produced both higher removal
+and higher variance across all parameters.</p>
+{img_tag(op.get("year"))}
+</div>
+
+<div class="card" id="op-month">
+<h2>Seasonal distributions by calendar month</h2>
+<p>Box plots of flow, inlet, and effluent parameters aggregated over all years by month.
+The monsoon signal (Jun–Sep) is visible in flow and inlet load; effluent quality follows
+with a lag driven by hydraulic retention time and biological response.</p>
+{img_tag(op.get("month"))}
+</div>
+
+<div class="card" id="op-removal">
+<h2>Removal efficiency — BOD, COD, TSS</h2>
+<p>Top row: 7-day rolling removal efficiency time series (2021–2025). Orange and red
+dashed lines mark 90% and 95% removal targets. Bottom row: box plots of daily removal %
+by year. The 2022 anomaly (high inlet concentrations) appears as elevated removal
+variance, not necessarily lower median removal — the plant maintains biological
+treatment even under hydraulic stress.</p>
+{img_tag(op.get("removal"))}
+</div>
+
+<div class="card" id="op-compliance">
+<h2>Monthly compliance rate</h2>
+<p>Green area = fraction of daily measurements that met the discharge standard.
+Grey area = fraction of missing readings. Orange dashed line at 80% pass rate.
+Compliance dips often coincide with monsoon high-flow months or the 2022 plant-upset
+period. Monitoring gaps (grey) are highest in 2021–2022 and should be factored into
+any compliance audit.</p>
+{img_tag(op.get("compliance"))}
+</div>
+
+<div class="card" id="op-power">
+<h2>Power efficiency vs. flow</h2>
+<p>Scatter of Power/Flow (KWh/ML) vs. daily flow (MLD), coloured by year.
+The red dashed line is the regulatory limit of 482 KWh/ML.
+A downward trend (higher flows → lower unit energy) indicates economies of scale in
+aeration. Points above the limit line represent non-compliant days.</p>
+{img_tag(op.get("power"))}
+</div>
+
+<div class="card" id="op-heatmap">
+<h2>Seasonal heatmap — monthly averages</h2>
+<p>Monthly average of each parameter, colour-normalised per row so within-year
+seasonal patterns are visible across different units. Actual values are annotated
+in each cell. Jun–Sep monsoon months appear distinctly in flow and inlet load;
+effluent quality parameters show lagged seasonal response.</p>
+{img_tag(op.get("heatmap"))}
+</div>
+
+</div><!-- /#main-content -->
+</body>
+</html>"""
+
+    with open(OP_REPORT, "w") as f:
+        f.write(body)
+    print(f"  operational report: {OP_REPORT}")
 
 
 def build_html(data):
@@ -2601,8 +2745,7 @@ def build_html(data):
     data keys:
       residuals, pearson (dict grab/comp), mi (dict grab/comp/mi_data),
       scatter (list), aeration_ts, cross_heatmap, stage_removal,
-      do_effluent, svi_tss, missing_all, obs (dict s1…s10),
-      operational (dict year/month/removal/compliance/power/heatmap)
+      do_effluent, svi_tss, missing_all, obs (dict s1…s10)
     """
     obs = data.get("obs", {})
     title = "EDA Full Report - All_Years_Full.xlsx"
@@ -2655,6 +2798,20 @@ def build_html(data):
     .obs-card table tbody tr:nth-child(even) { background: #F4F7FB; }
     .obs-card table tbody tr:nth-child(odd)  { background: #FFFFFF; }
     hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+    /* ── TL;DR summary cards ── */
+    .tldr { border-left: 5px solid #2E75B6; border-radius: 0 8px 8px 0;
+            padding: 12px 18px; margin: 0 0 20px 0; max-width: 950px; }
+    .tldr strong.tldr-label { display: block; font-size: 0.78em; text-transform: uppercase;
+                               letter-spacing: 0.07em; margin-bottom: 6px; color: #2E75B6; }
+    .tldr ul { margin: 0; padding-left: 18px; }
+    .tldr li { margin-bottom: 3px; font-size: 0.92em; line-height: 1.55; }
+    /* ── Ridge disclaimer banner ── */
+    .disclaimer { border-left: 5px solid #C0392B; border-radius: 0 8px 8px 0;
+                  padding: 12px 18px; margin: 0 0 20px 0; max-width: 950px; }
+    .disclaimer strong.disc-label { display: block; font-size: 0.78em; text-transform: uppercase;
+                                     letter-spacing: 0.07em; margin-bottom: 6px; color: #C0392B; }
+    .disclaimer ul { margin: 0; padding-left: 18px; }
+    .disclaimer li { margin-bottom: 3px; font-size: 0.92em; line-height: 1.55; }
     /* ── Left sidebar navigation ── */
     #sidenav {
         position: fixed; top: 0; left: 0; width: 255px; height: 100vh;
@@ -2799,14 +2956,9 @@ def build_html(data):
         )
 
     SIDENAV = f"""<nav id="sidenav">
-  <div class="nav-header">Navigation</div>
+  <div class="nav-header">EDA Report</div>
   <ul>
-    <li class="nav-s"><a class="nav-toggle" href="#s1">1. Ridge Residuals</a>
-      <ul class="nav-children">
-        {_nav_group("s1", "s1-grab", "Grab Effluent", GRAB_TARGETS)}
-        {_nav_group("s1", "s1-comp", "Composite Effluent", COMP_TARGETS)}
-      </ul>
-    </li>
+    <li class="nav-s"><a href="#s6">1. Data Coverage</a></li>
     <li class="nav-s"><a class="nav-toggle" href="#s4">2. Scatter Grids</a>
       <ul class="nav-children">
         {_nav_targets("s4", GRAB_TARGETS)}
@@ -2825,22 +2977,28 @@ def build_html(data):
       </ul>
     </li>
     <li class="nav-s"><a href="#s5">5. Cross-stage Heatmap</a></li>
-    <li class="nav-s"><a href="#s6">6. Data Coverage</a></li>
+    <li class="nav-s"><a href="#s8">6. Stage Removal</a></li>
     <li class="nav-s"><a href="#s7">7. Aeration Time Series</a></li>
-    <li class="nav-s"><a href="#s8">8. Stage Removal</a></li>
-    <li class="nav-s"><a href="#s9">9. DO vs Effluent</a></li>
-    <li class="nav-s"><a href="#s10">10. Settleability vs TSS</a></li>
-    <li class="nav-s"><a href="#s11">11. Feature Suggestions - Exp 3</a></li>
-    <li class="nav-s"><a class="nav-toggle" href="#s12">12. Operational Overview</a>
+    <li class="nav-s"><a href="#s9">8. DO vs Effluent</a></li>
+    <li class="nav-s"><a href="#s10">9. Settleability vs TSS</a></li>
+    <li class="nav-s"><a href="#s11">10. Feature Suggestions - Exp 3</a></li>
+    <li class="nav-s"><a class="nav-toggle" href="#s1">11. Ridge Residuals ⚠</a>
       <ul class="nav-children">
-        <li class="nav-t"><a href="#s12-year">Distributions by Year</a></li>
-        <li class="nav-t"><a href="#s12-month">Distributions by Month</a></li>
-        <li class="nav-t"><a href="#s12-removal">Removal Efficiency</a></li>
-        <li class="nav-t"><a href="#s12-compliance">Compliance Over Time</a></li>
-        <li class="nav-t"><a href="#s12-power">Power vs. Flow</a></li>
-        <li class="nav-t"><a href="#s12-heatmap">Seasonal Heatmap</a></li>
+        {_nav_group("s1", "s1-grab", "Grab Effluent", GRAB_TARGETS)}
+        {_nav_group("s1", "s1-comp", "Composite Effluent", COMP_TARGETS)}
       </ul>
     </li>
+  </ul>
+  <div style="border-top: 1px solid var(--border); margin: 10px 0;"></div>
+  <div style="padding: 4px 14px 8px; font-size: 0.78em; color: var(--text-muted, #888);
+              font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;">
+    Related Reports
+  </div>
+  <ul>
+    <li class="nav-s"><a href="operational_overview.html" style="font-size:0.88em;">
+      ↗ Operational Overview</a></li>
+    <li class="nav-s"><a href="../modeling/reports/unified_report.html" style="font-size:0.88em;">
+      ↗ Unified Modeling Report</a></li>
   </ul>
 </nav>"""
 
@@ -2857,25 +3015,34 @@ def build_html(data):
 <div id="main-content">
 <h1>{title}</h1>
 <p>Full exploratory data analysis on the enriched 60-column dataset
-(<code>All_Years_Full.xlsx</code>, 1918 daily rows, 2020-2025).
-Sections are ordered by relevance to the key question:
-<strong>are non-linear models (Random Forest) justified over linear ones?</strong>
-Use the navigation panel on the left to jump to any section or individual target.</p>
+(<code>All_Years_Full.xlsx</code>, ~1918 daily rows, 2020–2025).
+Sections open with data quality and distributions, then build toward
+<strong>feature–target signal and model-selection evidence</strong>.
+Process deep-dives (aeration, settleability) follow for specialists.
+The Ridge residuals section is placed last as a diagnostic appendix — it carries
+a known row-retention caveat (see disclaimer in that section).
+The <strong><a href="operational_overview.html">Operational Overview</a></strong>
+(plant performance dashboards) is a separate standalone report.</p>
 """]
 
-    # ── Section 1: Ridge residuals ──────────────────────────────────────────────
+    # ── Section 11 (display): Ridge residuals ─────────────────────────────────
     parts.append("""<div class="card" id="s1">
 <h2><span class="badge badge-decision">Model selection</span>
-1. Ridge residuals - linearity diagnostic</h2>
+11. Ridge residuals — linearity diagnostic (appendix)</h2>
+<div class="disclaimer"><strong class="disc-label">⚠ Known limitation</strong><ul>
+<li>This section uses <code>feature_cols(df)</code> → <code>dropna()</code>, which retains only ~9% of all rows. Residual patterns reflect a heavily filtered slice of the data and should be treated as indicative, not definitive.</li>
+<li>The signal from this section has been superseded by actual model results (Experiments 1–4, Phases 9–11) and permutation importance analysis. See the Unified Report for authoritative findings.</li>
+<li>This section is kept as an early-phase diagnostic record.</li>
+</ul></div>
 <p>A Ridge regression model (α = 1, StandardScaler) is trained on process features
-(2021-2024) and tested on 2025.
+(2021–2024) and tested on 2025.
 Three residual plots are shown per effluent target:</p>
 <ul>
-  <li><strong>Residuals vs Fitted</strong> - a random horizontal band around zero
+  <li><strong>Residuals vs Fitted</strong> — a random horizontal band around zero
       means linear assumptions hold; any curve, funnel, or pattern means they do not.</li>
-  <li><strong>Residuals vs Time</strong> - systematic drift or seasonality that the
+  <li><strong>Residuals vs Time</strong> — systematic drift or seasonality that the
       linear model cannot capture (blue = train, red = 2025 test).</li>
-  <li><strong>Residuals vs Top Feature</strong> - if residuals correlate with the
+  <li><strong>Residuals vs Top Feature</strong> — if residuals correlate with the
       feature most relied upon by Ridge, the relationship is non-linear.</li>
 </ul>
 """)
@@ -2926,7 +3093,7 @@ Three residual plots are shown per effluent target:</p>
         return fold
 
     parts.append(_resid_fold(GRAB_TARGETS, "grab", "Grab effluent targets",
-                             open_by_default=True, section_id="s1", group_id="s1-grab"))
+                             open_by_default=False, section_id="s1", group_id="s1-grab"))
     parts.append(_resid_fold(COMP_TARGETS, "comp", "Composite effluent targets",
                              section_id="s1", group_id="s1-comp"))
     parts.append("</div>\n")
@@ -2963,11 +3130,17 @@ Three residual plots are shown per effluent target:</p>
     parts.append(f"""<div class="card" id="s4">
 <h2><span class="badge badge-decision">Model selection</span>
 2. Feature vs target scatter grids</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Inlet BOD/COD/TSS show clear positive relationships with their effluent counterparts — the strongest visual signal in the dataset.</li>
+<li>Many plots show non-linear clustering and high-leverage outliers, especially 2022 (green points) — confirms linear models will struggle on those years.</li>
+<li>pH scatter plots are the most dispersed; pH is the weakest-predicted target throughout the project.</li>
+</ul></div>
 <p>Top 15 features (ranked by Mutual Information) plotted against each effluent target.
 Points are coloured by year. The dashed black line is the linear regression fit.
 The subplot highlighted in <strong style="color:#E07B20">orange</strong> is the feature
-with the highest Ridge coefficient magnitude - the variable Section 1 residuals rely on most.
-Look for curvature, fan shapes, or year-cluster separation in that panel first.</p>
+with the highest Ridge coefficient magnitude.
+Look for curvature, fan shapes, or year-cluster separation as evidence that non-linear
+models (RF, XGB) are needed.</p>
 {_obs(s4_obs)}
 {scatter_folds}
 </div>
@@ -2991,6 +3164,11 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
     parts.append(f"""<div class="card" id="s2">
 <h2><span class="badge badge-decision">Model selection</span>
 3. Pearson vs Spearman correlation</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Inlet parameters dominate: Spearman r &gt; Pearson r for most targets — monotonic but curved relationships, meaning non-linear models have a structural advantage.</li>
+<li>Secondary clarifier features show moderate correlations for TSS targets, weak for BOD/COD.</li>
+<li>pH targets show weak correlations (&lt;0.3) across all features in both metrics — confirmed hard targets throughout the project.</li>
+</ul></div>
 {PEARSON_INTERP}
 {grab_ps_fold}
 {comp_ps_fold}
@@ -3016,6 +3194,11 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
     parts.append(f"""<div class="card" id="s3">
 <h2><span class="badge badge-decision">Model selection</span>
 4. Mutual Information scores</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Inlet BOD/COD/TSS are top-MI features for their respective effluent targets (MI &gt; 0.30 for Grab, weaker for Composite due to smaller sample sizes).</li>
+<li>Some aeration features (DO, MLSS) show MI &gt; Spearman — non-monotonic relationships that only tree models can exploit.</li>
+<li>Effluent pH has the lowest MI scores across nearly all features; prediction accuracy for pH targets will remain limited regardless of model choice.</li>
+</ul></div>
 {MI_INTERP}
 {grab_mi_fold}
 {comp_mi_fold}
@@ -3028,7 +3211,12 @@ Look for curvature, fan shapes, or year-cluster separation in that panel first.<
     cross_img  = cross_data[0] if isinstance(cross_data, tuple) else cross_data
     cross_tbl  = cross_data[1] if isinstance(cross_data, tuple) else ""
     parts.append(f"""<div class="card" id="s5">
-<h2>5. Full correlation matrix - features &amp; targets</h2>
+<h2>5. Full correlation matrix — features &amp; targets</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Inlet–effluent parameter pairs dominate the upper triangle (|r| &gt; 0.5) — strong, consistent signal confirmed across both metrics.</li>
+<li>Secondary clarifier and aeration features cluster tightly with each other — collinearity is real but handled by regularisation (ElNet/Ridge) in the models.</li>
+<li>Flow and temporal features show weaker but consistent signal across multiple targets — justify inclusion as COMMON features in every experiment.</li>
+</ul></div>
 <p>All process features <em>and</em> all eight effluent targets correlated against
 each other. Features below the threshold (|Pearson| and |Spearman| both &lt; 0.5 for
 every pair) are hidden. This reveals both <strong>feature-target signal</strong>
@@ -3043,34 +3231,49 @@ Diagonal self-correlations are excluded.</p>
 """)
 
 
-    # ── Section 6: Missing data ────────────────────────────────────────────────
+    # ── Section 1 (display): Data coverage ────────────────────────────────────
     parts.append(f"""<div class="card" id="s6">
-<h2>6. Data coverage - all columns</h2>
+<h2>1. Data coverage — all columns</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Inlet and effluent parameters are the most complete (80–95%+ coverage most years).</li>
+<li>Aeration and secondary clarifier columns have large gaps, especially pre-2023 — plan for missingness when using these as features.</li>
+<li>2025 is a partial year; 2022 shows unusual patterns (plant upset) visible in later sections.</li>
+</ul></div>
 <p>Monthly data coverage (% of days with a recorded value) for every column in
 the dataset, grouped by treatment stage. White = no data; darker green = complete.
-Use this to understand where gaps fall before modelling - columns with very low
+Use this to understand where gaps fall before modelling — columns with very low
 coverage may need imputation or exclusion depending on the missing-data pattern.</p>
 {img_tag(data.get("missing_all"))}
 {_obs(obs.get("s6", ""))}
 </div>
 """)
 
-    # ── Section 7: Aeration time series ───────────────────────────────────────
+    # ── Section 7 (display): Aeration time series ─────────────────────────────
     parts.append(f"""<div class="card" id="s7">
 <h2>7. Aeration tank time series</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>DO drops below the 0.5 mg/L aerobic minimum repeatedly, especially in 2022–2023 — correlates with the effluent quality failures visible in Section 8.</li>
+<li>MLSS and SVI show seasonal patterns; SVI spikes in monsoon months (Jun–Sep) suggesting bulking sludge events.</li>
+<li>The New aeration tank consistently shows different DO behaviour from the Existing tank — two-tank dynamics that single-feature models miss.</li>
+</ul></div>
 <p>Dissolved Oxygen (DO), Mixed Liquor Suspended Solids (MLSS), and Sludge Volume
-Index (SVI) for the Existing (blue) and New (orange) aeration tanks over 2021-2025.
+Index (SVI) for the Existing (blue) and New (orange) aeration tanks over 2021–2025.
 The dashed red line on DO marks the 0.5 mg/L minimum required for aerobic treatment.
 Extended periods below this threshold are expected to correspond to poorer effluent
-quality - visible in the scatter charts of Section 9.</p>
+quality — visible in Section 8.</p>
 {img_tag(data.get("aeration_ts"))}
 {_obs(obs.get("s7", ""))}
 </div>
 """)
 
-    # ── Section 8: Stage removal ───────────────────────────────────────────────
+    # ── Section 6 (display): Stage removal ────────────────────────────────────
     parts.append(f"""<div class="card" id="s8">
-<h2>8. Stage removal efficiency</h2>
+<h2>6. Stage removal efficiency</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>The plant achieves &gt;90% median removal for BOD, COD, and TSS from inlet to final effluent — biological treatment is effective under normal operation.</li>
+<li>2022 shows significantly elevated inlet concentrations and higher removal variance — the main source of training-set outliers seen in later sections.</li>
+<li>Most removal happens in the biological stage; secondary clarification is the variable step where process control matters most for effluent quality.</li>
+</ul></div>
 <p>Median concentration ± IQR (shaded band) at each treatment stage for BOD, COD, and TSS.
 Y-axis is logarithmic. The annotation shows overall % removal from inlet to final effluent.
 This chart answers <em>where</em> in the process most removal occurs and how much
@@ -3080,22 +3283,32 @@ variability exists at each stage.</p>
 </div>
 """)
 
-    # ── Section 9: DO vs effluent ──────────────────────────────────────────────
+    # ── Section 8 (display): DO vs effluent ───────────────────────────────────
     parts.append(f"""<div class="card" id="s9">
-<h2>9. Aeration DO vs effluent quality</h2>
+<h2>8. Aeration DO vs effluent quality</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Clear threshold effect: DO &lt; 0.5 mg/L coincides with elevated effluent BOD and COD — non-linear step behaviour, not a smooth decline.</li>
+<li>This is direct evidence that RF/XGB can exploit a decision-boundary the linear model cannot represent.</li>
+<li>TSS relationship with DO is weaker than BOD/COD — TSS is driven more by settling dynamics than aeration performance.</li>
+</ul></div>
 <p>Scatter plots of Aeration DO (Existing Tank) against effluent BOD, COD, and TSS.
 The dashed red line marks the DO = 0.5 mg/L minimum threshold.
-A sharp degradation in effluent quality <em>below</em> the threshold - rather than a
-smooth linear decline - would be strong evidence for a threshold / step non-linearity
+A sharp degradation in effluent quality <em>below</em> the threshold — rather than a
+smooth linear decline — is strong evidence for a threshold / step non-linearity
 that RF can capture but a linear model cannot.</p>
 {img_tag(data.get("do_effluent"))}
 {_obs(obs.get("s9", ""))}
 </div>
 """)
 
-    # ── Section 10: SVI/MLSS vs TSS ───────────────────────────────────────────
+    # ── Section 9 (display): SVI/MLSS vs TSS ─────────────────────────────────
     parts.append(f"""<div class="card" id="s10">
-<h2>10. Settleability &amp; biomass vs effluent TSS</h2>
+<h2>9. Settleability &amp; biomass vs effluent TSS</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>SVI and SV30 show the expected positive correlation with effluent TSS — high SVI (poor settling) clusters with high effluent TSS spikes.</li>
+<li>The relationship is non-linear; high-SVI extremes drive the correlation, not the bulk of operating days.</li>
+<li>MLSS alone is a weaker predictor; SVI-based measures are more informative and justify their inclusion in Exp 3 ADD-tier features.</li>
+</ul></div>
 <p>SVI (Sludge Volume Index), MLSS, and SV30 for both aeration tanks plotted against
 effluent TSS. Poor settling (high SVI) should produce high effluent TSS because
 particles fail to settle out of the final effluent. Pearson r is shown in each panel
@@ -3107,53 +3320,6 @@ candidates for the feature selection pool.</p>
 """)
 
     parts.append(data.get("suggestions", ""))
-
-    # ── Section 12: Operational Overview ─────────────────────────────────────
-    op = data.get("operational", {})
-    parts.append(f"""<div class="card" id="s12">
-<h2>12. Operational Overview</h2>
-<p>Six operational charts ported from the legacy EDA script, now using the enriched
-60-column dataset (<code>All_Years_Full.xlsx</code>). These charts focus on year-over-year
-and month-over-month patterns, removal efficiency, compliance rates, and power efficiency.
-All use grab-sample effluent columns.</p>
-
-<h3 id="s12-year">12a - Annual distributions by parameter</h3>
-<p>Box plots (IQR + 1.5×IQR whiskers) for each core parameter, one box per year.
-Compliance limit lines are drawn in red/orange where applicable.
-Colour scheme is consistent with year palettes used throughout the report.</p>
-{img_tag(op.get("year"))}
-
-<h3 id="s12-month">12b - Seasonal distributions by calendar month</h3>
-<p>Box plots of flow, inlet, and effluent parameters aggregated over all years by month.
-Look for the monsoon signal (Jun-Sep) in flow and inlet load, and for how effluent
-quality follows or lags the inlet.</p>
-{img_tag(op.get("month"))}
-
-<h3 id="s12-removal">12c - Removal efficiency (BOD, COD, TSS)</h3>
-<p>Top row: 7-day rolling removal efficiency time series. Orange/red dashed lines mark
-90% and 95% removal targets. Bottom row: box plots of daily removal % by year.
-2022 anomaly (high inlet concentrations) should appear as elevated removal variance.</p>
-{img_tag(op.get("removal"))}
-
-<h3 id="s12-compliance">12d - Monthly compliance rate</h3>
-<p>Green area = fraction of daily measurements that met the discharge standard.
-Grey area = fraction of missing readings. Orange dashed line at 80% pass rate.
-Drops in compliance often coincide with monsoon high-flow months or 2022 upsets.</p>
-{img_tag(op.get("compliance"))}
-
-<h3 id="s12-power">12e - Power efficiency vs. flow</h3>
-<p>Scatter of Power/Flow (KWh/ML) vs. daily flow (MLD), coloured by year.
-The red dashed line is the regulatory limit of 482 KWh/ML.
-A downward trend indicates better energy efficiency at higher flows (economies of scale).</p>
-{img_tag(op.get("power"))}
-
-<h3 id="s12-heatmap">12f - Seasonal heatmap (monthly averages)</h3>
-<p>Monthly average of each parameter, colour-normalised per row so within-year
-seasonal patterns are visible across different units. Actual values are annotated
-in each cell. Jun-Sep monsoon months should appear distinctly in flow and inlet load.</p>
-{img_tag(op.get("heatmap"))}
-</div>
-""")
 
     parts.append("""
 </div><!-- /#main-content -->
@@ -3203,6 +3369,15 @@ in each cell. Jun-Sep monsoon months should appear distinctly in flow and inlet 
       }
     });
   });
+
+  // ── section display order (reorder cards without touching Python source) ───
+  (function() {
+    var order = ['s6','s4','s2','s3','s5','s8','s7','s9','s10','s11','s1'];
+    var mc = document.getElementById('main-content');
+    var cards = {};
+    mc.querySelectorAll('div.card').forEach(function(el) { cards[el.id] = el; });
+    order.forEach(function(id) { if (cards[id]) mc.appendChild(cards[id]); });
+  })();
 
   // ── sidebar: highlight currently visible section ─────────────────────────
   var navLinks = Array.from(document.querySelectorAll('#sidenav a[href^="#"]'));
@@ -3268,7 +3443,7 @@ def main():
     section_obs  = build_observations(df)
     suggestions_html = build_suggestions(df)
 
-    print("Building HTML report...")
+    print("Building HTML reports...")
     build_html({
         "residuals":    residuals,
         "ridge_coefs":  ridge_coefs,
@@ -3283,14 +3458,14 @@ def main():
         "missing_all":  missing_all,
         "obs":          section_obs,
         "suggestions":  suggestions_html,
-        "operational": {
-            "year":       op_year,
-            "month":      op_month,
-            "removal":    op_removal,
-            "compliance": op_compliance,
-            "power":      op_power,
-            "heatmap":    op_heatmap,
-        },
+    })
+    build_operational_html({
+        "year":       op_year,
+        "month":      op_month,
+        "removal":    op_removal,
+        "compliance": op_compliance,
+        "power":      op_power,
+        "heatmap":    op_heatmap,
     })
     print(f"\nDone. ~{n_charts} chart files → {PLOTS_DIR}/")
     print(f"Report: {REPORT}")
