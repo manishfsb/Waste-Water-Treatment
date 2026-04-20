@@ -2156,6 +2156,29 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
                 "no less-overfit model achieves comparable accuracy'>⚠</td>"
             )
 
+        TARGET_LIMITS = {
+            "Effluent BOD (mg/L, Grab)": 10.0,
+            "Effluent COD (mg/L, Grab)": 250.0,
+            "Effluent TSS (mg/L, Grab)": 10.0,
+            "Effluent BOD (mg/L, Composite)": 10.0,
+            "Effluent COD (mg/L, Composite)": 250.0,
+            "Effluent TSS (mg/L, Composite)": 10.0,
+        }
+        limit = TARGET_LIMITS.get(tgt)
+        
+        gadj_rmse_val = gadj_rmse if not pd.isna(gadj_rmse) else float("nan")
+        gadj_mdae_val = float(gpick.get("gadj_MdAE", best.get("MdAE_test", float("nan")))) if gpick is not None else float(best.get("MdAE_test", float("nan")))
+
+        if limit is not None:
+            limit_str = f"{limit:g} mg/L"
+            rmse_pct = f"{(gadj_rmse_val / limit * 100):.1f}%" if not pd.isna(gadj_rmse_val) else "—"
+            mdae_pct = f"{(gadj_mdae_val / limit * 100):.1f}%" if not pd.isna(gadj_mdae_val) else "—"
+            rmse_col = "#e74c3c" if not pd.isna(gadj_rmse_val) and (gadj_rmse_val / limit) > 0.5 else "var(--text-primary)"
+            mdae_col = "#e74c3c" if not pd.isna(gadj_mdae_val) and (gadj_mdae_val / limit) > 0.5 else "var(--text-primary)"
+            limit_cells = f"<td class='meta'>{limit_str}</td><td class='meta' style='color:{rmse_col}'>{rmse_pct}</td><td class='meta' style='color:{mdae_col}'>{mdae_pct}</td>"
+        else:
+            limit_cells = "<td class='meta'>—</td><td class='meta'>—</td><td class='meta'>—</td>"
+
         rows.append(
             f'<tr data-target="{slug}">'
             # Naive champion
@@ -2165,35 +2188,9 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
             f'<td class="{_gap_cls(naive_gap)}">{_fmt(naive_gap)}</td>'
             f'<td class="meta">{_fmt(naive_rmse)}</td>'
             f'<td class="meta" style="font-size:11px">{exp_label}</td>'
-            + right_cells + warn_cell +
+            + right_cells + warn_cell + limit_cells +
             f'</tr>'
         )
-
-    # Compute split averages (naive best per target)
-    grab_vals = [df_all[df_all["target"] == t]["R2_test"].max()
-                 for t in GRAB_TARGETS
-                 if not df_all[df_all["target"] == t].dropna(subset=["R2_test"]).empty]
-    comp_vals = [df_all[df_all["target"] == t]["R2_test"].max()
-                 for t in COMP_TARGETS
-                 if not df_all[df_all["target"] == t].dropna(subset=["R2_test"]).empty]
-    grab_avg = float(np.nanmean(grab_vals)) if grab_vals else float("nan")
-    comp_avg = float(np.nanmean(comp_vals)) if comp_vals else float("nan")
-    avg_all  = float(np.nanmean(grab_vals + comp_vals)) if (grab_vals or comp_vals) else float("nan")
-
-    def _avg_row(label, val):
-        return (
-            f"<tr style='background:var(--toc-bg);font-style:italic'>"
-            f"<td colspan='10' style='text-align:right;color:var(--text-muted);font-size:11px'>"
-            f"{label}</td>"
-            f"<td style='font-weight:700;color:{_r2_color(val)};white-space:nowrap'>"
-            f"avg R² {_fmt(val)}</td></tr>"
-        )
-
-    avg_rows = (
-        _avg_row("Avg naive best R² — Grab targets", grab_avg) +
-        _avg_row("Avg naive best R² — Composite targets", comp_avg) +
-        _avg_row("Avg naive best R² — All targets", avg_all)
-    )
 
     return f"""
 <div class="card section-card" id="overview-leaderboard">
@@ -2218,100 +2215,125 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
         <th colspan="4" style="text-align:center;border-bottom:1px solid var(--border-color)">
           Recommended (gap-adjusted)</th>
         <th rowspan="2">⚠</th>
+        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border-color)">
+          Compliance Error (Rec. Model)</th>
       </tr>
       <tr>
         <th>Model</th><th>Test R²</th><th>R² Gap</th><th>RMSE</th><th>Experiment</th>
         <th>Model · Experiment</th><th>R²</th><th>Gap</th><th>RMSE</th>
+        <th>Limit</th><th>RMSE % Limit</th><th>MdAE % Limit</th>
       </tr>
     </thead>
-    <tbody>{"".join(rows)}{avg_rows}</tbody>
+    <tbody>{"".join(rows)}</tbody>
   </table>
   </div>
 </div>"""
 
 
 def _progression_chart(df_all: pd.DataFrame) -> str:
-    """Chart.js line chart with R² / RMSE / MAE toggle per model family."""
+    """Chart.js line chart with Target dropdown and R² / RMSE / MAE / Gap toggle."""
     chart_models = ["Ridge", "ElNet", "RF", "Voting", "Stacking", "ANN"]
     metrics = [
-        ("R2_test",   "Avg Test R²",   False),   # (col, y-label, lower_is_better)
-        ("RMSE_test", "Avg Test RMSE", True),
-        ("MAE_test",  "Avg Test MAE",  True),
+        ("r2",   "R2_test",   "Test R²",       False),   # (m_key, col, y-label, lower_is_better)
+        ("gap",  "R2_gap",    "Test R² Gap",   True),
+        ("rmse", "RMSE_test", "Test RMSE",     True),
+        ("mae",  "MAE_test",  "Test MAE",      True),
     ]
 
-    # Build one grp per metric
-    grp_all = {}
-    for col, _, _ in metrics:
-        if col in df_all.columns:
-            grp_all[col] = df_all.groupby(["exp_key", "model"])[col].mean().reset_index()
-        else:
-            grp_all[col] = pd.DataFrame(columns=["exp_key", "model", col])
+    all_data = {}
+    options_html = ""
+    first_slug = None
 
-    # Determine x-axis from R2 presence
-    grp_r2 = grp_all["R2_test"]
-    exp_order_present = [e for e in EXP_CHART_ORDER if e in grp_r2["exp_key"].values]
-    labels = [EXP_CHART_LABELS.get(e, e) for e in exp_order_present]
+    for tgt in TARGETS_ORDERED:
+        df_t = df_all[df_all["target"] == tgt]
+        if df_t.empty:
+            continue
+        
+        slug = TARGET_SLUG.get(tgt, tgt.replace(" ", "-").lower())
+        short = TARGET_SHORT.get(tgt, tgt)
+        if first_slug is None:
+            first_slug = slug
+            
+        options_html += f'<option value="{slug}">{short}</option>'
+        
+        tgt_data = {}
+        for m_key, col_name, _, _ in metrics:
+            df_m = df_t.dropna(subset=[col_name])
+            exp_order_present = [e for e in EXP_CHART_ORDER if e in df_m["exp_key"].values]
+            labels = [EXP_CHART_LABELS.get(e, e) for e in exp_order_present]
+            
+            datasets = []
+            for mdl in chart_models:
+                data = []
+                for ek in exp_order_present:
+                    row = df_m[(df_m["exp_key"] == ek) & (df_m["model"] == mdl)]
+                    val = float(row[col_name].values[0]) if not row.empty else None
+                    data.append(val if val is not None and not np.isnan(val) else None)
+                
+                if any(v is not None for v in data):
+                    datasets.append({
+                        "label": mdl,
+                        "data": data,
+                        "borderColor": MODEL_COLORS.get(mdl, "#888"),
+                        "backgroundColor": MODEL_COLORS.get(mdl, "#888"),
+                        "spanGaps": True,
+                        "tension": 0.3,
+                        "pointRadius": 5,
+                        "borderWidth": 2,
+                    })
+            tgt_data[m_key] = {"labels": labels, "datasets": datasets}
+        all_data[slug] = tgt_data
 
-    def _build_datasets(col):
-        grp = grp_all[col]
-        out = []
-        for mdl in chart_models:
-            data = []
-            for ek in exp_order_present:
-                row = grp[(grp["exp_key"] == ek) & (grp["model"] == mdl)]
-                val = float(row[col].values[0]) if not row.empty else None
-                data.append(val if val is not None and not np.isnan(val) else None)
-            if any(v is not None for v in data):
-                out.append({
-                    "label": mdl,
-                    "data": data,
-                    "borderColor": MODEL_COLORS.get(mdl, "#888"),
-                    "backgroundColor": MODEL_COLORS.get(mdl, "#888"),
-                    "spanGaps": True,
-                    "tension": 0.3,
-                    "pointRadius": 5,
-                    "borderWidth": 2,
-                })
-        return out
-
-    all_data = {
-        "r2":   {"labels": labels, "datasets": _build_datasets("R2_test")},
-        "rmse": {"labels": labels, "datasets": _build_datasets("RMSE_test")},
-        "mae":  {"labels": labels, "datasets": _build_datasets("MAE_test")},
-    }
     chart_json = json.dumps(all_data)
 
     return f"""
 <div class="card section-card" id="overview-progression">
   <h2>Metric Progression Across Experiments</h2>
-  <p class="meta">Average metric across all 8 targets per model per experiment.
+  <p class="meta">View how model performance evolved across experiments for specific targets.
   Gaps in a line indicate the model was not run in that experiment.
   <strong>R²:</strong> higher is better. <strong>RMSE / MAE:</strong> lower is better (original units, mg/L or pH).</p>
-  <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
-    <button id="prog-btn-r2"   onclick="switchProgMetric('r2')"
-      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid #4A90D9;background:#4A90D9;color:#fff;font-weight:600">R²</button>
-    <button id="prog-btn-rmse" onclick="switchProgMetric('rmse')"
-      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color)">RMSE</button>
-    <button id="prog-btn-mae"  onclick="switchProgMetric('mae')"
-      style="padding:4px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color)">MAE</button>
+  
+  <div style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+    <div>
+      <label for="prog-target-sel" style="font-weight:600;font-size:13px;margin-right:6px;color:var(--text-color)">Target:</label>
+      <select id="prog-target-sel" onchange="switchProgTarget()" 
+        style="padding:6px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:13px;min-width:240px;outline:none;">
+        {options_html}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="prog-btn-r2"   onclick="switchProgMetric('r2')"
+        style="padding:5px 16px;border-radius:4px;cursor:pointer;border:1px solid #4A90D9;background:#4A90D9;color:#fff;font-weight:600;font-size:13px">R²</button>
+      <button id="prog-btn-gap"   onclick="switchProgMetric('gap')"
+        style="padding:5px 16px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:13px">R² Gap</button>
+      <button id="prog-btn-rmse" onclick="switchProgMetric('rmse')"
+        style="padding:5px 16px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:13px">RMSE</button>
+      <button id="prog-btn-mae"  onclick="switchProgMetric('mae')"
+        style="padding:5px 16px;border-radius:4px;cursor:pointer;border:1px solid var(--border-color);background:var(--card-bg);color:var(--text-color);font-size:13px">MAE</button>
+    </div>
   </div>
+  
   <div style="position:relative;height:380px;max-width:1000px;margin:0 auto">
     <canvas id="progressionChart"></canvas>
   </div>
+  
   <script>
   (function() {{
-    var allData   = {chart_json};
+    var allData = {chart_json};
+    var currentTarget = '{first_slug}';
+    var currentMetric = 'r2';
+    
     var isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
     var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
     var textColor = isDark ? '#A0A6B2' : '#555';
 
-    var yLabels = {{ r2: 'Avg Test R²', rmse: 'Avg Test RMSE', mae: 'Avg Test MAE' }};
-    var lowerBetter = {{ r2: false, rmse: true, mae: true }};
+    var yLabels = {{ r2: 'Test R²', gap: 'Train/Test R² Gap', rmse: 'Test RMSE', mae: 'Test MAE' }};
+    var lowerBetter = {{ r2: false, gap: true, rmse: true, mae: true }};
 
     var ctx = document.getElementById('progressionChart').getContext('2d');
     var progChart = new Chart(ctx, {{
       type: 'line',
-      data: allData['r2'],
+      data: allData[currentTarget][currentMetric],
       options: {{
         responsive: true,
         maintainAspectRatio: false,
@@ -2329,7 +2351,7 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
         scales: {{
           x: {{ ticks: {{ color: textColor, maxRotation: 45 }},
                 grid:  {{ color: gridColor }} }},
-          y: {{ title: {{ display: true, text: 'Avg Test R²', color: textColor }},
+          y: {{ title: {{ display: true, text: 'Test R²', color: textColor }},
                 ticks: {{ color: textColor }},
                 grid:  {{ color: gridColor }},
                 suggestedMin: -0.2, suggestedMax: 0.7 }}
@@ -2337,12 +2359,14 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
       }}
     }});
 
-    window.switchProgMetric = function(metric) {{
-      progChart.data = allData[metric];
-      // Update y-axis label and scale hints
-      var isLower = lowerBetter[metric];
-      progChart.options.scales.y.title.text = yLabels[metric];
-      if (metric === 'r2') {{
+    function updateChart() {{
+      var d = allData[currentTarget]?.[currentMetric];
+      if (!d) return;
+      progChart.data = d;
+      
+      var isLower = lowerBetter[currentMetric];
+      progChart.options.scales.y.title.text = yLabels[currentMetric];
+      if (currentMetric === 'r2') {{
         progChart.options.scales.y.suggestedMin = -0.2;
         progChart.options.scales.y.suggestedMax = 0.7;
       }} else {{
@@ -2350,10 +2374,22 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
         delete progChart.options.scales.y.suggestedMax;
       }}
       progChart.update();
+    }}
+
+    window.switchProgTarget = function() {{
+      var sel = document.getElementById('prog-target-sel');
+      if (sel) currentTarget = sel.value;
+      updateChart();
+    }};
+
+    window.switchProgMetric = function(metric) {{
+      currentMetric = metric;
+      updateChart();
 
       // Update button styles
-      ['r2','rmse','mae'].forEach(function(m) {{
+      ['r2','gap','rmse','mae'].forEach(function(m) {{
         var btn = document.getElementById('prog-btn-' + m);
+        if(!btn) return;
         if (m === metric) {{
           btn.style.background = '#4A90D9';
           btn.style.color = '#fff';
@@ -2372,10 +2408,23 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
 </div>"""
 
 
+def _abstract_section() -> str:
+    return """
+<div class="card section-card" id="overview-abstract" style="border-left:4px solid #4A90D9; margin-bottom: 24px;">
+  <h2 style="margin-top:0">Abstract</h2>
+  <ul style="line-height:1.5;margin-bottom:0;font-size:13px;color:var(--text-color)">
+    <li><strong>Baseline (Exp1 & 2):</strong> Established that inlet water quality alone is insufficient for prediction. Secondary clarifier data is essential to achieve meaningful accuracy.</li>
+    <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-S2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
+    <li><strong>Feature Pruning (Exp4):</strong> Removing collinear features (via VIF or manually) degraded generalisation across the board. The collinear features carry structural signal necessary for decision tree models, while regularised linear models already suppress collinearity automatically.</li>
+    <li><strong>Advanced Methods (Phase 9 & 11):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features (Phase 11) successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
+  </ul>
+</div>"""
+
 def build_overview(df_all: pd.DataFrame) -> str:
     return f"""
 <section id="overview">
   <h1 class="section-title">Overview</h1>
+  {_abstract_section()}
   {_global_leaderboard(df_all)}
   {_progression_chart(df_all)}
 </section>"""
