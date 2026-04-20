@@ -153,7 +153,7 @@ COMMON_CSS = """
   .summary-table th, .summary-table td { border-color: var(--border); }
   .summary-table tbody tr:nth-child(even) { background: var(--table-even); }
   .table-note  { color: var(--text-muted); }
-  .meta        { color: var(--text-meta); }
+  .meta        { color: var(--text-meta); font-size: 13px; }
   .obs-card    { background: var(--obs-bg); }
   .interp      { background: var(--interp-bg); border-color: var(--interp-bdr); }
   .toc         { background: var(--toc-bg); }

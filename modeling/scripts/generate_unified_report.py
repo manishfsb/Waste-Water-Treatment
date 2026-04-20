@@ -1127,94 +1127,111 @@ def _vif_callout() -> str:
         pairs = _collinear_pairs(X_df_clean, features, dict(vif_rows))
 
         short_name = name.replace("s2_stage3_", "").replace("_", " ").title()
+        vif_dict = dict(vif_rows)
+
+        # ── Build per-feature: collinear partners + suggested action ──────────
+        feature_partners = {f: [] for f in features}  # feat -> [(partner, r)]
+        drop_signals = {}   # feat -> reason string (first DROP signal wins)
+        keep_drops   = {}   # feat (keep) -> [drop_feat names]
+
+        for feat_a, feat_b, r in pairs:
+            mi_a   = mi_lookup.get((feat_a, target), None)
+            mi_b   = mi_lookup.get((feat_b, target), None)
+            cost_a = cost_lookup.get(feat_a, 0.0)
+            cost_b = cost_lookup.get(feat_b, 0.0)
+
+            drop_feat = reason = None
+            # Priority 1: domain logic — drop known derived feature
+            if feat_a in _DERIVED_FROM and feat_b in _DERIVED_FROM[feat_a]:
+                drop_feat = feat_a
+                reason = f"derived from {feat_b.split('(')[0].strip()}"
+            elif feat_b in _DERIVED_FROM and feat_a in _DERIVED_FROM[feat_b]:
+                drop_feat = feat_b
+                reason = f"derived from {feat_a.split('(')[0].strip()}"
+            # Priority 2: missingness cost — drop higher-cost feature if gap > 5 pp
+            if drop_feat is None and abs(cost_a - cost_b) > 5.0:
+                drop_feat  = feat_a if cost_a > cost_b else feat_b
+                drop_cost  = cost_a if drop_feat == feat_a else cost_b
+                keep_cost  = cost_b if drop_feat == feat_a else cost_a
+                reason = f"higher missingness cost ({drop_cost:.1f}% vs {keep_cost:.1f}%)"
+            # Priority 3: MI with target — drop lower MI
+            if drop_feat is None:
+                if mi_a is not None and mi_b is not None:
+                    drop_feat = feat_a if mi_a <= mi_b else feat_b
+                    mi_drop   = mi_a if drop_feat == feat_a else mi_b
+                    mi_keep   = mi_b if drop_feat == feat_a else mi_a
+                    reason    = f"lower MI with target ({mi_drop:.3f} vs {mi_keep:.3f})"
+                elif mi_a is not None or mi_b is not None:
+                    drop_feat = feat_b if mi_a is not None else feat_a
+                    reason    = "MI available for one feature only"
+            # Priority 4: VIF tiebreaker
+            if drop_feat is None:
+                drop_feat = feat_a if vif_dict.get(feat_a, 0) >= vif_dict.get(feat_b, 0) else feat_b
+                reason    = f"VIF tiebreaker ({vif_dict.get(drop_feat, 0):.1f} > other)"
+
+            keep_feat = feat_b if drop_feat == feat_a else feat_a
+            feature_partners[feat_a].append((feat_b, r))
+            feature_partners[feat_b].append((feat_a, r))
+
+            if drop_feat not in drop_signals:        # first DROP signal wins
+                drop_signals[drop_feat] = reason
+            keep_drops.setdefault(keep_feat, []).append(drop_feat)
+
+        # ── Build merged table rows ───────────────────────────────────────────
         tbl_rows = ""
         for feat, vif_val in vif_rows:
             flag, fc = _vflag(vif_val)
-            vif_str = f"{vif_val:.2f}" if not (isinstance(vif_val, float) and np.isnan(vif_val)) else "—"
-            bold = "bold" if vif_val > 10 else "normal"
+            vif_str  = f"{vif_val:.2f}" if not (isinstance(vif_val, float) and np.isnan(vif_val)) else "—"
+            bold     = "bold" if vif_val > 10 else "normal"
+
+            mi_val   = mi_lookup.get((feat, target), None)
+            mi_str   = f"{mi_val:.3f}" if mi_val is not None else "—"
+            cost_val = cost_lookup.get(feat, 0.0)
+            cost_str = f"{cost_val:.1f}%" if cost_val > 0 else "0%"
+
+            partners = sorted(feature_partners[feat], key=lambda x: -x[1])
+            if partners:
+                partner_parts = []
+                for p, pr in partners:
+                    pc = "#e74c3c" if pr >= 0.95 else "#f39c12"
+                    partner_parts.append(
+                        f'<span style="color:{pc}">{p}</span>'
+                        f'<span style="color:#666;font-size:10px"> (r={pr:.3f})</span>'
+                    )
+                partner_html = "<br>".join(partner_parts)
+            else:
+                partner_html = '<span style="color:#555">—</span>'
+
+            if feat in drop_signals:
+                action_html = (
+                    f'<span style="color:#e74c3c;font-weight:bold">DROP</span>'
+                    f'<br><span style="color:#888;font-size:10px">{drop_signals[feat]}</span>'
+                )
+            elif feat in keep_drops:
+                dropped_names = ", ".join(d.split("(")[0].strip() for d in keep_drops[feat])
+                action_html = (
+                    f'<span style="color:#2ecc71;font-weight:bold">KEEP</span>'
+                    f'<br><span style="color:#888;font-size:10px">retained; {dropped_names} to be dropped</span>'
+                )
+            else:
+                action_html = '<span style="color:#555">—</span>'
+
             tbl_rows += (
-                f'<tr><td>{feat}</td>'
+                f'<tr>'
+                f'<td>{feat}</td>'
                 f'<td style="color:{fc};font-weight:{bold}">{vif_str}</td>'
-                f'<td><span style="color:{fc};font-size:11px">{flag}</span></td></tr>'
+                f'<td><span style="color:{fc};font-size:11px">{flag}</span></td>'
+                f'<td>{mi_str}</td>'
+                f'<td>{cost_str}</td>'
+                f'<td style="font-size:11px;line-height:1.6">{partner_html}</td>'
+                f'<td style="font-size:11px">{action_html}</td>'
+                f'</tr>'
             )
 
-        # Collinear pairs sub-table
-        vif_dict = dict(vif_rows)
-        if pairs:
-            pair_rows = ""
-            for feat_a, feat_b, r in pairs:
-                r_col = "#e74c3c" if r >= 0.95 else "#f39c12"
-                mi_a   = mi_lookup.get((feat_a, target), None)
-                mi_b   = mi_lookup.get((feat_b, target), None)
-                cost_a = cost_lookup.get(feat_a, 0.0)   # base features default to 0
-                cost_b = cost_lookup.get(feat_b, 0.0)
-
-                # Priority 1: domain logic — drop known derived feature
-                drop_feat = reason = None
-                if feat_a in _DERIVED_FROM and feat_b in _DERIVED_FROM[feat_a]:
-                    drop_feat = feat_a
-                    reason = f"domain: {feat_a} is mathematically derived from {feat_b}"
-                elif feat_b in _DERIVED_FROM and feat_a in _DERIVED_FROM[feat_b]:
-                    drop_feat = feat_b
-                    reason = f"domain: {feat_b} is mathematically derived from {feat_a}"
-
-                # Priority 2: missingness cost — drop higher-cost feature if gap > 5 pp
-                if drop_feat is None and abs(cost_a - cost_b) > 5.0:
-                    drop_feat = feat_a if cost_a > cost_b else feat_b
-                    keep_cost = cost_b if drop_feat == feat_a else cost_a
-                    reason = (f"missingness: {cost_a:.1f}% vs {cost_b:.1f}% marginal row cost "
-                              f"— drop higher-cost feature ({drop_feat.split('(')[0].strip()})")
-
-                # Priority 3: MI with target — drop lower MI
-                if drop_feat is None:
-                    if mi_a is not None and mi_b is not None:
-                        drop_feat = feat_a if mi_a <= mi_b else feat_b
-                        mi_drop   = mi_a if drop_feat == feat_a else mi_b
-                        mi_keep   = mi_b if drop_feat == feat_a else mi_a
-                        reason    = f"MI {mi_drop:.3f} vs {mi_keep:.3f} — lower MI with target"
-                    elif mi_a is not None or mi_b is not None:
-                        drop_feat = feat_b if mi_a is not None else feat_a
-                        reason    = "MI available for one feature only — drop the unlisted one"
-
-                # Priority 4: VIF fallback
-                if drop_feat is None:
-                    drop_feat = feat_a if vif_dict.get(feat_a, 0) >= vif_dict.get(feat_b, 0) else feat_b
-                    reason    = f"VIF fallback ({vif_dict.get(drop_feat, 0):.1f} > other)"
-
-                mi_a_str   = f"{mi_a:.3f}"   if mi_a   is not None else "—"
-                mi_b_str   = f"{mi_b:.3f}"   if mi_b   is not None else "—"
-                cost_a_str = f"{cost_a:.1f}%" if cost_a > 0 else "0%"
-                cost_b_str = f"{cost_b:.1f}%" if cost_b > 0 else "0%"
-                pair_rows += (
-                    f'<tr>'
-                    f'<td>{feat_a}<br>'
-                    f'<span style="color:#888;font-size:10px">MI={mi_a_str} · cost={cost_a_str}</span></td>'
-                    f'<td>{feat_b}<br>'
-                    f'<span style="color:#888;font-size:10px">MI={mi_b_str} · cost={cost_b_str}</span></td>'
-                    f'<td style="color:{r_col};font-weight:bold">{r:.3f}</td>'
-                    f'<td style="color:#aaa;font-size:11px">drop <em>{drop_feat}</em><br>'
-                    f'<span style="color:#666;font-size:10px">{reason}</span></td></tr>'
-                )
-            pairs_html = f"""
-<details class="inner-fold" style="margin-top:8px">
-  <summary><span class="fold-icon">▶</span>
-    Collinear pairs (|r| ≥ {PAIR_R_THRESH}) — {len(pairs)} found
-  </summary>
-  <div class="fold-body">
-    <p class="meta">Each row is one pair whose Pearson |r| exceeds {PAIR_R_THRESH}.
-    Suggestion priority: (1) domain logic — drop mathematically derived features first;
-    (2) missingness cost — drop higher marginal row cost if gap &gt; 5 pp;
-    (3) MI with target — drop lower mutual information;
-    (4) VIF — tiebreaker only.</p>
-    <table class="summary-table" style="font-size:12px;max-width:720px">
-      <thead><tr><th>Feature A</th><th>Feature B</th><th>|r|</th><th>Suggested action</th></tr></thead>
-      <tbody>{pair_rows}</tbody>
-    </table>
-  </div>
-</details>"""
-        else:
-            pairs_html = f'<p class="meta" style="color:#2ecc71;font-size:11px">No feature pairs exceed |r| = {PAIR_R_THRESH} — high VIF may stem from many weak correlations rather than one dominant pair.</p>'
-
+        pair_count_note = (
+            f'{len(pairs)} collinear pair{"s" if len(pairs) != 1 else ""} (|r| ≥ {PAIR_R_THRESH})'
+            if pairs else f'no collinear pairs (|r| ≥ {PAIR_R_THRESH})'
+        )
         badge_col = "#e74c3c" if n_high > 0 else ("#f39c12" if n_mod > 0 else "#2ecc71")
         ok_ct     = len(vif_rows) - n_high - n_mod
         badge_txt = f"{n_high} HIGH · {n_mod} MOD · {ok_ct} OK"
@@ -1224,35 +1241,32 @@ def _vif_callout() -> str:
     <span style="margin-left:8px;font-size:11px;color:{badge_col}">{badge_txt}</span>
   </summary>
   <div class="fold-body">
-    <p class="meta">n_train (complete rows): {len(X_clean)} · n_features: {len(features)}</p>
-    <table class="summary-table" style="font-size:12px;max-width:540px">
-      <thead><tr><th>Feature</th><th>VIF</th><th>Flag</th></tr></thead>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
+      n_train (complete rows): {len(X_clean)} · n_features: {len(features)} · {pair_count_note} ·
+      Suggestion priority: domain logic → missingness cost → MI with target → VIF tiebreaker
+    </p>
+    <table class="summary-table" style="font-size:12px">
+      <thead><tr>
+        <th>Feature</th><th>VIF</th><th>Flag</th>
+        <th>MI</th><th>Cost</th>
+        <th>Collinear With (|r|)</th><th>Suggested Action</th>
+      </tr></thead>
       <tbody>{tbl_rows}</tbody>
     </table>
-    {pairs_html}
   </div>
 </details>""")
 
     action_guide = """
 <div class="obs-card" style="margin:12px 0;padding:14px 18px">
-  <strong style="font-size:13px">How to act on high VIF</strong>
-  <ol style="margin:8px 0 0 18px;font-size:12px;line-height:1.8">
-    <li><strong>Check the collinear pairs table first</strong> (inside each dataset fold below).
-        VIF alone tells you <em>that</em> a feature is inflated; the pairs table tells you
-        <em>which other feature</em> is causing it.</li>
-    <li><strong>Multiple HIGH features ≠ remove all.</strong>
-        If 5 features are HIGH but the pairs table shows 2 pairs + 1 hub, you only need to
-        drop 3 features (one from each pair + the hub), not all 5.</li>
-    <li><strong>Within a collinear pair, drop the one with:</strong>
-        higher VIF, higher missingness cost, or lower MI score with the target —
-        whichever is less informative domain-wise.</li>
-    <li><strong>Hub pattern:</strong> if one feature appears in many pairs (e.g. SVI),
-        dropping just that one hub resolves multiple HIGH VIFs simultaneously.</li>
-    <li><strong>Tree models (RF, XGB) are unaffected</strong> — collinearity only harms
-        OLS/Ridge coefficient stability. ElasticNet auto-handles it via L1 shrinkage.
-        VIF-based removal is primarily relevant before fitting OLS or Ridge.</li>
-    <li><strong>After dropping,</strong> re-fit and check that VIF &lt; 10 for remaining features.</li>
-  </ol>
+  <strong style="font-size:13px">Notes on VIF removal</strong>
+  <ul style="margin:8px 0 0 18px;font-size:12px;line-height:1.8">
+    <li><strong>Hub pattern:</strong> a feature appearing in many "Collinear With" rows (e.g. SVI)
+        is a hub — dropping it alone resolves multiple HIGH VIFs simultaneously.
+        Multiple HIGH flags ≠ remove all; count the distinct hubs first.</li>
+    <li><strong>Tree models (RF, XGB) are unaffected</strong> — collinearity only inflates
+        OLS/Ridge coefficient variance. ElasticNet handles it automatically via L1 shrinkage.
+        VIF-based removal is relevant only before fitting OLS or Ridge.</li>
+  </ul>
 </div>"""
 
     summary_html = (
