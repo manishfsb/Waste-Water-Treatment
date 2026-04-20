@@ -788,7 +788,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
     has_mdae = "MdAE_test" in df.columns
 
     hdr1 = "".join(
-        '<th colspan="5" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "#888"), m)
+        '<th colspan="5" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "var(--text-muted)"), m)
         for m in avail
     )
     hdr2 = "".join(
@@ -1250,25 +1250,25 @@ def _vif_callout() -> str:
                     pc = "#e74c3c" if pr >= 0.95 else "#f39c12"
                     partner_parts.append(
                         f'<span style="color:{pc}">{p}</span>'
-                        f'<span style="color:#666;font-size:10px"> (r={pr:.3f})</span>'
+                        f'<span style="color:var(--text-meta);font-size:10px"> (r={pr:.3f})</span>'
                     )
                 partner_html = "<br>".join(partner_parts)
             else:
-                partner_html = '<span style="color:#555">—</span>'
+                partner_html = '<span style="color:var(--text-muted)">—</span>'
 
             if feat in drop_signals:
                 action_html = (
                     f'<span style="color:#e74c3c;font-weight:bold">DROP</span>'
-                    f'<br><span style="color:#888;font-size:10px">{drop_signals[feat]}</span>'
+                    f'<br><span style="color:var(--text-meta);font-size:10px">{drop_signals[feat]}</span>'
                 )
             elif feat in keep_drops:
                 dropped_names = ", ".join(d.split("(")[0].strip() for d in keep_drops[feat])
                 action_html = (
                     f'<span style="color:#2ecc71;font-weight:bold">KEEP</span>'
-                    f'<br><span style="color:#888;font-size:10px">retained; {dropped_names} to be dropped</span>'
+                    f'<br><span style="color:var(--text-meta);font-size:10px">retained; {dropped_names} to be dropped</span>'
                 )
             else:
-                action_html = '<span style="color:#555">—</span>'
+                action_html = '<span style="color:var(--text-muted)">—</span>'
 
             tbl_rows += (
                 f'<tr>'
@@ -2679,9 +2679,9 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
     thead = """<thead><tr>
       <th>Model</th>
-      <th colspan="2" style="text-align:center;background:#1a3a5c">Exp3-S2 (baseline)</th>
-      <th colspan="2" style="text-align:center;background:#3a1a1a">Exp4-S1 (manual prune)</th>
-      <th colspan="2" style="text-align:center;background:#1a3a1a">Exp4-S2 (VIF prune)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-blue);color:var(--th-col-blue-text)">Exp3-S2 (baseline)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-red);color:var(--th-col-red-text)">Exp4-S1 (manual prune)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-green);color:var(--th-col-green-text)">Exp4-S2 (VIF prune)</th>
     </tr>
     <tr style="font-size:0.82em">
       <th></th>

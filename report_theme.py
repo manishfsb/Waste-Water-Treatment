@@ -42,6 +42,20 @@ _VARIABLES = """
   --details-bdr:  #D0D7E3;
   --summary-hover:#EEF3FA;
   --input-bg:     #FFFFFF;
+  /* Aliases — keep in sync with canonical names above */
+  --card-bg:      #FFFFFF;
+  --text-primary: #222222;
+  --text-color:   #222222;
+  --border-color: #DDDDDD;
+  --accent:       #4A90D9;
+  --accent-blue:  #4A90D9;
+  /* Themed column-header backgrounds (readable in light mode) */
+  --th-col-blue:  #D0E0F0;
+  --th-col-red:   #F0D0D0;
+  --th-col-green: #D0F0D0;
+  --th-col-blue-text: #1a3a5c;
+  --th-col-red-text:  #5c1a1a;
+  --th-col-green-text:#1a3a1a;
   color-scheme: light;
 }
 
@@ -64,6 +78,20 @@ _VARIABLES = """
   --details-bdr:  #2E3450;
   --summary-hover:#1A2238;
   --input-bg:     #23272F;
+  /* Aliases — keep in sync with canonical names above */
+  --card-bg:      #23272F;
+  --text-primary: #E2E4E9;
+  --text-color:   #E2E4E9;
+  --border-color: #383C46;
+  --accent:       #5BA3EC;
+  --accent-blue:  #5BA3EC;
+  /* Themed column-header backgrounds (readable in dark mode) */
+  --th-col-blue:  #1a3a5c;
+  --th-col-red:   #3a1a1a;
+  --th-col-green: #1a3a1a;
+  --th-col-blue-text: #A8CBE8;
+  --th-col-red-text:  #E8A8A8;
+  --th-col-green-text:#A8E8A8;
   color-scheme: dark;
 }
 """
