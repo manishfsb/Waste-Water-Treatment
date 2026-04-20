@@ -286,14 +286,16 @@ EXP_INTRO = {
     ),
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
-        "from Exp3-S2 improves generalisation — particularly for composite targets where GB/XGB "
-        "catastrophically overfit. "
+        "from Exp3-S2 improves generalisation. "
         "<strong>Sub-experiment 1</strong> drops three redundant groups: "
-        "SVI (derived from SV30/MLSS — zero independent information), "
-        "all (New) aeration tank columns (cross-tank r=0.74–0.84; Existing wins on every key target), "
-        "and all Sec Sedimentation columns (cross-stage r=0.69–0.87; Sec Clarifier wins consistently). "
+        "SVI (derived from SV30/MLSS), all (New) aeration tank columns (cross-tank r=0.74–0.84), "
+        "and all Sec Sedimentation columns (cross-stage r=0.69–0.87; Sec Clarifier wins on average). "
         "Feature count drops from 20–32 to 12–19. "
-        "Phase 2 will address residual within-group collinearity (MLSS vs SV30, Sec Clarifier inter-correlations) via VIF analysis."
+        "<strong>Result: hypothesis refuted.</strong> Performance deteriorated on every target "
+        "and every model — Grab COD RF dropped from R²=+0.40 to −0.08; GB/XGB overfitting "
+        "worsened rather than improved. The removed features carried real predictive signal "
+        "that model-side regularisation (ElNet, Ridge) was already exploiting correctly. "
+        "See the finding box below for full analysis."
     ),
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
@@ -2605,13 +2607,35 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
     best = _best_model_box(df_all[df_all["exp_key"] == "Exp4-S1"], "Experiment 4")
 
     vs_note = """
-<div class="info-note">
-  <strong>ℹ Comparison with Exp3-S2:</strong>
-  Row counts are identical to Exp3-S2 because Exp4-S1 datasets were derived by column-dropping from
-  the Exp3-S2 datasets; the marginal row recovery from regenerating via <code>dropna()</code> on the
-  smaller feature set was &lt;2% (5–10 rows per dataset). Model results are directly comparable
-  to Exp3-S2 run 1. Phase 2 will address within-group VIF collinearity (MLSS vs SV30,
-  Sec Clarifier inter-correlations) in a subsequent sub-experiment.
+<div class="info-note" style="border-left-color:#e74c3c">
+  <strong>⚠ Key finding — hypothesis refuted:</strong>
+  Removing the collinear/derived feature groups made performance <em>worse</em> across every
+  target and every model type. Average Test R² dropped by −0.08 to −0.48 per target depending
+  on the model. MdAE on BOD/TSS targets increased by +0.1 to +2.1 units.
+
+  <br><br><strong>Why row counts barely changed (+5–10 rows, &lt;2%):</strong>
+  The removed columns (Sec Sed: 23–33% missing; New aeration: 22–29% missing) are measured on
+  the same operational days as the retained Sec Clarifier columns (23–33% missing).
+  When Sec Clarifier data is missing, Sec Sed is also missing — co-occurring missingness means
+  removing them unlocks almost no additional rows.
+
+  <br><br><strong>Why performance degraded:</strong>
+  <ul style="margin:6px 0 0 16px;padding:0">
+    <li><strong>Linear models (ElNet/Ridge):</strong> regularisation was already handling the
+        collinearity correctly. Manual removal took away information that the L1/L2 penalties
+        would have downweighted automatically.</li>
+    <li><strong>Tree models (RF, GB, XGB):</strong> even correlated features add split diversity.
+        Sec Sed COD/TSS carried direct process signal for effluent COD/TSS (Grab COD RF dropped
+        from +0.40 to −0.08). Removing them removed real predictive signal, not just noise.</li>
+    <li><strong>GB/XGB overfitting worsened</strong> (not improved) — fewer features means each
+        boosting step makes more decisive, less diversified splits.</li>
+  </ul>
+
+  <br><strong>Conclusion:</strong> Collinearity in this dataset is best handled by model-side
+  regularisation (ElNet, Ridge), not by manual feature removal. Exp4-S1 empirically refutes
+  the pruning hypothesis. Phase 2 (VIF-based intra-group pruning) should be interpreted in
+  this light — proceed only if the collinearity causes instability in coefficient signs or
+  prediction intervals, not purely to reduce feature count.
 </div>"""
 
     return f"""
