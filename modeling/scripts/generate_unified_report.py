@@ -75,6 +75,7 @@ EXP_CHART_LABELS = {
     "Exp3-S1": "E3-S1",    "Exp3-S1-FS": "E3-S1-FS",
     "Exp3-S2": "E3-S2",
     "Exp4-S1": "E4-S1",
+    "Exp4-S2": "E4-S2",
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
     "Phase9-Stacking": "P9-Stack",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
@@ -95,6 +96,7 @@ MDAE_TARGETS = {
 
 # Dataset directory fragment → exp_key (order matters: most-specific first)
 _DS_EXP_MAP = [
+    ("experiment4/sub_exp2",                            "Exp4-S2"),
     ("experiment4/sub_exp1",                            "Exp4-S1"),
     ("experiment3/sub_exp2",                           "Exp3-S2"),
     ("experiment3/sub_exp1/feature_selected_datasets", "Exp3-S1-FS"),
@@ -195,6 +197,21 @@ FEATURE_DESCRIPTIONS = {
                      "overfit. Phase 1 of Exp4 — Phase 2 will address within-group VIF (MLSS vs SV30, "
                      "Sec Clarifier inter-correlations).",
     },
+    "Exp4-S2": {
+        "label": "Exp4-S1 + Iterative VIF Pruning (threshold=10) — 5–10 features",
+        "features": "Starting from the Exp4-S1 feature pool, automated iterative VIF pruning "
+                    "(drop highest-VIF feature, recompute, repeat until all VIF ≤ 10) run on "
+                    "training rows only. Dropped per target: all pH features (Inlet pH, "
+                    "Sec Clarifier pH, Aeration pH, Primary Clarifier pH — VIF 600–2400), "
+                    "Inlet BOD/COD (VIF 18–34), MLSS (SV30 survives as biomass proxy), "
+                    "one of Flow/Power Total. "
+                    "Temporal features (month, day_of_week, year) always retained, excluded from VIF. "
+                    "Row gain vs Exp4-S1: +47 to +293 rows (dropped features had high missingness).",
+        "rationale": "Hypothesis: automated, data-driven VIF pruning removes intra-group "
+                     "multicollinearity more precisely than manual feature removal (Exp4-S1), "
+                     "yielding a well-conditioned feature matrix where Ridge/ElNet regularisation "
+                     "can work effectively and tree model overfitting may reduce.",
+    },
     "Phase9-ANN": {
         "label": "Exp3-S2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
         "features": "Same as Exp3-S2 (25 features), StandardScaler + MLPRegressor, "
@@ -287,15 +304,15 @@ EXP_INTRO = {
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
         "from Exp3-S2 improves generalisation. "
-        "<strong>Sub-experiment 1</strong> drops three redundant groups: "
-        "SVI (derived from SV30/MLSS), all (New) aeration tank columns (cross-tank r=0.74–0.84), "
-        "and all Sec Sedimentation columns (cross-stage r=0.69–0.87; Sec Clarifier wins on average). "
-        "Feature count drops from 20–32 to 12–19. "
-        "<strong>Result: hypothesis refuted.</strong> Performance deteriorated on every target "
-        "and every model — Grab COD RF dropped from R²=+0.40 to −0.08; GB/XGB overfitting "
-        "worsened rather than improved. The removed features carried real predictive signal "
-        "that model-side regularisation (ElNet, Ridge) was already exploiting correctly. "
-        "See the finding box below for full analysis."
+        "<strong>Sub-experiment 1</strong> manually drops three redundant groups "
+        "(SVI, New aeration, Sec Sed — feature count 12–19). "
+        "<strong>Sub-experiment 2</strong> applies automated iterative VIF pruning (threshold=10) "
+        "within the Exp4-S1 feature pool, reducing to 5–10 features per target and gaining "
+        "+47 to +293 rows by dropping high-missingness correlated features. "
+        "<strong>Overall result: both sub-experiments refuted the pruning hypothesis.</strong> "
+        "S1 showed performance degraded universally. S2 confirmed the pattern: "
+        "Ridge alone partially recovered on some targets; tree models failed catastrophically. "
+        "See the finding boxes below for per-sub-experiment analysis."
     ),
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
@@ -357,6 +374,8 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Experiment 3 Sub-2": "Exp3-S2",
         "Exp4-S1": "Exp4-S1",
         "Experiment 4 Sub-1": "Exp4-S1",
+        "Exp4-S2": "Exp4-S2",
+        "Experiment 4 Sub-2": "Exp4-S2",
         "Phase9-ANN": "Phase9-ANN",
         "Phase9-Ensemble": "Phase9-Ensemble",
         "Phase10-FE": "Phase10-FE",
@@ -483,6 +502,7 @@ def load_all_data() -> pd.DataFrame:
         ("baseline", False), ("feature_selected", True),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
+        ("exp4_s2", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -495,6 +515,7 @@ def load_all_data() -> pd.DataFrame:
         ("baseline", False), ("feature_selected", True),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
+        ("exp4_s2", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -1836,6 +1857,7 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "p10b":        ["Phase10b-FE"],
         "p11":         ["Phase11"],
         "exp4-s1":     ["Exp4-S1"],
+        "exp4-s2":     ["Exp4-S2"],
     }
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
@@ -2600,50 +2622,165 @@ def _variance_diagnosis_callout() -> str:
 </div>"""
 
 
+def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
+    """Three-way comparison table: Exp3-S2 vs Exp4-S1 vs Exp4-S2 for each target × model."""
+    df3  = df_all[df_all["exp_key"] == "Exp3-S2"]
+    df4s1 = df_all[df_all["exp_key"] == "Exp4-S1"]
+    df4s2 = df_all[df_all["exp_key"] == "Exp4-S2"]
+
+    all_models = LINEAR_MODELS + NL_MODELS
+    rows_html = []
+
+    for tgt in TARGETS_ORDERED:
+        tgt_short = (tgt.replace("Effluent ", "").replace(" (mg/L, Grab)", " Grab")
+                        .replace(" (mg/L, Composite)", " Comp")
+                        .replace(" (Grab)", " pH Grab").replace(" (Composite)", " pH Comp"))
+        rows_html.append(
+            f'<tr><td colspan="7" style="background:var(--card-bg);font-weight:600;'
+            f'padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        )
+        for mdl in all_models:
+            def _r2(df_exp):
+                s = df_exp[(df_exp["target"] == tgt) & (df_exp["model"] == mdl)]
+                if s.empty or s["R2_test"].isna().all():
+                    return None, None
+                return float(s["R2_test"].iloc[0]), float(s["R2_gap"].iloc[0])
+
+            r2_e3, gap_e3   = _r2(df3)
+            r2_s1, gap_s1   = _r2(df4s1)
+            r2_s2, gap_s2   = _r2(df4s2)
+
+            def _fmt_cell(r2, gap, ref_r2):
+                if r2 is None:
+                    return '<td style="color:var(--text-muted)">—</td><td style="color:var(--text-muted)">—</td>'
+                r2_str = f"{r2:+.3f}"
+                gap_str = f"{gap:+.3f}"
+                # Colour R2 relative to reference (Exp3-S2)
+                if ref_r2 is None:
+                    r2_col = "var(--text-muted)"
+                elif r2 >= ref_r2 + 0.02:
+                    r2_col = "#2ecc71"
+                elif r2 <= ref_r2 - 0.02:
+                    r2_col = "#e74c3c"
+                else:
+                    r2_col = "var(--text-primary)"
+                gap_col = "#e74c3c" if gap > 0.15 else ("var(--text-muted)" if abs(gap) <= 0.05 else "var(--text-primary)")
+                return (f'<td style="color:{r2_col};font-weight:500">{r2_str}</td>'
+                        f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
+
+            e3_cells  = _fmt_cell(r2_e3,  gap_e3,  None)
+            s1_cells  = _fmt_cell(r2_s1,  gap_s1,  r2_e3)
+            s2_cells  = _fmt_cell(r2_s2,  gap_s2,  r2_e3)
+
+            rows_html.append(
+                f'<tr><td style="padding-left:20px;color:var(--text-muted)">{mdl}</td>'
+                f'{e3_cells}{s1_cells}{s2_cells}</tr>'
+            )
+
+    thead = """<thead><tr>
+      <th>Model</th>
+      <th colspan="2" style="text-align:center;background:#1a3a5c">Exp3-S2 (baseline)</th>
+      <th colspan="2" style="text-align:center;background:#3a1a1a">Exp4-S1 (manual prune)</th>
+      <th colspan="2" style="text-align:center;background:#1a3a1a">Exp4-S2 (VIF prune)</th>
+    </tr>
+    <tr style="font-size:0.82em">
+      <th></th>
+      <th>R² Test</th><th>R² Gap</th>
+      <th>R² Test</th><th>R² Gap</th>
+      <th>R² Test</th><th>R² Gap</th>
+    </tr></thead>"""
+
+    return f"""
+<div class="obs-card" style="margin-top:24px">
+  <h3 style="margin:0 0 12px">Three-way comparison: Exp3-S2 → Exp4-S1 → Exp4-S2</h3>
+  <p style="color:var(--text-muted);font-size:0.88em;margin:0 0 10px">
+    Colours vs Exp3-S2 baseline: <span style="color:#2ecc71">green = +0.02 gain</span>,
+    <span style="color:#e74c3c">red = −0.02 loss</span>, white = within ±0.02.
+    Gap column: <span style="color:#e74c3c">red = overfitting gap &gt;0.15</span>.
+  </p>
+  <div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:0.87em">
+    {thead}
+    <tbody>{''.join(rows_html)}</tbody>
+  </table>
+  </div>
+</div>"""
+
+
 def build_exp4_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp4-S1", "exp4-s1",
-                           "Sub-experiment 1 — Redundancy Pruning (SVI, New Aeration, Sec Sed)",
+                           "Sub-experiment 1 — Manual Redundancy Pruning (SVI, New Aeration, Sec Sed)",
                            open_default=True)
-    best = _best_model_box(df_all[df_all["exp_key"] == "Exp4-S1"], "Experiment 4")
 
-    vs_note = """
+    note_s1 = """
 <div class="info-note" style="border-left-color:#e74c3c">
-  <strong>⚠ Key finding — hypothesis refuted:</strong>
-  Removing the collinear/derived feature groups made performance <em>worse</em> across every
-  target and every model type. Average Test R² dropped by −0.08 to −0.48 per target depending
-  on the model. MdAE on BOD/TSS targets increased by +0.1 to +2.1 units.
-
-  <br><br><strong>Why row counts barely changed (+5–10 rows, &lt;2%):</strong>
-  The removed columns (Sec Sed: 23–33% missing; New aeration: 22–29% missing) are measured on
-  the same operational days as the retained Sec Clarifier columns (23–33% missing).
-  When Sec Clarifier data is missing, Sec Sed is also missing — co-occurring missingness means
-  removing them unlocks almost no additional rows.
+  <strong>⚠ Sub-exp 1 finding — manual pruning hypothesis refuted:</strong>
+  Removing the three feature groups made performance <em>worse</em> across every target and every
+  model. Row counts barely changed (+5–10, &lt;2%) because Sec Sed and Sec Clarifier are
+  collected on the same operational days (co-occurring missingness).
 
   <br><br><strong>Why performance degraded:</strong>
   <ul style="margin:6px 0 0 16px;padding:0">
-    <li><strong>Linear models (ElNet/Ridge):</strong> regularisation was already handling the
-        collinearity correctly. Manual removal took away information that the L1/L2 penalties
-        would have downweighted automatically.</li>
-    <li><strong>Tree models (RF, GB, XGB):</strong> even correlated features add split diversity.
-        Sec Sed COD/TSS carried direct process signal for effluent COD/TSS (Grab COD RF dropped
-        from +0.40 to −0.08). Removing them removed real predictive signal, not just noise.</li>
-    <li><strong>GB/XGB overfitting worsened</strong> (not improved) — fewer features means each
-        boosting step makes more decisive, less diversified splits.</li>
+    <li><strong>Linear (ElNet/Ridge):</strong> regularisation already handled collinearity via L1/L2.
+        Manual removal discarded signal the penalties would have downweighted automatically.</li>
+    <li><strong>Tree models (RF, GB, XGB):</strong> Sec Sed COD/TSS carried direct process signal
+        (RF Grab COD: +0.40 → −0.08). Fewer features → less split diversity → faster overfitting.</li>
+  </ul>
+</div>"""
+
+    sub2 = _exp_subsection(df_all, "Exp4-S2", "exp4-s2",
+                           "Sub-experiment 2 — Automated VIF Pruning (threshold = 10)",
+                           open_default=True)
+
+    note_s2 = """
+<div class="info-note" style="border-left-color:#e67e22">
+  <strong>⚠ Sub-exp 2 finding — VIF pruning also refuted, with nuance:</strong>
+  Automated iterative VIF pruning (drop highest-VIF feature until all VIF ≤ 10) reduced
+  feature sets to 5–10 and unlocked +47 to +293 additional rows by eliminating high-missingness
+  correlated features (pH columns, Inlet BOD/COD, MLSS).
+
+  <br><br><strong>Row gain is significant for composites:</strong> Comp TSS grew from 448 → 741
+  rows (+65%), Comp COD from 684 → 866 (+27%). This is a genuine data efficiency gain.
+
+  <br><br><strong>But performance still degraded:</strong>
+  <ul style="margin:6px 0 0 16px;padding:0">
+    <li><strong>Ridge:</strong> mixed results — Grab BOD Ridge recovered to +0.463 (close to
+        Exp4-S1 +0.518), Grab TSS Ridge stable at +0.373. But Comp pH Ridge collapsed to −1.44
+        and Comp COD remains unresolved.</li>
+    <li><strong>ElNet:</strong> Grab BOD dropped to +0.072 (vs Exp3-S2 +0.684). ElNet relies on
+        L1 to select from correlated features; pre-selecting them via VIF removes its advantage.</li>
+    <li><strong>Tree models (RF, GB, XGB):</strong> catastrophic on most targets. Removing all
+        pH features and Inlet BOD/COD strips the primary process-signal columns that trees use
+        for their first splits. Without these, boosted trees cannot learn the systematic trend
+        and overfit severely to noise.</li>
   </ul>
 
-  <br><strong>Conclusion:</strong> Collinearity in this dataset is best handled by model-side
-  regularisation (ElNet, Ridge), not by manual feature removal. Exp4-S1 empirically refutes
-  the pruning hypothesis. Phase 2 (VIF-based intra-group pruning) should be interpreted in
-  this light — proceed only if the collinearity causes instability in coefficient signs or
-  prediction intervals, not purely to reduce feature count.
+  <br><strong>Root cause:</strong> VIF pruning is <em>target-agnostic</em> — it removes features
+  that are correlated with other features, regardless of their correlation with the target.
+  Inlet BOD predicts Effluent BOD. Sec Clarifier pH predicts Effluent pH. These features have
+  high VIF precisely because the plant operates systematically (pH is buffered across all stages),
+  but they carry the predictive signal the models need.
+
+  <br><br><strong>Conclusion:</strong> Both manual and automated collinearity pruning are
+  counter-productive on this dataset. The collinearity is intrinsic to the process physics and
+  should be absorbed by regularisation (Ridge/ElNet), not removed. Tree models require the
+  full feature pool. <strong>Exp3-S2 remains the best feature set for tree models.</strong>
+  For linear models, Ridge on Exp4-S2 is competitive for Grab BOD/TSS but should not replace
+  Exp3-S2 Ridge as the baseline due to losses on other targets.
 </div>"""
+
+    comparison = _exp4_comparison_table(df_all)
+    best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp4-S1", "Exp4-S2"])], "Experiment 4")
 
     return f"""
 <section id="exp4">
   <h1 class="section-title">Experiment 4 — Collinearity Pruning</h1>
   <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
   {sub1}
-  {vs_note}
+  {note_s1}
+  {sub2}
+  {note_s2}
+  {comparison}
   {best}
 </section>"""
 
@@ -2829,7 +2966,8 @@ def _sidebar() -> str:
       Experiment 4 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp4">
-      <a class="nav-item nav-sub" href="#exp4-s1">Sub-exp 1 (Redundancy Pruning)</a>
+      <a class="nav-item nav-sub" href="#exp4-s1">Sub-exp 1 (Manual Pruning)</a>
+      <a class="nav-item nav-sub" href="#exp4-s2">Sub-exp 2 (VIF Pruning)</a>
     </div>
   </div>
 
