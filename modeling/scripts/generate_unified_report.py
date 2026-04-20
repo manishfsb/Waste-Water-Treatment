@@ -74,6 +74,7 @@ EXP_CHART_LABELS = {
     "Exp2-Sub2": "E2-S2",  "Exp2-Sub2-FS": "E2-S2-FS",
     "Exp3-S1": "E3-S1",    "Exp3-S1-FS": "E3-S1-FS",
     "Exp3-S2": "E3-S2",
+    "Exp4-S1": "E4-S1",
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
     "Phase9-Stacking": "P9-Stack",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
@@ -94,6 +95,7 @@ MDAE_TARGETS = {
 
 # Dataset directory fragment → exp_key (order matters: most-specific first)
 _DS_EXP_MAP = [
+    ("experiment4/sub_exp1",                            "Exp4-S1"),
     ("experiment3/sub_exp2",                           "Exp3-S2"),
     ("experiment3/sub_exp1/feature_selected_datasets", "Exp3-S1-FS"),
     ("experiment3/sub_exp1",                           "Exp3-S1"),
@@ -180,6 +182,18 @@ FEATURE_DESCRIPTIONS = {
                      "CONSIDER-tier features help despite higher missingness cost. "
                      "Key question: do regularised linear models benefit from "
                      "additional features even if non-linear models overfit?",
+    },
+    "Exp4-S1": {
+        "label": "Exp3-S2 minus Derived/Redundant Columns (12–19 features)",
+        "features": "Exp3-S2 feature set with three redundant groups removed: "
+                    "(1) Aeration SVI (Existing + New) — derived from SV30/MLSS, zero independent information; "
+                    "(2) All (New) aeration tank columns — cross-tank r=0.74–0.84, Existing tank wins on every BOD/COD/TSS target; "
+                    "(3) All Sec Sedimentation columns — cross-stage r=0.69–0.87, Sec Clarifier wins consistently. "
+                    "Remaining: Inlet, COMMON, Existing aeration (MLSS, SV30, DO, pH), Sec Clarifier (pH, TSS, BOD, COD, RAS).",
+        "rationale": "Hypothesis: removing collinear and derived features reduces variance inflation and "
+                     "improves generalisation, especially on composite targets where Exp3-S2 GB/XGB catastrophically "
+                     "overfit. Phase 1 of Exp4 — Phase 2 will address within-group VIF (MLSS vs SV30, "
+                     "Sec Clarifier inter-correlations).",
     },
     "Phase9-ANN": {
         "label": "Exp3-S2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
@@ -270,6 +284,17 @@ EXP_INTRO = {
         "whether more features — at higher missingness cost — still benefit regularised "
         "linear models."
     ),
+    "Exp4": (
+        "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
+        "from Exp3-S2 improves generalisation — particularly for composite targets where GB/XGB "
+        "catastrophically overfit. "
+        "<strong>Sub-experiment 1</strong> drops three redundant groups: "
+        "SVI (derived from SV30/MLSS — zero independent information), "
+        "all (New) aeration tank columns (cross-tank r=0.74–0.84; Existing wins on every key target), "
+        "and all Sec Sedimentation columns (cross-stage r=0.69–0.87; Sec Clarifier wins consistently). "
+        "Feature count drops from 20–32 to 12–19. "
+        "Phase 2 will address residual within-group collinearity (MLSS vs SV30, Sec Clarifier inter-correlations) via VIF analysis."
+    ),
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
         "which was selected as the richest validated set (ElNet Test R²=0.684 Grab BOD, "
@@ -328,6 +353,8 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Experiment 3 Sub-1": "Exp3-S1",
         "Experiment 3 Sub-1 FS": "Exp3-S1-FS",
         "Experiment 3 Sub-2": "Exp3-S2",
+        "Exp4-S1": "Exp4-S1",
+        "Experiment 4 Sub-1": "Exp4-S1",
         "Phase9-ANN": "Phase9-ANN",
         "Phase9-Ensemble": "Phase9-Ensemble",
         "Phase10-FE": "Phase10-FE",
@@ -453,6 +480,7 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
+        ("exp4_s1", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -464,6 +492,7 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
+        ("exp4_s1", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -527,6 +556,8 @@ def compute_all_mdae() -> pd.DataFrame:
     records = []
 
     for fpath in sorted(glob.glob(os.path.join(ds_base, "**", "*.xlsx"), recursive=True)):
+        if os.path.basename(fpath).startswith("~$"):
+            continue
         rel = fpath.replace(ds_base + os.sep, "").replace("\\", "/")
 
         # Determine exp_key from directory path
@@ -1802,6 +1833,7 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "p10-full":    ["Phase10-FE"],
         "p10b":        ["Phase10b-FE"],
         "p11":         ["Phase11"],
+        "exp4-s1":     ["Exp4-S1"],
     }
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
@@ -2566,6 +2598,32 @@ def _variance_diagnosis_callout() -> str:
 </div>"""
 
 
+def build_exp4_section(df_all: pd.DataFrame) -> str:
+    sub1 = _exp_subsection(df_all, "Exp4-S1", "exp4-s1",
+                           "Sub-experiment 1 — Redundancy Pruning (SVI, New Aeration, Sec Sed)",
+                           open_default=True)
+    best = _best_model_box(df_all[df_all["exp_key"] == "Exp4-S1"], "Experiment 4")
+
+    vs_note = """
+<div class="info-note">
+  <strong>ℹ Comparison with Exp3-S2:</strong>
+  Row counts are identical to Exp3-S2 because Exp4-S1 datasets were derived by column-dropping from
+  the Exp3-S2 datasets; the marginal row recovery from regenerating via <code>dropna()</code> on the
+  smaller feature set was &lt;2% (5–10 rows per dataset). Model results are directly comparable
+  to Exp3-S2 run 1. Phase 2 will address within-group VIF collinearity (MLSS vs SV30,
+  Sec Clarifier inter-correlations) in a subsequent sub-experiment.
+</div>"""
+
+    return f"""
+<section id="exp4">
+  <h1 class="section-title">Experiment 4 — Collinearity Pruning</h1>
+  <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
+  {sub1}
+  {vs_note}
+  {best}
+</section>"""
+
+
 def build_phase9_section(df_all: pd.DataFrame) -> str:
     ann_sub     = _phase9_model_subsection(
         df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
@@ -2739,6 +2797,15 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp3-s2">Sub-exp 2 (CONSIDER)</a>
       <a class="nav-item nav-sub" href="#exp3-cyclic">Cyclic Encoding</a>
       <a class="nav-item nav-sub" href="#exp3-vif">VIF Collinearity</a>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-exp4">
+      Experiment 4 <span class="nav-chevron">▾</span>
+    </div>
+    <div class="nav-group-items" id="nav-exp4">
+      <a class="nav-item nav-sub" href="#exp4-s1">Sub-exp 1 (Redundancy Pruning)</a>
     </div>
   </div>
 
@@ -3363,6 +3430,7 @@ def main():
         build_exp1_section(df_all),
         build_exp2_section(df_all),
         build_exp3_section(df_all),
+        build_exp4_section(df_all),
         build_phase9_section(df_all),
         build_phase10_section(df_all),
         build_phase11_section(df_all),
@@ -3401,7 +3469,7 @@ def main():
   <div class="page-header">
     <h1>Wastewater Treatment — Unified Modeling Report</h1>
     <p class="meta">Generated {ts} &nbsp;·&nbsp;
-      Experiments 1–3 + Phases 9–11 &nbsp;·&nbsp;
+      Experiments 1–4 + Phases 9–11 &nbsp;·&nbsp;
       9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp;
       Train 2021–2024 · Test 2025
     </p>
