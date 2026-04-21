@@ -243,8 +243,8 @@ def render_html(all_results: pd.DataFrame) -> str:
         parts.append("<table class='decomp'>")
         parts.append(
             "<thead><tr>"
-            "<th>Axis</th><th>Bucket</th><th>n</th>"
-            "<th>MAE</th><th>RMSE</th><th>Bias</th><th>R²</th>"
+            "<th>Axis</th><th>Bucket</th><th class='num'>n</th>"
+            "<th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th>"
             "</tr></thead><tbody>"
         )
         current_axis = None
@@ -284,6 +284,7 @@ def section_html(all_results: pd.DataFrame) -> str:
     table.ed-decomp { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 24px; }
     table.ed-decomp th, table.ed-decomp td { padding:5px 8px; border-bottom:1px solid var(--border); }
     table.ed-decomp th { background:var(--bg-soft); font-weight:600; text-align:left; }
+    table.ed-decomp th.num { text-align:right; }
     table.ed-decomp td.num { text-align:right; font-variant-numeric:tabular-nums; }
     .ed-target-header { font-size:15px; font-weight:600; margin:20px 0 6px;
                         padding:6px 10px; background:var(--bg-soft);
@@ -316,8 +317,8 @@ def section_html(all_results: pd.DataFrame) -> str:
         parts.append("<table class='ed-decomp'>")
         parts.append(
             "<thead><tr>"
-            "<th>Axis</th><th>Bucket</th><th>n</th>"
-            "<th>MAE</th><th>RMSE</th><th>Bias</th><th>R²</th>"
+            "<th>Axis</th><th>Bucket</th><th class='num'>n</th>"
+            "<th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th>"
             "</tr></thead><tbody>"
         )
         current_axis = None

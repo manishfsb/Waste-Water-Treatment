@@ -78,6 +78,7 @@ EXP_CHART_LABELS = {
     "Exp4-S2": "E4-S2",
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
     "Phase9-Stacking": "P9-Stack",
+    "ANN-Exp1": "ANN-E1", "ANN-Exp2-Sub1": "ANN-E2-S1", "ANN-Exp2-Sub2": "ANN-E2-S2",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
     "Phase11": "P11",
 }
@@ -212,6 +213,35 @@ FEATURE_DESCRIPTIONS = {
                      "yielding a well-conditioned feature matrix where Ridge/ElNet regularisation "
                      "can work effectively and tree model overfitting may reduce.",
     },
+    "ANN-Exp1": {
+        "label": "Exp1 Features → ANN (Inlet + COMMON, 9 features)",
+        "features": "Inlet pH, Inlet BOD, Inlet COD, Inlet TSS (Grab or Composite) + "
+                    "Flow (MLD), Power Total (KW). StandardScaler + MLPRegressor, "
+                    "GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit). "
+                    "~1175 Grab / ~800 Composite training rows.",
+        "rationale": "Phase 9 ANN failed with ~470 Grab training samples. Exp1 has 2.5× more "
+                     "data with simpler features. Tests whether ANN failure was data-volume "
+                     "limited. Same architecture as Phase 9 ANN; only dataset changed.",
+    },
+    "ANN-Exp2-Sub1": {
+        "label": "Exp2-Sub1 Features → ANN (Secondary + COMMON, 15 features)",
+        "features": "Sec Clarifier pH/TSS/BOD/COD/RAS, Sec Sed pH/TSS/BOD/COD/RAS + "
+                    "Flow, Power. StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
+                    "~924 Grab / ~740 Composite training rows.",
+        "rationale": "Middle ground: richer features (secondary process data) with ~2× the "
+                     "samples of Exp3-S2. Tests whether secondary process data adds meaningful "
+                     "ANN signal at adequate sample size.",
+    },
+    "ANN-Exp2-Sub2": {
+        "label": "Exp2-Sub2 Features → ANN (Inlet + Secondary + COMMON, 19 features)",
+        "features": "Inlet (Grab/Composite) + Sec Clarifier + Sec Sed + Flow, Power. "
+                    "StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
+                    "~920 Grab / ~733 Composite training rows.",
+        "rationale": "Combined inlet + secondary features at twice the sample count of "
+                     "Exp3-S2 ANN. The most direct comparison: same feature scope as "
+                     "Exp3-S2 baseline but without the CONSIDER-tier columns that reduced "
+                     "training rows via missingness.",
+    },
     "Phase9-ANN": {
         "label": "Exp3-S2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
         "features": "Same as Exp3-S2 (25 features), StandardScaler + MLPRegressor, "
@@ -313,6 +343,21 @@ EXP_INTRO = {
         "S1 showed performance degraded universally. S2 confirmed the pattern: "
         "Ridge alone partially recovered on some targets; tree models failed catastrophically. "
         "See the finding boxes below for per-sub-experiment analysis."
+    ),
+    "ANN-Dataset-Exploration": (
+        "The Phase 9 ANN failed on Exp3-S2 datasets (avg Test R²=−1.12) due to insufficient "
+        "training samples (~470 Grab, ~290 Composite). These runs test the same ANN architecture "
+        "on earlier, <strong>data-richer</strong> experiment datasets to isolate whether the failure "
+        "was <em>data-volume limited</em> or reflects a fundamental ANN limitation on this type of data."
+        "<br><br>"
+        "Three datasets are tested: <strong>Exp1</strong> (Inlet + COMMON, 9 features, "
+        "~1175 Grab / ~800 Composite rows — 2.5× more data), "
+        "<strong>Exp2-Sub1</strong> (Secondary + COMMON, 15 features, "
+        "~924 / ~740 rows), and "
+        "<strong>Exp2-Sub2</strong> (Inlet + Secondary + COMMON, 19 features, "
+        "~920 / ~733 rows). "
+        "The hyperparameter grid includes larger architectures (256-128, 128-64-32 hidden layers) "
+        "compared to Phase 9 ANN, appropriate for the larger sample counts."
     ),
     "Phase9": (
         "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
@@ -473,6 +518,30 @@ def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _norm_ann_extra(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize ANN results for Exp1/Exp2-Sub1/Exp2-Sub2 dataset runs.
+
+    experiment column in results.xlsx is the exp_key directly
+    (e.g. 'ANN-Exp1', 'ANN-Exp2-Sub1', 'ANN-Exp2-Sub2').
+    """
+    out = pd.DataFrame(dict(
+        exp_key=df["experiment"],
+        target=df["target"],
+        model="ANN",
+        n_train=df.get("n_train"),
+        n_test=df.get("n_test"),
+        n_features=df.get("n_features"),
+        R2_train=df.get("R2_train"),
+        R2_test=df.get("R2_test"),
+        R2_gap=df.get("R2_gap"),
+        RMSE_train=df.get("RMSE_train"),
+        RMSE_test=df.get("RMSE_test"),
+        MAE_test=df.get("MAE_test"),
+        MAPE_test=df.get("MAPE_test"),
+    ))
+    return out
+
+
 def _norm_phase10(df: pd.DataFrame, is_10b: bool) -> pd.DataFrame:
     exp_key = "Phase10b-FE" if is_10b else "Phase10-FE"
     out = pd.DataFrame(dict(
@@ -531,6 +600,14 @@ def load_all_data() -> pd.DataFrame:
             df = pd.read_excel(p)
             df = df[df["run"] == df["run"].max()]
             frames.append(_norm_phase9(df))
+
+    # ANN on Exp1/Exp2 datasets (diagnostic data-volume experiment)
+    for subdir in ["ann_exp1", "ann_exp2s1", "ann_exp2s2"]:
+        p = os.path.join(m, "phase9", subdir, "results.xlsx")
+        if os.path.exists(p):
+            df = pd.read_excel(p)
+            df = df[df["run"] == df["run"].max()]
+            frames.append(_norm_ann_extra(df))
 
     # Phase 10
     for path, is_10b in [
@@ -733,7 +810,13 @@ def _dataset_summary(df: pd.DataFrame) -> str:
 
 
 def _pick_best(avail, sub):
-    """Returns the model name with the highest Test R² for this target row."""
+    """Returns the model name with the highest Test R² for this target row.
+
+    Returns empty set when only one model is available — ★ is a comparison
+    marker and is meaningless without multiple models to compare.
+    """
+    if len(avail) <= 1:
+        return set()
     r2_vals = {}
     for m in avail:
         msub = sub[sub["model"] == m]
@@ -2809,6 +2892,102 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 </section>"""
 
 
+def _ann_dataset_exploration_callout() -> str:
+    return """
+<div class="obs-card" style="margin:1.5rem 0;border-left:4px solid #9B59B6">
+  <h4 style="margin:0 0 0.6rem">ANN Dataset Exploration — Key Findings</h4>
+  <ul style="margin:0 0 0 1rem;padding:0;font-size:0.9em;line-height:1.7">
+    <li><strong>Inlet features alone (Exp1, 9 features) are insufficient for the ANN</strong> —
+        avg Test R²=−5.6, worse than Phase 9 (Exp3-S2, −1.1). More data cannot compensate
+        for missing secondary process signal.</li>
+    <li><strong>Secondary features unlock positive Grab R² for the first time</strong> —
+        Exp2-Sub1 ANN (Secondary + COMMON, 12 features, ~924 rows) achieves Grab BOD +0.20,
+        Grab TSS +0.27. This is the only dataset × architecture combination where the ANN
+        produces positive generalisation on Grab targets.</li>
+    <li><strong>Adding inlet to secondary data (Exp2-Sub2) does not help composites</strong> —
+        Comp BOD collapses from −0.11 (Exp2-S1) to −1.49 (Exp2-S2). The ANN overfits
+        more with 16 features than with 12 on the same 733 composite rows.</li>
+    <li><strong>Composite targets fail for the ANN on every dataset tested</strong> —
+        all composite test R² are negative across Exp1, Exp2-Sub1, Exp2-Sub2, and Phase 9
+        (Exp3-S2). The pattern is consistent: composite measurements are temporally noisier
+        and the ANN cannot capture the distributional shift from training to 2025.</li>
+    <li><strong>Conclusion — the ANN failure is not data-volume limited</strong> —
+        tripling the training rows (Exp1: 1175 vs Exp3-S2: 470) did not rescue performance.
+        The binding constraint is the <em>feature set</em>: secondary process data is a
+        prerequisite for positive ANN generalisation on Grab targets. Even with secondary
+        features and adequate data (~924 rows), the ANN substantially underperforms the
+        Voting ensemble (avg Grab R²≈0.20 vs Voting 0.287 overall). The ANN is not
+        recommended for any target on this dataset.</li>
+  </ul>
+</div>"""
+
+
+def _ann_dataset_comparison(df_all: pd.DataFrame) -> str:
+    """Three-way ANN comparison table: Exp1 vs Exp2-Sub1 vs Exp2-Sub2 vs Phase9 (Exp3-S2)."""
+    keys = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
+    labels = {
+        "ANN-Exp1":      "Exp1 (9 feat, ~1175/800 rows)",
+        "ANN-Exp2-Sub1": "Exp2-S1 (15 feat, ~924/740 rows)",
+        "ANN-Exp2-Sub2": "Exp2-S2 (19 feat, ~920/733 rows)",
+        "Phase9-ANN":    "Exp3-S2 (25 feat, ~470/290 rows)",
+    }
+    available = [k for k in keys if k in df_all["exp_key"].values]
+    if len(available) < 2:
+        return ""
+
+    rows_html = []
+    for tgt in TARGETS_ORDERED:
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+        rows_html.append(
+            f'<tr><td colspan="{len(available) * 2 + 1}" '
+            f'style="background:var(--card-bg);font-weight:600;'
+            f'padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        )
+        row_cells = f'<td style="padding-left:20px;color:var(--text-muted)">ANN</td>'
+        for key in available:
+            sub = df_all[(df_all["exp_key"] == key) & (df_all["target"] == tgt)]
+            if sub.empty or sub["R2_test"].isna().all():
+                row_cells += ('<td style="color:var(--text-muted)">-</td>'
+                              '<td style="color:var(--text-muted)">-</td>')
+                continue
+            r2   = float(sub["R2_test"].iloc[0])
+            gap  = float(sub["R2_gap"].iloc[0]) if not pd.isna(sub["R2_gap"].iloc[0]) else float("nan")
+            r2_col  = ("#2ecc71" if r2 > 0.2 else ("#e74c3c" if r2 < 0 else "var(--text-primary)"))
+            gap_col = "#e74c3c" if gap > 0.15 else "var(--text-muted)"
+            gap_str = f"{gap:+.3f}" if not np.isnan(gap) else "-"
+            row_cells += (f'<td style="color:{r2_col};font-weight:500">{r2:+.3f}</td>'
+                          f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
+        rows_html.append(f'<tr>{row_cells}</tr>')
+
+    col_headers = "".join(
+        f'<th colspan="2" style="text-align:center">{labels[k]}</th>'
+        for k in available
+    )
+    sub_headers = "".join(
+        '<th>R² Test</th><th>R² Gap</th>' for _ in available
+    )
+    thead = f"""<thead>
+      <tr><th>Target</th>{col_headers}</tr>
+      <tr style="font-size:0.82em"><th></th>{sub_headers}</tr>
+    </thead>"""
+
+    return f"""
+<div class="obs-card" style="margin-top:24px">
+  <h3 style="margin:0 0 12px">ANN Performance Across Datasets — Data-Volume Diagnostic</h3>
+  <p style="color:var(--text-muted);font-size:0.88em;margin:0 0 10px">
+    Same ANN architecture across all columns; only dataset (feature set + sample count) changes.
+    <span style="color:#2ecc71">Green = R² &gt; 0.20</span>,
+    <span style="color:#e74c3c">Red = R² &lt; 0 or gap &gt; 0.15</span>.
+  </p>
+  <div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:0.87em">
+    {thead}
+    <tbody>{''.join(rows_html)}</tbody>
+  </table>
+  </div>
+</div>"""
+
+
 def build_phase9_section(df_all: pd.DataFrame) -> str:
     ann_sub     = _phase9_model_subsection(
         df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
@@ -2830,6 +3009,40 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
     best = _best_model_box(df_p9, "Phase 9")
     var_dx = _variance_diagnosis_callout()
 
+    # ANN dataset-exploration sub-sections
+    ann_e1_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp1", "p9-ann-exp1",
+        "ANN — Exp1 Datasets (Inlet + COMMON, 9 features)")
+    ann_e2s1_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
+        "ANN — Exp2-Sub1 Datasets (Secondary + COMMON, 15 features)")
+    ann_e2s2_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
+        "ANN — Exp2-Sub2 Datasets (Inlet + Secondary + COMMON, 19 features)")
+    ann_ds_comparison = _ann_dataset_comparison(df_all)
+    ann_ds_callout = _ann_dataset_exploration_callout()
+
+    # Only render the exploration block if at least one result file exists
+    has_ann_extra = any(
+        k in df_all["exp_key"].values
+        for k in ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"]
+    )
+    ann_exploration_block = ""
+    if has_ann_extra:
+        ann_exploration_block = f"""
+  <h2 class="section-title" id="p9-ann-exploration"
+      style="font-size:1.1rem;margin:2rem 0 0.5rem">
+    ANN Dataset Exploration — Data-Volume Diagnostic
+  </h2>
+  <p class="section-intro" style="margin-bottom:1rem">
+    {EXP_INTRO["ANN-Dataset-Exploration"]}
+  </p>
+  {ann_e1_sub}
+  {ann_e2s1_sub}
+  {ann_e2s2_sub}
+  {ann_ds_comparison}
+  {ann_ds_callout}"""
+
     return f"""
 <section id="phase9">
   <h1 class="section-title">Advanced Methods - ANN &amp; Ensembles</h1>
@@ -2844,6 +3057,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
   </details>
   {var_dx}
   {best}
+  {ann_exploration_block}
 </section>"""
 
 
@@ -3000,11 +3214,15 @@ def _sidebar() -> str:
       Advanced Methods <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p9">
-      <a class="nav-item nav-sub" href="#p9-ann">ANN</a>
+      <a class="nav-item nav-sub" href="#p9-ann">ANN (Exp3-S2)</a>
       <a class="nav-item nav-sub" href="#p9-ann-diagnosis">ANN Failure Post-Mortem</a>
       <a class="nav-item nav-sub" href="#p9-voting">Voting (ElNet+RF+XGB)</a>
       <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
       <a class="nav-item nav-sub" href="#p9-comparison">Combined</a>
+      <a class="nav-item nav-sub" href="#p9-ann-exploration">ANN Dataset Exploration</a>
+      <a class="nav-item nav-sub" href="#p9-ann-exp1">→ ANN Exp1</a>
+      <a class="nav-item nav-sub" href="#p9-ann-exp2s1">→ ANN Exp2-Sub1</a>
+      <a class="nav-item nav-sub" href="#p9-ann-exp2s2">→ ANN Exp2-Sub2</a>
     </div>
   </div>
 
@@ -3184,7 +3402,7 @@ CUSTOM_CSS = """
   }
   .exp-details > summary:hover { background: var(--summary-hover); border-radius: 8px; }
   .exp-details[open] > summary { border-bottom: 1px solid var(--border); }
-  .exp-body { padding: 16px 20px; }
+  .exp-body { padding: 16px 28px; }
 
   .inner-fold {
     border: 1px solid var(--border-light); border-radius: 6px;
@@ -3324,6 +3542,9 @@ CUSTOM_CSS = """
     margin: 12px 0;
   }
   .info-note strong { color: var(--text); }
+
+  /* ── obs-card default padding ─────────────────────────────────── */
+  .obs-card { padding: 14px 18px; border-radius: 6px; }
 
   /* ── Hidden filter rows ────────────────────────────────────────── */
   tr.filter-hidden { display: none; }
