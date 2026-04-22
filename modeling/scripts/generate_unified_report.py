@@ -21,6 +21,7 @@ import os
 import sys
 from datetime import datetime
 
+import joblib
 import numpy as np
 import pandas as pd
 
@@ -66,6 +67,8 @@ LINEAR_MODELS  = ["OLS", "Ridge", "ElNet"]
 NL_MODELS      = ["RF",  "GB",   "XGB"]
 ADV_MODELS     = ["ANN", "Voting", "Stacking"]
 ALL_MODELS_ORD = LINEAR_MODELS + NL_MODELS + ADV_MODELS
+CORE_THRESH = 0.08
+USEFUL_THRESH = 0.03
 
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
@@ -756,6 +759,268 @@ def _badge(text, kind="default"):
             f'letter-spacing:.3px">{text}</span>')
 
 
+_FS_IMPORTANCE_CACHE = {}
+_LINEAR_RANKING_CACHE = {}
+FS_BASE_MAP = {
+    "Exp1-FS": "Exp1",
+    "Exp2-Sub1-FS": "Exp2-Sub1",
+    "Exp2-Sub2-FS": "Exp2-Sub2",
+    "Exp3-S1-FS": "Exp3-S1",
+}
+
+
+def _tier_single(v: float) -> tuple[str, str]:
+    if not isinstance(v, (int, float)) or np.isnan(v):
+        return "-", "tier-na"
+    if v >= CORE_THRESH:
+        return "Core", "tier-core"
+    if v >= USEFUL_THRESH:
+        return "Useful", "tier-useful"
+    return "Dropped", "tier-weak"
+
+
+def _feat_short(f: str) -> str:
+    return (f.replace("Inlet ", "In ").replace("Effluent ", "Eff ")
+             .replace("(mg/L, Grab)", "(G)").replace("(mg/L, Composite)", "(C)")
+             .replace("(mg/L)", "").replace("Sec Clarifier ", "SecCl ")
+             .replace("Sec Sed ", "SecSd ").replace("Power Total (KW)", "Power")
+             .replace("Flow (MLD)", "Flow").strip())
+
+
+def _infer_source_features(df: pd.DataFrame, target: str, dataset_id: str) -> list[str]:
+    exclude = {"Date"}
+    if dataset_id.startswith("Exp3S1"):
+        exclude.update({"year", "month", "day_of_week"})
+    return [c for c in df.columns if c != target and c not in exclude and not c.startswith("predicted_")]
+
+
+def _source_dataset_path(dataset_id: str) -> str:
+    prefix, sample, measure = dataset_id.split("_", 2)
+    sample = sample.lower()
+    base_dir_map = {
+        "Exp1": os.path.join(MODELING_DIR, "datasets", "experiment1"),
+        "Exp2S1": os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1"),
+        "Exp2S2": os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2"),
+        "Exp3S1": os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1"),
+    }
+    file_prefix_map = {
+        "Exp1": "stage1",
+        "Exp2S1": "stage2_p1",
+        "Exp2S2": "stage2_p2",
+        "Exp3S1": "s1_stage3",
+    }
+    return os.path.join(
+        base_dir_map[prefix],
+        f"{file_prefix_map[prefix]}_{sample}_{measure}.xlsx",
+    )
+
+
+def _load_linear_rankings(exp_key: str) -> dict:
+    if exp_key in _LINEAR_RANKING_CACHE:
+        return _LINEAR_RANKING_CACHE[exp_key]
+
+    full_key = FS_BASE_MAP.get(exp_key)
+    if not full_key:
+        return {}
+
+    variant = "exp3_s1" if full_key == "Exp3-S1" else "baseline"
+    results_path = os.path.join(MODELING_DIR, "models", "linear", variant, "results.xlsx")
+    models_dir = os.path.join(MODELING_DIR, "models", "linear", variant, "models")
+    if not os.path.exists(results_path):
+        return {}
+
+    df = pd.read_excel(results_path)
+    df = df[df["run"] == df["run"].max()].copy()
+    df = df[df["experiment"] == full_key].copy()
+    out = {}
+
+    for _, row in df.iterrows():
+        target = row["target"]
+        dataset_id = row["dataset"]
+        run = int(row["run"])
+        pkl_path = os.path.join(models_dir, f"{dataset_id}_ElNet_run_{run}.pkl")
+        dataset_path = _source_dataset_path(dataset_id)
+        if not (os.path.exists(pkl_path) and os.path.exists(dataset_path)):
+            continue
+
+        artifact = joblib.load(pkl_path)
+        model = artifact["model"]
+        ds_df = pd.read_excel(dataset_path, nrows=0)
+        features = _infer_source_features(ds_df, target, dataset_id)
+        coefs = np.asarray(getattr(model, "coef_", []), dtype=float)
+        if len(features) != len(coefs):
+            continue
+
+        rows = []
+        for feat, coef in zip(features, coefs):
+            rows.append({
+                "feature": feat,
+                "feat_short": _feat_short(feat),
+                "coef": float(coef),
+                "abs_coef": float(abs(coef)),
+                "selected": abs(float(coef)) > 1e-9,
+            })
+
+        out[target] = {
+            "model": "ElNet",
+            "rows": sorted(rows, key=lambda r: (-r["abs_coef"], r["feature"])),
+        }
+
+    _LINEAR_RANKING_CACHE[exp_key] = out
+    return out
+
+
+def _load_fs_importance(exp_key: str) -> pd.DataFrame:
+    if exp_key in _FS_IMPORTANCE_CACHE:
+        return _FS_IMPORTANCE_CACHE[exp_key]
+
+    sel_dir = os.path.join(MODELING_DIR, "feature_analysis", "selection")
+    source_map = {
+        "Exp1-FS": ("feature_importance.xlsx", "Experiment 1"),
+        "Exp2-Sub1-FS": ("feature_importance.xlsx", "Experiment 2 Sub-1"),
+        "Exp2-Sub2-FS": ("feature_importance.xlsx", "Experiment 2 Sub-2"),
+        "Exp3-S1-FS": ("feature_importance_exp3_s1.xlsx", "Experiment 3 Sub-1"),
+    }
+    meta = source_map.get(exp_key)
+    if not meta:
+        return pd.DataFrame()
+
+    fname, experiment = meta
+    path = os.path.join(sel_dir, fname)
+    if not os.path.exists(path):
+        return pd.DataFrame()
+
+    df = pd.read_excel(path)
+    df = df[df["experiment"] == experiment].copy()
+    _FS_IMPORTANCE_CACHE[exp_key] = df
+    return df
+
+
+def _feature_selection_details(exp_key: str) -> str:
+    df = _load_fs_importance(exp_key)
+    if df.empty:
+        return ""
+    linear_lookup = _load_linear_rankings(exp_key)
+
+    intro = (
+        "Each target now shows both selection signals together: "
+        "the non-linear ranking used to build the current feature-selected datasets, "
+        "and a linear ranking from the matching ElasticNet full-feature run."
+    )
+
+    target_blocks = []
+    for tgt in TARGETS_ORDERED:
+        sub = df[df["target"] == tgt].copy()
+        if sub.empty:
+            continue
+        sub = sub.sort_values(["perm_imp_norm", "feature"], ascending=[False, True]).reset_index(drop=True)
+
+        kept = sub[sub["perm_imp_norm"] >= USEFUL_THRESH]["feat_short"].tolist()
+        dropped = sub[sub["perm_imp_norm"] < USEFUL_THRESH]["feat_short"].tolist()
+
+        nl_rows = []
+        for idx, (_, row) in enumerate(sub.iterrows(), start=1):
+            label, cls = _tier_single(row["perm_imp_norm"])
+            nl_rows.append(
+                f"<tr>"
+                f"<td>{idx}</td>"
+                f"<td>{row['feat_short']}</td>"
+                f"<td class='num'>{row['perm_imp_norm']:.3f}</td>"
+                f"<td class='{cls}'>{label}</td>"
+                f"</tr>"
+            )
+
+        lin_meta = linear_lookup.get(tgt, {})
+        lin_rows = lin_meta.get("rows", [])
+        lin_kept = [r["feat_short"] for r in lin_rows if r["selected"]]
+        lin_dropped = [r["feat_short"] for r in lin_rows if not r["selected"]]
+        lin_tbl_rows = []
+        for idx, row in enumerate(lin_rows, start=1):
+            coef_cls = "pos" if row["coef"] > 0 else ("neg" if row["coef"] < 0 else "tier-na")
+            status = "Selected" if row["selected"] else "Zeroed"
+            status_cls = "tier-useful" if row["selected"] else "tier-weak"
+            lin_tbl_rows.append(
+                f"<tr>"
+                f"<td>{idx}</td>"
+                f"<td>{row['feat_short']}</td>"
+                f"<td class='num'>{row['abs_coef']:.3f}</td>"
+                f"<td class='num {coef_cls}'>{row['coef']:+.3f}</td>"
+                f"<td class='{status_cls}'>{status}</td>"
+                f"</tr>"
+            )
+
+        target_blocks.append(f"""
+    <details class="inner-fold">
+      <summary><span class="fold-icon">▶</span> {TARGET_SHORT.get(tgt, tgt)}</summary>
+      <div class="fold-body">
+        <div class="fs-compare-grid">
+          <div class="fs-method-card">
+            <div class="fs-method-title">Non-Linear Ranking</div>
+            <p class="meta fs-method-note">
+              RF permutation importance on the tuned non-linear model. Features with
+              normalised permutation importance &ge; {USEFUL_THRESH:.2f} were retained.
+            </p>
+            <div class="fs-rank-summary">
+              <div><strong>Retained ({len(kept)}):</strong> {", ".join(kept) if kept else "-"}</div>
+              <div><strong>Dropped ({len(dropped)}):</strong> {", ".join(dropped) if dropped else "-"}</div>
+            </div>
+            <table class="summary-table fs-rank-table">
+              <thead>
+                <tr><th>Rank</th><th>Feature</th><th>Norm Perm Imp</th><th>Status</th></tr>
+              </thead>
+              <tbody>{"".join(nl_rows)}</tbody>
+            </table>
+          </div>
+          <div class="fs-method-card">
+            <div class="fs-method-title">Linear Ranking</div>
+            <p class="meta fs-method-note">
+              ElasticNet coefficient ranking on the matching full-feature linear run.
+              Features are ranked by <code>|standardized coefficient|</code>; zeroed coefficients are drop candidates.
+            </p>
+            <div class="fs-rank-summary">
+              <div><strong>Selected ({len(lin_kept)}):</strong> {", ".join(lin_kept) if lin_kept else "-"}</div>
+              <div><strong>Zeroed ({len(lin_dropped)}):</strong> {", ".join(lin_dropped) if lin_dropped else "-"}</div>
+            </div>
+            <table class="summary-table fs-rank-table">
+              <thead>
+                <tr><th>Rank</th><th>Feature</th><th>|Std Coef|</th><th>Signed Coef</th><th>Status</th></tr>
+              </thead>
+              <tbody>{"".join(lin_tbl_rows) if lin_tbl_rows else '<tr><td colspan=\"5\">No linear ranking found.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </details>""")
+
+    return f"""
+    <details class="inner-fold">
+      <summary><span class="fold-icon">▶</span> Feature Selection Rationale (ranked importance)</summary>
+      <div class="fold-body">
+        <p class="meta" style="margin-top:0">{intro}</p>
+        {"".join(target_blocks)}
+      </div>
+    </details>"""
+
+
+def _metric_delta_html(current, baseline, higher_is_better: bool, decimals: int = 3) -> str:
+    if not isinstance(current, (int, float)) or np.isnan(current):
+        return ""
+    if not isinstance(baseline, (int, float)) or np.isnan(baseline):
+        return ""
+    delta = current - baseline
+    if not higher_is_better:
+        delta = -delta
+    color = "#2ecc71" if delta > 0 else ("#e74c3c" if delta < 0 else "var(--text-muted)")
+    sign = "+" if delta > 0 else ""
+    raw_delta = current - baseline
+    raw_sign = "+" if raw_delta > 0 else ""
+    return (
+        f' <span class="delta-note" style="color:{color}" '
+        f'title="Delta vs full-feature version: {raw_sign}{raw_delta:.{decimals}f}">'
+        f'(Δ {sign}{delta:.{decimals}f})</span>'
+    )
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # HTML COMPONENT BUILDERS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -831,7 +1096,7 @@ def _pick_best(avail, sub):
     return {m for m, v in r2_vals.items() if v >= max_r2 - 1e-9}
 
 
-def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
+def _metrics_table(df: pd.DataFrame, models: list, section_id: str, df_all: pd.DataFrame | None = None) -> str:
     """Metric table: rows = targets, cols = (model × Test R² / Gap / RMSE / MAE / MdAE).
 
     MdAE (Median Absolute Error) is shown for BOD and TSS targets only - these have
@@ -846,6 +1111,16 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         return "<p class='meta'>No data for these models.</p>"
 
     has_mdae = "MdAE_test" in df.columns
+    exp_key = df["exp_key"].dropna().iloc[0] if "exp_key" in df.columns and not df["exp_key"].dropna().empty else None
+    baseline_key = FS_BASE_MAP.get(exp_key)
+    baseline_lookup = {}
+    df_base = pd.DataFrame()
+    if baseline_key and df_all is not None:
+        df_base = df_all[df_all["exp_key"] == baseline_key].copy()
+
+    if not df_base.empty:
+        for _, row in df_base.iterrows():
+            baseline_lookup[(row["target"], row["model"])] = row
 
     hdr1 = "".join(
         '<th colspan="5" style="color:{};">{}</th>'.format(MODEL_COLORS.get(m, "var(--text-muted)"), m)
@@ -877,26 +1152,38 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
             rmse = msub["RMSE_test"].values[0]
             mae  = msub["MAE_test"].values[0]
             is_best = m in best_models
+            base_row = baseline_lookup.get((tgt, m))
 
             cell_bg = "background:rgba(74,144,217,0.20);font-weight:bold;" if is_best else ""
+            r2_delta = _metric_delta_html(r2, base_row["R2_test"] if base_row is not None else np.nan, True)
+            gap_delta = _metric_delta_html(abs(gap) if isinstance(gap, (int, float)) else np.nan,
+                                           abs(base_row["R2_gap"]) if base_row is not None else np.nan,
+                                           False)
+            rmse_delta = _metric_delta_html(rmse, base_row["RMSE_test"] if base_row is not None else np.nan, False)
+            mae_delta = _metric_delta_html(mae, base_row["MAE_test"] if base_row is not None else np.nan, False)
 
             # MdAE cell - only for BOD/TSS targets; dash otherwise
             if show_mdae and has_mdae:
                 mdae_val = msub["MdAE_test"].values[0]
                 mdae_str = _fmt(mdae_val) if not (isinstance(mdae_val, float) and np.isnan(mdae_val)) else "-"
+                mdae_delta = _metric_delta_html(
+                    mdae_val,
+                    base_row["MdAE_test"] if (base_row is not None and "MdAE_test" in base_row.index) else np.nan,
+                    False,
+                )
                 mdae_title = 'title="Primary reliability metric for outlier-prone targets"'
                 mdae_cell = (
                     f'<td style="color:#f1c40f;font-style:italic;" {mdae_title}>'
-                    f'{mdae_str}</td>'
+                    f'{mdae_str}{mdae_delta}</td>'
                 )
             else:
                 mdae_cell = '<td style="color:var(--text-muted)">-</td>'
 
             cells += (
-                f'<td style="color:{_r2_color(r2)};{cell_bg}">{"★ " if is_best else ""}{_fmt(r2)}</td>'
-                f'<td class="{_gap_cls(gap)}">{_fmt(gap)}</td>'
-                f'<td>{_fmt(rmse)}</td>'
-                f'<td>{_fmt(mae)}</td>'
+                f'<td style="color:{_r2_color(r2)};{cell_bg}">{"★ " if is_best else ""}{_fmt(r2)}{r2_delta}</td>'
+                f'<td class="{_gap_cls(gap)}">{_fmt(gap)}{gap_delta}</td>'
+                f'<td>{_fmt(rmse)}{rmse_delta}</td>'
+                f'<td>{_fmt(mae)}{mae_delta}</td>'
                 f'{mdae_cell}'
             )
         rows.append(f'<tr data-target="{slug}">{cells}</tr>')
@@ -924,6 +1211,13 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str) -> str:
         'MdAE is the primary reliability metric for BOD/TSS; - indicates predictions not '
         'stored at row level (Phase 10 / Phase 11).</p>'
     )
+    if baseline_key and baseline_lookup:
+        legend += (
+            '<p class="table-note">'
+            'Inline deltas are shown for feature-selected variants only. '
+            'For Test R², <span style="color:#2ecc71">positive Δ</span> means the FS model improved. '
+            'For Gap, RMSE, MAE, and MdAE, positive Δ means the metric decreased versus the full-feature baseline.</p>'
+        )
     table = f"""
 <div class="tbl-wrap" id="{section_id}">
 <div class="tbl-scroll">
@@ -2030,10 +2324,11 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     all_m = [m for m in ALL_MODELS_ORD if m in df["model"].values]
 
     feat_html   = _feature_card(exp_key)
+    fs_html     = _feature_selection_details(exp_key)
     ds_html     = _dataset_summary(df)
-    lin_tbl     = _metrics_table(df[df["model"].isin(ml)], ml, f"{section_id}-lin")
-    nl_tbl      = _metrics_table(df[df["model"].isin(mn)], mn, f"{section_id}-nl")
-    comp_tbl    = _metrics_table(df, all_m, f"{section_id}-comp")
+    lin_tbl     = _metrics_table(df[df["model"].isin(ml)], ml, f"{section_id}-lin", df_all)
+    nl_tbl      = _metrics_table(df[df["model"].isin(mn)], mn, f"{section_id}-nl", df_all)
+    comp_tbl    = _metrics_table(df, all_m, f"{section_id}-comp", df_all)
     train_tbl   = _train_metrics_table(df, all_m)
 
     open_attr = " open" if open_default else ""
@@ -2042,6 +2337,7 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
   <summary><span class="fold-icon">▶</span> {title}</summary>
   <div class="exp-body">
     {feat_html}
+    {fs_html}
     {ds_html}
 
     <details class="inner-fold">
@@ -2596,7 +2892,7 @@ def _phase9_model_subsection(df_all: pd.DataFrame, exp_key: str,
     models = df["model"].unique().tolist()
     feat_html = _feature_card(exp_key)
     ds_html   = _dataset_summary(df)
-    tbl       = _metrics_table(df, models, section_id)
+    tbl       = _metrics_table(df, models, section_id, df_all)
     train_tbl = _train_metrics_table(df, models)
     return f"""
 <details class="exp-details" id="{section_id}">
@@ -3389,6 +3685,57 @@ CUSTOM_CSS = """
   .feat-card-features, .feat-card-rationale {
     font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 4px;
   }
+  .fs-rank-summary {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--border-light);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .fs-compare-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .fs-method-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--details-bg);
+  }
+  .fs-method-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .fs-method-note {
+    font-size: 11px;
+    line-height: 1.45;
+    margin: 0 0 8px;
+  }
+  .fs-rank-table {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .fs-rank-table th, .fs-rank-table td {
+    padding: 4px 7px;
+  }
+  .fs-rank-table td.num { text-align: right; }
+  .delta-note {
+    font-size: 10px;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .tier-na { color: var(--text-muted); }
 
   /* ── Exp details / foldable sections ──────────────────────────── */
   .exp-details {
