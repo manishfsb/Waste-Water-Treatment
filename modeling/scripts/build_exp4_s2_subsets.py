@@ -207,7 +207,7 @@ def main():
     s1_counts = {}
     for stem in ["grab_BOD","grab_COD","grab_TSS","grab_pH",
                  "comp_BOD","comp_COD","comp_TSS","comp_pH"]:
-        p = os.path.join(E4S1_DIR, f"e4_s1_{stem}.xlsx")
+        p = os.path.join(E4S1_DIR, f"{stem}.xlsx")
         if os.path.exists(p):
             s1_counts[stem] = len(pd.read_excel(p))
 
@@ -219,7 +219,7 @@ def main():
 
         result = build_subset(raw, target, variant, stem, min_year, pool)
 
-        out_path = os.path.join(OUT_DIR, f"e4_s2_{stem}.xlsx")
+        out_path = os.path.join(OUT_DIR, f"{stem}.xlsx")
         result["df"].to_excel(out_path, index=False)
 
         n_s1 = s1_counts.get(stem, "-")

@@ -51,49 +51,49 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
     {
-        "name":       "stage2_p1_grab_BOD",
+        "name":       "grab_BOD",
         "file":       os.path.join(DS_DIR, "stage2_p1_grab_BOD.xlsx"),
         "target":     "Effluent BOD (mg/L, Grab)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_grab_COD",
+        "name":       "grab_COD",
         "file":       os.path.join(DS_DIR, "stage2_p1_grab_COD.xlsx"),
         "target":     "Effluent COD (mg/L, Grab)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_grab_TSS",
+        "name":       "grab_TSS",
         "file":       os.path.join(DS_DIR, "stage2_p1_grab_TSS.xlsx"),
         "target":     "Effluent TSS (mg/L, Grab)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_grab_pH",
+        "name":       "grab_pH",
         "file":       os.path.join(DS_DIR, "stage2_p1_grab_pH.xlsx"),
         "target":     "Effluent pH (Grab)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_comp_BOD",
+        "name":       "comp_BOD",
         "file":       os.path.join(DS_DIR, "stage2_p1_comp_BOD.xlsx"),
         "target":     "Effluent BOD (mg/L, Composite)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_comp_COD",
+        "name":       "comp_COD",
         "file":       os.path.join(DS_DIR, "stage2_p1_comp_COD.xlsx"),
         "target":     "Effluent COD (mg/L, Composite)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_comp_TSS",
+        "name":       "comp_TSS",
         "file":       os.path.join(DS_DIR, "stage2_p1_comp_TSS.xlsx"),
         "target":     "Effluent TSS (mg/L, Composite)",
         "experiment": "ANN-Exp2-Sub1",
     },
     {
-        "name":       "stage2_p1_comp_pH",
+        "name":       "comp_pH",
         "file":       os.path.join(DS_DIR, "stage2_p1_comp_pH.xlsx"),
         "target":     "Effluent pH (Composite)",
         "experiment": "ANN-Exp2-Sub1",

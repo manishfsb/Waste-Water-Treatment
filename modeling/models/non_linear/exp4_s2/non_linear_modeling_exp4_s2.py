@@ -67,14 +67,14 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 
 # ── Registry ───────────────────────────────────────────────────────────────────
 REGISTRY = [
-    ("Experiment 4 Sub-2", "e4_s2_grab_BOD", _e4s2("e4_s2_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 4 Sub-2", "e4_s2_grab_COD", _e4s2("e4_s2_grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Experiment 4 Sub-2", "e4_s2_grab_TSS", _e4s2("e4_s2_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 4 Sub-2", "e4_s2_grab_pH",  _e4s2("e4_s2_grab_pH"),  "Effluent pH (Grab)"),
-    ("Experiment 4 Sub-2", "e4_s2_comp_BOD", _e4s2("e4_s2_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 4 Sub-2", "e4_s2_comp_COD", _e4s2("e4_s2_comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Experiment 4 Sub-2", "e4_s2_comp_TSS", _e4s2("e4_s2_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 4 Sub-2", "e4_s2_comp_pH",  _e4s2("e4_s2_comp_pH"),  "Effluent pH (Composite)"),
+    ("Experiment 4 Sub-2", "grab_BOD", _e4s2("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Experiment 4 Sub-2", "grab_COD", _e4s2("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Experiment 4 Sub-2", "grab_TSS", _e4s2("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Experiment 4 Sub-2", "grab_pH",  _e4s2("grab_pH"),  "Effluent pH (Grab)"),
+    ("Experiment 4 Sub-2", "comp_BOD", _e4s2("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Experiment 4 Sub-2", "comp_COD", _e4s2("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Experiment 4 Sub-2", "comp_TSS", _e4s2("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Experiment 4 Sub-2", "comp_pH",  _e4s2("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Colours ────────────────────────────────────────────────────────────────────

@@ -82,7 +82,7 @@ EXP2S2_C   = COMP_INLET + SEC_COLS + COMMON  # 19 features
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _s1(name):
     """Experiment 1 files: datasets/experiment1/<name>.xlsx"""
-    return os.path.join(MODELING_DIR, "datasets", "experiment1", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2", f"{name}.xlsx")
 
 def _s2a(name):
     """Experiment 2 Sub-1: datasets/experiment2/sub_exp1/<name>.xlsx"""
@@ -96,35 +96,35 @@ def _s2b(name):
 # (experiment_label, dataset_id, file_path, features, target)
 DATASETS = [
     # ── Experiment 1 - Grab ──────────────────────────────────────────────────
-    ("Exp1", "Exp1_Grab_BOD", _s1("stage1_grab_BOD"), EXP1_GRAB, "Effluent BOD (mg/L, Grab)"),
-    ("Exp1", "Exp1_Grab_COD", _s1("stage1_grab_COD"), EXP1_GRAB, "Effluent COD (mg/L, Grab)"),
-    ("Exp1", "Exp1_Grab_TSS", _s1("stage1_grab_TSS"), EXP1_GRAB, "Effluent TSS (mg/L, Grab)"),
-    ("Exp1", "Exp1_Grab_pH",  _s1("stage1_grab_pH"),  EXP1_GRAB, "Effluent pH (Grab)"),
+    ("Exp1", "Exp1_Grab_BOD", _s1("grab_BOD"), EXP1_GRAB, "Effluent BOD (mg/L, Grab)"),
+    ("Exp1", "Exp1_Grab_COD", _s1("grab_COD"), EXP1_GRAB, "Effluent COD (mg/L, Grab)"),
+    ("Exp1", "Exp1_Grab_TSS", _s1("grab_TSS"), EXP1_GRAB, "Effluent TSS (mg/L, Grab)"),
+    ("Exp1", "Exp1_Grab_pH",  _s1("grab_pH"),  EXP1_GRAB, "Effluent pH (Grab)"),
     # ── Experiment 1 - Composite ─────────────────────────────────────────────
-    ("Exp1", "Exp1_Comp_BOD", _s1("stage1_comp_BOD"), EXP1_COMP, "Effluent BOD (mg/L, Composite)"),
-    ("Exp1", "Exp1_Comp_COD", _s1("stage1_comp_COD"), EXP1_COMP, "Effluent COD (mg/L, Composite)"),
-    ("Exp1", "Exp1_Comp_TSS", _s1("stage1_comp_TSS"), EXP1_COMP, "Effluent TSS (mg/L, Composite)"),
-    ("Exp1", "Exp1_Comp_pH",  _s1("stage1_comp_pH"),  EXP1_COMP, "Effluent pH (Composite)"),
+    ("Exp1", "Exp1_Comp_BOD", _s1("comp_BOD"), EXP1_COMP, "Effluent BOD (mg/L, Composite)"),
+    ("Exp1", "Exp1_Comp_COD", _s1("comp_COD"), EXP1_COMP, "Effluent COD (mg/L, Composite)"),
+    ("Exp1", "Exp1_Comp_TSS", _s1("comp_TSS"), EXP1_COMP, "Effluent TSS (mg/L, Composite)"),
+    ("Exp1", "Exp1_Comp_pH",  _s1("comp_pH"),  EXP1_COMP, "Effluent pH (Composite)"),
     # ── Experiment 2 Sub-1 - Grab ─────────────────────────────────────────────
-    ("Exp2-Sub1", "Exp2S1_Grab_BOD", _s2a("stage2_p1_grab_BOD"), EXP2S1, "Effluent BOD (mg/L, Grab)"),
-    ("Exp2-Sub1", "Exp2S1_Grab_COD", _s2a("stage2_p1_grab_COD"), EXP2S1, "Effluent COD (mg/L, Grab)"),
-    ("Exp2-Sub1", "Exp2S1_Grab_TSS", _s2a("stage2_p1_grab_TSS"), EXP2S1, "Effluent TSS (mg/L, Grab)"),
-    ("Exp2-Sub1", "Exp2S1_Grab_pH",  _s2a("stage2_p1_grab_pH"),  EXP2S1, "Effluent pH (Grab)"),
+    ("Exp2-Sub1", "Exp2S1_Grab_BOD", _s2a("grab_BOD"), EXP2S1, "Effluent BOD (mg/L, Grab)"),
+    ("Exp2-Sub1", "Exp2S1_Grab_COD", _s2a("grab_COD"), EXP2S1, "Effluent COD (mg/L, Grab)"),
+    ("Exp2-Sub1", "Exp2S1_Grab_TSS", _s2a("grab_TSS"), EXP2S1, "Effluent TSS (mg/L, Grab)"),
+    ("Exp2-Sub1", "Exp2S1_Grab_pH",  _s2a("grab_pH"),  EXP2S1, "Effluent pH (Grab)"),
     # ── Experiment 2 Sub-1 - Composite ───────────────────────────────────────
-    ("Exp2-Sub1", "Exp2S1_Comp_BOD", _s2a("stage2_p1_comp_BOD"), EXP2S1, "Effluent BOD (mg/L, Composite)"),
-    ("Exp2-Sub1", "Exp2S1_Comp_COD", _s2a("stage2_p1_comp_COD"), EXP2S1, "Effluent COD (mg/L, Composite)"),
-    ("Exp2-Sub1", "Exp2S1_Comp_TSS", _s2a("stage2_p1_comp_TSS"), EXP2S1, "Effluent TSS (mg/L, Composite)"),
-    ("Exp2-Sub1", "Exp2S1_Comp_pH",  _s2a("stage2_p1_comp_pH"),  EXP2S1, "Effluent pH (Composite)"),
+    ("Exp2-Sub1", "Exp2S1_Comp_BOD", _s2a("comp_BOD"), EXP2S1, "Effluent BOD (mg/L, Composite)"),
+    ("Exp2-Sub1", "Exp2S1_Comp_COD", _s2a("comp_COD"), EXP2S1, "Effluent COD (mg/L, Composite)"),
+    ("Exp2-Sub1", "Exp2S1_Comp_TSS", _s2a("comp_TSS"), EXP2S1, "Effluent TSS (mg/L, Composite)"),
+    ("Exp2-Sub1", "Exp2S1_Comp_pH",  _s2a("comp_pH"),  EXP2S1, "Effluent pH (Composite)"),
     # ── Experiment 2 Sub-2 - Grab ─────────────────────────────────────────────
-    ("Exp2-Sub2", "Exp2S2_Grab_BOD", _s2b("stage2_p2_grab_BOD"), EXP2S2_G, "Effluent BOD (mg/L, Grab)"),
-    ("Exp2-Sub2", "Exp2S2_Grab_COD", _s2b("stage2_p2_grab_COD"), EXP2S2_G, "Effluent COD (mg/L, Grab)"),
-    ("Exp2-Sub2", "Exp2S2_Grab_TSS", _s2b("stage2_p2_grab_TSS"), EXP2S2_G, "Effluent TSS (mg/L, Grab)"),
-    ("Exp2-Sub2", "Exp2S2_Grab_pH",  _s2b("stage2_p2_grab_pH"),  EXP2S2_G, "Effluent pH (Grab)"),
+    ("Exp2-Sub2", "Exp2S2_Grab_BOD", _s2b("grab_BOD"), EXP2S2_G, "Effluent BOD (mg/L, Grab)"),
+    ("Exp2-Sub2", "Exp2S2_Grab_COD", _s2b("grab_COD"), EXP2S2_G, "Effluent COD (mg/L, Grab)"),
+    ("Exp2-Sub2", "Exp2S2_Grab_TSS", _s2b("grab_TSS"), EXP2S2_G, "Effluent TSS (mg/L, Grab)"),
+    ("Exp2-Sub2", "Exp2S2_Grab_pH",  _s2b("grab_pH"),  EXP2S2_G, "Effluent pH (Grab)"),
     # ── Experiment 2 Sub-2 - Composite ───────────────────────────────────────
-    ("Exp2-Sub2", "Exp2S2_Comp_BOD", _s2b("stage2_p2_comp_BOD"), EXP2S2_C, "Effluent BOD (mg/L, Composite)"),
-    ("Exp2-Sub2", "Exp2S2_Comp_COD", _s2b("stage2_p2_comp_COD"), EXP2S2_C, "Effluent COD (mg/L, Composite)"),
-    ("Exp2-Sub2", "Exp2S2_Comp_TSS", _s2b("stage2_p2_comp_TSS"), EXP2S2_C, "Effluent TSS (mg/L, Composite)"),
-    ("Exp2-Sub2", "Exp2S2_Comp_pH",  _s2b("stage2_p2_comp_pH"),  EXP2S2_C, "Effluent pH (Composite)"),
+    ("Exp2-Sub2", "Exp2S2_Comp_BOD", _s2b("comp_BOD"), EXP2S2_C, "Effluent BOD (mg/L, Composite)"),
+    ("Exp2-Sub2", "Exp2S2_Comp_COD", _s2b("comp_COD"), EXP2S2_C, "Effluent COD (mg/L, Composite)"),
+    ("Exp2-Sub2", "Exp2S2_Comp_TSS", _s2b("comp_TSS"), EXP2S2_C, "Effluent TSS (mg/L, Composite)"),
+    ("Exp2-Sub2", "Exp2S2_Comp_pH",  _s2b("comp_pH"),  EXP2S2_C, "Effluent pH (Composite)"),
 ]
 
 

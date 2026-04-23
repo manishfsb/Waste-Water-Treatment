@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore")
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
-DS_DIR       = os.path.join(MODELING_DIR, "datasets", "experiment1")
+DS_DIR       = os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
 RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
@@ -51,49 +51,49 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
     {
-        "name":       "stage1_grab_BOD",
+        "name":       "grab_BOD",
         "file":       os.path.join(DS_DIR, "stage1_grab_BOD.xlsx"),
         "target":     "Effluent BOD (mg/L, Grab)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_grab_COD",
+        "name":       "grab_COD",
         "file":       os.path.join(DS_DIR, "stage1_grab_COD.xlsx"),
         "target":     "Effluent COD (mg/L, Grab)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_grab_TSS",
+        "name":       "grab_TSS",
         "file":       os.path.join(DS_DIR, "stage1_grab_TSS.xlsx"),
         "target":     "Effluent TSS (mg/L, Grab)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_grab_pH",
+        "name":       "grab_pH",
         "file":       os.path.join(DS_DIR, "stage1_grab_pH.xlsx"),
         "target":     "Effluent pH (Grab)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_comp_BOD",
+        "name":       "comp_BOD",
         "file":       os.path.join(DS_DIR, "stage1_comp_BOD.xlsx"),
         "target":     "Effluent BOD (mg/L, Composite)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_comp_COD",
+        "name":       "comp_COD",
         "file":       os.path.join(DS_DIR, "stage1_comp_COD.xlsx"),
         "target":     "Effluent COD (mg/L, Composite)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_comp_TSS",
+        "name":       "comp_TSS",
         "file":       os.path.join(DS_DIR, "stage1_comp_TSS.xlsx"),
         "target":     "Effluent TSS (mg/L, Composite)",
         "experiment": "ANN-Exp1",
     },
     {
-        "name":       "stage1_comp_pH",
+        "name":       "comp_pH",
         "file":       os.path.join(DS_DIR, "stage1_comp_pH.xlsx"),
         "target":     "Effluent pH (Composite)",
         "experiment": "ANN-Exp1",

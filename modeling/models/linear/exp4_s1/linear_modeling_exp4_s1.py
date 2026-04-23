@@ -76,14 +76,14 @@ def _e4s1(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment4", "sub_exp1", f"{name}.xlsx")
 
 DATASETS = [
-    ("Exp4-S1", "Exp4S1_Grab_BOD", _e4s1("e4_s1_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp4-S1", "Exp4S1_Grab_COD", _e4s1("e4_s1_grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp4-S1", "Exp4S1_Grab_TSS", _e4s1("e4_s1_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp4-S1", "Exp4S1_Grab_pH",  _e4s1("e4_s1_grab_pH"),  "Effluent pH (Grab)"),
-    ("Exp4-S1", "Exp4S1_Comp_BOD", _e4s1("e4_s1_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp4-S1", "Exp4S1_Comp_COD", _e4s1("e4_s1_comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp4-S1", "Exp4S1_Comp_TSS", _e4s1("e4_s1_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp4-S1", "Exp4S1_Comp_pH",  _e4s1("e4_s1_comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp4-S1", "Exp4S1_Grab_BOD", _e4s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp4-S1", "Exp4S1_Grab_COD", _e4s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp4-S1", "Exp4S1_Grab_TSS", _e4s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp4-S1", "Exp4S1_Grab_pH",  _e4s1("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp4-S1", "Exp4S1_Comp_BOD", _e4s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp4-S1", "Exp4S1_Comp_COD", _e4s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp4-S1", "Exp4S1_Comp_TSS", _e4s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp4-S1", "Exp4S1_Comp_pH",  _e4s1("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Metric helpers ─────────────────────────────────────────────────────────────

@@ -22,6 +22,7 @@ Outputs: eda/plots/               (PNG files)
 """
 
 import base64
+import json as _json
 import os
 import sys as _sys
 import warnings
@@ -688,6 +689,239 @@ def plot_aeration_timeseries(df):
 
 # ── Chart 6: Cross-stage correlation heatmap ──────────────────────────────────
 
+_CORR_INTERACTIVE = """
+<div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px;flex-wrap:wrap;
+            background:#111929;border:1px solid #2e3d52;border-radius:6px;padding:10px 16px">
+  <span style="color:#9ab0cc;font-size:0.88rem;white-space:nowrap">Threshold &nbsp;|r| &ge;</span>
+  <input type="range" id="s5-slider" min="0" max="1" step="0.01" value="0.5"
+         style="width:180px;accent-color:#4a90d9;cursor:pointer">
+  <input type="number" id="s5-num" min="0" max="1" step="0.01" value="0.50"
+         style="width:70px;background:#1e2d3e;color:#c8d8ec;border:1px solid #3a5070;
+                border-radius:4px;padding:3px 7px;font-size:0.88rem">
+  <span id="s5-count" style="color:#7a98bc;font-size:0.82rem;margin-left:4px"></span>
+</div>
+
+<details id="s5-matrix-fold" style="margin:8px 0 14px">
+  <summary style="font-weight:600;font-size:0.92rem;cursor:pointer;padding:5px 0;
+                  color:#8aa8cc;letter-spacing:0.01em">
+    &#9656; Show correlation matrices (Pearson &amp; Spearman)
+  </summary>
+  <div style="margin-top:12px;overflow-x:auto">
+    <p style="font-size:0.83rem;color:#8aa8cc;margin:0 0 6px;font-weight:600">Pearson</p>
+    <canvas id="s5-pearson-canvas" style="display:block;max-width:100%"></canvas>
+    <p style="font-size:0.83rem;color:#8aa8cc;margin:16px 0 6px;font-weight:600">Spearman</p>
+    <canvas id="s5-spearman-canvas" style="display:block;max-width:100%"></canvas>
+    <p style="font-size:0.74rem;color:#4a5a70;margin:6px 0 0">Only columns with at least one
+    partner above the threshold are shown in the matrices.</p>
+  </div>
+</details>
+
+<div id="s5-pair-table"></div>
+
+<script>
+(function () {
+  var C = _S5C, P = _S5P;
+  var GRAB = new Set(_S5G), COMP = new Set(_S5K);
+  var ATGT = new Set(_S5G.concat(_S5K));
+
+  function pairCat(a, b) {
+    var aT = ATGT.has(a), bT = ATGT.has(b);
+    if (!aT && !bT) return 'ff';
+    if (aT && bT) { var aG = GRAB.has(a), bG = GRAB.has(b); return aG === bG ? (aG ? 'gg' : 'cc') : 'gc'; }
+    return GRAB.has(aT ? a : b) ? 'fg' : 'fc';
+  }
+
+  function rclr(v) {
+    if (v === null || isNaN(v)) return '#1a2535';
+    var t = Math.max(-1, Math.min(1, v)), r, g, b;
+    if (t >= 0) { r = Math.round(247 + t * (103 - 247)); g = Math.round(247 + t * (0 - 247)); b = Math.round(247 + t * (31 - 247)); }
+    else { var u = -t; r = Math.round(247 + u * (5 - 247)); g = Math.round(247 + u * (48 - 247)); b = Math.round(247 + u * (97 - 247)); }
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function rfmt(v) {
+    if (v === null) return '-';
+    var ab = Math.abs(v), clr = ab >= 0.75 ? '#C0392B' : (ab >= 0.5 ? '#E07B20' : '');
+    var txt = (v > 0 ? '+' : '') + v.toFixed(2);
+    return clr ? '<span style="color:' + clr + ';font-weight:600">' + txt + '</span>' : txt;
+  }
+
+  var TD  = 'padding:5px 10px;border-bottom:1px solid #2e3d52;color:#b8c8dc';
+  var TDR = TD + ';text-align:right;font-variant-numeric:tabular-nums';
+  var TDA = 'padding:5px 4px;border-bottom:1px solid #2e3d52;color:#4a5a70;text-align:center';
+  var TH  = 'padding:7px 10px;text-align:left;color:#8aa8cc;font-weight:600';
+  var THR = 'padding:7px 10px;text-align:right;color:#8aa8cc;font-weight:600';
+  var THEAD = '<thead><tr style="background:#1d2f45;border-bottom:2px solid #3a5070">'
+    + '<th style="' + TH + '">Column A</th><th style="padding:7px 4px"></th>'
+    + '<th style="' + TH + '">Column B</th>'
+    + '<th style="' + THR + '">Pearson</th><th style="' + THR + '">Spearman</th>'
+    + '</tr></thead>';
+
+  function grpBlock(pairs, heading, openDef) {
+    if (!pairs.length) return '';
+    var rows = pairs.map(function (x, i) {
+      var bg = i % 2 === 0 ? '#141e2d' : '#192336';
+      return '<tr style="background:' + bg + '">'
+        + '<td style="' + TD + '">' + x[0] + '</td>'
+        + '<td style="' + TDA + '">↔</td>'
+        + '<td style="' + TD + '">' + x[1] + '</td>'
+        + '<td style="' + TDR + '">' + rfmt(x[2]) + '</td>'
+        + '<td style="' + TDR + '">' + rfmt(x[3]) + '</td>'
+        + '</tr>';
+    }).join('');
+    var op = openDef ? ' open' : '';
+    return '<details' + op + ' style="margin:5px 0 5px 12px">'
+      + '<summary style="font-weight:600;font-size:0.87rem;cursor:pointer;padding:3px 0;color:#7a98bc">'
+      + heading + ' &mdash; ' + pairs.length + ' pair' + (pairs.length !== 1 ? 's' : '') + '</summary>'
+      + '<div style="overflow-x:auto;margin-top:6px;border-radius:6px;border:1px solid #2e3d52;overflow:hidden">'
+      + '<table style="border-collapse:collapse;font-size:0.82rem;width:100%;background:#111929">'
+      + THEAD + '<tbody>' + rows + '</tbody></table></div></details>';
+  }
+
+  function drawCanvas(id, activeCols, mat, title) {
+    var cv = document.getElementById(id);
+    if (!cv) return;
+    var ctx = cv.getContext('2d'), n = activeCols.length;
+    if (!n) {
+      cv.width = 300; cv.height = 36;
+      ctx.fillStyle = '#0d1520'; ctx.fillRect(0, 0, 300, 36);
+      ctx.fillStyle = '#7a98bc'; ctx.font = '12px sans-serif'; ctx.textBaseline = 'middle';
+      ctx.fillText('No columns above threshold', 10, 18);
+      return;
+    }
+    var CELL = Math.max(14, Math.min(32, Math.floor(660 / n)));
+    var LW = Math.min(170, Math.max(80, Math.floor(CELL * 5.5)));
+    var LH = Math.min(160, Math.max(70, Math.floor(CELL * 5.5)));
+    cv.width = LW + n * CELL + 12;
+    cv.height = LH + n * CELL + 20;
+    cv.style.maxWidth = '100%';
+    ctx.fillStyle = '#0d1520'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = '#c8d8ec';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(title, LW, 4);
+    var fs = Math.max(6, Math.min(11, CELL - 9));
+    var lfs = Math.max(8, Math.min(11, CELL - 1));
+    for (var i = 0; i < n; i++) {
+      for (var j = 0; j < n; j++) {
+        if (i === j) continue;
+        var v = mat[i][j], x = LW + j * CELL, y = LH + i * CELL;
+        ctx.fillStyle = rclr(v); ctx.fillRect(x, y, CELL - 1, CELL - 1);
+        if (CELL >= 20 && v !== null) {
+          ctx.font = fs + 'px sans-serif';
+          ctx.fillStyle = Math.abs(v) > 0.45 ? '#fff' : '#111';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(v.toFixed(2), x + CELL / 2, y + CELL / 2);
+        }
+      }
+    }
+    ctx.font = lfs + 'px sans-serif'; ctx.fillStyle = '#9ab0cc';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (var i = 0; i < n; i++) ctx.fillText(activeCols[i], LW - 4, LH + i * CELL + CELL / 2);
+    for (var j = 0; j < n; j++) {
+      ctx.save();
+      ctx.translate(LW + j * CELL + CELL / 2, LH - 3);
+      ctx.rotate(-Math.PI * 0.45);
+      ctx.font = lfs + 'px sans-serif'; ctx.fillStyle = '#9ab0cc';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(activeCols[j], 0, 0);
+      ctx.restore();
+    }
+  }
+
+  function buildMat(activeCols, pType) {
+    var n = activeCols.length, idx = {};
+    activeCols.forEach(function (c, i) { idx[c] = i; });
+    var m = [];
+    for (var i = 0; i < n; i++) { m.push(new Array(n).fill(null)); }
+    P.forEach(function (r) {
+      var a = C[r[0]], b = C[r[1]], v = pType === 0 ? r[2] : r[3];
+      if (a in idx && b in idx) { var i = idx[a], j = idx[b]; m[i][j] = v; m[j][i] = v; }
+    });
+    return m;
+  }
+
+  function render(thr) {
+    var actSet = new Set();
+    P.forEach(function (r) {
+      var mr = Math.max(r[2] !== null ? Math.abs(r[2]) : 0, r[3] !== null ? Math.abs(r[3]) : 0);
+      if (mr >= thr) { actSet.add(C[r[0]]); actSet.add(C[r[1]]); }
+    });
+    var ac = C.filter(function (c) { return actSet.has(c); });
+    drawCanvas('s5-pearson-canvas',  ac, buildMat(ac, 0), 'Pearson');
+    drawCanvas('s5-spearman-canvas', ac, buildMat(ac, 1), 'Spearman');
+
+    var ff = [], fg = [], fc = [], gg = [], cc = [], gc = [];
+    P.forEach(function (r) {
+      var mr = Math.max(r[2] !== null ? Math.abs(r[2]) : 0, r[3] !== null ? Math.abs(r[3]) : 0);
+      if (mr < thr) return;
+      var a = C[r[0]], b = C[r[1]], cat = pairCat(a, b), entry = [a, b, r[2], r[3]];
+      if (cat === 'ff') ff.push(entry);
+      else if (cat === 'fg') fg.push(entry);
+      else if (cat === 'fc') fc.push(entry);
+      else if (cat === 'gg') gg.push(entry);
+      else if (cat === 'cc') cc.push(entry);
+      else gc.push(entry);
+    });
+    var sortF = function (a, b) {
+      return Math.max(b[2] !== null ? Math.abs(b[2]) : 0, b[3] !== null ? Math.abs(b[3]) : 0)
+           - Math.max(a[2] !== null ? Math.abs(a[2]) : 0, a[3] !== null ? Math.abs(a[3]) : 0);
+    };
+    [ff, fg, fc, gg, cc, gc].forEach(function (g) { g.sort(sortF); });
+
+    var tot = ff.length + fg.length + fc.length + gg.length + cc.length + gc.length;
+    var cnt = document.getElementById('s5-count');
+    if (cnt) cnt.textContent = tot + ' pair' + (tot !== 1 ? 's' : '') + ' with |r| ≥ ' + thr.toFixed(2);
+
+    var legend = '<p style="font-size:0.77rem;color:#556070;margin:2px 0 8px">'
+      + '<span style="color:#C0392B;font-weight:600">Red</span> = |r| ≥ 0.75 &nbsp;·&nbsp; '
+      + '<span style="color:#E07B20;font-weight:600">Orange</span> = |r| 0.50–0.74</p>';
+
+    var outerFF = ff.length ? '<details open style="margin:6px 0">'
+      + '<summary style="font-weight:600;font-size:0.90rem;cursor:pointer;padding:4px 0;color:#8aa8cc">'
+      + 'Features vs Features &mdash; ' + ff.length + ' pair' + (ff.length !== 1 ? 's' : '')
+      + ' &nbsp;<span style="font-size:0.78rem;color:#556070;font-weight:400">(collinearity)</span></summary>'
+      + grpBlock(ff, 'Features vs Features', true) + '</details>' : '';
+
+    var ftCnt = fg.length + fc.length;
+    var outerFT = ftCnt ? '<details open style="margin:6px 0">'
+      + '<summary style="font-weight:600;font-size:0.90rem;cursor:pointer;padding:4px 0;color:#8aa8cc">'
+      + 'Features vs Targets &mdash; ' + ftCnt + ' pair' + (ftCnt !== 1 ? 's' : '') + '</summary>'
+      + grpBlock(fg, 'Features vs Grab Targets', true)
+      + grpBlock(fc, 'Features vs Composite Targets', true) + '</details>' : '';
+
+    var ttCnt = gg.length + cc.length + gc.length;
+    var outerTT = ttCnt ? '<details style="margin:6px 0">'
+      + '<summary style="font-weight:600;font-size:0.90rem;cursor:pointer;padding:4px 0;color:#8aa8cc">'
+      + 'Targets vs Targets &mdash; ' + ttCnt + ' pair' + (ttCnt !== 1 ? 's' : '')
+      + ' &nbsp;<span style="font-size:0.78rem;color:#556070;font-weight:400">'
+      + '(grab and composite targets never appear in the same model dataset)</span></summary>'
+      + grpBlock(gg, 'Grab vs Grab', false)
+      + grpBlock(cc, 'Composite vs Composite', false)
+      + grpBlock(gc, 'Grab vs Composite', false) + '</details>' : '';
+
+    document.getElementById('s5-pair-table').innerHTML =
+      '<div style="margin-top:4px">' + legend + outerFF + outerFT + outerTT + '</div>';
+  }
+
+  function update(val) {
+    var t = Math.max(0, Math.min(1, parseFloat(val) || 0));
+    var sl = document.getElementById('s5-slider');
+    var ni = document.getElementById('s5-num');
+    if (sl) sl.value = t;
+    if (ni) ni.value = t.toFixed(2);
+    render(t);
+  }
+
+  var sl = document.getElementById('s5-slider');
+  var ni = document.getElementById('s5-num');
+  if (sl) sl.addEventListener('input', function (e) { update(e.target.value); });
+  if (ni) ni.addEventListener('change', function (e) { update(e.target.value); });
+  update(0.5);
+}());
+</script>
+"""
+
+
 def plot_cross_stage_heatmap(df):
     """
     Full square correlation matrix: all features + all targets × themselves.
@@ -718,35 +952,25 @@ def plot_cross_stage_heatmap(df):
     pears_df = pd.DataFrame(pears_arr, index=short, columns=short)
     spear_df = pd.DataFrame(spear_arr, index=short, columns=short)
 
-    # ── Threshold filter: keep rows AND columns where any |r| > 0.5 ─────────────
-    THRESHOLD = 0.5
-    max_abs = pears_df.abs().combine(spear_df.abs(), np.fmax)   # NaN-safe element-wise max
-    active  = max_abs.max(axis=1) > THRESHOLD                   # rows with signal
+    # ── No threshold filter — show full matrix ───────────────────────────────────
+    PAIR_THRESHOLD = 0.5   # used only for the companion pair table, not the visual
+    pears_f = pears_df
+    spear_f = spear_df
+    n_shown = n
 
-    n_total  = n
-    n_shown  = int(active.sum())
-    n_hidden = n_total - n_shown
+    subtitle = f"Full matrix — all {n} columns  ·  diagonal self-correlations excluded"
 
-    pears_f = pears_df.loc[active, active]
-    spear_f = spear_df.loc[active, active]
-
-    subtitle = (
-        f"Showing {n_shown} of {n_total} columns  ·  "
-        f"threshold: |Pearson| or |Spearman| > {THRESHOLD}  ·  "
-        f"{n_hidden} column{'s' if n_hidden != 1 else ''} below threshold hidden"
-    )
-
-    # ── Compact figure (square matrix - no need to be huge) ────────────────────
-    cell = max(0.55, min(1.0, 14.0 / n_shown))   # cell size in inches
-    side = max(8, n_shown * cell)
-    side = min(side, 20)                          # cap at 20 inches
+    # ── Full matrix figure — scale with column count ──────────────────────────
+    cell = max(0.40, min(0.70, 28.0 / n_shown))  # cell size in inches
+    side = max(10, n_shown * cell)
+    side = min(side, 36)                          # cap at 36 inches for full matrix
     fig, axes = plt.subplots(2, 1, figsize=(side, side * 2 + 1))
 
     kws = dict(
         cmap="RdBu_r", vmin=-1, vmax=1,
-        linewidths=0.4, linecolor="white",
+        linewidths=0.3, linecolor="white",
         cbar_kws={"shrink": 0.5, "label": "r"},
-        annot=True, fmt=".2f", annot_kws={"size": max(5, min(8, int(120 / n_shown)))},
+        annot=True, fmt=".2f", annot_kws={"size": max(4, min(7, int(200 / n_shown)))},
     )
 
     sns.heatmap(pears_f, ax=axes[0], **kws)
@@ -769,179 +993,32 @@ def plot_cross_stage_heatmap(df):
     plt.tight_layout(rect=[0, 0, 1, 0.97])
     path = save(fig, "06_cross_stage_heatmap")
 
-    # ── Build pair table (upper triangle, sorted by |Pearson| desc) ─────────────
-    pairs = []
-    cols_f = list(pears_f.columns)
-    for ii, ca in enumerate(cols_f):
-        for jj, cb in enumerate(cols_f):
-            if jj <= ii:      # lower triangle + diagonal → skip
+    # ── Serialize all pairs as JSON for interactive rendering ────────────────────
+    pairs_data = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            pr, sr = pears_arr[i, j], spear_arr[i, j]
+            if np.isnan(pr) and np.isnan(sr):
                 continue
-            pr = pears_f.loc[ca, cb]
-            sr = spear_f.loc[ca, cb]
-            if pd.isna(pr) and pd.isna(sr):
-                continue
-            max_r = max(abs(pr) if pd.notna(pr) else 0,
-                        abs(sr) if pd.notna(sr) else 0)
-            if max_r >= THRESHOLD:
-                pairs.append((ca, cb, pr, sr, max_r))
+            p_val = None if np.isnan(pr) else round(float(pr), 4)
+            s_val = None if np.isnan(sr) else round(float(sr), 4)
+            pairs_data.append([i, j, p_val, s_val])
 
-    pairs.sort(key=lambda x: x[4], reverse=True)   # sort by max |r|
+    cols_js  = _json.dumps(short)
+    pairs_js = _json.dumps(pairs_data)
+    grab_js  = _json.dumps([s(t) for t in GRAB_TARGETS])
+    comp_js  = _json.dumps([s(t) for t in COMP_TARGETS])
 
-    def _rfmt(v):
-        if pd.isna(v): return "-"
-        clr = "#C0392B" if abs(v) >= 0.75 else ("#E07B20" if abs(v) >= 0.5 else "")
-        sign = "+" if v > 0 else ""
-        txt  = f"{sign}{v:.2f}"
-        return f"<span style='color:{clr};font-weight:600'>{txt}</span>" if clr else txt
-
-    TD = "padding:6px 12px;border-bottom:1px solid #2e3d52;color:#b8c8dc"
-    TD_R = f"{TD};text-align:right;font-variant-numeric:tabular-nums"
-    TD_ARROW = "padding:6px 4px;border-bottom:1px solid #2e3d52;color:#4a5a70;text-align:center"
-
-    # ── Classify pairs into sub-sections ────────────────────────────────────────
-    GRAB_TGT_SHORT = {s(t) for t in GRAB_TARGETS}
-    COMP_TGT_SHORT = {s(t) for t in COMP_TARGETS}
-    ALL_TGT_SHORT  = GRAB_TGT_SHORT | COMP_TGT_SHORT
-
-    feat_feat   = []
-    feat_grab   = []
-    feat_comp   = []
-    tgt_gc      = []   # grab vs composite
-    tgt_gg      = []   # grab vs grab
-    tgt_cc      = []   # composite vs composite
-
-    for pair in pairs:
-        ca, cb = pair[0], pair[1]
-        a_tgt = ca in ALL_TGT_SHORT
-        b_tgt = cb in ALL_TGT_SHORT
-        if not a_tgt and not b_tgt:
-            feat_feat.append(pair)
-        elif a_tgt and b_tgt:
-            a_grab = ca in GRAB_TGT_SHORT
-            b_grab = cb in GRAB_TGT_SHORT
-            if a_grab != b_grab:
-                tgt_gc.append(pair)
-            elif a_grab:
-                tgt_gg.append(pair)
-            else:
-                tgt_cc.append(pair)
-        else:
-            # one is a target - normalise so the target is always cb for label purposes
-            tgt_col = ca if a_tgt else cb
-            if tgt_col in GRAB_TGT_SHORT:
-                feat_grab.append(pair)
-            else:
-                feat_comp.append(pair)
-
-    TH = "padding:8px 12px;text-align:left;color:#8aa8cc;font-weight:600;letter-spacing:0.03em"
-    TH_R = "padding:8px 12px;text-align:right;color:#8aa8cc;font-weight:600;letter-spacing:0.03em"
-
-    def _sub_table(sub_pairs, heading, open_by_default=False):
-        if not sub_pairs:
-            return ""
-        rows = ""
-        for i, (ca, cb, pr, sr, _) in enumerate(sub_pairs):
-            row_bg = "#141e2d" if i % 2 == 0 else "#192336"
-            rows += (
-                f"<tr style='background:{row_bg}'>"
-                f"<td style='{TD}'>{ca}</td>"
-                f"<td style='{TD_ARROW}'>↔</td>"
-                f"<td style='{TD}'>{cb}</td>"
-                f"<td style='{TD_R}'>{_rfmt(pr)}</td>"
-                f"<td style='{TD_R}'>{_rfmt(sr)}</td>"
-                f"</tr>"
-            )
-        open_attr = " open" if open_by_default else ""
-        n = len(sub_pairs)
-        return f"""
-      <details{open_attr} style='margin:8px 0 8px 16px'>
-        <summary style='font-weight:600;font-size:0.88rem;cursor:pointer;padding:4px 0;
-                        color:#7a98bc;letter-spacing:0.01em'>
-          {heading} &mdash; {n} pair{'s' if n != 1 else ''}
-        </summary>
-        <div style='overflow-x:auto;margin-top:8px;border-radius:6px;
-                    border:1px solid #2e3d52;overflow:hidden'>
-        <table style='border-collapse:collapse;font-size:0.84rem;width:100%;
-                      max-width:760px;background:#111929'>
-          <thead>
-            <tr style='background:#1d2f45;border-bottom:2px solid #3a5070'>
-              <th style='{TH}'>Column A</th>
-              <th style='padding:8px 4px'></th>
-              <th style='{TH}'>Column B</th>
-              <th style='{TH_R}'>Pearson r</th>
-              <th style='{TH_R}'>Spearman r</th>
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
-        </div>
-      </details>"""
-
-    feat_feat_block = _sub_table(feat_feat, "Features vs Features", open_by_default=True)
-
-    feat_tgt_subs = (
-        _sub_table(feat_grab, "Features vs Grab Targets", open_by_default=True)
-        + _sub_table(feat_comp, "Features vs Composite Targets", open_by_default=True)
+    data_script = (
+        "<script>\n"
+        f"var _S5C={cols_js};\n"
+        f"var _S5P={pairs_js};\n"
+        f"var _S5G={grab_js};\n"
+        f"var _S5K={comp_js};\n"
+        "</script>\n"
     )
-    n_feat_tgt = len(feat_grab) + len(feat_comp)
-    feat_tgt_block = f"""
-      <details open style='margin:8px 0'>
-        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
-                        color:#8aa8cc;letter-spacing:0.01em'>
-          Features vs Targets &mdash; {n_feat_tgt} pair{'s' if n_feat_tgt != 1 else ''}
-        </summary>
-        {feat_tgt_subs}
-      </details>""" if n_feat_tgt else ""
 
-    tgt_tgt_subs = (
-        _sub_table(tgt_gg, "Grab vs Grab")
-        + _sub_table(tgt_cc, "Composite vs Composite")
-        + _sub_table(tgt_gc, "Grab vs Composite")
-    )
-    n_tgt_tgt = len(tgt_gg) + len(tgt_cc) + len(tgt_gc)
-    tgt_tgt_block = f"""
-      <details style='margin:8px 0'>
-        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
-                        color:#8aa8cc;letter-spacing:0.01em'>
-          Targets vs Targets &mdash; {n_tgt_tgt} pair{'s' if n_tgt_tgt != 1 else ''}
-          &nbsp;<span style='font-size:0.78rem;color:#556070;font-weight:400'>
-            (grab and composite targets never appear in the same model dataset)</span>
-        </summary>
-        {tgt_tgt_subs}
-      </details>""" if n_tgt_tgt else ""
-
-    feat_feat_outer = f"""
-      <details open style='margin:8px 0'>
-        <summary style='font-weight:600;font-size:0.91rem;cursor:pointer;padding:5px 0;
-                        color:#8aa8cc;letter-spacing:0.01em'>
-          Features vs Features &mdash; {len(feat_feat)} pair{'s' if len(feat_feat) != 1 else ''}
-          &nbsp;<span style='font-size:0.78rem;color:#556070;font-weight:400'>
-            (collinearity - check these before linear modelling)</span>
-        </summary>
-        {feat_feat_block}
-      </details>""" if feat_feat else ""
-
-    table_html = f"""
-    <details open style='margin:16px 0'>
-      <summary style='font-weight:600;font-size:0.93rem;cursor:pointer;padding:6px 0;
-                      color:#8aa8cc;letter-spacing:0.01em'>
-        Correlated pairs &mdash; {len(pairs)} pair{'s' if len(pairs)!=1 else ''}
-        with |Pearson| or |Spearman| &ge; {THRESHOLD}
-        &nbsp;&middot;&nbsp; sorted by strongest correlation within each group
-      </summary>
-      <p style='font-size:0.77rem;color:#556070;margin:8px 0 4px'>
-        <span style='color:#C0392B;font-weight:600'>Red</span> = |r| &ge; 0.75 (strong)
-        &nbsp;&middot;&nbsp;
-        <span style='color:#E07B20;font-weight:600'>Orange</span> = |r| 0.50&ndash;0.74 (moderate)
-      </p>
-      {feat_feat_outer}
-      {feat_tgt_block}
-      {tgt_tgt_block}
-    </details>
-    """
-
-    return path, table_html
-
+    return path, data_script + _CORR_INTERACTIVE
 
 
 # ── Chart 7: Stage removal efficiency ─────────────────────────────────────────
@@ -3207,24 +3284,17 @@ models (RF, XGB) are needed.</p>
 """)
 
     # ── Section 5: Cross-stage heatmap ─────────────────────────────────────────
-    cross_data = data.get("cross_heatmap", (None, ""))
-    cross_img  = cross_data[0] if isinstance(cross_data, tuple) else cross_data
-    cross_tbl  = cross_data[1] if isinstance(cross_data, tuple) else ""
+    cross_tbl = data.get("cross_heatmap", ("", ""))[1]
     parts.append(f"""<div class="card" id="s5">
 <h2>5. Full correlation matrix — features &amp; targets</h2>
 <div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
-<li>Inlet–effluent parameter pairs dominate the upper triangle (|r| &gt; 0.5) — strong, consistent signal confirmed across both metrics.</li>
+<li>Inlet–effluent parameter pairs dominate (|r| &gt; 0.5) — strong, consistent signal confirmed across both metrics.</li>
 <li>Secondary clarifier and aeration features cluster tightly with each other — collinearity is real but handled by regularisation (ElNet/Ridge) in the models.</li>
 <li>Flow and temporal features show weaker but consistent signal across multiple targets — justify inclusion as COMMON features in every experiment.</li>
 </ul></div>
-<p>All process features <em>and</em> all eight effluent targets correlated against
-each other. Features below the threshold (|Pearson| and |Spearman| both &lt; 0.5 for
-every pair) are hidden. This reveals both <strong>feature-target signal</strong>
-(which inputs associate with which outputs) and <strong>inter-feature collinearity</strong>
-(which inputs carry redundant information).
-Top = Pearson, Bottom = Spearman.
-Diagonal self-correlations are excluded.</p>
-{img_tag(cross_img)}
+<p>All process features and all eight effluent targets correlated pairwise. Use the threshold
+control to filter the matrices and the pair table simultaneously. Matrices fold closed by default.
+Diagonal self-correlations excluded.</p>
 {cross_tbl}
 {_obs(obs.get("s5", ""))}
 </div>

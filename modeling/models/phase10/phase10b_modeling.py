@@ -52,21 +52,21 @@ os.makedirs(PLOTS_DIR,  exist_ok=True)
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
-    {"name": "s2_stage3_grab_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_BOD.xlsx"),
+    {"name": "grab_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_BOD.xlsx"),
      "target": "Effluent BOD (mg/L, Grab)",       "experiment": "Phase10b-FE-GrabOnly", "is_grab": True},
-    {"name": "s2_stage3_grab_COD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_COD.xlsx"),
+    {"name": "grab_COD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_COD.xlsx"),
      "target": "Effluent COD (mg/L, Grab)",       "experiment": "Phase10b-FE-GrabOnly", "is_grab": True},
-    {"name": "s2_stage3_grab_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_grab_TSS.xlsx"),
+    {"name": "grab_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_grab_TSS.xlsx"),
      "target": "Effluent TSS (mg/L, Grab)",       "experiment": "Phase10b-FE-GrabOnly", "is_grab": True},
-    {"name": "s2_stage3_grab_pH",   "file": os.path.join(DS_DIR, "s2_stage3_grab_pH.xlsx"),
+    {"name": "grab_pH",   "file": os.path.join(DS_DIR, "s2_stage3_grab_pH.xlsx"),
      "target": "Effluent pH (Grab)",               "experiment": "Phase10b-FE-GrabOnly", "is_grab": True},
-    {"name": "s2_stage3_comp_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_BOD.xlsx"),
+    {"name": "comp_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_BOD.xlsx"),
      "target": "Effluent BOD (mg/L, Composite)",  "experiment": "Phase10b-FE-GrabOnly", "is_grab": False},
-    {"name": "s2_stage3_comp_COD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_COD.xlsx"),
+    {"name": "comp_COD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_COD.xlsx"),
      "target": "Effluent COD (mg/L, Composite)",  "experiment": "Phase10b-FE-GrabOnly", "is_grab": False},
-    {"name": "s2_stage3_comp_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_comp_TSS.xlsx"),
+    {"name": "comp_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_comp_TSS.xlsx"),
      "target": "Effluent TSS (mg/L, Composite)",  "experiment": "Phase10b-FE-GrabOnly", "is_grab": False},
-    {"name": "s2_stage3_comp_pH",   "file": os.path.join(DS_DIR, "s2_stage3_comp_pH.xlsx"),
+    {"name": "comp_pH",   "file": os.path.join(DS_DIR, "s2_stage3_comp_pH.xlsx"),
      "target": "Effluent pH (Composite)",          "experiment": "Phase10b-FE-GrabOnly", "is_grab": False},
 ]
 

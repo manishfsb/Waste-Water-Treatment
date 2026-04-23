@@ -66,23 +66,23 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 # (experiment_label, model_name, subset_path, target)
 REGISTRY = [
     # Experiment 3 Sub-2 - Grab
-    ("Experiment 3 Sub-2", "s2_stage3_grab_BOD",
-     _e3s2("s2_stage3_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 3 Sub-2", "s2_stage3_grab_COD",
-     _e3s2("s2_stage3_grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Experiment 3 Sub-2", "s2_stage3_grab_TSS",
-     _e3s2("s2_stage3_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 3 Sub-2", "s2_stage3_grab_pH",
-     _e3s2("s2_stage3_grab_pH"),  "Effluent pH (Grab)"),
+    ("Experiment 3 Sub-2", "grab_BOD",
+     _e3s2("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Experiment 3 Sub-2", "grab_COD",
+     _e3s2("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Experiment 3 Sub-2", "grab_TSS",
+     _e3s2("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Experiment 3 Sub-2", "grab_pH",
+     _e3s2("grab_pH"),  "Effluent pH (Grab)"),
     # Experiment 3 Sub-2 - Composite
-    ("Experiment 3 Sub-2", "s2_stage3_comp_BOD",
-     _e3s2("s2_stage3_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 3 Sub-2", "s2_stage3_comp_COD",
-     _e3s2("s2_stage3_comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Experiment 3 Sub-2", "s2_stage3_comp_TSS",
-     _e3s2("s2_stage3_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 3 Sub-2", "s2_stage3_comp_pH",
-     _e3s2("s2_stage3_comp_pH"),  "Effluent pH (Composite)"),
+    ("Experiment 3 Sub-2", "comp_BOD",
+     _e3s2("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Experiment 3 Sub-2", "comp_COD",
+     _e3s2("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Experiment 3 Sub-2", "comp_TSS",
+     _e3s2("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Experiment 3 Sub-2", "comp_pH",
+     _e3s2("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Colours ────────────────────────────────────────────────────────────────────

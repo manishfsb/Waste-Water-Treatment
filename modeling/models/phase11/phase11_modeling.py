@@ -57,14 +57,14 @@ os.makedirs(PLOTS_DIR,  exist_ok=True)
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
-    {"name": "s2_stage3_grab_BOD", "target": "Effluent BOD (mg/L, Grab)",      "log_y": True},
-    {"name": "s2_stage3_grab_COD", "target": "Effluent COD (mg/L, Grab)",      "log_y": True},
-    {"name": "s2_stage3_grab_TSS", "target": "Effluent TSS (mg/L, Grab)",      "log_y": True},
-    {"name": "s2_stage3_grab_pH",  "target": "Effluent pH (Grab)",             "log_y": False},
-    {"name": "s2_stage3_comp_BOD", "target": "Effluent BOD (mg/L, Composite)", "log_y": True},
-    {"name": "s2_stage3_comp_COD", "target": "Effluent COD (mg/L, Composite)", "log_y": True},
-    {"name": "s2_stage3_comp_TSS", "target": "Effluent TSS (mg/L, Composite)", "log_y": True},
-    {"name": "s2_stage3_comp_pH",  "target": "Effluent pH (Composite)",        "log_y": False},
+    {"name": "grab_BOD", "target": "Effluent BOD (mg/L, Grab)",      "log_y": True},
+    {"name": "grab_COD", "target": "Effluent COD (mg/L, Grab)",      "log_y": True},
+    {"name": "grab_TSS", "target": "Effluent TSS (mg/L, Grab)",      "log_y": True},
+    {"name": "grab_pH",  "target": "Effluent pH (Grab)",             "log_y": False},
+    {"name": "comp_BOD", "target": "Effluent BOD (mg/L, Composite)", "log_y": True},
+    {"name": "comp_COD", "target": "Effluent COD (mg/L, Composite)", "log_y": True},
+    {"name": "comp_TSS", "target": "Effluent TSS (mg/L, Composite)", "log_y": True},
+    {"name": "comp_pH",  "target": "Effluent pH (Composite)",        "log_y": False},
 ]
 
 # Columns that should NOT get lag/rolling expansion

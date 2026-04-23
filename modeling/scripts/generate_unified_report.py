@@ -72,7 +72,8 @@ USEFUL_THRESH = 0.03
 
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
-    "Exp1": "Exp1",        "Exp1-FS": "Exp1-FS",
+    "Exp1-Sub1": "E1-S1",
+    "Exp1": "Exp1",        "Exp1-FS": "Exp1-FS",   "Exp1-Cyclic": "E1-Cyc",
     "Exp2-Sub1": "E2-S1",  "Exp2-Sub1-FS": "E2-S1-FS",
     "Exp2-Sub2": "E2-S2",  "Exp2-Sub2-FS": "E2-S2-FS",
     "Exp3-S1": "E3-S1",    "Exp3-S1-FS": "E3-S1-FS",
@@ -109,8 +110,10 @@ _DS_EXP_MAP = [
     ("experiment2/sub_exp2",                           "Exp2-Sub2"),
     ("experiment2/sub_exp1/feature_selected_datasets", "Exp2-Sub1-FS"),
     ("experiment2/sub_exp1",                           "Exp2-Sub1"),
-    ("experiment1/feature_selected_datasets",          "Exp1-FS"),
-    ("experiment1",                                    "Exp1"),
+    ("experiment1/sub_exp2/feature_selected_datasets", "Exp1-FS"),
+    ("experiment1/sub_exp2_cyclic",                    "Exp1-Cyclic"),
+    ("experiment1/sub_exp2",                           "Exp1"),
+    ("experiment1/sub_exp1",                           "Exp1-Sub1"),
 ]
 
 # predicted_<TAG>_run_N → canonical model name
@@ -124,6 +127,15 @@ _PRED_MODEL_MAP = {
 _PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phase9-Stacking"}
 
 FEATURE_DESCRIPTIONS = {
+    "Exp1-Sub1": {
+        "label": "Inlet Only (4 features) — no process or temporal context",
+        "features": "Inlet pH, Inlet BOD (mg/L), Inlet COD (mg/L), Inlet TSS (mg/L) "
+                    "(Grab or Composite) — no Flow, Power, or calendar features",
+        "rationale": "Absolute minimum feature set: can inlet water quality alone predict "
+                     "effluent quality? This sub-experiment establishes the floor and "
+                     "quantifies how much process context (Flow, Power, calendar) adds "
+                     "when compared against Exp1 (Sub 2).",
+    },
     "Exp1": {
         "label": "Inlet + COMMON (9 features)",
         "features": "Inlet pH, Inlet BOD, Inlet COD, Inlet TSS (Grab or Composite) + "
@@ -131,6 +143,16 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Baseline: can inlet water quality alone predict effluent quality? "
                      "Tests the simplest, most operationally available feature set - "
                      "no secondary treatment data required.",
+    },
+    "Exp1-Cyclic": {
+        "label": "Inlet + COMMON with Cyclic Calendar Encoding (11 features)",
+        "features": "Inlet pH, BOD, COD, TSS (Grab or Composite) + "
+                    "Flow (MLD), Power Total (KW), year, "
+                    "month_sin, month_cos, dow_sin, dow_cos",
+        "rationale": "Tests whether replacing raw integer month (1–12) and day_of_week (0–6) "
+                     "with sin/cos projections improves generalisation. Raw integers impose a "
+                     "false December→January discontinuity on linear models; cyclic encoding "
+                     "preserves the wrap-around topology of both features.",
     },
     "Exp1-FS": {
         "label": "Inlet + COMMON - Feature Selected (5-8 features)",
@@ -314,11 +336,14 @@ FEATURE_DESCRIPTIONS = {
 
 EXP_INTRO = {
     "Exp1": (
-        "Experiment 1 establishes the baseline: how well can <strong>inlet water quality "
-        "alone</strong> predict effluent concentrations? This is the simplest and most "
-        "operationally available feature set - no secondary treatment measurements needed. "
-        "A feature-selected sub-variant is also included to test whether pruning to "
-        "the most informative subset improves generalisation."
+        "Experiment 1 investigates inlet-only prediction across three progressively richer "
+        "feature sets. <strong>Sub-experiment 1</strong> uses only the 4 inlet concentration "
+        "columns — the absolute minimum. <strong>Sub-experiment 2</strong> (the original Exp1 "
+        "baseline) adds Flow, Power, and calendar variables (month, day_of_week, year). "
+        "A <strong>feature-selected</strong> variant prunes Sub-2 to the most informative columns, "
+        "and a <strong>cyclic-encoded</strong> variant replaces raw integer calendar features "
+        "with sin/cos projections. The progression table at the bottom of this section "
+        "shows exactly what each layer contributes."
     ),
     "Exp2": (
         "Experiment 2 expands the feature scope. <strong>Sub-experiment 1</strong> tests "
@@ -412,7 +437,8 @@ EXP_INTRO = {
 
 def _exp_key(raw: str, is_fs: bool) -> str:
     mapping = {
-        "Exp1": "Exp1", "Exp2-Sub1": "Exp2-Sub1", "Exp2-Sub2": "Exp2-Sub2",
+        "Exp1-Sub1": "Exp1-Sub1", "Exp1": "Exp1", "Exp1-Cyclic": "Exp1-Cyclic",
+        "Exp2-Sub1": "Exp2-Sub1", "Exp2-Sub2": "Exp2-Sub2",
         "Exp3-S1": "Exp3-S1", "Exp3-S1-FS": "Exp3-S1-FS", "Exp3-S2": "Exp3-S2",
         "Experiment 1": "Exp1",
         "Experiment 2 Sub-1": "Exp2-Sub1",
@@ -572,6 +598,7 @@ def load_all_data() -> pd.DataFrame:
     # Linear
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
+        ("exp1_s1", False), ("exp1_cyclic", False),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
@@ -585,6 +612,7 @@ def load_all_data() -> pd.DataFrame:
     # Non-linear
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
+        ("exp1_s1", False), ("exp1_cyclic", False),
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
@@ -798,7 +826,7 @@ def _source_dataset_path(dataset_id: str) -> str:
     prefix, sample, measure = dataset_id.split("_", 2)
     sample = sample.lower()
     base_dir_map = {
-        "Exp1": os.path.join(MODELING_DIR, "datasets", "experiment1"),
+        "Exp1": os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2"),
         "Exp2S1": os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1"),
         "Exp2S2": os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2"),
         "Exp3S1": os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1"),
@@ -1451,14 +1479,14 @@ def _vif_callout() -> str:
 
     ds_dir = os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp2")
     DATASETS = [
-        ("s2_stage3_grab_BOD", "Effluent BOD (mg/L, Grab)"),
-        ("s2_stage3_grab_COD", "Effluent COD (mg/L, Grab)"),
-        ("s2_stage3_grab_TSS", "Effluent TSS (mg/L, Grab)"),
-        ("s2_stage3_grab_pH",  "Effluent pH (Grab)"),
-        ("s2_stage3_comp_BOD", "Effluent BOD (mg/L, Composite)"),
-        ("s2_stage3_comp_COD", "Effluent COD (mg/L, Composite)"),
-        ("s2_stage3_comp_TSS", "Effluent TSS (mg/L, Composite)"),
-        ("s2_stage3_comp_pH",  "Effluent pH (Composite)"),
+        ("grab_BOD", "Effluent BOD (mg/L, Grab)"),
+        ("grab_COD", "Effluent COD (mg/L, Grab)"),
+        ("grab_TSS", "Effluent TSS (mg/L, Grab)"),
+        ("grab_pH",  "Effluent pH (Grab)"),
+        ("comp_BOD", "Effluent BOD (mg/L, Composite)"),
+        ("comp_COD", "Effluent COD (mg/L, Composite)"),
+        ("comp_TSS", "Effluent TSS (mg/L, Composite)"),
+        ("comp_pH",  "Effluent pH (Composite)"),
     ]
     EXCLUDE = {"Date", "year", "month", "day_of_week"}
 
@@ -2181,8 +2209,10 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
 def _section_bests_json(df_all: pd.DataFrame) -> str:
     """JSON for the dynamic running-leaders sidebar panel."""
     section_exp_keys = {
+        "exp1-sub1":   ["Exp1-Sub1"],
         "exp1-full":   ["Exp1"],
         "exp1-fs":     ["Exp1-FS"],
+        "exp1-cyclic": ["Exp1-Cyclic"],
         "exp2-s1":     ["Exp2-Sub1"],
         "exp2-s1-fs":  ["Exp2-Sub1-FS"],
         "exp2-s2":     ["Exp2-Sub2"],
@@ -2788,21 +2818,203 @@ def build_overview(df_all: pd.DataFrame) -> str:
 # EXPERIMENT SECTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _exp1_cyclic_delta_div(df_all: pd.DataFrame) -> str:
+    """Foldable delta comparison: Exp1 raw integers vs Exp1-Cyclic sin/cos encoding.
+
+    Renders two compact tables (Grab targets, Composite targets).
+    Each cell: base_r2 → cyc_r2 (Δ value) colour-coded green/red.
+    """
+    base = df_all[df_all["exp_key"] == "Exp1"].copy()
+    cyc  = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    if base.empty or cyc.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    grab_tgts  = GRAB_TARGETS
+    comp_tgts  = COMP_TARGETS
+
+    def _cell(model, tgt):
+        b = base[(base["model"] == model) & (base["target"] == tgt)]
+        c = cyc[(cyc["model"]  == model) & (cyc["target"]  == tgt)]
+        if b.empty or c.empty:
+            return "<td class='meta'>—</td>"
+        bv = b["R2_test"].values[0]
+        cv = c["R2_test"].values[0]
+        if np.isnan(bv) or np.isnan(cv):
+            return "<td class='meta'>—</td>"
+        delta = cv - bv
+        d_fmt = f"{delta:+.3f}"
+        d_col = "#5BAD6F" if delta >= 0 else "#E15252"
+        return (
+            f"<td style='text-align:center;font-size:0.83em;white-space:nowrap'>"
+            f"{bv:.3f} → {cv:.3f}"
+            f"<br><span style='color:{d_col};font-weight:bold'>{d_fmt}</span></td>"
+        )
+
+    def _table(tgts, label):
+        short_hdrs = "".join(
+            f"<th style='font-size:0.82em'>{TARGET_SHORT.get(t, t)}</th>"
+            for t in tgts
+        )
+        rows_html = ""
+        for m in models_ord:
+            cells = "".join(_cell(m, t) for t in tgts)
+            rows_html += f"<tr><td><strong>{m}</strong></td>{cells}</tr>"
+        return f"""
+<p style='margin:0.8rem 0 0.3rem;font-weight:bold'>{label}</p>
+<div style='overflow-x:auto'>
+<table class='summary-table' style='font-size:0.88em;min-width:600px'>
+  <thead><tr>
+    <th>Model</th>{short_hdrs}
+  </tr></thead>
+  <tbody>{rows_html}</tbody>
+</table>
+</div>"""
+
+    grab_tbl = _table(grab_tgts, "Grab targets")
+    comp_tbl = _table(comp_tgts, "Composite targets")
+
+    return f"""
+<details class="exp-details" id="exp1-cyclic-delta">
+  <summary><span class="fold-icon">▶</span>
+    Cyclic Encoding Impact — Exp1 (raw) vs Exp1-Cyclic (sin/cos)
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <p class="meta">
+        Each cell shows: <strong>Exp1 Test R² → Exp1-Cyclic Test R²</strong> with the
+        delta colour-coded (<span style='color:#5BAD6F;font-weight:bold'>green = improvement</span>,
+        <span style='color:#E15252;font-weight:bold'>red = regression</span>).
+        Raw integer month (1–12) and day_of_week (0–6) are replaced by four columns:
+        month_sin, month_cos, dow_sin, dow_cos. Feature count: 9 → 11.
+        All other training settings identical.
+      </p>
+    </div>
+    {grab_tbl}
+    {comp_tbl}
+  </div>
+</details>"""
+
+
+def _exp1_feature_progression_div(df_all: pd.DataFrame) -> str:
+    """3-way comparison: Sub1 (inlet only) → Sub2 (+ process + calendar) → Sub2-Cyclic.
+
+    Shows Test R² for each experiment variant side by side so the reader can see
+    exactly what each layer of features contributes.
+    Columns: Sub1 R² | Sub2 R² | Δ_context | Cyc R² | Δ_encoding
+    """
+    s1  = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s2  = df_all[df_all["exp_key"] == "Exp1"].copy()
+    cyc = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    if s1.empty or s2.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+
+    def _row(model, tgt):
+        r1  = s1[(s1["model"]  == model) & (s1["target"]  == tgt)]
+        r2  = s2[(s2["model"]  == model) & (s2["target"]  == tgt)]
+        rc  = cyc[(cyc["model"] == model) & (cyc["target"] == tgt)]
+        if r1.empty or r2.empty:
+            return f"<tr><td>{model}</td><td colspan='5' class='meta'>—</td></tr>"
+        v1 = float(r1["R2_test"].values[0])
+        v2 = float(r2["R2_test"].values[0])
+        d12 = v2 - v1
+        d12_col = "#5BAD6F" if d12 >= 0 else "#E15252"
+        v1_cell = f"<td style='text-align:center'>{v1:+.3f}</td>"
+        v2_cell = f"<td style='text-align:center'>{v2:+.3f}</td>"
+        d12_cell = (f"<td style='text-align:center;color:{d12_col};font-weight:bold'>"
+                    f"{d12:+.3f}</td>")
+        if rc.empty:
+            vc_cell = "<td class='meta' style='text-align:center'>—</td>"
+            dc_cell = "<td class='meta' style='text-align:center'>—</td>"
+        else:
+            vc = float(rc["R2_test"].values[0])
+            dc = vc - v2
+            dc_col = "#5BAD6F" if dc >= 0 else "#E15252"
+            vc_cell = f"<td style='text-align:center'>{vc:+.3f}</td>"
+            dc_cell = (f"<td style='text-align:center;color:{dc_col};font-weight:bold'>"
+                       f"{dc:+.3f}</td>")
+        return f"<tr><td><strong>{model}</strong></td>{v1_cell}{v2_cell}{d12_cell}{vc_cell}{dc_cell}</tr>"
+
+    def _table(tgts, label):
+        rows_html = ""
+        for tgt in tgts:
+            short = TARGET_SHORT.get(tgt, tgt)
+            rows_html += f"""
+<tr style='background:var(--bg-secondary)'><td colspan='6' style='font-weight:bold;padding:0.4rem 0.6rem'>
+  {short}
+</td></tr>"""
+            for m in models_ord:
+                rows_html += _row(m, tgt)
+        return f"""
+<p style='margin:0.8rem 0 0.3rem;font-weight:bold'>{label}</p>
+<div style='overflow-x:auto'>
+<table class='summary-table' style='font-size:0.85em;min-width:700px'>
+  <thead><tr>
+    <th>Model</th>
+    <th style='text-align:center'>Sub1<br><span class='meta'>4 feat</span></th>
+    <th style='text-align:center'>Sub2 (Exp1)<br><span class='meta'>9 feat</span></th>
+    <th style='text-align:center'>Δ Context<br><span class='meta'>+Flow+Power+Cal</span></th>
+    <th style='text-align:center'>Sub2-Cyc<br><span class='meta'>11 feat</span></th>
+    <th style='text-align:center'>Δ Encoding<br><span class='meta'>cyclic vs raw</span></th>
+  </tr></thead>
+  <tbody>{rows_html}</tbody>
+</table>
+</div>"""
+
+    grab_tbl = _table(GRAB_TARGETS, "Grab targets")
+    comp_tbl = _table(COMP_TARGETS, "Composite targets")
+
+    return f"""
+<details class="exp-details" id="exp1-progression">
+  <summary><span class="fold-icon">▶</span>
+    Feature Progression: Sub1 (Inlet Only) → Sub2 (+Process+Calendar) → Sub2-Cyclic (+Encoding)
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <p class="meta">
+        <strong>How to read:</strong>
+        <em>Sub1</em> = inlet concentrations only (4 features).
+        <em>Δ Context</em> = gain from adding Flow, Power, and calendar features (9 vs 4).
+        <em>Δ Encoding</em> = gain from replacing raw integer month/dow with sin/cos projections (11 vs 9).
+        <span style='color:#5BAD6F;font-weight:bold'>Green = improvement</span>,
+        <span style='color:#E15252;font-weight:bold'>red = regression</span>.
+      </p>
+    </div>
+    {grab_tbl}
+    {comp_tbl}
+  </div>
+</details>"""
+
+
 def build_exp1_section(df_all: pd.DataFrame) -> str:
-    sub1   = _exp_subsection(df_all, "Exp1", "exp1-full",
-                             "Full Feature Set (Inlet + COMMON)", open_default=True)
-    sub2   = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
-                             "Feature Selected Variant", open_default=False)
-    fs_div = _fs_analysis_div(df_all, "Exp1", "Exp1-FS")
-    best   = _best_model_box(df_all[df_all["exp_key"].isin(["Exp1","Exp1-FS"])],
-                             "Experiment 1")
+    sub_s1    = _exp_subsection(df_all, "Exp1-Sub1", "exp1-sub1",
+                                "Sub-experiment 1 — Inlet Only (4 features)", open_default=False)
+    sub1      = _exp_subsection(df_all, "Exp1", "exp1-full",
+                                "Sub-experiment 2 — Inlet + COMMON (9 features)", open_default=True)
+    sub2      = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
+                                "Sub-experiment 2 — Feature Selected Variant", open_default=False)
+    sub_cyc   = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-cyclic",
+                                "Sub-experiment 2 Cyclic — Cyclic Calendar Encoding (11 features)",
+                                open_default=False)
+    fs_div    = _fs_analysis_div(df_all, "Exp1", "Exp1-FS")
+    prog_div  = _exp1_feature_progression_div(df_all)
+    delta_div = _exp1_cyclic_delta_div(df_all)
+    best      = _best_model_box(
+        df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1", "Exp1-FS", "Exp1-Cyclic"])],
+        "Experiment 1")
     return f"""
 <section id="exp1">
-  <h1 class="section-title">Experiment 1 - Inlet + COMMON</h1>
+  <h1 class="section-title">Experiment 1 - Inlet Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
+  {sub_s1}
   {sub1}
   {sub2}
   {fs_div}
+  {sub_cyc}
+  {prog_div}
+  {delta_div}
   {best}
 </section>"""
 
@@ -3465,8 +3677,11 @@ def _sidebar() -> str:
       Experiment 1 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp1">
-      <a class="nav-item nav-sub" href="#exp1-full">Full Feature Set</a>
+      <a class="nav-item nav-sub" href="#exp1-sub1">Sub1 (Inlet Only)</a>
+      <a class="nav-item nav-sub" href="#exp1-full">Sub2 (+ COMMON)</a>
       <a class="nav-item nav-sub" href="#exp1-fs">Feature Selected</a>
+      <a class="nav-item nav-sub" href="#exp1-cyclic">Sub2 Cyclic</a>
+      <a class="nav-item nav-sub" href="#exp1-progression">Progression Table</a>
     </div>
   </div>
 
@@ -4011,7 +4226,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── Running Leaders sidebar ─────────────────────────────────────────────────
 (function() {
   // SECTION_BESTS is injected by Python below
-  var sectionOrder = ['exp1-full','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
+  var sectionOrder = ['exp1-sub1','exp1-full','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
                       'exp3-s1','exp3-s1-fs','exp3-s2','p9-ann','p9-voting','p9-stacking',
                       'p10-full','p10b','p11'];
   var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',

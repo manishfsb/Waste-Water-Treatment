@@ -69,15 +69,15 @@ def _e3s1_fs(name):
 # (experiment_label, dataset_id, file_path, target)
 DATASETS = [
     # ── Experiment 3 Sub-1 FS - Grab ─────────────────────────────────────────
-    ("Exp3-S1-FS", "Exp3S1FS_Grab_BOD", _e3s1_fs("s1_stage3_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Grab_COD", _e3s1_fs("s1_stage3_grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Grab_TSS", _e3s1_fs("s1_stage3_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Grab_pH",  _e3s1_fs("s1_stage3_grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Grab_BOD", _e3s1_fs("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Grab_COD", _e3s1_fs("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Grab_TSS", _e3s1_fs("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Grab_pH",  _e3s1_fs("grab_pH"),  "Effluent pH (Grab)"),
     # ── Experiment 3 Sub-1 FS - Composite ────────────────────────────────────
-    ("Exp3-S1-FS", "Exp3S1FS_Comp_BOD", _e3s1_fs("s1_stage3_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Comp_COD", _e3s1_fs("s1_stage3_comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Comp_TSS", _e3s1_fs("s1_stage3_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp3-S1-FS", "Exp3S1FS_Comp_pH",  _e3s1_fs("s1_stage3_comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Comp_BOD", _e3s1_fs("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Comp_COD", _e3s1_fs("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Comp_TSS", _e3s1_fs("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S1-FS", "Exp3S1FS_Comp_pH",  _e3s1_fs("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 

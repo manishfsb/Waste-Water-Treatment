@@ -27,12 +27,12 @@ MODELING_DIR = os.path.dirname(SCRIPT_DIR)
 DATA_FILE    = os.path.join(os.path.dirname(MODELING_DIR), "raw_data", "All_Years_Full.xlsx")
 FI_FILE      = os.path.join(MODELING_DIR, "feature_analysis", "selection", "feature_importance.xlsx")
 
-EXP1_FS_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1", "feature_selected_datasets")
+EXP1_FS_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2", "feature_selected_datasets")
 EXP2S1_FS_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1", "feature_selected_datasets")
 EXP2S2_FS_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2", "feature_selected_datasets")
 
 # Baseline subset dirs (for row-count comparison)
-EXP1_BASE_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1")
+EXP1_BASE_DIR   = os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2")
 EXP2S1_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1")
 EXP2S2_BASE_DIR = os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2")
 
@@ -45,58 +45,58 @@ FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03-0.07); drop Weak (< 0.03)
 # min_year matches the baseline subset creation in stage1_modeling.py.
 REGISTRY = [
     # Experiment 1 - Grab
-    ("Experiment 1", "Grab", "stage1_grab_BOD",
+    ("Experiment 1", "Grab", "grab_BOD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
-    ("Experiment 1", "Grab", "stage1_grab_COD",
+    ("Experiment 1", "Grab", "grab_COD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent COD (mg/L, Grab)", 2020),
-    ("Experiment 1", "Grab", "stage1_grab_TSS",
+    ("Experiment 1", "Grab", "grab_TSS",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
-    ("Experiment 1", "Grab", "stage1_grab_pH",
+    ("Experiment 1", "Grab", "grab_pH",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent pH (Grab)", 2021),
     # Experiment 1 - Composite
-    ("Experiment 1", "Composite", "stage1_comp_BOD",
+    ("Experiment 1", "Composite", "comp_BOD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
-    ("Experiment 1", "Composite", "stage1_comp_COD",
+    ("Experiment 1", "Composite", "comp_COD",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent COD (mg/L, Composite)", 2022),
-    ("Experiment 1", "Composite", "stage1_comp_TSS",
+    ("Experiment 1", "Composite", "comp_TSS",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent TSS (mg/L, Composite)", 2022),
-    ("Experiment 1", "Composite", "stage1_comp_pH",
+    ("Experiment 1", "Composite", "comp_pH",
      EXP1_FS_DIR, EXP1_BASE_DIR, "Effluent pH (Composite)", 2022),
     # Experiment 2 Sub-1 - Grab
-    ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_BOD",
+    ("Experiment 2 Sub-1", "Grab", "grab_BOD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_COD",
+    ("Experiment 2 Sub-1", "Grab", "grab_COD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent COD (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_TSS",
+    ("Experiment 2 Sub-1", "Grab", "grab_TSS",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-1", "Grab", "stage2_p1_grab_pH",
+    ("Experiment 2 Sub-1", "Grab", "grab_pH",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent pH (Grab)", 2020),
     # Experiment 2 Sub-1 - Composite
-    ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_BOD",
+    ("Experiment 2 Sub-1", "Composite", "comp_BOD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_COD",
+    ("Experiment 2 Sub-1", "Composite", "comp_COD",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent COD (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_TSS",
+    ("Experiment 2 Sub-1", "Composite", "comp_TSS",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent TSS (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-1", "Composite", "stage2_p1_comp_pH",
+    ("Experiment 2 Sub-1", "Composite", "comp_pH",
      EXP2S1_FS_DIR, EXP2S1_BASE_DIR, "Effluent pH (Composite)", 2022),
     # Experiment 2 Sub-2 - Grab
-    ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_BOD",
+    ("Experiment 2 Sub-2", "Grab", "grab_BOD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent BOD (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_COD",
+    ("Experiment 2 Sub-2", "Grab", "grab_COD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent COD (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_TSS",
+    ("Experiment 2 Sub-2", "Grab", "grab_TSS",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent TSS (mg/L, Grab)", 2020),
-    ("Experiment 2 Sub-2", "Grab", "stage2_p2_grab_pH",
+    ("Experiment 2 Sub-2", "Grab", "grab_pH",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent pH (Grab)", 2020),
     # Experiment 2 Sub-2 - Composite
-    ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_BOD",
+    ("Experiment 2 Sub-2", "Composite", "comp_BOD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent BOD (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_COD",
+    ("Experiment 2 Sub-2", "Composite", "comp_COD",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent COD (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_TSS",
+    ("Experiment 2 Sub-2", "Composite", "comp_TSS",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent TSS (mg/L, Composite)", 2022),
-    ("Experiment 2 Sub-2", "Composite", "stage2_p2_comp_pH",
+    ("Experiment 2 Sub-2", "Composite", "comp_pH",
      EXP2S2_FS_DIR, EXP2S2_BASE_DIR, "Effluent pH (Composite)", 2022),
 ]
 

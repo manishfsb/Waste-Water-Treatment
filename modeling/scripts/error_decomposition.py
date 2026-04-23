@@ -45,14 +45,14 @@ sys.path.insert(0, PROJECT_ROOT)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 TARGETS = [
-    ("s2_stage3_grab_BOD", "Effluent BOD (mg/L, Grab)",      "Inlet BOD (mg/L, Grab)"),
-    ("s2_stage3_grab_COD", "Effluent COD (mg/L, Grab)",      "Inlet COD (mg/L, Grab)"),
-    ("s2_stage3_grab_TSS", "Effluent TSS (mg/L, Grab)",      "Inlet TSS (mg/L, Grab)"),
-    ("s2_stage3_grab_pH",  "Effluent pH (Grab)",             "Inlet pH (Grab)"),
-    ("s2_stage3_comp_BOD", "Effluent BOD (mg/L, Composite)", "Inlet BOD (mg/L, Composite)"),
-    ("s2_stage3_comp_COD", "Effluent COD (mg/L, Composite)", "Inlet COD (mg/L, Composite)"),
-    ("s2_stage3_comp_TSS", "Effluent TSS (mg/L, Composite)", "Inlet TSS (mg/L, Composite)"),
-    ("s2_stage3_comp_pH",  "Effluent pH (Composite)",        "Inlet pH (Composite)"),
+    ("grab_BOD", "Effluent BOD (mg/L, Grab)",      "Inlet BOD (mg/L, Grab)"),
+    ("grab_COD", "Effluent COD (mg/L, Grab)",      "Inlet COD (mg/L, Grab)"),
+    ("grab_TSS", "Effluent TSS (mg/L, Grab)",      "Inlet TSS (mg/L, Grab)"),
+    ("grab_pH",  "Effluent pH (Grab)",             "Inlet pH (Grab)"),
+    ("comp_BOD", "Effluent BOD (mg/L, Composite)", "Inlet BOD (mg/L, Composite)"),
+    ("comp_COD", "Effluent COD (mg/L, Composite)", "Inlet COD (mg/L, Composite)"),
+    ("comp_TSS", "Effluent TSS (mg/L, Composite)", "Inlet TSS (mg/L, Composite)"),
+    ("comp_pH",  "Effluent pH (Composite)",        "Inlet pH (Composite)"),
 ]
 
 MODEL_COL = "predicted_Voting_run_1"     # Phase 9 ensemble artefact - present in all s2 files

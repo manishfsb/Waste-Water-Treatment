@@ -36,14 +36,14 @@ FS_THRESHOLD = 0.03   # Core (>= 0.08) + Useful (0.03-0.07); drop Weak (< 0.03)
 # ── Registry ───────────────────────────────────────────────────────────────────
 # (exp_label, variant, dataset_name, target, min_year)
 REGISTRY = [
-    ("Experiment 3 Sub-1", "Grab",      "s1_stage3_grab_BOD", "Effluent BOD (mg/L, Grab)",      2021),
-    ("Experiment 3 Sub-1", "Grab",      "s1_stage3_grab_COD", "Effluent COD (mg/L, Grab)",      2021),
-    ("Experiment 3 Sub-1", "Grab",      "s1_stage3_grab_TSS", "Effluent TSS (mg/L, Grab)",      2021),
-    ("Experiment 3 Sub-1", "Grab",      "s1_stage3_grab_pH",  "Effluent pH (Grab)",             2021),
-    ("Experiment 3 Sub-1", "Composite", "s1_stage3_comp_BOD", "Effluent BOD (mg/L, Composite)", 2021),
-    ("Experiment 3 Sub-1", "Composite", "s1_stage3_comp_COD", "Effluent COD (mg/L, Composite)", 2021),
-    ("Experiment 3 Sub-1", "Composite", "s1_stage3_comp_TSS", "Effluent TSS (mg/L, Composite)", 2021),
-    ("Experiment 3 Sub-1", "Composite", "s1_stage3_comp_pH",  "Effluent pH (Composite)",        2021),
+    ("Experiment 3 Sub-1", "Grab",      "grab_BOD", "Effluent BOD (mg/L, Grab)",      2021),
+    ("Experiment 3 Sub-1", "Grab",      "grab_COD", "Effluent COD (mg/L, Grab)",      2021),
+    ("Experiment 3 Sub-1", "Grab",      "grab_TSS", "Effluent TSS (mg/L, Grab)",      2021),
+    ("Experiment 3 Sub-1", "Grab",      "grab_pH",  "Effluent pH (Grab)",             2021),
+    ("Experiment 3 Sub-1", "Composite", "comp_BOD", "Effluent BOD (mg/L, Composite)", 2021),
+    ("Experiment 3 Sub-1", "Composite", "comp_COD", "Effluent COD (mg/L, Composite)", 2021),
+    ("Experiment 3 Sub-1", "Composite", "comp_TSS", "Effluent TSS (mg/L, Composite)", 2021),
+    ("Experiment 3 Sub-1", "Composite", "comp_pH",  "Effluent pH (Composite)",        2021),
 ]
 
 

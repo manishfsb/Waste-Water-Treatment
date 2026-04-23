@@ -53,14 +53,14 @@ EXP2_COMP = COMP_INLET + SEC_COLS + COMMON
 # (target_col, variant, file_stem, min_year)
 # min_year matches prior subset conventions (2020 for most grab, 2022 for composite)
 REGISTRY = [
-    ("Effluent BOD (mg/L, Grab)",      "Grab",      "stage3_grab_BOD",  2020),
-    ("Effluent COD (mg/L, Grab)",      "Grab",      "stage3_grab_COD",  2020),
-    ("Effluent TSS (mg/L, Grab)",      "Grab",      "stage3_grab_TSS",  2020),
-    ("Effluent pH (Grab)",             "Grab",      "stage3_grab_pH",   2020),
-    ("Effluent BOD (mg/L, Composite)", "Composite", "stage3_comp_BOD",  2022),
-    ("Effluent COD (mg/L, Composite)", "Composite", "stage3_comp_COD",  2022),
-    ("Effluent TSS (mg/L, Composite)", "Composite", "stage3_comp_TSS",  2022),
-    ("Effluent pH (Composite)",        "Composite", "stage3_comp_pH",   2022),
+    ("Effluent BOD (mg/L, Grab)",      "Grab",      "grab_BOD",  2020),
+    ("Effluent COD (mg/L, Grab)",      "Grab",      "grab_COD",  2020),
+    ("Effluent TSS (mg/L, Grab)",      "Grab",      "grab_TSS",  2020),
+    ("Effluent pH (Grab)",             "Grab",      "grab_pH",   2020),
+    ("Effluent BOD (mg/L, Composite)", "Composite", "comp_BOD",  2022),
+    ("Effluent COD (mg/L, Composite)", "Composite", "comp_COD",  2022),
+    ("Effluent TSS (mg/L, Composite)", "Composite", "comp_TSS",  2022),
+    ("Effluent pH (Composite)",        "Composite", "comp_pH",   2022),
 ]
 
 
@@ -117,16 +117,16 @@ def main():
         s2_new     = add_feats + cons_feats   # ADD + CONSIDER combined
 
         # Exp2 Sub-2 baseline row count (for delta reference)
-        exp2_file = os.path.join(EXP2S2_GRAB, f"stage2_p2_{stem.replace('stage3_', '')}.xlsx")
+        exp2_file = os.path.join(EXP2S2_GRAB, f"{stem}.xlsx")
         n_exp2 = len(pd.read_excel(exp2_file)) if os.path.exists(exp2_file) else None
 
         # ── S1: baseline + ADD ───────────────────────────────────────────────────
-        s1_path = os.path.join(S1_DIR, f"s1_{stem}.xlsx")
+        s1_path = os.path.join(S1_DIR, f"{stem}.xlsx")
         n_s1 = build_subset(raw, target, baseline, add_feats, min_year, s1_path,
                              f"S1 {stem}")
 
         # ── S2: baseline + ADD + CONSIDER ────────────────────────────────────────
-        s2_path = os.path.join(S2_DIR, f"s2_{stem}.xlsx")
+        s2_path = os.path.join(S2_DIR, f"{stem}.xlsx")
         n_s2 = build_subset(raw, target, baseline, s2_new, min_year, s2_path,
                              f"S2 {stem}")
 

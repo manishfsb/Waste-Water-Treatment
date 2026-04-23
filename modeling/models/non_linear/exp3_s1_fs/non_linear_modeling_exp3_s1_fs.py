@@ -67,23 +67,23 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 # (experiment_label, model_name, subset_path, target)
 REGISTRY = [
     # Experiment 3 Sub-1 FS - Grab
-    ("Experiment 3 Sub-1 FS", "s1_stage3_grab_BOD",
-     _e3s1_fs("s1_stage3_grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_grab_COD",
-     _e3s1_fs("s1_stage3_grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_grab_TSS",
-     _e3s1_fs("s1_stage3_grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_grab_pH",
-     _e3s1_fs("s1_stage3_grab_pH"),  "Effluent pH (Grab)"),
+    ("Experiment 3 Sub-1 FS", "grab_BOD",
+     _e3s1_fs("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Experiment 3 Sub-1 FS", "grab_COD",
+     _e3s1_fs("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Experiment 3 Sub-1 FS", "grab_TSS",
+     _e3s1_fs("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Experiment 3 Sub-1 FS", "grab_pH",
+     _e3s1_fs("grab_pH"),  "Effluent pH (Grab)"),
     # Experiment 3 Sub-1 FS - Composite
-    ("Experiment 3 Sub-1 FS", "s1_stage3_comp_BOD",
-     _e3s1_fs("s1_stage3_comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_comp_COD",
-     _e3s1_fs("s1_stage3_comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_comp_TSS",
-     _e3s1_fs("s1_stage3_comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 3 Sub-1 FS", "s1_stage3_comp_pH",
-     _e3s1_fs("s1_stage3_comp_pH"),  "Effluent pH (Composite)"),
+    ("Experiment 3 Sub-1 FS", "comp_BOD",
+     _e3s1_fs("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Experiment 3 Sub-1 FS", "comp_COD",
+     _e3s1_fs("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Experiment 3 Sub-1 FS", "comp_TSS",
+     _e3s1_fs("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Experiment 3 Sub-1 FS", "comp_pH",
+     _e3s1_fs("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Colours ────────────────────────────────────────────────────────────────────
