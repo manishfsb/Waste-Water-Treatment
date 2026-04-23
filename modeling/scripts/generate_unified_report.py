@@ -471,6 +471,11 @@ def _melt_linear(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
             n_train=row.get("n_train"),
             n_test=row.get("n_test"),
             n_features=row.get("n_features"),
+            n_features_input=row.get("n_features_input"),
+            n_selected_linear=row.get("n_selected_linear"),
+            selected_features_linear=row.get("selected_features_linear"),
+            ElNet_n_selected=row.get("ElNet_n_selected"),
+            ElNet_selected_features=row.get("ElNet_selected_features"),
         )
         for m in LINEAR_MODELS:
             r = base.copy()
@@ -496,6 +501,9 @@ def _norm_nl(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
         n_train=df.get("n_train"),
         n_test=df.get("n_test"),
         n_features=df.get("n_features"),
+        n_features_input=df.get("n_features_input"),
+        n_selected_nl=df.get("n_selected_nl"),
+        selected_features_nl=df.get("selected_features_nl"),
         R2_train=df.get("R2_train"),
         R2_test=df.get("R2_test"),
         R2_gap=df.get("R2_gap"),
@@ -1100,6 +1108,117 @@ def _dataset_summary(df: pd.DataFrame) -> str:
     </table>
   </div>
 </details>"""
+
+
+def _feature_selection_table(df: pd.DataFrame) -> str:
+    """
+    Render a per-target feature selection comparison table showing which
+    features were selected by each model class.
+
+    Linear: MI+Corr pre-screen (shared by OLS and Ridge) + ElasticNet internal.
+    Non-linear: OOF permutation importance (per model: RF, GB, XGB).
+
+    Features are color-coded:
+      green  = selected by ALL model classes present (universal core)
+      amber  = selected by some but not all (model-specific)
+      (not shown) = dropped by all
+    """
+    # Check if selection columns exist (only present in run_2+ data)
+    has_linear = "selected_features_linear" in df.columns and df["selected_features_linear"].notna().any()
+    has_nl     = "selected_features_nl" in df.columns and df["selected_features_nl"].notna().any()
+    if not has_linear and not has_nl:
+        return ""
+
+    rows_html = []
+    for tgt in TARGETS_ORDERED:
+        sub = df[df["target"] == tgt]
+        if sub.empty:
+            continue
+
+        slug = TARGET_SLUG.get(tgt, "all")
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+
+        # Linear selected (from OLS/Ridge row — same for both)
+        lin_row = sub[sub["model"] == "OLS"]
+        lin_sel = set()
+        lin_str = "—"
+        if has_linear and not lin_row.empty:
+            raw = lin_row.iloc[0].get("selected_features_linear", "")
+            if isinstance(raw, str) and raw.strip():
+                lin_sel = set(f.strip() for f in raw.split(","))
+                lin_str = f"{len(lin_sel)} features"
+
+        # ElasticNet internal selection
+        elnet_row = sub[sub["model"] == "ElNet"]
+        elnet_sel = set()
+        elnet_str = "—"
+        if has_linear and not elnet_row.empty:
+            raw = elnet_row.iloc[0].get("ElNet_selected_features", "")
+            if isinstance(raw, str) and raw.strip():
+                elnet_sel = set(f.strip() for f in raw.split(","))
+                elnet_str = f"{len(elnet_sel)} features"
+
+        # Tree model selections (RF, GB, XGB — may differ)
+        nl_sels = {}
+        for mdl in ["RF", "GB", "XGB"]:
+            nl_row = sub[sub["model"] == mdl]
+            if has_nl and not nl_row.empty:
+                raw = nl_row.iloc[0].get("selected_features_nl", "")
+                if isinstance(raw, str) and raw.strip():
+                    nl_sels[mdl] = set(f.strip() for f in raw.split(","))
+
+        # All non-empty sets for overlap analysis
+        all_sets = [s for s in [lin_sel, elnet_sel] + list(nl_sels.values()) if s]
+        if not all_sets:
+            continue
+        universal = set.intersection(*all_sets) if len(all_sets) > 1 else set()
+
+        def _feat_tags(feat_set, universal_set):
+            if not feat_set:
+                return "<em style='color:var(--text-meta)'>none</em>"
+            tags = []
+            for f in sorted(feat_set):
+                cls = "fs-univ" if f in universal_set else "fs-model"
+                tags.append(f'<span class="{cls}">{f}</span>')
+            return " ".join(tags)
+
+        nl_cells = ""
+        for mdl in ["RF", "GB", "XGB"]:
+            s = nl_sels.get(mdl, set())
+            nl_cells += f"<td>{_feat_tags(s, universal)}</td>"
+
+        rows_html.append(f"""
+<tr data-target="{slug}">
+  <td><strong>{tgt_short}</strong></td>
+  <td>{_feat_tags(lin_sel, universal)}</td>
+  <td>{_feat_tags(elnet_sel, universal)}</td>
+  {nl_cells}
+</tr>""")
+
+    if not rows_html:
+        return ""
+
+    return f"""
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> Model-Specific Feature Selection (run 2+)</summary>
+  <div class="fold-body">
+    <p style="font-size:0.82rem;color:var(--text-meta);margin:0 0 8px">
+      <span class="fs-univ" style="padding:1px 6px;border-radius:4px">Green</span> = selected by <strong>all</strong> model classes (universal core) &nbsp;|&nbsp;
+      <span class="fs-model" style="padding:1px 6px;border-radius:4px">Amber</span> = model-specific selection &nbsp;|&nbsp;
+      Linear (OLS+Ridge): MI+Correlation pre-screen &nbsp;|&nbsp;
+      ElasticNet: internal L1 selection &nbsp;|&nbsp;
+      RF/GB/XGB: OOF permutation importance
+    </p>
+    <table class="summary-table fs-table">
+      <thead><tr>
+        <th>Target</th><th>Linear (OLS/Ridge)</th><th>ElasticNet</th>
+        <th>RF</th><th>GB</th><th>XGB</th>
+      </tr></thead>
+      <tbody>{"".join(rows_html)}</tbody>
+    </table>
+  </div>
+</details>"""
+
 
 
 def _pick_best(avail, sub):
@@ -2356,6 +2475,7 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     feat_html   = _feature_card(exp_key)
     fs_html     = _feature_selection_details(exp_key)
     ds_html     = _dataset_summary(df)
+    fs_sel_html = _feature_selection_table(df)
     lin_tbl     = _metrics_table(df[df["model"].isin(ml)], ml, f"{section_id}-lin", df_all)
     nl_tbl      = _metrics_table(df[df["model"].isin(mn)], mn, f"{section_id}-nl", df_all)
     comp_tbl    = _metrics_table(df, all_m, f"{section_id}-comp", df_all)
@@ -2369,6 +2489,7 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     {feat_html}
     {fs_html}
     {ds_html}
+    {fs_sel_html}
 
     <details class="inner-fold">
       <summary><span class="fold-icon">▶</span> Linear Models (OLS · Ridge · ElNet)</summary>
@@ -3512,7 +3633,10 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
                               "Sub-experiment 2 Cyclic — Cyclic Calendar Encoding (11 features)",
                               open_default=False)
     sub_fs  = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
-                              "Sub-experiment 2 — Feature Selected Variant", open_default=False)
+                              "Sub-experiment 2 — Feature Selected Variant "
+                              "<span style='font-size:11px;font-weight:400;color:var(--text-meta)'>"
+                              "(run 1 baseline: static RF-importance pre-screen applied to dataset upfront)</span>",
+                              open_default=False)
     cmp_div      = _exp1_comparison_panel(df_all)
     findings_div = _exp1_qna(df_all)
     best         = _best_model_box(
@@ -3615,8 +3739,9 @@ def _phase9_model_subsection(df_all: pd.DataFrame, exp_key: str,
     if df.empty:
         return ""
     models = df["model"].unique().tolist()
-    feat_html = _feature_card(exp_key)
-    ds_html   = _dataset_summary(df)
+    feat_html   = _feature_card(exp_key)
+    ds_html     = _dataset_summary(df)
+    fs_sel_html = _feature_selection_table(df)
     tbl       = _metrics_table(df, models, section_id, df_all)
     train_tbl = _train_metrics_table(df, models)
     return f"""
@@ -3625,6 +3750,7 @@ def _phase9_model_subsection(df_all: pd.DataFrame, exp_key: str,
   <div class="exp-body">
     {feat_html}
     {ds_html}
+    {fs_sel_html}
     {tbl}
     {train_tbl}
   </div>
@@ -4414,6 +4540,23 @@ CUSTOM_CSS = """
   .feat-card-features, .feat-card-rationale {
     font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 4px;
   }
+  /* Feature selection comparison table badges */
+  .fs-univ {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    background: rgba(46, 204, 113, 0.15); color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.35);
+    border-radius: 4px; padding: 1px 5px; margin: 1px 2px;
+    white-space: nowrap;
+  }
+  .fs-model {
+    display: inline-block; font-size: 11px;
+    background: rgba(243, 156, 18, 0.12); color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    border-radius: 4px; padding: 1px 5px; margin: 1px 2px;
+    white-space: nowrap;
+  }
+  .fs-table td { vertical-align: top; font-size: 11.5px; line-height: 1.6; }
+  .fs-table th { font-size: 11.5px; white-space: nowrap; }
   .fs-rank-summary {
     margin: 0 0 10px;
     padding: 10px 12px;

@@ -42,7 +42,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
@@ -192,6 +194,53 @@ def _run_number(model_dir: str) -> int:
     df = pd.read_excel(rfile)
     return int(df["run"].max()) + 1 if "run" in df.columns else 1
 
+
+# ── OOF permutation importance feature selection ────────────────────────────
+
+def _oof_perm_select(fitted_estimator, X_tr: np.ndarray, y_tr: np.ndarray,
+                     features: list, tscv,
+                     threshold: float = 0.05) -> tuple[np.ndarray, list, np.ndarray]:
+    """
+    Compute permutation importance on out-of-fold (validation) splits.
+
+    Unlike training-set permutation importance (current broken approach),
+    this evaluates each feature's contribution on data the model has NOT seen,
+    giving an unbiased, generalization-aware importance estimate.
+
+    Steps:
+      1. For each CV fold: clone the fitted estimator (same hyperparams, unfitted),
+         train on train_fold, compute perm. importance on val_fold.
+      2. Average importance across folds, normalize to sum=1.
+      3. Drop features with normalized importance < threshold.
+      4. Fallback: if all features are dropped, return the full set.
+
+    Returns:
+      mask       - boolean array (True = keep)
+      selected   - list of selected feature names
+      norm_imps  - normalized OOF importance per feature (for logging)
+    """
+    fold_imps = np.zeros(len(features))
+    for tr_idx, val_idx in tscv.split(X_tr):
+        est = clone(fitted_estimator)       # same hyperparams, freshly unfitted
+        est.fit(X_tr[tr_idx], y_tr[tr_idx])
+        perm = permutation_importance(
+            est, X_tr[val_idx], y_tr[val_idx],
+            n_repeats=10, random_state=42, n_jobs=1,
+        )
+        fold_imps += perm.importances_mean.clip(min=0)
+
+    fold_imps /= tscv.n_splits
+    total     = fold_imps.sum()
+    norm_imps = fold_imps / total if total > 0 else fold_imps
+    mask      = norm_imps >= threshold
+
+    if mask.sum() == 0:
+        print("    OOF selection: all features below threshold — keeping full set")
+        mask = np.ones(len(features), dtype=bool)
+
+    selected = [f for f, m in zip(features, mask) if m]
+    return mask, selected, norm_imps
+
 # ── Plotting ───────────────────────────────────────────────────────────────────
 
 def _plot_scatter(plots_dir, name, model_tag, run, test_df, y_test, y_pred, target):
@@ -254,8 +303,13 @@ def train_one(experiment, name, subset_path, features, target,
               model_tag, search_factory, run, model_dir):
     """
     Train one (model, dataset) combination using a GridSearchCV /
-    RandomizedSearchCV factory. Fits the search, extracts best_estimator_,
-    records CV RMSE and best hyperparameters. Returns metrics dict + plot paths.
+    RandomizedSearchCV factory.
+
+    Phase 1 (initial search): fit search on full feature set to find best
+    hyperparameters.
+    Phase 2 (OOF selection): use those best hyperparams to estimate per-feature
+    importance on validation folds (unbiased). Drop features below threshold.
+    Phase 3 (final fit): refit search on selected features only.
     """
     df = pd.read_excel(subset_path, parse_dates=["Date"])
 
@@ -272,58 +326,101 @@ def train_one(experiment, name, subset_path, features, target,
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
 
-    print(f"    n_train={len(train)} n_test={len(test)} - tuning...", end="", flush=True)
+    n_in = len(features)
+    print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in}")
 
-    # ── Hyperparameter search ─────────────────────────────────────────────────
-    search = search_factory()
-    search.fit(X_tr, y_tr)
-    best     = search.best_estimator_
-    cv_rmse  = float(-search.best_score_)
-    best_p   = search.best_params_
-    print(f"  CV_RMSE={cv_rmse:.3f}  best={best_p}")
+    # ── Phase 1: initial CV search on full feature set ────────────────────────
+    print(f"    Phase 1 — initial CV search (all {n_in} features)...",
+          end="", flush=True)
+    search1 = search_factory()
+    search1.fit(X_tr, y_tr)
+    best1    = search1.best_estimator_
+    cv_rmse1 = float(-search1.best_score_)
+    best_p   = search1.best_params_
+    print(f"  CV_RMSE={cv_rmse1:.3f}  best={best_p}")
 
-    tr_pred = best.predict(X_tr)
-    te_pred = best.predict(X_te)
+    # ── Phase 2: OOF permutation importance feature selection ─────────────────
+    print(f"    Phase 2 — OOF permutation importance selection...",
+          end="", flush=True)
+    oof_mask, selected_nl, norm_imps = _oof_perm_select(
+        best1, X_tr, y_tr, features, TSCV, threshold=0.05
+    )
+    n_sel = int(oof_mask.sum())
+    print(f"  selected {n_sel}/{n_in} features")
+    print(f"    Kept : {selected_nl}")
+    dropped_nl = [f for f, m in zip(features, oof_mask) if not m]
+    if dropped_nl:
+        print(f"    Dropped: {dropped_nl}")
+
+    # Apply mask to training and test arrays
+    X_tr_sel = X_tr[:, oof_mask]
+    X_te_sel = X_te[:, oof_mask]
+
+    # ── Phase 3: refit final CV search on selected features only ─────────────
+    print(f"    Phase 3 — final CV search ({n_sel} features)...",
+          end="", flush=True)
+    search2  = search_factory()
+    search2.fit(X_tr_sel, y_tr)
+    best     = search2.best_estimator_
+    cv_rmse  = float(-search2.best_score_)
+    best_p2  = search2.best_params_
+    print(f"  CV_RMSE={cv_rmse:.3f}  best={best_p2}")
+
+    tr_pred = best.predict(X_tr_sel)
+    te_pred = best.predict(X_te_sel)
 
     row = {
-        "experiment":  experiment,
-        "model_name":  name,
-        "run":         run,
-        "model":       model_tag,
-        "target":      target,
-        "n_train":     len(train),
-        "n_test":      len(test),
-        "CV_RMSE":     round(cv_rmse, 4),
-        "R2_train":    round(_r2(y_tr, tr_pred),  4),
-        "RMSE_train":  round(_rmse(y_tr, tr_pred), 4),
-        "MAE_train":   round(_mae(y_tr,  tr_pred), 4),
-        "R2_test":     round(_r2(y_te, te_pred),   4),
-        "RMSE_test":   round(_rmse(y_te, te_pred), 4),
-        "MAE_test":    round(_mae(y_te,  te_pred), 4),
-        "R2_gap":      round(_r2(y_tr, tr_pred) - _r2(y_te, te_pred), 4),
-        "best_params": str(best_p),
+        "experiment":          experiment,
+        "model_name":          name,
+        "run":                 run,
+        "model":               model_tag,
+        "target":              target,
+        "n_train":             len(train),
+        "n_test":              len(test),
+        "n_features_input":    n_in,
+        "n_selected_nl":       n_sel,
+        "selected_features_nl": ", ".join(selected_nl),
+        "dropped_features_nl":  ", ".join(dropped_nl),
+        "CV_RMSE_initial":     round(cv_rmse1, 4),
+        "CV_RMSE":             round(cv_rmse,  4),
+        "R2_train":            round(_r2(y_tr, tr_pred),  4),
+        "RMSE_train":          round(_rmse(y_tr, tr_pred), 4),
+        "MAE_train":           round(_mae(y_tr,  tr_pred), 4),
+        "R2_test":             round(_r2(y_te, te_pred),   4),
+        "RMSE_test":           round(_rmse(y_te, te_pred), 4),
+        "MAE_test":            round(_mae(y_te,  te_pred), 4),
+        "R2_gap":              round(_r2(y_tr, tr_pred) - _r2(y_te, te_pred), 4),
+        "best_params":         str(best_p2),
     }
+    # n_features column (used by unified report for backward compat)
+    row["n_features"] = n_sel
 
-    # ── Save best estimator ───────────────────────────────────────────────────
+    # ── Save best estimator (with feature metadata) ──────────────────────────
     plots_dir  = os.path.join(model_dir, "plots")
     models_dir = os.path.join(model_dir, "models")
     pkl_path   = os.path.join(models_dir, f"{name}_{model_tag}_run_{run}.pkl")
-    joblib.dump(best, pkl_path)
+    joblib.dump({
+        "model":            best,
+        "selected_features": selected_nl,
+        "feature_mask":     oof_mask,
+        "all_features":     features,
+        "norm_oof_importance": dict(zip(features, norm_imps.tolist())),
+    }, pkl_path)
 
-    # ── Plots ─────────────────────────────────────────────────────────────────
+    # ── Plots (using selected features) ───────────────────────────────────
     plots = {
         "scatter":    _plot_scatter(plots_dir, name, model_tag, run,
                                     test, y_te, te_pred, target),
         "timeseries": _plot_timeseries(plots_dir, name, model_tag, run,
-                                       df, features, best, target),
+                                       df, selected_nl, best, target),
         "importance": _plot_importance(plots_dir, name, model_tag, run,
-                                       best, features),
+                                       best, selected_nl),
     }
 
-    # ── Append predictions to subset file ─────────────────────────────────────
+    # ── Append predictions to subset file ──────────────────────────────────
     df_sub = pd.read_excel(subset_path)
     col    = f"predicted_{model_tag}_NL_run_{run}"
-    df_sub[col] = best.predict(df_sub[features].values).round(3)
+    df_sub[col] = best.predict(df_sub[selected_nl].values).round(3)
     df_sub.to_excel(subset_path, index=False)
 
     return row, plots
