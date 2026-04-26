@@ -54,7 +54,7 @@ SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
 _STAGE_DIRS = {
-    "experiment1":    os.path.join("datasets", "experiment1"),
+    "experiment1":    os.path.join("datasets", "experiment1", "sub_exp2"),
     "experiment2_s1": os.path.join("datasets", "experiment2", "sub_exp1"),
     "experiment2_s2": os.path.join("datasets", "experiment2", "sub_exp2"),
 }
@@ -339,6 +339,15 @@ def train_one(experiment, name, subset_path, features, target,
     best_p   = search1.best_params_
     print(f"  CV_RMSE={cv_rmse1:.3f}  best={best_p}")
 
+    # Full-feature test metrics (for FS comparison)
+    tr_pred_full = best1.predict(X_tr)
+    te_pred_full = best1.predict(X_te)
+    r2_train_full = round(_r2(y_tr, tr_pred_full),   4)
+    r2_test_full  = round(_r2(y_te, te_pred_full),   4)
+    rmse_test_full = round(_rmse(y_te, te_pred_full), 4)
+    mae_test_full  = round(_mae(y_te,  te_pred_full), 4)
+    r2_gap_full    = round(r2_train_full - r2_test_full, 4)
+
     # ── Phase 2: OOF permutation importance feature selection ─────────────────
     print(f"    Phase 2 — OOF permutation importance selection...",
           end="", flush=True)
@@ -382,6 +391,11 @@ def train_one(experiment, name, subset_path, features, target,
         "selected_features_nl": ", ".join(selected_nl),
         "dropped_features_nl":  ", ".join(dropped_nl),
         "CV_RMSE_initial":     round(cv_rmse1, 4),
+        "R2_train_full":       r2_train_full,
+        "R2_test_full":        r2_test_full,
+        "RMSE_test_full":      rmse_test_full,
+        "MAE_test_full":       mae_test_full,
+        "R2_gap_full":         r2_gap_full,
         "CV_RMSE":             round(cv_rmse,  4),
         "R2_train":            round(_r2(y_tr, tr_pred),  4),
         "RMSE_train":          round(_rmse(y_tr, tr_pred), 4),

@@ -472,8 +472,8 @@ def _melt_linear(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
             n_test=row.get("n_test"),
             n_features=row.get("n_features"),
             n_features_input=row.get("n_features_input"),
-            n_selected_linear=row.get("n_selected_linear"),
-            selected_features_linear=row.get("selected_features_linear"),
+            n_selected_ols=row.get("n_selected_ols"),
+            selected_features_ols=row.get("selected_features_ols"),
             ElNet_n_selected=row.get("ElNet_n_selected"),
             ElNet_selected_features=row.get("ElNet_selected_features"),
         )
@@ -489,6 +489,12 @@ def _melt_linear(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
                 MAE_test=row.get(f"{m}_test_MAE"),
                 MAPE_test=row.get(f"{m}_test_MAPE"),
             )
+            if m == "OLS":
+                r["R2_test_full"]   = row.get("OLS_full_test_R2")
+                r["R2_train_full"]  = row.get("OLS_full_train_R2")
+                r["RMSE_test_full"] = row.get("OLS_full_test_RMSE")
+                r["MAE_test_full"]  = row.get("OLS_full_test_MAE")
+                r["R2_gap_full"]    = row.get("OLS_full_R2_gap")
             rows.append(r)
     return pd.DataFrame(rows)
 
@@ -504,6 +510,11 @@ def _norm_nl(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
         n_features_input=df.get("n_features_input"),
         n_selected_nl=df.get("n_selected_nl"),
         selected_features_nl=df.get("selected_features_nl"),
+        R2_train_full=df.get("R2_train_full"),
+        R2_test_full=df.get("R2_test_full"),
+        RMSE_test_full=df.get("RMSE_test_full"),
+        MAE_test_full=df.get("MAE_test_full"),
+        R2_gap_full=df.get("R2_gap_full"),
         R2_train=df.get("R2_train"),
         R2_test=df.get("R2_test"),
         R2_gap=df.get("R2_gap"),
@@ -1115,7 +1126,8 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
     Render a per-target feature selection comparison table showing which
     features were selected by each model class.
 
-    Linear: MI+Corr pre-screen (shared by OLS and Ridge) + ElasticNet internal.
+    OLS: LassoCV pre-screen (TimeSeriesSplit, fitted on scaled train data).
+    ElasticNet: internal L1 selection (non-zero coefficients after fitting).
     Non-linear: OOF permutation importance (per model: RF, GB, XGB).
 
     Features are color-coded:
@@ -1124,7 +1136,7 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
       (not shown) = dropped by all
     """
     # Check if selection columns exist (only present in run_2+ data)
-    has_linear = "selected_features_linear" in df.columns and df["selected_features_linear"].notna().any()
+    has_linear = "selected_features_ols" in df.columns and df["selected_features_ols"].notna().any()
     has_nl     = "selected_features_nl" in df.columns and df["selected_features_nl"].notna().any()
     if not has_linear and not has_nl:
         return ""
@@ -1138,12 +1150,12 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
         slug = TARGET_SLUG.get(tgt, "all")
         tgt_short = TARGET_SHORT.get(tgt, tgt)
 
-        # Linear selected (from OLS/Ridge row — same for both)
+        # OLS selected (LassoCV pre-screen)
         lin_row = sub[sub["model"] == "OLS"]
         lin_sel = set()
         lin_str = "—"
         if has_linear and not lin_row.empty:
-            raw = lin_row.iloc[0].get("selected_features_linear", "")
+            raw = lin_row.iloc[0].get("selected_features_ols", "")
             if isinstance(raw, str) and raw.strip():
                 lin_sel = set(f.strip() for f in raw.split(","))
                 lin_str = f"{len(lin_sel)} features"
@@ -1198,24 +1210,135 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
     if not rows_html:
         return ""
 
+    # ── FS Impact comparison table ─────────────────────────────────────────────
+    # Collect data grouped by target for rowspan merging
+    impact_data = []   # list of (tgt_short, mdl, r2_full, r2_sel, rmse_full, rmse_sel, gap_full, gap_sel)
+    for tgt in TARGETS_ORDERED:
+        sub = df[df["target"] == tgt]
+        if sub.empty:
+            continue
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+        for mdl in ["OLS", "RF", "GB", "XGB"]:
+            mrow = sub[sub["model"] == mdl]
+            if mrow.empty:
+                continue
+            r = mrow.iloc[0]
+            r2_full   = r.get("R2_test_full")
+            r2_sel    = r.get("R2_test")
+            rmse_full = r.get("RMSE_test_full")
+            rmse_sel  = r.get("RMSE_test")
+            gap_full  = r.get("R2_gap_full")
+            gap_sel   = r.get("R2_gap")
+            if pd.isna(r2_full) or pd.isna(r2_sel):
+                continue
+            impact_data.append((tgt_short, mdl, r2_full, r2_sel, rmse_full, rmse_sel, gap_full, gap_sel))
+
+    impact_html = ""
+    if impact_data:
+        def _delta_cell(val, invert=False):
+            """Colour a delta value: green=better, red=worse, grey=zero."""
+            if abs(val) < 1e-6:
+                return f'<span style="color:var(--text-meta)">{val:+.3f}</span>'
+            better = val > 0 if not invert else val < 0
+            color  = "#5BAD6F" if better else "#E15252"
+            return f'<span style="color:{color};font-weight:600">{val:+.3f}</span>'
+
+        # Build rows with rowspan on the target cell
+        impact_rows = []
+        i = 0
+        while i < len(impact_data):
+            tgt_short = impact_data[i][0]
+            # Count consecutive rows sharing this target
+            j = i
+            while j < len(impact_data) and impact_data[j][0] == tgt_short:
+                j += 1
+            span = j - i
+            for k in range(i, j):
+                _, mdl, r2f, r2s, rmsf, rmss, gf, gs = impact_data[k]
+                dr2   = r2s  - r2f
+                drmse = (rmss - rmsf) if (rmsf is not None and rmss is not None and not pd.isna(rmsf) and not pd.isna(rmss)) else float("nan")
+                dgap  = gs   - gf
+                rmse_f_str = f"{rmsf:.3f}" if rmsf is not None and not pd.isna(rmsf) else "—"
+                rmse_s_str = f"{rmss:.3f}" if rmss is not None and not pd.isna(rmss) else "—"
+                tgt_cell = f'<td rowspan="{span}" style="vertical-align:middle;font-weight:600;white-space:nowrap">{tgt_short}</td>' if k == i else ""
+                impact_rows.append(
+                    f'<tr style="font-size:0.75rem">'
+                    f'{tgt_cell}'
+                    f'<td>{mdl}</td>'
+                    f'<td>{r2f:+.3f}</td><td>{r2s:+.3f}</td><td>{_delta_cell(dr2)}</td>'
+                    f'<td>{rmse_f_str}</td><td>{rmse_s_str}</td><td>{_delta_cell(drmse, invert=True)}</td>'
+                    f'<td>{gf:+.3f}</td><td>{gs:+.3f}</td><td>{_delta_cell(dgap, invert=True)}</td>'
+                    f'</tr>'
+                )
+            i = j
+
+        # Summary row
+        deltas_r2   = [r[3] - r[2] for r in impact_data]
+        deltas_gap  = [r[7] - r[6] for r in impact_data]
+        n_total     = len(deltas_r2)
+        n_improved  = sum(1 for d in deltas_r2 if d > 1e-6)
+        n_hurt      = sum(1 for d in deltas_r2 if d < -1e-6)
+        mean_dr2    = np.mean(deltas_r2)
+        mean_dgap   = np.mean(deltas_gap)
+        summary_color = "#5BAD6F" if mean_dr2 > 0 else "#E15252"
+        gap_color     = "#5BAD6F" if mean_dgap < 0 else "#E15252"
+        summary_row = (
+            f'<tr style="font-size:0.75rem;border-top:2px solid var(--border);font-weight:600;background:var(--bg-alt)">'
+            f'<td colspan="2">Summary ({n_total} rows)</td>'
+            f'<td colspan="2"></td>'
+            f'<td style="color:{summary_color}">{mean_dr2:+.3f} avg ΔR²</td>'
+            f'<td colspan="2"></td>'
+            f'<td></td>'
+            f'<td colspan="2"></td>'
+            f'<td style="color:{gap_color}">{mean_dgap:+.3f} avg ΔGap</td>'
+            f'</tr>'
+            f'<tr style="font-size:0.72rem;color:var(--text-meta);background:var(--bg-alt)">'
+            f'<td colspan="11">'
+            f'Improved: <strong style="color:#5BAD6F">{n_improved}</strong> &nbsp;|&nbsp; '
+            f'Hurt: <strong style="color:#E15252">{n_hurt}</strong> &nbsp;|&nbsp; '
+            f'Neutral: <strong>{n_total - n_improved - n_hurt}</strong> &nbsp;|&nbsp; '
+            f'Improvement rate: <strong>{100*n_improved/n_total:.0f}%</strong>'
+            f'</td></tr>'
+        )
+
+        impact_html = f"""
+<h4 style="margin:16px 0 4px;font-size:0.82rem;color:var(--text-main)">Feature Selection Impact (Full → Selected)</h4>
+<p style="font-size:0.73rem;color:var(--text-meta);margin:0 0 6px">
+  ΔR² / ΔRMSE / ΔGap = selected − full &nbsp;|&nbsp;
+  <span style="color:#5BAD6F;font-weight:600">green</span> = improvement &nbsp;|&nbsp;
+  <span style="color:#E15252;font-weight:600">red</span> = degradation &nbsp;|&nbsp;
+  grey = no change &nbsp;|&nbsp;
+  For RMSE and Gap: lower is better, so negative delta = green
+</p>
+<table class="summary-table" style="font-size:0.75rem">
+  <thead><tr style="font-size:0.73rem">
+    <th>Target</th><th>Model</th>
+    <th>R²_full</th><th>R²_sel</th><th>ΔR²</th>
+    <th>RMSE_full</th><th>RMSE_sel</th><th>ΔRMSE</th>
+    <th>Gap_full</th><th>Gap_sel</th><th>ΔGap</th>
+  </tr></thead>
+  <tbody>{"".join(impact_rows)}{summary_row}</tbody>
+</table>"""
+
     return f"""
 <details class="inner-fold">
-  <summary><span class="fold-icon">▶</span> Model-Specific Feature Selection (run 2+)</summary>
+  <summary><span class="fold-icon">▶</span> Model-Specific Feature Selection</summary>
   <div class="fold-body">
     <p style="font-size:0.82rem;color:var(--text-meta);margin:0 0 8px">
       <span class="fs-univ" style="padding:1px 6px;border-radius:4px">Green</span> = selected by <strong>all</strong> model classes (universal core) &nbsp;|&nbsp;
       <span class="fs-model" style="padding:1px 6px;border-radius:4px">Amber</span> = model-specific selection &nbsp;|&nbsp;
-      Linear (OLS+Ridge): MI+Correlation pre-screen &nbsp;|&nbsp;
-      ElasticNet: internal L1 selection &nbsp;|&nbsp;
+      OLS: LassoCV pre-screen (TimeSeriesSplit) &nbsp;|&nbsp;
+      ElasticNet: internal L1 selection (non-zero coefficients) &nbsp;|&nbsp;
       RF/GB/XGB: OOF permutation importance
     </p>
     <table class="summary-table fs-table">
       <thead><tr>
-        <th>Target</th><th>Linear (OLS/Ridge)</th><th>ElasticNet</th>
+        <th>Target</th><th>OLS</th><th>ElasticNet</th>
         <th>RF</th><th>GB</th><th>XGB</th>
       </tr></thead>
       <tbody>{"".join(rows_html)}</tbody>
     </table>
+    {impact_html}
   </div>
 </details>"""
 
