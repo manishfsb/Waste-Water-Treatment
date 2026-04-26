@@ -25,12 +25,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import ElasticNet, LinearRegression, Ridge
+from sklearn.linear_model import ElasticNet, LassoCV, LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
-from sklearn.feature_selection import mutual_info_regression
 from sklearn.preprocessing import StandardScaler
-from scipy import stats as scipy_stats
 import joblib
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -111,25 +109,25 @@ def _metrics(y_true, y_pred, prefix: str) -> dict:
     }
 
 
-# ── MI + Correlation pre-screen ───────────────────────────────────────────────
+# ── LassoCV feature selection for OLS ────────────────────────────────────────
 
-_MI_THRESH   = 0.02
-_CORR_THRESH = 0.05
-
-def _mi_corr_select(X_tr, y_train, features):
-    mi    = mutual_info_regression(X_tr, y_train, random_state=42)
-    corrs = np.array([abs(scipy_stats.spearmanr(X_tr[:, i], y_train)[0])
-                      for i in range(len(features))])
-    mask  = (mi >= _MI_THRESH) | (corrs >= _CORR_THRESH)
+def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
+                  features: list, tscv) -> tuple:
+    lasso = LassoCV(cv=tscv, max_iter=10000, random_state=42, n_jobs=-1)
+    lasso.fit(X_tr_sc, y_train)
+    mask = lasso.coef_ != 0
     if mask.sum() == 0:
+        print("    LassoCV: all features zeroed — keeping full set")
         mask = np.ones(len(features), dtype=bool)
     n_in, n_kept = len(features), int(mask.sum())
-    print(f"    MI+Corr pre-screen → {n_kept}/{n_in} features kept", end="")
+    print(f"    LassoCV pre-screen → {n_kept}/{n_in} features kept", end="")
     if n_kept == n_in:
         print(" (no pruning)")
     else:
-        print(f" — dropped: {[f for f, m in zip(features, mask) if not m]}")
-    return mask, [f for f, m in zip(features, mask) if m]
+        dropped = [f for f, m in zip(features, mask) if not m]
+        print(f" — dropped: {dropped}")
+    selected = [f for f, m in zip(features, mask) if m]
+    return mask, selected
 
 
 # ── Run-number detection ───────────────────────────────────────────────────────
@@ -185,65 +183,66 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     X_all_sc = scaler.transform(X_all)
 
     tscv = TimeSeriesSplit(n_splits=3)
+    n_in = len(features)
 
-    # ── MI+Corr feature selection (OLS & Ridge share same mask) ──────────────
-    mi_mask, selected_linear = _mi_corr_select(X_train, y_train, features)
-    X_tr_sel  = X_tr_sc[:, mi_mask]
-    X_te_sel  = X_te_sc[:, mi_mask]
-    X_all_sel = X_all_sc[:, mi_mask]
-    n_in, n_sel = len(features), int(mi_mask.sum())
+    # ── LassoCV feature selection for OLS ─────────────────────────────────────
+    ols_mask, selected_ols = _lasso_select(X_tr_sc, y_train, features, tscv)
+    X_tr_ols  = X_tr_sc[:, ols_mask]
+    X_te_ols  = X_te_sc[:, ols_mask]
+    X_all_ols = X_all_sc[:, ols_mask]
+    n_sel_ols = int(ols_mask.sum())
 
     results = {
-        "experiment":         experiment,
-        "dataset":            ds_id,
-        "target":             target,
-        "run":                run,
-        "n_train":            len(train_df),
-        "n_test":             len(test_df),
-        "n_features":         n_in,
-        "n_features_input":   n_in,
-        "n_selected_linear":  n_sel,
-        "selected_features_linear": ", ".join(selected_linear),
+        "experiment":        experiment,
+        "dataset":           ds_id,
+        "target":            target,
+        "run":               run,
+        "n_train":           len(train_df),
+        "n_test":            len(test_df),
+        "n_features":        n_in,
+        "n_features_input":  n_in,
+        "n_selected_ols":    n_sel_ols,
+        "selected_features_ols": ", ".join(selected_ols),
     }
     preds = {}
 
-    # ── OLS (MI-selected features) ──────────────────────────────────────────────
+    # ── OLS (LassoCV-selected features) ────────────────────────────────────────
     ols = LinearRegression()
-    ols.fit(X_tr_sel, y_train)
-    tr_ols = ols.predict(X_tr_sel)
-    te_ols = ols.predict(X_te_sel)
+    ols.fit(X_tr_ols, y_train)
+    tr_ols = ols.predict(X_tr_ols)
+    te_ols = ols.predict(X_te_ols)
     results.update(_metrics(y_train, tr_ols, "OLS_train"))
     results.update(_metrics(y_test,  te_ols, "OLS_test"))
     results["OLS_R2_gap"] = results["OLS_train_R2"] - results["OLS_test_R2"]
-    preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_sel), 3)
+    preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_ols), 3)
     joblib.dump({"scaler": scaler, "model": ols,
-                 "selected_features": selected_linear, "feature_mask": mi_mask},
+                 "selected_features": selected_ols, "feature_mask": ols_mask},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
     print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
-          f"RMSE: {results['OLS_test_RMSE']:.3f}")
+          f"RMSE: {results['OLS_test_RMSE']:.3f}  "
+          f"({n_sel_ols}/{n_in} features via LassoCV)")
 
-    # ── Ridge (MI-selected features) ───────────────────────────────────────────
+    # ── Ridge (full feature set — L2 handles collinearity internally) ──────────
     ridge_gs = GridSearchCV(
         Ridge(), {"alpha": RIDGE_ALPHAS},
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
     )
-    ridge_gs.fit(X_tr_sel, y_train)
+    ridge_gs.fit(X_tr_sc, y_train)
     ridge = ridge_gs.best_estimator_
-    tr_ridge = ridge.predict(X_tr_sel)
-    te_ridge = ridge.predict(X_te_sel)
+    tr_ridge = ridge.predict(X_tr_sc)
+    te_ridge = ridge.predict(X_te_sc)
     results.update(_metrics(y_train, tr_ridge, "Ridge_train"))
     results.update(_metrics(y_test,  te_ridge, "Ridge_test"))
     results["Ridge_R2_gap"]  = results["Ridge_train_R2"] - results["Ridge_test_R2"]
     results["Ridge_CV_RMSE"] = float(-ridge_gs.best_score_)
     results["Ridge_alpha"]   = ridge_gs.best_params_["alpha"]
-    preds[f"predicted_Ridge_run_{run}"] = np.round(ridge.predict(X_all_sel), 3)
-    joblib.dump({"scaler": scaler, "model": ridge,
-                 "selected_features": selected_linear, "feature_mask": mi_mask},
+    preds[f"predicted_Ridge_run_{run}"] = np.round(ridge.predict(X_all_sc), 3)
+    joblib.dump({"scaler": scaler, "model": ridge},
                 os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
     print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | "
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
-          f"α={results['Ridge_alpha']}")
+          f"α={results['Ridge_alpha']}  (full {n_in} features)")
 
     # ── ElasticNet (full set — its own L1 selection) ───────────────────────────
     elnet_gs = GridSearchCV(

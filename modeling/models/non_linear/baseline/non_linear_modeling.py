@@ -110,13 +110,15 @@ SEC_COLS   = ["Sec Clarifier pH", "Sec Clarifier TSS (mg/L)",
               "Sec Clarifier BOD (mg/L)", "Sec Clarifier COD (mg/L)",
               "Sec Clarifier RAS", "Sec Sed pH", "Sec Sed TSS (mg/L)",
               "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)"]
-COMMON     = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
+COMMON        = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
+COMMON_CYCLIC = ["Flow (MLD)", "Power Total (KW)", "year",
+                 "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
-S1_GRAB   = GRAB_INLET + COMMON
-S1_COMP   = COMP_INLET + COMMON
-S2P1      = SEC_COLS   + COMMON
-S2P2_GRAB = GRAB_INLET + SEC_COLS + COMMON
-S2P2_COMP = COMP_INLET + SEC_COLS + COMMON
+S1_GRAB   = GRAB_INLET + COMMON_CYCLIC      # 11 features (cyclic calendar)
+S1_COMP   = COMP_INLET + COMMON_CYCLIC      # 11 features (cyclic calendar)
+S2P1      = SEC_COLS   + COMMON             # 15 features
+S2P2_GRAB = GRAB_INLET + SEC_COLS + COMMON  # 19 features
+S2P2_COMP = COMP_INLET + SEC_COLS + COMMON  # 19 features
 
 # ── Model registry ─────────────────────────────────────────────────────────────
 # (experiment_label, model_name, subset_path, features, target)

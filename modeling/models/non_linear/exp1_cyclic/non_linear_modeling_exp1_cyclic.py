@@ -192,7 +192,9 @@ def train_one(experiment, name, subset_path, features, target,
     gs1.fit(X_tr, y_tr)
     best1    = gs1.best_estimator_
     cv_rmse1 = float(-gs1.best_score_)
-    print(f"  CV_RMSE={cv_rmse1:.3f}")
+    te_pred_full = best1.predict(X_te)
+    r2_test_full = _r2(y_te, te_pred_full)
+    print(f"  CV_RMSE={cv_rmse1:.3f}  R²_test_full={r2_test_full:+.3f}")
 
     # Phase 2: OOF permutation importance selection
     print(f"    Phase 2 — OOF selection...", end="", flush=True)
@@ -235,6 +237,7 @@ def train_one(experiment, name, subset_path, features, target,
         "dropped_features_nl":  ", ".join(dropped_nl),
         "n_features":          n_sel,
         "CV_RMSE_initial":     round(cv_rmse1, 4),
+        "R2_test_full":        round(r2_test_full, 4),
         "CV_RMSE":             round(cv_rmse,  4),
         "R2_train":   _r2(y_tr, tr_pred),
         "R2_test":    _r2(y_te, te_pred),

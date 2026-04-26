@@ -25,9 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
@@ -101,25 +99,6 @@ def _run_number(model_dir: str) -> int:
     return int(df["run"].max()) + 1 if "run" in df.columns else 1
 
 
-# ── OOF permutation importance feature selection ────────────────────────────────
-
-def _oof_perm_select(fitted_estimator, X_tr, y_tr, features, tscv, threshold=0.05):
-    fold_imps = np.zeros(len(features))
-    for tr_idx, val_idx in tscv.split(X_tr):
-        est = clone(fitted_estimator)
-        est.fit(X_tr[tr_idx], y_tr[tr_idx])
-        perm = permutation_importance(
-            est, X_tr[val_idx], y_tr[val_idx],
-            n_repeats=10, random_state=42, n_jobs=1)
-        fold_imps += perm.importances_mean.clip(min=0)
-    fold_imps /= tscv.n_splits
-    total     = fold_imps.sum()
-    norm_imps = fold_imps / total if total > 0 else fold_imps
-    mask      = norm_imps >= threshold
-    if mask.sum() == 0:
-        mask = np.ones(len(features), dtype=bool)
-    selected = [f for f, m in zip(features, mask) if m]
-    return mask, selected, norm_imps
 
 
 # ── Plotting ───────────────────────────────────────────────────────────────────
@@ -177,81 +156,47 @@ def train_one(experiment, name, subset_path, features, target,
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
     n_in = len(features)
-    print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in}")
+    print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in} (no FS — inlet only)")
 
-    # Phase 1: initial CV search on full feature set
-    print(f"    Phase 1 — CV search (all {n_in} features)...", end="", flush=True)
-    gs1 = search_cls(estimator, param_grid,
-                     scoring="neg_root_mean_squared_error",
-                     cv=TSCV, n_jobs=-1, refit=True,
-                     **({} if search_cls is GridSearchCV else {"n_iter": 30, "random_state": 42}))
-    gs1.fit(X_tr, y_tr)
-    best1    = gs1.best_estimator_
-    cv_rmse1 = float(-gs1.best_score_)
-    print(f"  CV_RMSE={cv_rmse1:.3f}")
-
-    # Phase 2: OOF permutation importance selection
-    print(f"    Phase 2 — OOF selection...", end="", flush=True)
-    oof_mask, selected_nl, norm_imps = _oof_perm_select(
-        best1, X_tr, y_tr, features, TSCV, threshold=0.05)
-    n_sel = int(oof_mask.sum())
-    dropped_nl = [f for f, m in zip(features, oof_mask) if not m]
-    print(f"  {n_sel}/{n_in} features kept")
-    if dropped_nl:
-        print(f"    Dropped: {dropped_nl}")
-
-    X_tr_sel = X_tr[:, oof_mask]
-    X_te_sel = X_te[:, oof_mask]
-
-    # Phase 3: refit on selected features
-    print(f"    Phase 3 — refit ({n_sel} features)...", end="", flush=True)
-    gs2 = search_cls(estimator, param_grid,
-                     scoring="neg_root_mean_squared_error",
-                     cv=TSCV, n_jobs=-1, refit=True,
-                     **({} if search_cls is GridSearchCV else {"n_iter": 30, "random_state": 42}))
-    gs2.fit(X_tr_sel, y_tr)
-    best    = gs2.best_estimator_
-    cv_rmse = float(-gs2.best_score_)
+    print(f"    CV search ({n_in} features)...", end="", flush=True)
+    gs = search_cls(estimator, param_grid,
+                    scoring="neg_root_mean_squared_error",
+                    cv=TSCV, n_jobs=-1, refit=True,
+                    **({} if search_cls is GridSearchCV else {"n_iter": 30, "random_state": 42}))
+    gs.fit(X_tr, y_tr)
+    best     = gs.best_estimator_
+    cv_rmse  = float(-gs.best_score_)
     print(f"  CV_RMSE={cv_rmse:.3f}")
 
-    tr_pred  = best.predict(X_tr_sel)
-    te_pred  = best.predict(X_te_sel)
-    all_pred = best.predict(df[selected_nl].values)
+    tr_pred  = best.predict(X_tr)
+    te_pred  = best.predict(X_te)
+    all_pred = best.predict(df[features].values)
 
     row = {
-        "experiment":          experiment,
-        "target":              target,
-        "model":               model_tag,
-        "run":                 run,
-        "n_train":             len(train),
-        "n_test":              len(test),
-        "n_features_input":    n_in,
-        "n_selected_nl":       n_sel,
-        "selected_features_nl": ", ".join(selected_nl),
-        "dropped_features_nl":  ", ".join(dropped_nl),
-        "n_features":          n_sel,
-        "CV_RMSE_initial":     round(cv_rmse1, 4),
-        "CV_RMSE":             round(cv_rmse,  4),
+        "experiment":       experiment,
+        "target":           target,
+        "model":            model_tag,
+        "run":              run,
+        "n_train":          len(train),
+        "n_test":           len(test),
+        "n_features_input": n_in,
+        "n_features":       n_in,
+        "CV_RMSE":          round(cv_rmse, 4),
         "R2_train":   _r2(y_tr, tr_pred),
         "R2_test":    _r2(y_te, te_pred),
         "R2_gap":     _r2(y_tr, tr_pred) - _r2(y_te, te_pred),
         "RMSE_train": _rmse(y_tr, tr_pred),
         "RMSE_test":  _rmse(y_te, te_pred),
         "MAE_test":   _mae(y_te, te_pred),
-        "best_params": str(gs2.best_params_),
+        "best_params": str(gs.best_params_),
     }
     print(f"    R²_train={row['R2_train']:+.3f}  R²_test={row['R2_test']:+.3f}  "
           f"gap={row['R2_gap']:+.3f}  RMSE_test={row['RMSE_test']:.3f}")
 
-    joblib.dump({
-        "model":             best,
-        "selected_features": selected_nl,
-        "feature_mask":      oof_mask,
-        "all_features":      features,
-        "norm_oof_importance": dict(zip(features, norm_imps.tolist())),
-    }, os.path.join(model_dir, f"{name}_{model_tag}_run_{run}.pkl"))
+    joblib.dump({"model": best, "all_features": features},
+                os.path.join(model_dir, f"{name}_{model_tag}_run_{run}.pkl"))
     _plot_scatter(plots_dir, name, model_tag, run, test, y_te, te_pred)
-    _plot_importance(plots_dir, name, model_tag, run, best, selected_nl)
+    _plot_importance(plots_dir, name, model_tag, run, best, features)
 
     df_sub = pd.read_excel(subset_path)
     col    = f"predicted_{model_tag}_run_{run}"

@@ -72,10 +72,12 @@ SEC_COLS = [
     "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
 ]
 COMMON = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
+COMMON_CYCLIC = ["Flow (MLD)", "Power Total (KW)", "year",
+                 "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
-EXP1_GRAB  = GRAB_INLET + COMMON          # 9 features
-EXP1_COMP  = COMP_INLET + COMMON          # 9 features
-EXP2S1     = SEC_COLS   + COMMON          # 15 features
+EXP1_GRAB  = GRAB_INLET + COMMON_CYCLIC      # 11 features (cyclic calendar)
+EXP1_COMP  = COMP_INLET + COMMON_CYCLIC      # 11 features (cyclic calendar)
+EXP2S1     = SEC_COLS   + COMMON             # 15 features
 EXP2S2_G   = GRAB_INLET + SEC_COLS + COMMON  # 19 features
 EXP2S2_C   = COMP_INLET + SEC_COLS + COMMON  # 19 features
 
