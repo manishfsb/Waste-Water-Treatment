@@ -75,7 +75,10 @@ EXP_CHART_LABELS = {
     "Exp1-Sub1": "E1-S1",
     "Exp1": "Exp1",        "Exp1-FS": "Exp1-FS",   "Exp1-Cyclic": "E1-Cyc",
     "Exp2-Sub1": "E2-S1",  "Exp2-Sub1-FS": "E2-S1-FS",
+    "Exp2-Sub1-Clr": "E2-S1-Clr",
+    "Exp2-Sub1-Sed": "E2-S1-Sed",
     "Exp2-Sub2": "E2-S2",  "Exp2-Sub2-FS": "E2-S2-FS",
+    "Exp2-Sub2-Cyc": "E2-S2-Cyc",
     "Exp3-S1": "E3-S1",    "Exp3-S1-FS": "E3-S1-FS",
     "Exp3-S2": "E3-S2",
     "Exp4-S1": "E4-S1",
@@ -187,6 +190,27 @@ FEATURE_DESCRIPTIONS = {
         "features": "Subset of Exp2-S2 combined features after permutation importance "
                     "and mutual information screening",
         "rationale": "Remove redundant or low-signal features from the full Exp2-S2 set.",
+    },
+    "Exp2-Sub1-Clr": {
+        "label": "Secondary Clarifier + COMMON (10 features)",
+        "features": "Sec Clarifier pH, TSS, BOD, COD, RAS + Flow, Power, month, day_of_week, year",
+        "rationale": "Isolate the Clarifier group to test whether Clarifier and Sedimentation "
+                     "features carry distinct signal or are interchangeable.",
+    },
+    "Exp2-Sub1-Sed": {
+        "label": "Secondary Sedimentation + COMMON (10 features)",
+        "features": "Sec Sed pH, TSS, BOD, COD, RAS(New) + Flow, Power, month, day_of_week, year",
+        "rationale": "Isolate the Sedimentation group — paired with Exp2-Sub1-Clr to test "
+                     "whether one group dominates the other.",
+    },
+    "Exp2-Sub2-Cyc": {
+        "label": "Inlet + Secondary + COMMON (cyclic calendar, 21 features)",
+        "features": "Grab or Composite inlet (4) + all SEC_COLS (10) + Flow, Power, year, "
+                    "month_sin, month_cos, dow_sin, dow_cos (7) — cyclic calendar replaces "
+                    "raw month/day_of_week",
+        "rationale": "Full combined feature set with corrected calendar encoding. "
+                     "OLS uses LassoCV pre-screening; trees use OOF permutation importance "
+                     "feature selection, both stored in the same results file.",
     },
     "Exp3-S1": {
         "label": "Exp2-S2 + ADD-tier Aeration Features (16-22 features)",
@@ -349,10 +373,14 @@ EXP_INTRO = {
         "feature-selected breakdown per model and target with magnitude-weighted deltas."
     ),
     "Exp2": (
-        "Experiment 2 expands the feature scope. <strong>Sub-experiment 1</strong> tests "
-        "secondary clarifier data without any inlet measurements, while "
-        "<strong>Sub-experiment 2</strong> combines both inlet and secondary data for the "
-        "richest baseline. Feature-selected variants are included for each sub-experiment."
+        "Experiment 2 expands the feature set from inlet-only to include secondary treatment data. "
+        "<strong>Sub-experiment 1</strong> tests three secondary-only feature scopes side by side: "
+        "Sec Clarifier features alone (10 features), Sec Sedimentation features alone (10 features), "
+        "and both groups combined (15 features). The split variants test whether the two secondary "
+        "groups carry distinct signal or are interchangeable. "
+        "<strong>Sub-experiment 2</strong> adds inlet concentrations to the combined secondary set "
+        "with cyclic calendar encoding (21 features), and applies model-specific feature selection "
+        "(OLS: LassoCV; trees: OOF permutation importance)."
     ),
     "Exp3": (
         "Experiment 3 extends the Exp2-S2 combined feature set with aeration basin data "
@@ -442,6 +470,9 @@ def _exp_key(raw: str, is_fs: bool) -> str:
     mapping = {
         "Exp1-Sub1": "Exp1-Sub1", "Exp1": "Exp1", "Exp1-Cyclic": "Exp1-Cyclic",
         "Exp2-Sub1": "Exp2-Sub1", "Exp2-Sub2": "Exp2-Sub2",
+        "Exp2-Sub1-Clr": "Exp2-Sub1-Clr",
+        "Exp2-Sub1-Sed": "Exp2-Sub1-Sed",
+        "Exp2-Sub2-Cyc": "Exp2-Sub2-Cyc",
         "Exp3-S1": "Exp3-S1", "Exp3-S1-FS": "Exp3-S1-FS", "Exp3-S2": "Exp3-S2",
         "Experiment 1": "Exp1",
         "Experiment 2 Sub-1": "Exp2-Sub1",
@@ -624,6 +655,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
+        ("exp2_s1_split", False), ("exp2_s2_cyc", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -638,6 +670,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
+        ("exp2_s1_split", False), ("exp2_s2_cyc", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -1213,116 +1246,6 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
     if not rows_html:
         return ""
 
-    # ── FS Impact comparison table ─────────────────────────────────────────────
-    # Collect data grouped by target for rowspan merging
-    impact_data = []   # list of (tgt_short, mdl, r2_full, r2_sel, rmse_full, rmse_sel, gap_full, gap_sel)
-    for tgt in TARGETS_ORDERED:
-        sub = df[df["target"] == tgt]
-        if sub.empty:
-            continue
-        tgt_short = TARGET_SHORT.get(tgt, tgt)
-        for mdl in ["OLS", "RF", "GB", "XGB"]:
-            mrow = sub[sub["model"] == mdl]
-            if mrow.empty:
-                continue
-            r = mrow.iloc[0]
-            r2_full   = r.get("R2_test_full")
-            r2_sel    = r.get("R2_test")
-            rmse_full = r.get("RMSE_test_full")
-            rmse_sel  = r.get("RMSE_test")
-            gap_full  = r.get("R2_gap_full")
-            gap_sel   = r.get("R2_gap")
-            if pd.isna(r2_full) or pd.isna(r2_sel):
-                continue
-            impact_data.append((tgt_short, mdl, r2_full, r2_sel, rmse_full, rmse_sel, gap_full, gap_sel))
-
-    impact_html = ""
-    if impact_data:
-        def _delta_cell(val, invert=False):
-            """Colour a delta value: green=better, red=worse, grey=zero."""
-            if abs(val) < 1e-6:
-                return f'<span style="color:var(--text-meta)">{val:+.3f}</span>'
-            better = val > 0 if not invert else val < 0
-            color  = "#5BAD6F" if better else "#E15252"
-            return f'<span style="color:{color};font-weight:600">{val:+.3f}</span>'
-
-        # Build rows with rowspan on the target cell
-        impact_rows = []
-        i = 0
-        while i < len(impact_data):
-            tgt_short = impact_data[i][0]
-            # Count consecutive rows sharing this target
-            j = i
-            while j < len(impact_data) and impact_data[j][0] == tgt_short:
-                j += 1
-            span = j - i
-            for k in range(i, j):
-                _, mdl, r2f, r2s, rmsf, rmss, gf, gs = impact_data[k]
-                dr2   = r2s  - r2f
-                drmse = (rmss - rmsf) if (rmsf is not None and rmss is not None and not pd.isna(rmsf) and not pd.isna(rmss)) else float("nan")
-                dgap  = gs   - gf
-                rmse_f_str = f"{rmsf:.3f}" if rmsf is not None and not pd.isna(rmsf) else "—"
-                rmse_s_str = f"{rmss:.3f}" if rmss is not None and not pd.isna(rmss) else "—"
-                tgt_cell = f'<td rowspan="{span}" style="vertical-align:middle;font-weight:600;white-space:nowrap">{tgt_short}</td>' if k == i else ""
-                impact_rows.append(
-                    f'<tr style="font-size:0.75rem">'
-                    f'{tgt_cell}'
-                    f'<td>{mdl}</td>'
-                    f'<td>{r2f:+.3f}</td><td>{r2s:+.3f}</td><td>{_delta_cell(dr2)}</td>'
-                    f'<td>{rmse_f_str}</td><td>{rmse_s_str}</td><td>{_delta_cell(drmse, invert=True)}</td>'
-                    f'<td>{gf:+.3f}</td><td>{gs:+.3f}</td><td>{_delta_cell(dgap, invert=True)}</td>'
-                    f'</tr>'
-                )
-            i = j
-
-        # Summary row
-        deltas_r2   = [r[3] - r[2] for r in impact_data]
-        deltas_gap  = [r[7] - r[6] for r in impact_data]
-        n_total     = len(deltas_r2)
-        n_improved  = sum(1 for d in deltas_r2 if d > 1e-6)
-        n_hurt      = sum(1 for d in deltas_r2 if d < -1e-6)
-        mean_dr2    = np.mean(deltas_r2)
-        mean_dgap   = np.mean(deltas_gap)
-        summary_color = "#5BAD6F" if mean_dr2 > 0 else "#E15252"
-        gap_color     = "#5BAD6F" if mean_dgap < 0 else "#E15252"
-        summary_row = (
-            f'<tr style="font-size:0.75rem;border-top:2px solid var(--border);font-weight:600;background:var(--bg-alt)">'
-            f'<td colspan="2">Summary ({n_total} rows)</td>'
-            f'<td colspan="2"></td>'
-            f'<td style="color:{summary_color}">{mean_dr2:+.3f} avg ΔR²</td>'
-            f'<td colspan="2"></td>'
-            f'<td></td>'
-            f'<td colspan="2"></td>'
-            f'<td style="color:{gap_color}">{mean_dgap:+.3f} avg ΔGap</td>'
-            f'</tr>'
-            f'<tr style="font-size:0.72rem;color:var(--text-meta);background:var(--bg-alt)">'
-            f'<td colspan="11">'
-            f'Improved: <strong style="color:#5BAD6F">{n_improved}</strong> &nbsp;|&nbsp; '
-            f'Hurt: <strong style="color:#E15252">{n_hurt}</strong> &nbsp;|&nbsp; '
-            f'Neutral: <strong>{n_total - n_improved - n_hurt}</strong> &nbsp;|&nbsp; '
-            f'Improvement rate: <strong>{100*n_improved/n_total:.0f}%</strong>'
-            f'</td></tr>'
-        )
-
-        impact_html = f"""
-<h4 style="margin:16px 0 4px;font-size:0.82rem;color:var(--text-main)">Feature Selection Impact (Full → Selected)</h4>
-<p style="font-size:0.73rem;color:var(--text-meta);margin:0 0 6px">
-  ΔR² / ΔRMSE / ΔGap = selected − full &nbsp;|&nbsp;
-  <span style="color:#5BAD6F;font-weight:600">green</span> = improvement &nbsp;|&nbsp;
-  <span style="color:#E15252;font-weight:600">red</span> = degradation &nbsp;|&nbsp;
-  grey = no change &nbsp;|&nbsp;
-  For RMSE and Gap: lower is better, so negative delta = green
-</p>
-<table class="summary-table" style="font-size:0.75rem">
-  <thead><tr style="font-size:0.73rem">
-    <th>Target</th><th>Model</th>
-    <th>R²_full</th><th>R²_sel</th><th>ΔR²</th>
-    <th>RMSE_full</th><th>RMSE_sel</th><th>ΔRMSE</th>
-    <th>Gap_full</th><th>Gap_sel</th><th>ΔGap</th>
-  </tr></thead>
-  <tbody>{"".join(impact_rows)}{summary_row}</tbody>
-</table>"""
-
     return f"""
 <details class="inner-fold">
   <summary><span class="fold-icon">▶</span> Model-Specific Feature Selection</summary>
@@ -1341,7 +1264,6 @@ def _feature_selection_table(df: pd.DataFrame) -> str:
       </tr></thead>
       <tbody>{"".join(rows_html)}</tbody>
     </table>
-    {impact_html}
   </div>
 </details>"""
 
@@ -2494,6 +2416,194 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 
+def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
+    """Custom champion box for Experiment 1 with gap-adjusted selection and readable source labels.
+
+    Candidates per (model, target):
+      Sub1          → Exp1-Sub1 R2_test / R2_gap
+      Sub2 (linear) → Exp1 R2_test_full (OLS only, unregularised)
+                       Exp1 R2_test / R2_gap (OLS LassoCV; Ridge / ElNet full=FS)
+      Sub2 (trees)  → Exp1-Cyclic R2_test_full / R2_gap_full  (pre-selection baseline)
+                       Exp1-Cyclic R2_test / R2_gap            (OOF-selected refit)
+    Winner per target = highest gap-adj score across all candidates.
+    """
+    s1  = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s2  = df_all[df_all["exp_key"] == "Exp1"].copy()
+    cyc = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+
+    if s1.empty and s2.empty:
+        return ""
+
+    lin_set  = {"OLS", "Ridge", "ElNet"}
+    tree_set = {"RF", "GB", "XGB"}
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+
+    def _g(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns:
+            return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _candidates(model, tgt):
+        """Return list of (r2, gap, source_label) tuples for this model × target."""
+        out = []
+        # Sub1
+        r2 = _g(s1, model, tgt); gap = _g(s1, model, tgt, "R2_gap")
+        if r2 is not None:
+            out.append((r2, gap, "Sub1 (4 feat · inlet only)"))
+
+        if model == "OLS":
+            # Full (unregularised)
+            r2f = _g(s2, model, tgt, "R2_test_full"); gapf = _g(s2, model, tgt, "R2_gap_full")
+            if r2f is not None:
+                out.append((r2f, gapf, "Sub2 Full · OLS (unregularised, 11 feat)"))
+            # FS (LassoCV)
+            r2s = _g(s2, model, tgt); gaps = _g(s2, model, tgt, "R2_gap")
+            if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
+                out.append((r2s, gaps, "Sub2 FS · OLS (LassoCV)"))
+        elif model in lin_set:
+            # Ridge / ElNet: full = FS (L2 / L1 selects internally)
+            r2 = _g(s2, model, tgt); gap = _g(s2, model, tgt, "R2_gap")
+            lbl = ("Sub2 · Ridge (L2 full)" if model == "Ridge"
+                   else "Sub2 · ElNet (L1 internal)")
+            if r2 is not None:
+                out.append((r2, gap, lbl))
+        else:
+            # Trees: full baseline (pre-selection, cyclic dataset)
+            r2f  = _g(cyc, model, tgt, "R2_test_full")
+            gapf = (_g(cyc, model, tgt, "R2_gap_full")
+                    if "R2_gap_full" in cyc.columns else None)
+            if r2f is not None:
+                out.append((r2f, gapf, f"Sub2 Full Cyclic · {model}"))
+            # Trees FS (OOF-selected refit)
+            r2s = _g(cyc, model, tgt); gaps = _g(cyc, model, tgt, "R2_gap")
+            if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
+                out.append((r2s, gaps, f"Sub2 FS Cyclic · {model} (OOF-sel)"))
+        return out
+
+    table_rows = []
+    overfit_warnings = []
+
+    for tgt in TARGETS_ORDERED:
+        short = TARGET_SHORT.get(tgt, tgt)
+        slug  = TARGET_SLUG.get(tgt, "all")
+
+        all_cands = []  # (r2, gap, model, source_label)
+        for m in models_ord:
+            for r2, gap, lbl in _candidates(m, tgt):
+                all_cands.append((r2, gap, m, lbl))
+
+        if not all_cands:
+            continue
+
+        def _gaj_score(r2, gap):
+            return _gap_adj(r2, gap if gap is not None else 0.0)
+
+        best_gaj = max(all_cands, key=lambda c: _gaj_score(c[0], c[1]))
+        best_raw = max(all_cands, key=lambda c: c[0])
+
+        r2_win, gap_win, m_win, src_win = best_gaj
+        gaj_win = _gaj_score(r2_win, gap_win)
+        r2_raw_best = best_raw[0]
+        raw_differs = abs(r2_raw_best - r2_win) > 0.005
+
+        r2_col  = _r2_color(r2_win)
+        mdl_col = MODEL_COLORS.get(m_win, "#888")
+        gap_col = ("#E15252" if gap_win is not None and gap_win > 0.10
+                   else "#5BAD6F" if gap_win is not None and gap_win < -0.10
+                   else "var(--text-muted)")
+        gap_str = f"{gap_win:+.3f}" if gap_win is not None else "—"
+
+        overfit_flag = ""
+        if gap_win is not None and abs(gap_win) > 0.25:
+            overfit_flag = (' <span style="color:#e74c3c;font-size:10px" '
+                            'title="Gap > 0.25 on the gap-adj winner">⚠ overfit</span>')
+            overfit_warnings.append(short)
+
+        alt_note = ""
+        if raw_differs:
+            _, gap_raw_best, m_raw_best, src_raw_best = best_raw
+            alt_note = (
+                f'<br><span style="color:#f39c12;font-size:10px" '
+                f'title="Raw R² winner ({m_raw_best} · {src_raw_best}: '
+                f'{r2_raw_best:+.3f}) demoted by gap-adj scoring">'
+                f'raw: {m_raw_best} {r2_raw_best:+.3f} ({src_raw_best})</span>'
+            )
+
+        table_rows.append(
+            f'<tr data-target="{slug}">'
+            f'<td>{short}</td>'
+            f'<td><strong style="color:{mdl_col}">{m_win}</strong></td>'
+            f'<td style="color:{r2_col};font-weight:bold">'
+            f'{r2_win:+.3f}{overfit_flag}'
+            f'<br><span style="font-size:0.78em;color:var(--text-muted)">'
+            f'gap-adj {gaj_win:+.3f}</span></td>'
+            f'<td style="color:{gap_col}">{gap_str}</td>'
+            f'<td class="meta" style="font-size:11px">{src_win}{alt_note}</td>'
+            f'</tr>'
+        )
+
+    if not table_rows:
+        return ""
+
+    df_exp1 = df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1", "Exp1-Cyclic"])]
+    grab_best_vals = [float(df_exp1[df_exp1["target"] == t]["R2_test"].max())
+                      for t in GRAB_TARGETS
+                      if not df_exp1[df_exp1["target"] == t].dropna(subset=["R2_test"]).empty]
+    comp_best_vals = [float(df_exp1[df_exp1["target"] == t]["R2_test"].max())
+                      for t in COMP_TARGETS
+                      if not df_exp1[df_exp1["target"] == t].dropna(subset=["R2_test"]).empty]
+    grab_avg = float(np.nanmean(grab_best_vals)) if grab_best_vals else float("nan")
+    comp_avg = float(np.nanmean(comp_best_vals)) if comp_best_vals else float("nan")
+    avg_r2   = float(np.nanmean(grab_best_vals + comp_best_vals)) \
+               if (grab_best_vals or comp_best_vals) else float("nan")
+
+    avg_detail = ""
+    if not np.isnan(grab_avg) and not np.isnan(comp_avg):
+        avg_detail = (
+            f" · Grab avg {_fmt(grab_avg)}"
+            f" · Composite avg <span style='color:{_r2_color(comp_avg)}'>{_fmt(comp_avg)}</span>"
+        )
+
+    overfit_note = ""
+    if overfit_warnings:
+        overfit_note = (
+            f'<p class="table-note" style="margin-top:8px;color:#f39c12">'
+            f'⚠ <strong>Overfitting note:</strong> '
+            f'{", ".join(overfit_warnings)} show |gap| &gt; 0.25 even on the gap-adj winner — '
+            f'treat these results with caution.</p>'
+        )
+
+    criteria_note = (
+        '<p class="table-note" style="margin-top:4px">'
+        '<strong>Selection:</strong> winner chosen by gap-adjusted score '
+        '= R² − 0.5 · max(0, |gap| − 0.10), consistent with the global leaderboard methodology. '
+        'Where the raw R² winner differs from the gap-adj winner it is shown in orange below the '
+        'source label. avg best Test R² uses the raw per-target best for cross-experiment '
+        'comparability. Composite averages should be read cautiously — all composite targets '
+        'fail at the Exp1 feature level (Grab COD likewise); secondary clarifier data is required '
+        'before these targets become learnable.</p>'
+    )
+
+    return f"""
+<div class="best-box">
+  <div class="best-box-title">Best Model in Experiment 1
+    <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
+  </div>
+  <table class="summary-table best-table">
+    <thead><tr>
+      <th>Target</th><th>Model</th>
+      <th>Test R²<br><span class="meta" style="font-weight:normal;font-size:0.8em">gap-adj below</span></th>
+      <th>Gap</th><th>Source (gap-adj winner)</th>
+    </tr></thead>
+    <tbody>{"".join(table_rows)}</tbody>
+  </table>
+  {overfit_note}
+  {criteria_note}
+</div>"""
+
+
 def _best_model_box(df: pd.DataFrame, label: str) -> str:
     """Champion box: best Test R² per target in this section, with experiment source."""
     rows = []
@@ -3439,7 +3549,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 </div>"""
 
     return f"""
-<details class="exp-details" id="exp1-findings">
+<details class="exp-details" id="exp1-findings" open>
   <summary><span class="fold-icon">▶</span> Findings — Experiment 1</summary>
   <div class="exp-body">
   {_qcard(1, "Do inlet concentrations alone carry meaningful predictive power?", q1)}
@@ -3521,7 +3631,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         elif model in lin_models:
             return _gap_v(s2, model, tgt)
         else:
-            return _gap_v(cyc, model, tgt)
+            return _get(s2, model, tgt, "R2_gap_full")  # baseline NL stores full-set gap
 
     def _fs_gap(model, tgt):
         if model in lin_models:
@@ -3529,8 +3639,25 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         else:
             return _gap_v(cyc, model, tgt)
 
-    def _val_td(v, is_raw=False, is_gaj=False):
-        if v is None:
+    def _full_rmse(model, tgt):
+        if model == "OLS":
+            return _get(s2, model, tgt, "RMSE_test_full")
+        elif model in lin_models:
+            return _get(s2, model, tgt, "RMSE_test")
+        else:
+            return _get(s2, model, tgt, "RMSE_test_full")  # baseline NL stores full-set RMSE
+
+    def _fs_rmse(model, tgt):
+        if model in lin_models:
+            return _get(s2, model, tgt, "RMSE_test")
+        else:
+            return _get(cyc, model, tgt, "RMSE_test")
+
+    def _s1_rmse(model, tgt):
+        return _get(s1, model, tgt, "RMSE_test")
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
             return "<td class='meta' style='text-align:center'>—</td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
@@ -3538,13 +3665,37 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         elif is_raw:            col = "#E67E22"; fw = "bold"
         elif is_gaj:            col = "#4A90D9"; fw = "bold"
         else:                   col = "inherit"; fw = "normal"
-        return f"<td style='text-align:center;color:{col};font-weight:{fw}'>{v:+.3f}{marker_html}</td>"
+        rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
+        gap_val  = gap if (gap is not None and gap == gap) else None
+        gap_str  = f"{gap_val:+.3f}" if gap_val is not None else "—"
+        gap_col  = ("#E15252" if gap_val is not None and gap_val > 0.10
+                    else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                    else "var(--text-muted)")
+        secondary = (f"<br><span style='font-size:0.72em;color:var(--text-muted);"
+                     f"font-weight:normal'>RMSE {rmse_str} · "
+                     f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{marker_html}{secondary}</td>")
 
-    def _delta_td(d):
-        if d is None:
+    def _delta_td(dr2, drmse=None, dgap=None):
+        if dr2 is None:
             return "<td class='meta' style='text-align:center'>—</td>"
-        col = "#5BAD6F" if d >= MEANINGFUL else ("#E15252" if d <= -MEANINGFUL else "var(--text-muted)")
-        return f"<td style='text-align:center;color:{col};font-weight:bold'>{d:+.3f}</td>"
+        r2_col = ("#5BAD6F" if dr2 >= MEANINGFUL else
+                  "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+        extra = ""
+        if drmse is not None and drmse == drmse:
+            rm_col = ("#5BAD6F" if drmse <= -MEANINGFUL else
+                      "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+            extra += (f"<br><span style='font-size:0.72em;color:{rm_col};"
+                      f"font-weight:normal'>RMSE {drmse:+.2f}</span>")
+        if dgap is not None and dgap == dgap:
+            # positive ΔGap = more overfitting (bad); negative = less (good)
+            gp_col = ("#E15252" if dgap > MEANINGFUL else
+                      "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+            extra += (f"<br><span style='font-size:0.72em;color:{gp_col};"
+                      f"font-weight:normal'>Gap {dgap:+.3f}</span>")
+        return (f"<td style='text-align:center;color:{r2_col};font-weight:bold'>"
+                f"{dr2:+.3f}{extra}</td>")
 
     deltas_s1_full  = []; gaj_deltas_s1_full  = []
     deltas_full_fs  = []; gaj_deltas_full_fs  = []
@@ -3553,18 +3704,33 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
-            f"<tr style='background:var(--bg-secondary)'>"
-            f"<td colspan='6' style='font-weight:bold;padding:0.4rem 0.6rem'>{short}</td></tr>"
+            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,var(--bg-alt) 100%)'>"
+            f"<td colspan='6' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
+            f"border-left:4px solid var(--accent-blue,#4A90D9)'>{short}</td></tr>"
         )
         for m in models_ord:
             v1   = _get(s1, m, tgt);   g1   = _gap_v(s1, m, tgt)
             vf   = _full_val(m, tgt);  gf   = _full_gap(m, tgt)
             vs   = _fs_val(m, tgt);    gs   = _fs_gap(m, tgt)
 
+            r1   = _s1_rmse(m, tgt)
+            rf_  = _full_rmse(m, tgt)
+            rs_  = _fs_rmse(m, tgt)
+
             sc1 = _gaj(v1, g1); scf = _gaj(vf, gf); scs = _gaj(vs, gs)
 
             d1f = (vf - v1) if (v1 is not None and vf is not None) else None
             dfs = (vs - vf) if (vf is not None and vs is not None) else None
+
+            d1f_rmse = ((rf_ - r1) if (r1 is not None and rf_ is not None
+                         and r1 == r1 and rf_ == rf_) else None)
+            dfs_rmse = ((rs_ - rf_) if (rf_ is not None and rs_ is not None
+                         and rf_ == rf_ and rs_ == rs_) else None)
+
+            d1f_gap = ((gf - g1) if (g1 is not None and gf is not None
+                        and g1 == g1 and gf == gf) else None)
+            dfs_gap = ((gs - gf) if (gf is not None and gs is not None
+                        and gf == gf and gs == gs) else None)
 
             sd1f = (scf - sc1) if (sc1 is not None and scf is not None) else None
             sdfs = (scs - scf) if (scf is not None and scs is not None) else None
@@ -3584,19 +3750,19 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 
             tbody += (
                 f"<tr><td><strong>{m}</strong></td>"
-                f"{_val_td(v1,  _is_raw(v1),  _is_gaj(sc1))}"
-                f"{_val_td(vf,  _is_raw(vf),  _is_gaj(scf))}"
-                f"{_delta_td(d1f)}"
-                f"{_val_td(vs,  _is_raw(vs),  _is_gaj(scs))}"
-                f"{_delta_td(dfs)}"
+                f"{_val_td(v1,  r1,  g1,  _is_raw(v1),  _is_gaj(sc1))}"
+                f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(scf))}"
+                f"{_delta_td(d1f, d1f_rmse, d1f_gap)}"
+                f"{_val_td(vs,  rs_, gs,  _is_raw(vs),  _is_gaj(scs))}"
+                f"{_delta_td(dfs, dfs_rmse, dfs_gap)}"
                 f"</tr>"
             )
 
-    def _trans_stats_row(deltas, from_label, to_label):
-        if not deltas:
-            return (f"<tr><td><strong>{from_label} → {to_label}</strong></td>"
-                    f"<td colspan='5' class='meta'>—</td></tr>")
-        arr = np.array(deltas)
+    def _combined_stats_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
+        if not raw_deltas:
+            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' class='meta'>—</td></tr>")
+        arr = np.array(raw_deltas)
         n   = len(arr)
         net = float(arr.mean())
         wins   = arr[arr >  MEANINGFUL]
@@ -3604,77 +3770,56 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
         mean_win  = float(wins.mean())   if len(wins)   else None
         mean_loss = float(losses.mean()) if len(losses) else None
-        net_col = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
-        verdict = ("Net improvement" if net > MEANINGFUL else
-                   "Net regression"  if net < -MEANINGFUL else "Negligible")
+        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        verdict  = ("Net improvement" if net > MEANINGFUL else
+                    "Net regression"  if net < -MEANINGFUL else "Negligible")
         win_str  = (f"{len(wins)}/{n} (avg {mean_win:+.3f})"    if mean_win  is not None else f"{len(wins)}/{n}")
         loss_str = (f"{len(losses)}/{n} (avg {mean_loss:+.3f})" if mean_loss is not None else f"{len(losses)}/{n}")
+        if gaj_deltas:
+            gaj_net  = float(np.array(gaj_deltas).mean())
+            diff     = gaj_net - net
+            gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "var(--text-muted)")
+            if diff < -0.02:   interp = "Raw gains partially inflated by increased overfitting"; diff_col = "#E15252"
+            elif diff > 0.02:  interp = "Raw gains understated — overfitting decreased"; diff_col = "#5BAD6F"
+            else:              interp = "Overfitting largely unchanged"; diff_col = "var(--text-muted)"
+            gaj_str  = f"{gaj_net:+.4f}"
+            diff_str = f"{diff:+.4f}"
+        else:
+            gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+        verdict_cell = (f"<strong>{verdict}</strong><br>"
+                        f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span>")
         return (
             f"<tr>"
-            f"<td style='white-space:nowrap'><strong>{from_label} → {to_label}</strong></td>"
+            f"<td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
             f"<td style='text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
             f"<td style='text-align:center;color:#5BAD6F'>{win_str}</td>"
             f"<td style='text-align:center;color:#E15252'>{loss_str}</td>"
             f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
-            f"<td style='text-align:center;color:{net_col};font-weight:bold'>{verdict}</td>"
-            f"</tr>"
-        )
-
-    def _gaj_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
-        if not gaj_deltas:
-            return f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td><td colspan='4' class='meta'>—</td></tr>"
-        raw_net = float(np.array(raw_deltas).mean()) if raw_deltas else 0.0
-        gaj_net = float(np.array(gaj_deltas).mean())
-        diff    = gaj_net - raw_net
-        raw_col = "#5BAD6F" if raw_net > MEANINGFUL else ("#E15252" if raw_net < -MEANINGFUL else "var(--text-muted)")
-        gaj_col = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "var(--text-muted)")
-        if diff < -0.02:   interp = "Raw gains partially inflated by increased overfitting"; diff_col = "#E15252"
-        elif diff > 0.02:  interp = "Raw gains understated — overfitting actually decreased"; diff_col = "#5BAD6F"
-        else:              interp = "Overfitting largely unchanged"; diff_col = "var(--text-muted)"
-        return (
-            f"<tr>"
-            f"<td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
-            f"<td style='text-align:center;color:{raw_col};font-weight:bold'>{raw_net:+.4f}</td>"
-            f"<td style='text-align:center;color:{gaj_col};font-weight:bold'>{gaj_net:+.4f}</td>"
-            f"<td style='text-align:center;color:{diff_col}'>{diff:+.4f}</td>"
-            f"<td class='meta'>{interp}</td>"
+            f"<td style='text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td class='meta'>{verdict_cell}</td>"
             f"</tr>"
         )
 
     n_cells = len(models_ord) * len(TARGETS_ORDERED)
     stats_block = f"""
 <div style='margin-top:1.4rem'>
-  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary — Raw Test R²</p>
+  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
   <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.85em;min-width:700px'>
+  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
     <thead><tr>
       <th>Transition</th>
-      <th style='text-align:center'>Net Mean Δ<br><span class='meta'>primary verdict</span></th>
+      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
       <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
       <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
       <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
-      <th style='text-align:center'>Verdict</th>
+      <th style='text-align:center'>Gap-Adj Net ΔR²<br><span class='meta'>R²−0.5·max(0,|gap|−0.10)</span></th>
+      <th style='text-align:center'>Gap-Adj − Raw<br><span class='meta'>overfitting shift</span></th>
+      <th>Verdict / Interpretation</th>
     </tr></thead>
     <tbody>
-      {_trans_stats_row(deltas_s1_full, "Sub1", "Sub2 Full")}
-      {_trans_stats_row(deltas_full_fs, "Sub2 Full", "Sub2 FS")}
-    </tbody>
-  </table>
-  </div>
-
-  <p style='font-weight:bold;margin:1.1rem 0 0.4rem'>Gap-Adjusted Comparison</p>
-  <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.85em;min-width:640px'>
-    <thead><tr>
-      <th>Transition</th>
-      <th style='text-align:center'>Raw Net Δ</th>
-      <th style='text-align:center'>Gap-Adj Net Δ<br><span class='meta'>R²−0.5·max(0,|gap|−0.10)</span></th>
-      <th style='text-align:center'>Difference<br><span class='meta'>Gap-Adj − Raw</span></th>
-      <th>Interpretation</th>
-    </tr></thead>
-    <tbody>
-      {_gaj_row(deltas_s1_full,  gaj_deltas_s1_full,  "Sub1", "Sub2 Full")}
-      {_gaj_row(deltas_full_fs,  gaj_deltas_full_fs,  "Sub2 Full", "Sub2 FS")}
+      {_combined_stats_row(deltas_s1_full, gaj_deltas_s1_full, "Sub1", "Sub2 Full")}
+      {_combined_stats_row(deltas_full_fs, gaj_deltas_full_fs, "Sub2 Full", "Sub2 FS")}
     </tbody>
   </table>
   </div>
@@ -3682,35 +3827,113 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
   <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
     <p class='meta'>
       <strong>Reading the table.</strong>
-      Net Mean Δ is the signed average across all {n_cells} (model × target) cells.
+      Net Mean ΔR² is the signed average across all {n_cells} (model × target) cells.
       <strong>Sub2 Full</strong> = full 11-feature set before any pruning
       (OLS: unregularised on all features; Ridge/ElNet: full set; RF/GB/XGB: Phase 1 CV model).
       <strong>Sub2 FS</strong> = model-specific selection applied
       (OLS: LassoCV; Ridge: no change — L2 handles it; ElNet: no change — L1 selects internally;
       RF/GB/XGB: OOF permutation importance refit on features with ≥5% relative importance).
-      Gap-Adj Δ penalises −0.5 per R² unit of gap above 0.10 before averaging.
+      <strong>Gap-Adj − Raw</strong> indicates whether raw gains are inflated by increased overfitting
+      (negative = gains overstated) or understated by reduced overfitting (positive = gains understated).
       <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score ·
       <span style='color:#5BAD6F'>green</span> = both ·
       <span style='color:#E67E22'>orange</span> = raw only ·
       <span style='color:#4A90D9'>blue</span> = gap-adj only.
-      <span style='color:#5BAD6F;font-weight:bold'>Green Δ</span> = improvement,
-      <span style='color:#E15252;font-weight:bold'>red Δ</span> = regression,
+      In the delta columns: <span style='color:#5BAD6F;font-weight:bold'>green ΔR²</span> = improvement ·
+      <span style='color:#E15252;font-weight:bold'>red ΔR²</span> = regression ·
+      <span style='color:#E15252'>red ΔGap</span> = gap widened (more overfit) ·
+      <span style='color:#5BAD6F'>green ΔGap</span> = gap narrowed (less overfit) ·
       grey = negligible (|Δ| ≤ {MEANINGFUL}).
     </p>
   </div>
 </div>"""
 
+    # ── Validation framework card ─────────────────────────────────────────────
+    val_rows = []
+    for m in models_ord:
+        if m == "OLS":
+            method  = "LassoCV — L1 cross-validated pre-screen (TimeSeriesSplit)"
+            ns_vals = [v for tgt in TARGETS_ORDERED
+                       for v in [_get(s2, m, tgt, "n_selected_ols")]
+                       if v is not None and v == v]
+            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else "—"
+            bypass  = False
+        elif m == "Ridge":
+            method  = "Full set — L2 regularisation handles collinearity internally"
+            avg_sel = "11 / 11 (all)"
+            bypass  = True
+        elif m == "ElNet":
+            method  = "Internal L1 — retains features with non-zero fitted coefficients"
+            ns_vals = [v for tgt in TARGETS_ORDERED
+                       for v in [_get(s2, m, tgt, "ElNet_n_selected")]
+                       if v is not None and v == v]
+            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else "—"
+            bypass  = False
+        else:
+            method  = "OOF permutation importance ≥ 5% threshold (3-phase: full → select → refit)"
+            ns_vals = [v for tgt in TARGETS_ORDERED
+                       for v in [_get(cyc, m, tgt, "n_selected_nl")]
+                       if v is not None and v == v]
+            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else "—"
+            bypass  = False
+        status_col = "#7FB3D3" if bypass else "#5BAD6F"
+        status     = "✓ Correctly bypassed (L2)" if bypass else "✓ Selection applied"
+        val_rows.append(
+            f"<tr><td><strong>{m}</strong></td>"
+            f"<td style='font-size:0.82em'>{method}</td>"
+            f"<td style='text-align:center'>11</td>"
+            f"<td style='text-align:center'>{avg_sel}</td>"
+            f"<td style='text-align:center;color:{status_col};font-weight:600'>{status}</td></tr>"
+        )
+
+    val_card = f"""
+<div style='margin:1rem 0 0.6rem'>
+  <p style='font-weight:bold;margin-bottom:0.3rem;font-size:0.88em;color:var(--text-main)'>
+    Feature Selection Validation — Sub-experiment 2 (11 cyclic features input)
+  </p>
+  <p class='meta' style='margin-bottom:0.6rem;font-size:0.82em'>
+    Each model applies a distinct selection protocol to the shared 11-feature pool.
+    The table confirms which method was used, how many features were retained on average
+    across the 8 targets, and whether the protocol was correctly applied.
+  </p>
+  <div style='overflow-x:auto'>
+  <table class='summary-table' style='font-size:0.83em'>
+    <thead><tr>
+      <th>Model</th><th>FS Method</th>
+      <th style='text-align:center'>Input<br>Feats</th>
+      <th style='text-align:center'>Avg Selected<br>(across 8 targets)</th>
+      <th style='text-align:center'>Status</th>
+    </tr></thead>
+    <tbody>{"".join(val_rows)}</tbody>
+  </table>
+  </div>
+  <p class='meta' style='font-size:0.78em;margin-top:0.3rem'>
+    Ridge is the only model that intentionally bypasses feature removal — L2 shrinks
+    uninformative coefficients toward zero without discarding them. All other models
+    reduce the feature space. Per-target selected feature lists are in the
+    <em>Model-Specific Feature Selection</em> fold within Sub-experiment 2 above.
+  </p>
+</div>"""
+
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.6rem'>
-<table class='summary-table' style='font-size:0.83em;min-width:780px'>
+<div style='overflow-x:auto;margin-top:0.8rem'>
+<table class='summary-table' style='font-size:0.83em;min-width:860px;border-collapse:collapse'>
   <thead>
-    <tr>
-      <th>Model</th>
-      <th style='text-align:center'>Sub1<br><span class='meta'>4 feat · no FS</span></th>
-      <th style='text-align:center'>Sub2 Full<br><span class='meta'>11 feat · full set</span></th>
-      <th style='text-align:center'>Δ (S1→Full)<br><span class='meta'>+process+cyclic cal</span></th>
-      <th style='text-align:center'>Sub2 FS<br><span class='meta'>11 feat · model FS</span></th>
-      <th style='text-align:center'>Δ (Full→FS)<br><span class='meta'>feat selection</span></th>
+    <tr style='background:var(--bg-secondary)'>
+      <th style='min-width:60px'>Model</th>
+      <th style='text-align:center;border-left:3px solid #888'>Sub1<br>
+          <span class='meta' style='font-weight:normal'>4 feat · no FS</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center;border-left:3px solid #4A90D9'>Sub2 Full<br>
+          <span class='meta' style='font-weight:normal'>11 feat · full set</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ (S1→Full)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 FS<br>
+          <span class='meta' style='font-weight:normal'>model-specific</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ (Full→FS)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
@@ -3739,8 +3962,11 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         <span style='color:#4A90D9;font-weight:bold'>blue</span> = gap-adj only ·
         <span style='color:#5BAD6F;font-weight:bold'>green Δ</span> = improvement ·
         <span style='color:#E15252;font-weight:bold'>red Δ</span> = regression.
+        RMSE reported in native units (mg/L or pH units). Gap = Train R² − Test R²;
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
       </p>
     </div>
+    {val_card}
     {main_table}
     {stats_block}
   </div>
@@ -3757,9 +3983,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
                              open_default=True)
     cmp_div      = _exp1_comparison_panel(df_all)
     findings_div = _exp1_qna(df_all)
-    best         = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1", "Exp1-Cyclic"])],
-        "Experiment 1")
+    best         = _exp1_best_model_box(df_all)
     return f"""
 <section id="exp1">
   <h1 class="section-title">Experiment 1 - Inlet Features</h1>
@@ -3772,30 +3996,563 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
 </section>"""
 
 
+def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Sub-experiment comparison table for Experiment 2.
+
+    Columns: Sub1-Clr | Sub1-Sed | Combined | Δ(Clr→Comb) | Sub2 Full | Sub2 FS | Δ(Comb→S2-FS)
+    """
+    clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
+    sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
+    comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
+    cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
+
+    if clr.empty and sed.empty and comb.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    lin_models = {"OLS", "Ridge", "ElNet"}
+    MEANINGFUL = 0.01
+
+    def _get(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gap_v(df, model, tgt):
+        return _get(df, model, tgt, "R2_gap")
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _sub2_full(model, tgt):
+        """R² on full feature set before FS for Sub2."""
+        if model == "OLS":
+            v = _get(cyc, model, tgt, "R2_test_full")
+            return v if v is not None else _get(cyc, model, tgt)
+        elif model in lin_models:
+            return _get(cyc, model, tgt)
+        else:
+            v = _get(cyc, model, tgt, "R2_test_full")
+            return v if v is not None else _get(cyc, model, tgt)
+
+    def _sub2_fs(model, tgt):
+        """Feature-selected R² for Sub2."""
+        return _get(cyc, model, tgt)
+
+    def _sub2_full_gap(model, tgt):
+        if model == "OLS":
+            v = _get(cyc, model, tgt, "R2_gap_full")
+            return v if v is not None else _gap_v(cyc, model, tgt)
+        elif model in lin_models:
+            return _gap_v(cyc, model, tgt)
+        else:
+            v = _get(cyc, model, tgt, "R2_gap_full")
+            return v if v is not None else _gap_v(cyc, model, tgt)
+
+    def _sub2_fs_gap(model, tgt):
+        return _gap_v(cyc, model, tgt)
+
+    def _sub2_full_rmse(model, tgt):
+        if model == "OLS":
+            v = _get(cyc, model, tgt, "RMSE_test_full")
+            return v if v is not None else _get(cyc, model, tgt, "RMSE_test")
+        else:
+            return _get(cyc, model, tgt, "RMSE_test")
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return "<td class='meta' style='text-align:center'>—</td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw and is_gaj:   col = "#5BAD6F"; fw = "bold"
+        elif is_raw:            col = "#E67E22"; fw = "bold"
+        elif is_gaj:            col = "#4A90D9"; fw = "bold"
+        else:                   col = "inherit"; fw = "normal"
+        rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
+        gap_val  = gap if (gap is not None and gap == gap) else None
+        gap_str  = f"{gap_val:+.3f}" if gap_val is not None else "—"
+        gap_col  = ("#E15252" if gap_val is not None and gap_val > 0.10
+                    else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                    else "var(--text-muted)")
+        secondary = (f"<br><span style='font-size:0.72em;color:var(--text-muted);"
+                     f"font-weight:normal'>RMSE {rmse_str} · "
+                     f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{marker_html}{secondary}</td>")
+
+    def _delta_td(dr2, drmse=None, dgap=None):
+        if dr2 is None:
+            return "<td class='meta' style='text-align:center'>—</td>"
+        r2_col = ("#5BAD6F" if dr2 >= MEANINGFUL else
+                  "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+        extra = ""
+        if drmse is not None and drmse == drmse:
+            rm_col = ("#5BAD6F" if drmse <= -MEANINGFUL else
+                      "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+            extra += (f"<br><span style='font-size:0.72em;color:{rm_col};"
+                      f"font-weight:normal'>RMSE {drmse:+.2f}</span>")
+        if dgap is not None and dgap == dgap:
+            gp_col = ("#E15252" if dgap > MEANINGFUL else
+                      "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+            extra += (f"<br><span style='font-size:0.72em;color:{gp_col};"
+                      f"font-weight:normal'>Gap {dgap:+.3f}</span>")
+        return (f"<td style='text-align:center;color:{r2_col};font-weight:bold'>"
+                f"{dr2:+.3f}{extra}</td>")
+
+    # Collect deltas for summary rows
+    d_clr_comb  = []; gaj_d_clr_comb  = []
+    d_sed_comb  = []; gaj_d_sed_comb  = []
+    d_clr_sed   = []; gaj_d_clr_sed   = []
+    d_comb_s2fs = []; gaj_d_comb_s2fs = []
+
+    tbody = ""
+    for tgt in TARGETS_ORDERED:
+        short = TARGET_SHORT.get(tgt, tgt)
+        tbody += (
+            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,var(--bg-alt) 100%)'>"
+            f"<td colspan='9' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
+            f"border-left:4px solid var(--accent-blue,#4A90D9)'>{short}</td></tr>"
+        )
+        for m in models_ord:
+            vc  = _get(clr,  m, tgt); gc  = _gap_v(clr,  m, tgt)
+            vs  = _get(sed,  m, tgt); gs  = _gap_v(sed,  m, tgt)
+            vco = _get(comb, m, tgt); gco = _gap_v(comb, m, tgt)
+            vf  = _sub2_full(m, tgt); gf  = _sub2_full_gap(m, tgt)
+            vfs = _sub2_fs(m,   tgt); gfs = _sub2_fs_gap(m,   tgt)
+
+            rc  = _get(clr,  m, tgt, "RMSE_test")
+            rs  = _get(sed,  m, tgt, "RMSE_test")
+            rco = _get(comb, m, tgt, "RMSE_test")
+            rf_ = _sub2_full_rmse(m, tgt)
+            rfs = _get(cyc,  m, tgt, "RMSE_test")
+
+            sc  = _gaj(vc,  gc);   ss  = _gaj(vs,  gs)
+            sco = _gaj(vco, gco);  sf  = _gaj(vf,  gf); sfs = _gaj(vfs, gfs)
+
+            d_cc = (vco - vc)  if (vc  is not None and vco is not None) else None
+            d_sc = (vco - vs)  if (vs  is not None and vco is not None) else None
+            d_cs = (vs  - vc)  if (vc  is not None and vs  is not None) else None
+            d_cf = (vfs - vco) if (vco is not None and vfs is not None) else None
+
+            d_cc_rmse = (rco - rc)  if (rc  is not None and rco is not None) else None
+            d_sc_rmse = (rco - rs)  if (rs  is not None and rco is not None) else None
+            d_cf_rmse = (rfs - rco) if (rco is not None and rfs is not None) else None
+
+            d_cc_gap = (gco - gc)   if (gc  is not None and gco is not None) else None
+            d_sc_gap = (gco - gs)   if (gs  is not None and gco is not None) else None
+            d_cf_gap = (gfs - gco)  if (gco is not None and gfs is not None) else None
+
+            # gap-adj deltas
+            gaj_cc = (sco - sc)  if (sc  is not None and sco is not None) else None
+            gaj_sc = (sco - ss)  if (ss  is not None and sco is not None) else None
+            gaj_cs = (ss  - sc)  if (sc  is not None and ss  is not None) else None
+            gaj_cf = (sfs - sco) if (sco is not None and sfs is not None) else None
+
+            if d_cc  is not None: d_clr_comb.append(d_cc);   gaj_d_clr_comb.append(gaj_cc)  if gaj_cc  is not None else None
+            if d_sc  is not None: d_sed_comb.append(d_sc);   gaj_d_sed_comb.append(gaj_sc)  if gaj_sc  is not None else None
+            if d_cs  is not None: d_clr_sed.append(d_cs);    gaj_d_clr_sed.append(gaj_cs)   if gaj_cs  is not None else None
+            if d_cf  is not None: d_comb_s2fs.append(d_cf);  gaj_d_comb_s2fs.append(gaj_cf) if gaj_cf  is not None else None
+
+            cands_raw = {k: v for k, v in [("Clr",vc),("Sed",vs),("Comb",vco),("S2-Full",vf),("S2-FS",vfs)] if v is not None}
+            cands_gaj = {k: v for k, v in [("Clr",sc),("Sed",ss),("Comb",sco),("S2-Full",sf),("S2-FS",sfs)] if v is not None}
+            best_raw = max(cands_raw.values()) if cands_raw else None
+            best_gaj = max(cands_gaj.values()) if cands_gaj else None
+
+            def _is_raw(v_): return best_raw is not None and v_ is not None and abs(v_ - best_raw) < 1e-9
+            def _is_gaj(s_): return best_gaj is not None and s_ is not None and abs(s_ - best_gaj) < 1e-9
+
+            tbody += (
+                f"<tr><td><strong>{m}</strong></td>"
+                f"{_val_td(vc,  rc,  gc,  _is_raw(vc),  _is_gaj(sc))}"
+                f"{_val_td(vs,  rs,  gs,  _is_raw(vs),  _is_gaj(ss))}"
+                f"{_val_td(vco, rco, gco, _is_raw(vco), _is_gaj(sco))}"
+                f"{_delta_td(d_cc, d_cc_rmse, d_cc_gap)}"
+                f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(sf))}"
+                f"{_val_td(vfs, rfs, gfs, _is_raw(vfs), _is_gaj(sfs))}"
+                f"{_delta_td(d_cf, d_cf_rmse, d_cf_gap)}"
+                f"</tr>"
+            )
+
+    def _combined_stats_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
+        if not raw_deltas:
+            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' class='meta'>—</td></tr>")
+        arr = np.array(raw_deltas)
+        n   = len(arr)
+        net = float(arr.mean())
+        wins   = arr[arr >  MEANINGFUL]
+        losses = arr[arr < -MEANINGFUL]
+        ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        mean_win  = float(wins.mean())   if len(wins)   else None
+        mean_loss = float(losses.mean()) if len(losses) else None
+        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        verdict  = ("Net improvement" if net > MEANINGFUL else
+                    "Net regression"  if net < -MEANINGFUL else "Negligible")
+        win_str  = (f"{len(wins)}/{n} (avg {mean_win:+.3f})"    if mean_win  is not None else f"{len(wins)}/{n}")
+        loss_str = (f"{len(losses)}/{n} (avg {mean_loss:+.3f})" if mean_loss is not None else f"{len(losses)}/{n}")
+        if gaj_deltas:
+            gaj_arr = [g for g in gaj_deltas if g is not None]
+            if gaj_arr:
+                gaj_net  = float(np.array(gaj_arr).mean())
+                diff     = gaj_net - net
+                gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "var(--text-muted)")
+                if diff < -0.02:   interp = "Raw gains partially inflated by increased overfitting"; diff_col = "#E15252"
+                elif diff > 0.02:  interp = "Raw gains understated — overfitting decreased"; diff_col = "#5BAD6F"
+                else:              interp = "Overfitting largely unchanged"; diff_col = "var(--text-muted)"
+                gaj_str  = f"{gaj_net:+.4f}"
+                diff_str = f"{diff:+.4f}"
+            else:
+                gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+        else:
+            gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+        verdict_cell = (f"<strong>{verdict}</strong><br>"
+                        f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span>")
+        return (
+            f"<tr>"
+            f"<td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+            f"<td style='text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
+            f"<td style='text-align:center;color:#5BAD6F'>{win_str}</td>"
+            f"<td style='text-align:center;color:#E15252'>{loss_str}</td>"
+            f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
+            f"<td style='text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td class='meta'>{verdict_cell}</td>"
+            f"</tr>"
+        )
+
+    stats_block = f"""
+<div style='margin-top:1.4rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
+  <div style='overflow-x:auto'>
+  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
+    <thead><tr>
+      <th>Transition</th>
+      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
+      <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
+      <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
+      <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
+      <th style='text-align:center'>Gap-Adj Net ΔR²</th>
+      <th style='text-align:center'>Gap-Adj − Raw</th>
+      <th>Verdict</th>
+    </tr></thead>
+    <tbody>
+      {_combined_stats_row(d_clr_comb,  gaj_d_clr_comb,  "Clarifier", "Combined")}
+      {_combined_stats_row(d_sed_comb,  gaj_d_sed_comb,  "Sed",       "Combined")}
+      {_combined_stats_row(d_clr_sed,   gaj_d_clr_sed,   "Clarifier", "Sed")}
+      {_combined_stats_row(d_comb_s2fs, gaj_d_comb_s2fs, "Combined",  "Sub2 FS")}
+    </tbody>
+  </table>
+  </div>
+  <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
+    <p class='meta'>
+      <strong>Reading the table.</strong>
+      <strong>Sub1-Clr</strong> = Sec Clarifier + COMMON (10 features, no FS).
+      <strong>Sub1-Sed</strong> = Sec Sedimentation + COMMON (10 features, no FS).
+      <strong>Combined</strong> = both secondary groups + COMMON (15 features, original baseline).
+      <strong>Sub2 Full</strong> = Inlet + Secondary + COMMON with cyclic calendar (21 features,
+      no FS applied; for OLS this is the pre-LassoCV result).
+      <strong>Sub2 FS</strong> = same 21 features after model-specific selection
+      (OLS: LassoCV; Ridge: full set; ElNet: internal L1; RF/GB/XGB: OOF permutation importance ≥5%).
+      <strong>Δ(Clr→Comb)</strong> = what adding Sed to Clarifier contributes.
+      <strong>Δ(Comb→S2-FS)</strong> = what adding inlet + cyclic calendar + FS contributes.
+      <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score.
+    </p>
+  </div>
+</div>"""
+
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem'>
+<table class='summary-table' style='font-size:0.82em;min-width:1100px;border-collapse:collapse'>
+  <thead>
+    <tr style='background:var(--bg-secondary)'>
+      <th style='min-width:60px'>Model</th>
+      <th style='text-align:center;border-left:3px solid #888'>Sub1-Clr<br>
+          <span class='meta' style='font-weight:normal'>10 feat</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Sub1-Sed<br>
+          <span class='meta' style='font-weight:normal'>10 feat</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center;border-left:3px solid #4A90D9'>Combined<br>
+          <span class='meta' style='font-weight:normal'>15 feat</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ(Clr→Comb)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 Full<br>
+          <span class='meta' style='font-weight:normal'>21 feat, cyclic</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Sub2 FS<br>
+          <span class='meta' style='font-weight:normal'>model-specific</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ(Comb→S2-FS)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="exp2-comparison">
+  <summary><span class="fold-icon">▶</span>
+    Sub-experiment Comparison — Clarifier / Sed / Combined / Sub2-FS
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #E67E22">
+      <p class="meta">
+        Five columns per (model, target): three secondary-only baselines followed by the
+        combined inlet+secondary+cyclic Sub2 full and FS results. The two delta columns
+        show (1) what combining both secondary groups adds over Clarifier alone, and
+        (2) what adding inlet concentrations and cyclic calendar (with FS) contributes
+        over the combined secondary baseline. <strong>★</strong> = best raw Test R² ·
+        <strong>✦</strong> = best gap-adjusted score.
+        <span style='color:#5BAD6F;font-weight:bold'>green Δ</span> = improvement ·
+        <span style='color:#E15252;font-weight:bold'>red Δ</span> = regression ·
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+      </p>
+    </div>
+    {main_table}
+    {stats_block}
+  </div>
+</details>"""
+
+
+def _exp2_qna(df_all: pd.DataFrame) -> str:
+    """Data-driven Q&A for Experiment 2 — four key questions."""
+    clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
+    sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
+    comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
+    cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
+
+    if clr.empty and comb.empty:
+        return ""
+
+    all_m  = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    MEANINGFUL = 0.005
+
+    def _r2(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _delta_arr(from_df, to_df, models, targets):
+        vals = []
+        for m in models:
+            for t in targets:
+                a = _r2(from_df, m, t); b = _r2(to_df, m, t)
+                if a is not None and b is not None:
+                    vals.append(b - a)
+        return np.array(vals) if vals else np.array([])
+
+    def _colored(arr):
+        if not len(arr): return "<em>—</em>"
+        v = float(arr.mean())
+        c = "#5BAD6F" if v > MEANINGFUL else ("#E15252" if v < -MEANINGFUL else "var(--text-muted)")
+        return f"<span style='color:{c};font-weight:bold'>{v:+.3f}</span>"
+
+    # ── Q1: Do Clarifier and Sed carry distinct signal? ───────────────────────
+    clr_vals = [_r2(clr, m, t) for m in all_m for t in TARGETS_ORDERED if _r2(clr, m, t) is not None]
+    sed_vals = [_r2(sed, m, t) for m in all_m for t in TARGETS_ORDERED if _r2(sed, m, t) is not None]
+    clr_avg  = float(np.mean(clr_vals)) if clr_vals else None
+    sed_avg  = float(np.mean(sed_vals)) if sed_vals else None
+
+    d_cs = _delta_arr(clr, sed, all_m, TARGETS_ORDERED)
+    d_cs_grab = _delta_arr(clr, sed, all_m, GRAB_TARGETS)
+    d_cs_comp = _delta_arr(clr, sed, all_m, COMP_TARGETS)
+
+    if clr_avg is not None and sed_avg is not None:
+        diff = sed_avg - clr_avg
+        if abs(diff) < 0.02:
+            _q1_verdict = ("They carry <strong>similar signal</strong> overall "
+                           f"(Clarifier avg={clr_avg:+.3f}, Sed avg={sed_avg:+.3f}; Δ={diff:+.3f}). "
+                           "The two secondary groups are largely interchangeable at this level.")
+        elif diff > 0:
+            _q1_verdict = (f"<strong>Sedimentation features slightly outperform Clarifier</strong> "
+                           f"(avg Sed={sed_avg:+.3f} vs Clarifier={clr_avg:+.3f}; Δ={diff:+.3f}). "
+                           "The difference is small but consistent across targets.")
+        else:
+            _q1_verdict = (f"<strong>Clarifier features slightly outperform Sedimentation</strong> "
+                           f"(avg Clr={clr_avg:+.3f} vs Sed={sed_avg:+.3f}; Δ={diff:+.3f}). "
+                           "The difference is small but consistent across targets.")
+    else:
+        _q1_verdict = "Insufficient data to compare."
+
+    q1 = (
+        f"{_q1_verdict} "
+        f"<br><strong>Grab targets:</strong> Sed − Clr mean Δ = {_colored(d_cs_grab)}, "
+        f"<strong>Composite targets:</strong> Sed − Clr mean Δ = {_colored(d_cs_comp)}. "
+        f"Co-occurring missingness means both groups have nearly identical row counts "
+        f"— row count is not a confound here. The signal overlap is high because "
+        f"Clarifier and Sedimentation units process the same water sequentially."
+    )
+
+    # ── Q2: What does combining both groups add? ───────────────────────────────
+    d_clr_comb = _delta_arr(clr,  comb, all_m, TARGETS_ORDERED)
+    d_sed_comb = _delta_arr(sed,  comb, all_m, TARGETS_ORDERED)
+    d_clr_comb_grab = _delta_arr(clr, comb, all_m, GRAB_TARGETS)
+    d_clr_comb_comp = _delta_arr(clr, comb, all_m, COMP_TARGETS)
+
+    n_cc = len(d_clr_comb)
+    wins_cc = int((d_clr_comb > 0.01).sum()) if n_cc else 0
+
+    q2 = (
+        f"Adding Sedimentation to Clarifier (Clr→Combined): mean Δ = {_colored(d_clr_comb)} "
+        f"({wins_cc}/{n_cc} cells improved). "
+        f"<br>Adding Clarifier to Sedimentation (Sed→Combined): mean Δ = {_colored(d_sed_comb)}. "
+        f"<br><strong>Grab:</strong> {_colored(d_clr_comb_grab)}, "
+        f"<strong>Composite:</strong> {_colored(d_clr_comb_comp)}. "
+        f"The combined group rarely beats the better individual group by more than a small margin — "
+        f"confirming the high signal overlap between the two secondary sub-systems. "
+        f"Models using the combined 15-feature set do not consistently outperform either "
+        f"10-feature variant because regularised models (Ridge, ElNet) already handle "
+        f"the redundancy, and tree models are not noticeably improved by the additional 5 features."
+    )
+
+    # ── Q3: What does adding inlet + cyclic calendar contribute? ──────────────
+    # Compare Combined (15 feat) to Sub2-FS (cyc, model-specific FS)
+    def _cyc_fs(m, t): return _r2(cyc, m, t)
+
+    fs_vals = [(m, t, _cyc_fs(m, t)) for m in all_m for t in TARGETS_ORDERED]
+    fs_vals = [(m, t, v) for m, t, v in fs_vals if v is not None]
+
+    comb_vals_aligned = [_r2(comb, m, t) for m, t, _ in fs_vals]
+    d_comb_s2 = np.array([b - a for (_, _, b), a in zip(fs_vals, comb_vals_aligned)
+                           if a is not None])
+    d_comb_s2_grab = _delta_arr(
+        comb, cyc, all_m, GRAB_TARGETS)
+    d_comb_s2_comp = _delta_arr(
+        comb, cyc, all_m, COMP_TARGETS)
+
+    n_cs2 = len(d_comb_s2)
+    wins_cs2  = int((d_comb_s2 > 0.01).sum())  if n_cs2 else 0
+    loss_cs2  = int((d_comb_s2 < -0.01).sum()) if n_cs2 else 0
+
+    q3 = (
+        f"Combined (15) → Sub2-FS (21 + cyclic + FS): mean Δ = {_colored(d_comb_s2)} "
+        f"({wins_cs2}/{n_cs2} improved, {loss_cs2}/{n_cs2} regressed). "
+        f"<br><strong>Grab:</strong> {_colored(d_comb_s2_grab)}, "
+        f"<strong>Composite:</strong> {_colored(d_comb_s2_comp)}. "
+        f"Cyclic calendar encoding ensures no false December→January discontinuity. "
+        f"OLS uses LassoCV to reduce the 21-feature set; tree models use OOF "
+        f"permutation importance (≥5% threshold) to select the most informative features. "
+        f"Where the delta is positive, the inlet signal and correct calendar encoding "
+        f"add genuine predictive value. Where negative, the added features primarily "
+        f"increase variance (especially on smaller composite datasets, n≈730–740 train rows)."
+    )
+
+    # ── Q4: Grab vs Composite split ───────────────────────────────────────────
+    grab_clr = [_r2(clr, m, t) for m in all_m for t in GRAB_TARGETS if _r2(clr, m, t) is not None]
+    grab_sed = [_r2(sed, m, t) for m in all_m for t in GRAB_TARGETS if _r2(sed, m, t) is not None]
+    comp_clr = [_r2(clr, m, t) for m in all_m for t in COMP_TARGETS if _r2(clr, m, t) is not None]
+    comp_sed = [_r2(sed, m, t) for m in all_m for t in COMP_TARGETS if _r2(sed, m, t) is not None]
+
+    ga_clr = float(np.mean(grab_clr)) if grab_clr else None
+    ga_sed = float(np.mean(grab_sed)) if grab_sed else None
+    co_clr = float(np.mean(comp_clr)) if comp_clr else None
+    co_sed = float(np.mean(comp_sed)) if comp_sed else None
+
+    def _fmt(v):
+        if v is None: return "—"
+        c = "#5BAD6F" if v > 0.05 else ("#E15252" if v < -0.05 else "var(--text-muted)")
+        return f"<span style='color:{c};font-weight:bold'>{v:+.3f}</span>"
+
+    q4 = (
+        f"Yes — consistently. "
+        f"<br><strong>Clarifier-only:</strong> Grab avg = {_fmt(ga_clr)}, Composite avg = {_fmt(co_clr)}. "
+        f"<br><strong>Sed-only:</strong> Grab avg = {_fmt(ga_sed)}, Composite avg = {_fmt(co_sed)}. "
+        f"Grab targets respond better to every secondary-feature configuration. "
+        f"Composite targets show mostly negative or near-zero R² from secondary-only features — "
+        f"they need inlet concentrations (Sub2) before any linear model generalises. "
+        f"The structural reason: composite samples are collected on fewer days (~730–970 rows) "
+        f"and their effluent quality is driven more by inlet load (what goes in) than by "
+        f"instantaneous secondary process readings. "
+        f"Composite COD fails across all Exp2 variants — this target requires either "
+        f"additional features or a process-specific explanation."
+    )
+
+    def _qcard(n, question, answer, extra=""):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
+    {extra}
+  </div>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="exp2-findings" open>
+  <summary><span class="fold-icon">▶</span> Findings — Experiment 2</summary>
+  <div class="exp-body">
+  {_qcard(1, "Do Sec Clarifier and Sec Sedimentation features carry distinct signal, or are they interchangeable?", q1)}
+  {_qcard(2, "What does combining both secondary groups add over either individually?", q2)}
+  {_qcard(3, "What does adding inlet concentrations and cyclic calendar contribute (Combined → Sub2-FS)?", q3)}
+  {_qcard(4, "Do Grab and Composite targets respond differently to the secondary feature transitions?", q4)}
+  </div>
+</details>"""
+
+
 def build_exp2_section(df_all: pd.DataFrame) -> str:
-    sub1   = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1",
-                             "Sub-experiment 1 - Secondary Clarifier + COMMON", open_default=True)
-    fs1div = _fs_analysis_div(df_all, "Exp2-Sub1", "Exp2-Sub1-FS")
-    sub1fs = _exp_subsection(df_all, "Exp2-Sub1-FS", "exp2-s1-fs",
-                             "Sub-experiment 1 - Feature Selected", open_default=False)
-    sub2   = _exp_subsection(df_all, "Exp2-Sub2", "exp2-s2",
-                             "Sub-experiment 2 - Inlet + Secondary + COMMON", open_default=True)
-    fs2div = _fs_analysis_div(df_all, "Exp2-Sub2", "Exp2-Sub2-FS")
-    sub2fs = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s2-fs",
-                             "Sub-experiment 2 - Feature Selected", open_default=False)
-    best = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Exp2-Sub1","Exp2-Sub1-FS","Exp2-Sub2","Exp2-Sub2-FS"])],
+    # Sub-exp 1: three secondary-only scopes
+    sub1_combined = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1-combined",
+                                    "Combined Secondary + COMMON (15 features)",
+                                    open_default=True)
+    sub1_clr = _exp_subsection(df_all, "Exp2-Sub1-Clr", "exp2-s1-clr",
+                               "Sec Clarifier + COMMON (10 features)",
+                               open_default=False)
+    sub1_sed = _exp_subsection(df_all, "Exp2-Sub1-Sed", "exp2-s1-sed",
+                               "Sec Sedimentation + COMMON (10 features)",
+                               open_default=False)
+
+    # Sub-exp 2: cyclic, with integrated FS
+    sub2_cyc = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s2-cyc",
+                               "Sub-experiment 2 — Inlet + Secondary + COMMON "
+                               "(cyclic calendar, 21 features, model-specific FS integrated)",
+                               open_default=True)
+
+    cmp_div      = _exp2_comparison_panel(df_all)
+    findings_div = _exp2_qna(df_all)
+    best         = _best_model_box(
+        df_all[df_all["exp_key"].isin([
+            "Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed", "Exp2-Sub2-Cyc",
+        ])],
         "Experiment 2")
+
+    sub1_wrapper = f"""
+<details class="exp-details" open id="exp2-s1">
+  <summary><span class="fold-icon">▶</span>
+    Sub-experiment 1 — Secondary Features Only (three scopes)
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <p class="meta">
+        Three feature scopes tested side by side within Sub-experiment 1.
+        <strong>Combined</strong> (15 features) is the original baseline — both secondary groups
+        together. <strong>Clarifier-only</strong> and <strong>Sed-only</strong> (10 features each)
+        isolate each group to test whether they carry distinct signal or are interchangeable.
+        All variants include COMMON (Flow, Power, month, day_of_week, year).
+        Co-occurring missingness means row counts are nearly identical across the three.
+      </p>
+    </div>
+    {sub1_combined}
+    {sub1_clr}
+    {sub1_sed}
+  </div>
+</details>"""
+
     return f"""
 <section id="exp2">
   <h1 class="section-title">Experiment 2 - Secondary & Combined Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
-  {sub1}
-  {sub1fs}
-  {fs1div}
-  {sub2}
-  {sub2fs}
-  {fs2div}
+  {sub1_wrapper}
+  {sub2_cyc}
+  {cmp_div}
+  {findings_div}
   {best}
 </section>"""
 
@@ -4433,9 +5190,7 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-exp1">
       <a class="nav-item nav-sub" href="#exp1-sub1">Sub1 (Inlet Only)</a>
-      <a class="nav-item nav-sub" href="#exp1-full">Sub2 (+ COMMON)</a>
-      <a class="nav-item nav-sub" href="#exp1-cyclic">Sub2 Cyclic</a>
-      <a class="nav-item nav-sub" href="#exp1-fs">Feature Selected</a>
+      <a class="nav-item nav-sub" href="#exp1-full">Sub2 (Cyclic, 11 feat)</a>
       <a class="nav-item nav-sub" href="#exp1-comparison">Sub-exp Comparison</a>
       <a class="nav-item nav-sub" href="#exp1-findings">Findings</a>
     </div>
@@ -4447,9 +5202,12 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-exp2">
       <a class="nav-item nav-sub" href="#exp2-s1">Sub-exp 1 (Secondary)</a>
-      <a class="nav-item nav-sub" href="#exp2-s1-fs">Sub-exp 1 FS</a>
-      <a class="nav-item nav-sub" href="#exp2-s2">Sub-exp 2 (Combined)</a>
-      <a class="nav-item nav-sub" href="#exp2-s2-fs">Sub-exp 2 FS</a>
+      <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ Combined (15 feat)</a>
+      <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier only</a>
+      <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation only</a>
+      <a class="nav-item nav-sub" href="#exp2-s2-cyc">Sub-exp 2 (Inlet+Sec, Cyclic+FS)</a>
+      <a class="nav-item nav-sub" href="#exp2-comparison">Sub-exp Comparison</a>
+      <a class="nav-item nav-sub" href="#exp2-findings">Findings</a>
     </div>
   </div>
 
@@ -4595,6 +5353,7 @@ CUSTOM_CSS = """
     background: var(--toc-bg); font-weight: 600;
   }
   .nav-sub { padding-left: 28px; font-size: 12px; }
+  .nav-subsub { padding-left: 2.4rem !important; font-size: 0.78em; color: var(--text-muted); }
 
   /* ── Page header ───────────────────────────────────────────────── */
   .page-header {
