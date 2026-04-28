@@ -4102,17 +4102,21 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"{dr2:+.3f}{extra}</td>")
 
     # Collect deltas for summary rows
-    d_clr_comb  = []; gaj_d_clr_comb  = []
-    d_sed_comb  = []; gaj_d_sed_comb  = []
-    d_clr_sed   = []; gaj_d_clr_sed   = []
-    d_comb_s2fs = []; gaj_d_comb_s2fs = []
+    d_clr_comb      = []; gaj_d_clr_comb      = []
+    d_sed_comb      = []; gaj_d_sed_comb      = []
+    d_clr_sed       = []; gaj_d_clr_sed       = []
+    d_comb_s2full   = []; gaj_d_comb_s2full   = []
+    d_comb_s2fs     = []; gaj_d_comb_s2fs     = []
+    d_sed_s2full    = []; gaj_d_sed_s2full    = []
+    d_sed_s2fs      = []; gaj_d_sed_s2fs      = []
+    d_s2full_s2fs   = []; gaj_d_s2full_s2fs   = []
 
     tbody = ""
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
             f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,var(--bg-alt) 100%)'>"
-            f"<td colspan='9' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
+            f"<td colspan='6' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
             f"border-left:4px solid var(--accent-blue,#4A90D9)'>{short}</td></tr>"
         )
         for m in models_ord:
@@ -4131,29 +4135,49 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             sc  = _gaj(vc,  gc);   ss  = _gaj(vs,  gs)
             sco = _gaj(vco, gco);  sf  = _gaj(vf,  gf); sfs = _gaj(vfs, gfs)
 
-            d_cc = (vco - vc)  if (vc  is not None and vco is not None) else None
-            d_sc = (vco - vs)  if (vs  is not None and vco is not None) else None
-            d_cs = (vs  - vc)  if (vc  is not None and vs  is not None) else None
-            d_cf = (vfs - vco) if (vco is not None and vfs is not None) else None
+            d_cc  = (vco - vc)  if (vc  is not None and vco is not None) else None
+            d_sc  = (vco - vs)  if (vs  is not None and vco is not None) else None
+            d_cs  = (vs  - vc)  if (vc  is not None and vs  is not None) else None
+            d_cf  = (vf  - vco) if (vco is not None and vf  is not None) else None
+            d_cfs = (vfs - vco) if (vco is not None and vfs is not None) else None
+            d_sf  = (vf  - vs)  if (vs  is not None and vf  is not None) else None
+            d_sfs = (vfs - vs)  if (vs  is not None and vfs is not None) else None
+            d_ff  = (vfs - vf)  if (vf  is not None and vfs is not None) else None
 
-            d_cc_rmse = (rco - rc)  if (rc  is not None and rco is not None) else None
-            d_sc_rmse = (rco - rs)  if (rs  is not None and rco is not None) else None
-            d_cf_rmse = (rfs - rco) if (rco is not None and rfs is not None) else None
+            d_cc_rmse  = (rco - rc)  if (rc  is not None and rco is not None) else None
+            d_sc_rmse  = (rco - rs)  if (rs  is not None and rco is not None) else None
+            d_cf_rmse  = (rf_ - rco) if (rco is not None and rf_ is not None) else None
+            d_cfs_rmse = (rfs - rco) if (rco is not None and rfs is not None) else None
+            d_sf_rmse  = (rf_ - rs)  if (rs  is not None and rf_ is not None) else None
+            d_sfs_rmse = (rfs - rs)  if (rs  is not None and rfs is not None) else None
+            d_ff_rmse  = (rfs - rf_) if (rf_ is not None and rfs is not None) else None
 
-            d_cc_gap = (gco - gc)   if (gc  is not None and gco is not None) else None
-            d_sc_gap = (gco - gs)   if (gs  is not None and gco is not None) else None
-            d_cf_gap = (gfs - gco)  if (gco is not None and gfs is not None) else None
+            d_cc_gap  = (gco - gc)  if (gc  is not None and gco is not None) else None
+            d_sc_gap  = (gco - gs)  if (gs  is not None and gco is not None) else None
+            d_cf_gap  = (gf  - gco) if (gco is not None and gf  is not None) else None
+            d_cfs_gap = (gfs - gco) if (gco is not None and gfs is not None) else None
+            d_sf_gap  = (gf  - gs)  if (gs  is not None and gf  is not None) else None
+            d_sfs_gap = (gfs - gs)  if (gs  is not None and gfs is not None) else None
+            d_ff_gap  = (gfs - gf)  if (gf  is not None and gfs is not None) else None
 
             # gap-adj deltas
-            gaj_cc = (sco - sc)  if (sc  is not None and sco is not None) else None
-            gaj_sc = (sco - ss)  if (ss  is not None and sco is not None) else None
-            gaj_cs = (ss  - sc)  if (sc  is not None and ss  is not None) else None
-            gaj_cf = (sfs - sco) if (sco is not None and sfs is not None) else None
+            gaj_cc  = (sco - sc)  if (sc  is not None and sco is not None) else None
+            gaj_sc  = (sco - ss)  if (ss  is not None and sco is not None) else None
+            gaj_cs  = (ss  - sc)  if (sc  is not None and ss  is not None) else None
+            gaj_cf  = (sf  - sco) if (sco is not None and sf  is not None) else None
+            gaj_cfs = (sfs - sco) if (sco is not None and sfs is not None) else None
+            gaj_sf  = (sf  - ss)  if (ss  is not None and sf  is not None) else None
+            gaj_sfs = (sfs - ss)  if (ss  is not None and sfs is not None) else None
+            gaj_ff  = (sfs - sf)  if (sf  is not None and sfs is not None) else None
 
-            if d_cc  is not None: d_clr_comb.append(d_cc);   gaj_d_clr_comb.append(gaj_cc)  if gaj_cc  is not None else None
-            if d_sc  is not None: d_sed_comb.append(d_sc);   gaj_d_sed_comb.append(gaj_sc)  if gaj_sc  is not None else None
-            if d_cs  is not None: d_clr_sed.append(d_cs);    gaj_d_clr_sed.append(gaj_cs)   if gaj_cs  is not None else None
-            if d_cf  is not None: d_comb_s2fs.append(d_cf);  gaj_d_comb_s2fs.append(gaj_cf) if gaj_cf  is not None else None
+            if d_cc  is not None: d_clr_comb.append(d_cc);       gaj_d_clr_comb.append(gaj_cc)    if gaj_cc  is not None else None
+            if d_sc  is not None: d_sed_comb.append(d_sc);       gaj_d_sed_comb.append(gaj_sc)    if gaj_sc  is not None else None
+            if d_cs  is not None: d_clr_sed.append(d_cs);        gaj_d_clr_sed.append(gaj_cs)     if gaj_cs  is not None else None
+            if d_cf  is not None: d_comb_s2full.append(d_cf);    gaj_d_comb_s2full.append(gaj_cf) if gaj_cf  is not None else None
+            if d_cfs is not None: d_comb_s2fs.append(d_cfs);     gaj_d_comb_s2fs.append(gaj_cfs)  if gaj_cfs is not None else None
+            if d_sf  is not None: d_sed_s2full.append(d_sf);     gaj_d_sed_s2full.append(gaj_sf)  if gaj_sf  is not None else None
+            if d_sfs is not None: d_sed_s2fs.append(d_sfs);      gaj_d_sed_s2fs.append(gaj_sfs)   if gaj_sfs is not None else None
+            if d_ff  is not None: d_s2full_s2fs.append(d_ff);    gaj_d_s2full_s2fs.append(gaj_ff) if gaj_ff  is not None else None
 
             cands_raw = {k: v for k, v in [("Clr",vc),("Sed",vs),("Comb",vco),("S2-Full",vf),("S2-FS",vfs)] if v is not None}
             cands_gaj = {k: v for k, v in [("Clr",sc),("Sed",ss),("Comb",sco),("S2-Full",sf),("S2-FS",sfs)] if v is not None}
@@ -4168,10 +4192,8 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"{_val_td(vc,  rc,  gc,  _is_raw(vc),  _is_gaj(sc))}"
                 f"{_val_td(vs,  rs,  gs,  _is_raw(vs),  _is_gaj(ss))}"
                 f"{_val_td(vco, rco, gco, _is_raw(vco), _is_gaj(sco))}"
-                f"{_delta_td(d_cc, d_cc_rmse, d_cc_gap)}"
                 f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(sf))}"
                 f"{_val_td(vfs, rfs, gfs, _is_raw(vfs), _is_gaj(sfs))}"
-                f"{_delta_td(d_cf, d_cf_rmse, d_cf_gap)}"
                 f"</tr>"
             )
 
@@ -4238,10 +4260,14 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       <th>Verdict</th>
     </tr></thead>
     <tbody>
-      {_combined_stats_row(d_clr_comb,  gaj_d_clr_comb,  "Clarifier", "Combined")}
-      {_combined_stats_row(d_sed_comb,  gaj_d_sed_comb,  "Sed",       "Combined")}
-      {_combined_stats_row(d_clr_sed,   gaj_d_clr_sed,   "Clarifier", "Sed")}
-      {_combined_stats_row(d_comb_s2fs, gaj_d_comb_s2fs, "Combined",  "Sub2 FS")}
+      {_combined_stats_row(d_clr_sed,      gaj_d_clr_sed,      "Clarifier", "Sed")}
+      {_combined_stats_row(d_clr_comb,     gaj_d_clr_comb,     "Clarifier", "Combined")}
+      {_combined_stats_row(d_sed_comb,     gaj_d_sed_comb,     "Sed",       "Combined")}
+      {_combined_stats_row(d_comb_s2full,  gaj_d_comb_s2full,  "Combined",  "Sub2 Full")}
+      {_combined_stats_row(d_sed_s2full,   gaj_d_sed_s2full,   "Sed",       "Sub2 Full")}
+      {_combined_stats_row(d_comb_s2fs,    gaj_d_comb_s2fs,    "Combined",  "Sub2 FS")}
+      {_combined_stats_row(d_sed_s2fs,     gaj_d_sed_s2fs,     "Sed",       "Sub2 FS")}
+      {_combined_stats_row(d_s2full_s2fs,  gaj_d_s2full_s2fs,  "Sub2 Full", "Sub2 FS")}
     </tbody>
   </table>
   </div>
@@ -4255,16 +4281,15 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       no FS applied; for OLS this is the pre-LassoCV result).
       <strong>Sub2 FS</strong> = same 21 features after model-specific selection
       (OLS: LassoCV; Ridge: full set; ElNet: internal L1; RF/GB/XGB: OOF permutation importance ≥5%).
-      <strong>Δ(Clr→Comb)</strong> = what adding Sed to Clarifier contributes.
-      <strong>Δ(Comb→S2-FS)</strong> = what adding inlet + cyclic calendar + FS contributes.
       <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score.
+      Detailed transition deltas (win/loss counts and gap-adjusted net) are in the Transition Summary below.
     </p>
   </div>
 </div>"""
 
     main_table = f"""
 <div style='overflow-x:auto;margin-top:0.8rem'>
-<table class='summary-table' style='font-size:0.82em;min-width:1100px;border-collapse:collapse'>
+<table class='summary-table' style='font-size:0.82em;min-width:860px;border-collapse:collapse'>
   <thead>
     <tr style='background:var(--bg-secondary)'>
       <th style='min-width:60px'>Model</th>
@@ -4277,16 +4302,12 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       <th style='text-align:center;border-left:3px solid #4A90D9'>Combined<br>
           <span class='meta' style='font-weight:normal'>15 feat</span><br>
           <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ(Clr→Comb)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
       <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 Full<br>
           <span class='meta' style='font-weight:normal'>21 feat, cyclic</span><br>
           <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
       <th style='text-align:center'>Sub2 FS<br>
           <span class='meta' style='font-weight:normal'>model-specific</span><br>
           <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ(Comb→S2-FS)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
@@ -4301,14 +4322,10 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #E67E22">
       <p class="meta">
-        Five columns per (model, target): three secondary-only baselines followed by the
-        combined inlet+secondary+cyclic Sub2 full and FS results. The two delta columns
-        show (1) what combining both secondary groups adds over Clarifier alone, and
-        (2) what adding inlet concentrations and cyclic calendar (with FS) contributes
-        over the combined secondary baseline. <strong>★</strong> = best raw Test R² ·
+        Five columns per (model, target): three secondary-only baselines (Clarifier, Sed,
+        Combined) followed by Sub2 Full and Sub2 FS results. Transition deltas are in the
+        Transition Summary table below. <strong>★</strong> = best raw Test R² ·
         <strong>✦</strong> = best gap-adjusted score.
-        <span style='color:#5BAD6F;font-weight:bold'>green Δ</span> = improvement ·
-        <span style='color:#E15252;font-weight:bold'>red Δ</span> = regression ·
         <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
       </p>
     </div>
@@ -5202,9 +5219,9 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-exp2">
       <a class="nav-item nav-sub" href="#exp2-s1">Sub-exp 1 (Secondary)</a>
-      <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ Combined (15 feat)</a>
       <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier only</a>
       <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation only</a>
+      <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ Combined (15 feat)</a>
       <a class="nav-item nav-sub" href="#exp2-s2-cyc">Sub-exp 2 (Inlet+Sec, Cyclic+FS)</a>
       <a class="nav-item nav-sub" href="#exp2-comparison">Sub-exp Comparison</a>
       <a class="nav-item nav-sub" href="#exp2-findings">Findings</a>

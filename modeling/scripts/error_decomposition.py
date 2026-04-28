@@ -116,11 +116,11 @@ def decompose_target(name: str, target: str, inlet_col: str) -> pd.DataFrame:
 
     # Restrict to rows with non-null (y_true, y_pred, flow, inlet)
     flow_col   = "Flow (MLD)"
-    dow_col    = "day_of_week"
-    needed = [target, MODEL_COL, flow_col, dow_col, inlet_col]
+    needed = [target, MODEL_COL, flow_col, inlet_col]
     df = df.dropna(subset=needed).copy()
-    df["year"]  = df["Date"].dt.year
-    df["month"] = df["Date"].dt.month
+    df["year"]        = df["Date"].dt.year
+    df["month"]       = df["Date"].dt.month
+    df["day_of_week"] = df["Date"].dt.dayofweek
 
     train = df[df["year"] < 2025]
     test  = df[df["year"] == 2025]
@@ -150,7 +150,7 @@ def decompose_target(name: str, target: str, inlet_col: str) -> pd.DataFrame:
                      **_cell_metrics(y_true[mask], y_pred[mask])})
 
     # 2. Weekday vs weekend
-    is_weekend = test[dow_col].isin([5, 6]).values
+    is_weekend = test["day_of_week"].isin([5, 6]).values
     rows.append({"target": target, "axis": "Day",
                  "bucket": "Weekday", **_cell_metrics(y_true[~is_weekend], y_pred[~is_weekend])})
     rows.append({"target": target, "axis": "Day",
