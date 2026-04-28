@@ -73,13 +73,13 @@ USEFUL_THRESH = 0.03
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
     "Exp1-Sub1": "E1-S1",
-    "Exp1": "Exp1",        "Exp1-FS": "Exp1-FS",   "Exp1-Cyclic": "E1-Cyc",
-    "Exp2-Sub1": "E2-S1",  "Exp2-Sub1-FS": "E2-S1-FS",
+    "Exp1": "Exp1",            "Exp1-FS": "Exp1-FS",  "Exp1-Cyclic": "E1-Cyc",
+    "Exp2-Sub1": "E2-S1-Comb", "Exp2-Sub1-FS": "E2-S1-FS",
     "Exp2-Sub1-Clr": "E2-S1-Clr",
     "Exp2-Sub1-Sed": "E2-S1-Sed",
-    "Exp2-Sub2": "E2-S2",  "Exp2-Sub2-FS": "E2-S2-FS",
-    "Exp2-Sub2-Cyc": "E2-S2-Cyc",
-    "Exp3-S1": "E3-S1",    "Exp3-S1-FS": "E3-S1-FS",
+    "Exp2-Sub2": "E2-S2",      "Exp2-Sub2-FS": "E2-S2-FS",
+    "Exp2-Sub2-Cyc": "E2-S2",
+    "Exp3-S1": "E3-S1",        "Exp3-S1-FS": "E3-S1-FS",
     "Exp3-S2": "E3-S2",
     "Exp4-S1": "E4-S1",
     "Exp4-S2": "E4-S2",
@@ -88,6 +88,32 @@ EXP_CHART_LABELS = {
     "ANN-Exp1": "ANN-E1", "ANN-Exp2-Sub1": "ANN-E2-S1", "ANN-Exp2-Sub2": "ANN-E2-S2",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
     "Phase11": "P11",
+}
+
+# Longer descriptive labels used only in the "Source" column of best-model tables.
+EXP_SOURCE_LABELS = {
+    "Exp1-Sub1":      "Exp1 S1 — Inlet only",
+    "Exp1":           "Exp1 S2 — Inlet+COMMON",
+    "Exp1-FS":        "Exp1 S2 FS",
+    "Exp1-Cyclic":    "Exp1 S2 (cyclic enc.)",
+    "Exp2-Sub1-Clr":  "Exp2 S1 — Clarifier",
+    "Exp2-Sub1-Sed":  "Exp2 S1 — Sedimentation",
+    "Exp2-Sub1":      "Exp2 S1 — Combined",
+    "Exp2-Sub1-FS":   "Exp2 S1 FS",
+    "Exp2-Sub2":      "Exp2 S2",
+    "Exp2-Sub2-FS":   "Exp2 S2 FS",
+    "Exp2-Sub2-Cyc":  "Exp2 S2",
+    "Exp3-S1":        "Exp3 S1",
+    "Exp3-S1-FS":     "Exp3 S1 FS",
+    "Exp3-S2":        "Exp3 S2",
+    "Exp4-S1":        "Exp4 S1",
+    "Exp4-S2":        "Exp4 S2",
+    "Phase9-ANN":     "Phase 9 — ANN",
+    "Phase9-Voting":  "Phase 9 — Voting",
+    "Phase9-Stacking":"Phase 9 — Stacking",
+    "Phase10-FE":     "Phase 10 — FE (all)",
+    "Phase10b-FE":    "Phase 10b — FE (Grab)",
+    "Phase11":        "Phase 11 — Temporal",
 }
 EXP_CHART_ORDER = list(EXP_CHART_LABELS.keys())
 
@@ -2621,7 +2647,8 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
         col = _r2_color(best["R2_test"])
         mdl_col = MODEL_COLORS.get(best["model"], "#888")
         gap_cls_val = _gap_cls(best["R2_gap"])
-        exp_lbl = EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"])
+        exp_lbl = EXP_SOURCE_LABELS.get(best["exp_key"],
+                      EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"]))
 
         overfit_flag = ""
         if abs(best["R2_gap"]) > 0.25:
@@ -2644,7 +2671,7 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
             f'<td><strong style="color:{mdl_col};">{best["model"]}</strong></td>'
             f'<td style="color:{col};font-weight:bold">{_fmt(best["R2_test"])}{overfit_flag}</td>'
             f'<td class="{gap_cls_val}">{_fmt(best["R2_gap"])}</td>'
-            f'<td class="meta" style="font-size:11px">({exp_lbl}){skipped_note}</td>'
+            f'<td class="meta" style="font-size:11px">{exp_lbl}{skipped_note}</td>'
             f'</tr>'
         )
     if not rows:
@@ -2824,7 +2851,8 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
         naive_gap  = best["R2_gap"]
         naive_rmse = best.get("RMSE_test", float("nan"))
         naive_mdl  = best["model"]
-        exp_label  = EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"])
+        exp_label  = EXP_SOURCE_LABELS.get(best["exp_key"],
+                 EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"]))
         mdl_col    = MODEL_COLORS.get(naive_mdl, "#888")
 
         # ── Gap-adjusted recommendation (across all experiments) ───────────────
