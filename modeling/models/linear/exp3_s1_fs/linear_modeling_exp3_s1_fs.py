@@ -48,7 +48,7 @@ ELNET_PARAM_GRID = {
 }
 
 # ── Feature inference ──────────────────────────────────────────────────────────
-_EXCLUDE_COLS     = {"Date", "year", "month", "day_of_week"}
+_EXCLUDE_COLS     = {"Date", "year"}
 _EXCLUDE_PREFIXES = ("predicted_",)
 
 def infer_features(df: pd.DataFrame, target: str) -> list:

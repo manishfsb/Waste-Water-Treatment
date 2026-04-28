@@ -52,7 +52,7 @@ XGB_DIST = {"max_depth": [2, 3, 4, 5], "min_child_weight": [5, 10, 20],
             "reg_alpha": [0.0, 0.1, 1.0], "reg_lambda": [0.5, 1.0, 5.0]}
 
 # ── Feature inference ──────────────────────────────────────────────────────────
-_EXCLUDE_COLS     = {"Date", "year", "month", "day_of_week"}
+_EXCLUDE_COLS     = {"Date", "year"}
 _EXCLUDE_PREFIXES = ("predicted_",)
 
 def infer_features(df: pd.DataFrame, target: str) -> list:

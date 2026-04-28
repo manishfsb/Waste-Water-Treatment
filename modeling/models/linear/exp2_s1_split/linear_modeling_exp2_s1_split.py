@@ -2,8 +2,8 @@
 linear_modeling_exp2_s1_split.py
 
 Trains OLS, Ridge, and ElasticNet on Experiment 2 Sub-experiment 1 split variants:
-  - Exp2-Sub1-Clr : Sec Clarifier features + COMMON (10 features)
-  - Exp2-Sub1-Sed : Sec Sedimentation features + COMMON (10 features)
+  - Exp2-Sub1-Clr : Sec Clarifier features + COMMON_CYCLIC (12 features)
+  - Exp2-Sub1-Sed : Sec Sedimentation features + COMMON_CYCLIC (12 features)
 
 These are baseline runs (no LassoCV FS). OLS runs on the full feature set only.
 No OLS_full_* columns are produced (there is no FS split).
@@ -56,10 +56,10 @@ SEC_SED_COLS = [
     "Sec Sed pH", "Sec Sed TSS (mg/L)",
     "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
 ]
-COMMON = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
+COMMON_CYCLIC = ["Flow (MLD)", "Power Total (KW)", "year", "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
-CLR_FEAT = SEC_CLARIFIER_COLS + COMMON   # 10 features
-SED_FEAT = SEC_SED_COLS + COMMON         # 10 features
+CLR_FEAT = SEC_CLARIFIER_COLS + COMMON_CYCLIC   # 12 features
+SED_FEAT = SEC_SED_COLS + COMMON_CYCLIC         # 12 features
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _clr(name):

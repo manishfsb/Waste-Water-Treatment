@@ -7,7 +7,7 @@ Two modeling changes layered on Exp3-S2 datasets:
        shift(1), shift(3), shift(7)      (previous observations)
        rolling(7D).mean()                (calendar-aware 7-day mean)
      Added only to continuous features (inlets, Flow, Power, secondary, aeration).
-     Calendar features (month/day_of_week/year) are left untouched.
+     year is left untouched (not lag-expanded).
 
   2. LOG-TRANSFORMED TARGETS - BOD/COD/TSS are right-skewed non-negative
      concentrations. We fit on log1p(y) and back-transform predictions with
@@ -68,8 +68,7 @@ DATASETS = [
 ]
 
 # Columns that should NOT get lag/rolling expansion
-CALENDAR_COLS   = {"month", "day_of_week", "year"}
-NO_TEMPORAL     = CALENDAR_COLS | {"Date"}
+NO_TEMPORAL     = {"Date", "year"}
 
 # Lag and rolling window configuration
 LAG_SHIFTS      = [1, 3, 7]

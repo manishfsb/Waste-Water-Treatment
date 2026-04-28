@@ -130,7 +130,7 @@ MLP_BASE = dict(
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def infer_features(df: pd.DataFrame, target: str) -> list[str]:
-    exclude = {"Date", "year", "month", "day_of_week", target}
+    exclude = {"Date", "year", target}
     return [c for c in df.columns
             if c not in exclude and not c.startswith("predicted_")]
 

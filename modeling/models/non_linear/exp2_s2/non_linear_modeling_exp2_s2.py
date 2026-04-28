@@ -1,9 +1,9 @@
 """
-non_linear_modeling_exp2_s2_cyc.py
+non_linear_modeling_exp2_s2.py
 
-Trains RF, GradientBoosting, and XGBoost on Experiment 2 Sub-experiment 2 datasets
-with cyclic calendar encoding. Includes OOF permutation importance feature selection
-(3-phase: full → select → refit), identical to exp1_cyclic non-linear protocol.
+Trains RF, GradientBoosting, and XGBoost on Experiment 2 Sub-experiment 2 datasets.
+Calendar features use cyclic sin/cos encoding (standard for Exp2 onwards).
+Includes OOF permutation importance feature selection (3-phase: full → select → refit).
 
 Feature set (21 features per target):
   Grab : Inlet pH/BOD/COD/TSS (Grab, 4) + all SEC_COLS (10) + COMMON_CYCLIC (7) = 21
@@ -13,7 +13,7 @@ Stores R2_test_full, R2_train_full, R2_gap_full, n_selected_nl, selected_feature
 in addition to post-selection R2_test, R2_train, R2_gap.
 
 Usage (from project root):
-    .venv/bin/python3 modeling/models/non_linear/exp2_s2_cyc/non_linear_modeling_exp2_s2_cyc.py
+    .venv/bin/python3 modeling/models/non_linear/exp2_s2/non_linear_modeling_exp2_s2.py
 """
 
 import os
@@ -81,19 +81,19 @@ E2S2_COMP = COMP_INLET + SEC_COLS + COMMON_CYCLIC   # 21 features
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _cyc(name):
-    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2_cyclic",
+    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2",
                         f"{name}.xlsx")
 
 
 REGISTRY = [
-    ("Exp2-Sub2-Cyc", "grab_BOD", _cyc("grab_BOD"), E2S2_GRAB, "Effluent BOD (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "grab_COD", _cyc("grab_COD"), E2S2_GRAB, "Effluent COD (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "grab_TSS", _cyc("grab_TSS"), E2S2_GRAB, "Effluent TSS (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "grab_pH",  _cyc("grab_pH"),  E2S2_GRAB, "Effluent pH (Grab)"),
-    ("Exp2-Sub2-Cyc", "comp_BOD", _cyc("comp_BOD"), E2S2_COMP, "Effluent BOD (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "comp_COD", _cyc("comp_COD"), E2S2_COMP, "Effluent COD (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "comp_TSS", _cyc("comp_TSS"), E2S2_COMP, "Effluent TSS (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "comp_pH",  _cyc("comp_pH"),  E2S2_COMP, "Effluent pH (Composite)"),
+    ("Exp2-Sub2", "grab_BOD", _cyc("grab_BOD"), E2S2_GRAB, "Effluent BOD (mg/L, Grab)"),
+    ("Exp2-Sub2", "grab_COD", _cyc("grab_COD"), E2S2_GRAB, "Effluent COD (mg/L, Grab)"),
+    ("Exp2-Sub2", "grab_TSS", _cyc("grab_TSS"), E2S2_GRAB, "Effluent TSS (mg/L, Grab)"),
+    ("Exp2-Sub2", "grab_pH",  _cyc("grab_pH"),  E2S2_GRAB, "Effluent pH (Grab)"),
+    ("Exp2-Sub2", "comp_BOD", _cyc("comp_BOD"), E2S2_COMP, "Effluent BOD (mg/L, Composite)"),
+    ("Exp2-Sub2", "comp_COD", _cyc("comp_COD"), E2S2_COMP, "Effluent COD (mg/L, Composite)"),
+    ("Exp2-Sub2", "comp_TSS", _cyc("comp_TSS"), E2S2_COMP, "Effluent TSS (mg/L, Composite)"),
+    ("Exp2-Sub2", "comp_pH",  _cyc("comp_pH"),  E2S2_COMP, "Effluent pH (Composite)"),
 ]
 
 MODEL_COLOURS = {"RF": "#2171B5", "GB": "#238B45", "XGB": "#D94801"}
@@ -291,7 +291,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
     run = _run_number(model_dir)
     print(f"\n{'='*60}")
-    print(f"{model_tag} — Exp2-Sub2-Cyc  (run {run})")
+    print(f"{model_tag} — Exp2-Sub2  (run {run})")
     print(f"{'='*60}")
 
     results = []
@@ -324,7 +324,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    print("Non-Linear Modeling — Exp2-Sub2-Cyc  (RF / GB / XGB)")
+    print("Non-Linear Modeling — Exp2-Sub2  (RF / GB / XGB)")
     print("21 features · cyclic calendar · OOF permutation importance FS (3-phase)\n")
 
     run_model("RF",  RandomForestRegressor(**RF_BASE),     RF_GRID,  GridSearchCV)

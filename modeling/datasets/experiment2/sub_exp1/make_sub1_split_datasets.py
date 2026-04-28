@@ -1,10 +1,12 @@
 """
 make_sub1_split_datasets.py
 
-Reads existing sub_exp1/ xlsx files (which contain ALL SEC_COLS + COMMON)
+Reads existing sub_exp1/ xlsx files (which contain ALL SEC_COLS + COMMON_CYCLIC)
 and subsets them into two new directories:
-  - sec_clarifier/  : 8 xlsx with only SEC_CLARIFIER_COLS + COMMON
-  - sec_sed/        : 8 xlsx with only SEC_SED_COLS + COMMON
+  - sec_clarifier/  : 8 xlsx with only SEC_CLARIFIER_COLS + COMMON_CYCLIC (12 features)
+  - sec_sed/        : 8 xlsx with only SEC_SED_COLS + COMMON_CYCLIC (12 features)
+
+Calendar features use cyclic (sin/cos) encoding — no raw month/day_of_week columns.
 
 Usage (from project root):
     .venv/bin/python3 modeling/datasets/experiment2/sub_exp1/make_sub1_split_datasets.py
@@ -29,7 +31,7 @@ SEC_SED_COLS = [
     "Sec Sed pH", "Sec Sed TSS (mg/L)",
     "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
 ]
-COMMON = ["Flow (MLD)", "Power Total (KW)", "month", "day_of_week", "year"]
+COMMON_CYCLIC = ["Flow (MLD)", "Power Total (KW)", "year", "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 STEMS = [
@@ -61,7 +63,7 @@ def make_split(stem: str, target: str):
         ("Clarifier", SEC_CLARIFIER_COLS, CLR_DIR),
         ("Sed",       SEC_SED_COLS,       SED_DIR),
     ]:
-        keep = ["Date"] + feat_cols + COMMON + [target]
+        keep = ["Date"] + feat_cols + COMMON_CYCLIC + [target]
         missing = [c for c in keep if c not in df.columns and c != "Date"]
         if missing:
             print(f"  WARNING [{label}] {stem}: missing columns {missing} — skipping")

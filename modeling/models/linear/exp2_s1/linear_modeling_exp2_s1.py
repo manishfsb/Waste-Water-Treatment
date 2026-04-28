@@ -1,19 +1,14 @@
 """
-linear_modeling_exp2_s2_cyc.py
+linear_modeling_exp2_s1.py
 
-Trains OLS, Ridge, and ElasticNet on Experiment 2 Sub-experiment 2 datasets
-with cyclic calendar encoding (month/dow replaced with sin/cos projections).
+Trains OLS, Ridge, and ElasticNet on Experiment 2 Sub-experiment 1 combined datasets.
+Feature set: SEC_COLS (10) + COMMON_CYCLIC (7) = 17 features per target.
+Calendar uses cyclic sin/cos encoding (standard for Exp2 onwards).
 
-Feature set (21 features per target):
-  Grab : Inlet pH/BOD/COD/TSS (Grab, 4) + all SEC_COLS (10) + Flow, Power, year,
-         month_sin, month_cos, dow_sin, dow_cos (7) = 21 features
-  Comp : Inlet pH/BOD/COD/TSS (Composite, 4) + all SEC_COLS (10) + COMMON_CYCLIC = 21 features
-
-OLS uses LassoCV pre-screening (same as exp1_cyclic pattern).
-OLS_full_* columns store the pre-LassoCV result.
+These are baseline runs (no LassoCV FS). OLS runs on the full feature set only.
 
 Usage (from project root):
-    .venv/bin/python3 modeling/models/linear/exp2_s2_cyc/linear_modeling_exp2_s2_cyc.py
+    .venv/bin/python3 modeling/models/linear/exp2_s1/linear_modeling_exp2_s1.py
 """
 
 import os
@@ -25,7 +20,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import ElasticNet, LassoCV, LinearRegression, Ridge
+from sklearn.linear_model import ElasticNet, LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
@@ -52,43 +47,32 @@ ELNET_PARAM_GRID = {
 }
 
 # ── Feature sets ───────────────────────────────────────────────────────────────
-GRAB_INLET = [
-    "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
-    "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)",
-]
-COMP_INLET = [
-    "Inlet pH (Composite)", "Inlet BOD (mg/L, Composite)",
-    "Inlet COD (mg/L, Composite)", "Inlet TSS (mg/L, Composite)",
-]
 SEC_COLS = [
     "Sec Clarifier pH", "Sec Clarifier TSS (mg/L)",
     "Sec Clarifier BOD (mg/L)", "Sec Clarifier COD (mg/L)", "Sec Clarifier RAS",
     "Sec Sed pH", "Sec Sed TSS (mg/L)",
     "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
 ]
-COMMON_CYCLIC = [
-    "Flow (MLD)", "Power Total (KW)", "year",
-    "month_sin", "month_cos", "dow_sin", "dow_cos",
-]
+COMMON_CYCLIC = ["Flow (MLD)", "Power Total (KW)", "year",
+                 "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
-E2S2_GRAB = GRAB_INLET + SEC_COLS + COMMON_CYCLIC   # 21 features
-E2S2_COMP = COMP_INLET + SEC_COLS + COMMON_CYCLIC   # 21 features
+E2S1_FEAT = SEC_COLS + COMMON_CYCLIC   # 17 features
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
-def _cyc(name):
-    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp2_cyclic",
+def _ds(name):
+    return os.path.join(MODELING_DIR, "datasets", "experiment2", "sub_exp1",
                         f"{name}.xlsx")
 
 
 DATASETS = [
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Grab_BOD", _cyc("grab_BOD"), E2S2_GRAB, "Effluent BOD (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Grab_COD", _cyc("grab_COD"), E2S2_GRAB, "Effluent COD (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Grab_TSS", _cyc("grab_TSS"), E2S2_GRAB, "Effluent TSS (mg/L, Grab)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Grab_pH",  _cyc("grab_pH"),  E2S2_GRAB, "Effluent pH (Grab)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Comp_BOD", _cyc("comp_BOD"), E2S2_COMP, "Effluent BOD (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Comp_COD", _cyc("comp_COD"), E2S2_COMP, "Effluent COD (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Comp_TSS", _cyc("comp_TSS"), E2S2_COMP, "Effluent TSS (mg/L, Composite)"),
-    ("Exp2-Sub2-Cyc", "E2S2Cyc_Comp_pH",  _cyc("comp_pH"),  E2S2_COMP, "Effluent pH (Composite)"),
+    ("Exp2-Sub1", "Grab_BOD", _ds("grab_BOD"), E2S1_FEAT, "Effluent BOD (mg/L, Grab)"),
+    ("Exp2-Sub1", "Grab_COD", _ds("grab_COD"), E2S1_FEAT, "Effluent COD (mg/L, Grab)"),
+    ("Exp2-Sub1", "Grab_TSS", _ds("grab_TSS"), E2S1_FEAT, "Effluent TSS (mg/L, Grab)"),
+    ("Exp2-Sub1", "Grab_pH",  _ds("grab_pH"),  E2S1_FEAT, "Effluent pH (Grab)"),
+    ("Exp2-Sub1", "Comp_BOD", _ds("comp_BOD"), E2S1_FEAT, "Effluent BOD (mg/L, Composite)"),
+    ("Exp2-Sub1", "Comp_COD", _ds("comp_COD"), E2S1_FEAT, "Effluent COD (mg/L, Composite)"),
+    ("Exp2-Sub1", "Comp_TSS", _ds("comp_TSS"), E2S1_FEAT, "Effluent TSS (mg/L, Composite)"),
+    ("Exp2-Sub1", "Comp_pH",  _ds("comp_pH"),  E2S1_FEAT, "Effluent pH (Composite)"),
 ]
 
 
@@ -113,27 +97,6 @@ def _metrics(y_true, y_pred, prefix: str) -> dict:
         f"{prefix}_MAE":  _mae(y_true, y_pred),
         f"{prefix}_MAPE": _mape(y_true, y_pred),
     }
-
-
-# ── LassoCV feature selection for OLS ────────────────────────────────────────
-
-def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
-                  features: list, tscv) -> tuple:
-    lasso = LassoCV(cv=tscv, max_iter=10000, random_state=42, n_jobs=-1)
-    lasso.fit(X_tr_sc, y_train)
-    mask = lasso.coef_ != 0
-    if mask.sum() == 0:
-        print("    LassoCV: all features zeroed — keeping full set")
-        mask = np.ones(len(features), dtype=bool)
-    n_in, n_kept = len(features), int(mask.sum())
-    print(f"    LassoCV pre-screen → {n_kept}/{n_in} features kept", end="")
-    if n_kept == n_in:
-        print(" (no pruning)")
-    else:
-        dropped = [f for f, m in zip(features, mask) if not m]
-        print(f" — dropped: {dropped}")
-    selected = [f for f, m in zip(features, mask) if m]
-    return mask, selected
 
 
 # ── Run-number detection ───────────────────────────────────────────────────────
@@ -191,61 +154,33 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     tscv = TimeSeriesSplit(n_splits=3)
     n_in = len(features)
 
-    # ── LassoCV feature selection for OLS ─────────────────────────────────────
-    ols_mask, selected_ols = _lasso_select(X_tr_sc, y_train, features, tscv)
-    X_tr_ols  = X_tr_sc[:, ols_mask]
-    X_te_ols  = X_te_sc[:, ols_mask]
-    X_all_ols = X_all_sc[:, ols_mask]
-    n_sel_ols = int(ols_mask.sum())
-
     results = {
-        "experiment":            experiment,
-        "dataset":               ds_id,
-        "target":                target,
-        "run":                   run,
-        "n_train":               len(train_df),
-        "n_test":                len(test_df),
-        "n_features":            n_in,
-        "n_features_input":      n_in,
-        "n_selected_ols":        n_sel_ols,
-        "selected_features_ols": ", ".join(selected_ols),
+        "experiment":   experiment,
+        "dataset":      ds_id,
+        "target":       target,
+        "run":          run,
+        "n_train":      len(train_df),
+        "n_test":       len(test_df),
+        "n_features":   n_in,
     }
     preds = {}
 
-    # ── OLS full set (pre-LassoCV baseline — stored as OLS_full_*) ────────────
-    ols_full = LinearRegression()
-    ols_full.fit(X_tr_sc, y_train)
-    tr_ols_full = ols_full.predict(X_tr_sc)
-    te_ols_full = ols_full.predict(X_te_sc)
-    results["OLS_full_train_R2"]   = float(r2_score(y_train, tr_ols_full))
-    results["OLS_full_test_R2"]    = float(r2_score(y_test,  te_ols_full))
-    results["OLS_full_test_RMSE"]  = _rmse(y_test, te_ols_full)
-    results["OLS_full_R2_gap"]     = results["OLS_full_train_R2"] - results["OLS_full_test_R2"]
-    # Expose as R2_test_full / RMSE_test_full / R2_gap_full (unified report schema)
-    results["R2_test_full"]        = results["OLS_full_test_R2"]
-    results["RMSE_test_full"]      = results["OLS_full_test_RMSE"]
-    results["R2_gap_full"]         = results["OLS_full_R2_gap"]
-    print(f"    OLS_full - Train R²: {results['OLS_full_train_R2']:+.3f} | "
-          f"Test R²: {results['OLS_full_test_R2']:+.3f}  (all {n_in} features)")
-
-    # ── OLS (LassoCV-selected features) ───────────────────────────────────────
+    # ── OLS (full feature set — no LassoCV FS for baseline runs) ──────────────
     ols = LinearRegression()
-    ols.fit(X_tr_ols, y_train)
-    tr_ols = ols.predict(X_tr_ols)
-    te_ols = ols.predict(X_te_ols)
+    ols.fit(X_tr_sc, y_train)
+    tr_ols = ols.predict(X_tr_sc)
+    te_ols = ols.predict(X_te_sc)
     results.update(_metrics(y_train, tr_ols, "OLS_train"))
     results.update(_metrics(y_test,  te_ols, "OLS_test"))
     results["OLS_R2_gap"] = results["OLS_train_R2"] - results["OLS_test_R2"]
-    preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_ols), 3)
-    joblib.dump({"scaler": scaler, "model": ols,
-                 "selected_features": selected_ols, "feature_mask": ols_mask},
+    preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_sc), 3)
+    joblib.dump({"scaler": scaler, "model": ols},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
     print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
-          f"RMSE: {results['OLS_test_RMSE']:.3f}  "
-          f"({n_sel_ols}/{n_in} features via LassoCV)")
+          f"RMSE: {results['OLS_test_RMSE']:.3f}  ({n_in} features)")
 
-    # ── Ridge (full feature set) ───────────────────────────────────────────────
+    # ── Ridge (L2 handles collinearity internally) ─────────────────────────────
     ridge_gs = GridSearchCV(
         Ridge(), {"alpha": RIDGE_ALPHAS},
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
@@ -264,9 +199,9 @@ def train_dataset(experiment, ds_id, path, features, target, run):
                 os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
     print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | "
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
-          f"α={results['Ridge_alpha']}  (full {n_in} features)")
+          f"α={results['Ridge_alpha']}  ({n_in} features)")
 
-    # ── ElasticNet (full set) ──────────────────────────────────────────────────
+    # ── ElasticNet (full set — its own L1 selection) ───────────────────────────
     elnet_gs = GridSearchCV(
         ElasticNet(max_iter=10000), ELNET_PARAM_GRID,
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
@@ -341,14 +276,14 @@ def _plot_r2_barchart(df_results: pd.DataFrame, run: int):
     ax.bar(x + w, df_results["ElNet_test_R2"],  w, label="ElNet", color=MODEL_COLORS["ElNet"])
     ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
+    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=8)
     ax.set_ylabel("Test R²", fontsize=11)
-    ax.set_title(f"Exp2-Sub2-Cyc  |  Test R² Comparison (run {run})", fontsize=12)
+    ax.set_title(f"Exp2-Sub1  |  Test R² Comparison (run {run})", fontsize=12)
     ax.legend(fontsize=9)
     ax.set_ylim(bottom=min(-0.15,
         df_results[["OLS_test_R2","Ridge_test_R2","ElNet_test_R2"]].min().min() - 0.05))
     plt.tight_layout()
-    path = os.path.join(PLOTS_DIR, f"Exp2-Sub2-Cyc_r2_comparison_run_{run}.png")
+    path = os.path.join(PLOTS_DIR, f"Exp2-Sub1_r2_comparison_run_{run}.png")
     fig.savefig(path, dpi=150)
     plt.close(fig)
     print(f"  R² bar chart → {path}")
@@ -376,9 +311,8 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Exp2-Sub2-Cyc Linear Modeling - Run {run}")
-    print(f"Features: {len(E2S2_GRAB)} per target  "
-          f"(cyclic calendar: month_sin/cos, dow_sin/cos; LassoCV FS for OLS)\n")
+    print(f"Exp2-Sub1 Linear Modeling - Run {run}")
+    print(f"Features: {len(E2S1_FEAT)} (SEC_COLS + COMMON_CYCLIC, cyclic calendar)\n")
 
     all_results = []
 
@@ -390,7 +324,6 @@ def main():
 
         if not os.path.exists(path):
             print(f"  WARNING: file not found - {path}")
-            print(f"  Run make_sub2_cyclic_datasets.py first.")
             continue
 
         results, preds = train_dataset(experiment, ds_id, path, features, target, run)
