@@ -165,9 +165,9 @@ FEATURE_DESCRIPTIONS = {
                      "subset improves generalisation on the 2025 holdout.",
     },
     "Exp2-Sub1": {
-        "label": "Secondary Clarifier + COMMON (15 features)",
-        "features": "Sec Clarifier pH/TSS/BOD/COD/RAS, Sec Sed pH/TSS/BOD/COD/RAS "
-                    "+ Flow, Power, month, day_of_week, year",
+        "label": "Combined Secondary + COMMON (15 features)",
+        "features": "Sec Clarifier pH/TSS/BOD/COD/RAS + Sec Sed pH/TSS/BOD/COD/RAS "
+                    "+ Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
         "rationale": "Tests secondary treatment process data only (no inlet). "
                      "Do downstream process indicators predict effluent better than inlet?",
     },
@@ -192,22 +192,21 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Remove redundant or low-signal features from the full Exp2-S2 set.",
     },
     "Exp2-Sub1-Clr": {
-        "label": "Secondary Clarifier + COMMON (10 features)",
-        "features": "Sec Clarifier pH, TSS, BOD, COD, RAS + Flow, Power, month, day_of_week, year",
+        "label": "Secondary Clarifier + COMMON (12 features)",
+        "features": "Sec Clarifier pH, TSS, BOD, COD, RAS + Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
         "rationale": "Isolate the Clarifier group to test whether Clarifier and Sedimentation "
                      "features carry distinct signal or are interchangeable.",
     },
     "Exp2-Sub1-Sed": {
-        "label": "Secondary Sedimentation + COMMON (10 features)",
-        "features": "Sec Sed pH, TSS, BOD, COD, RAS(New) + Flow, Power, month, day_of_week, year",
+        "label": "Secondary Sedimentation + COMMON (12 features)",
+        "features": "Sec Sed pH, TSS, BOD, COD, RAS(New) + Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
         "rationale": "Isolate the Sedimentation group — paired with Exp2-Sub1-Clr to test "
                      "whether one group dominates the other.",
     },
     "Exp2-Sub2-Cyc": {
-        "label": "Inlet + Secondary + COMMON (cyclic calendar, 21 features)",
+        "label": "Inlet + Secondary + COMMON (21 features)",
         "features": "Grab or Composite inlet (4) + all SEC_COLS (10) + Flow, Power, year, "
-                    "month_sin, month_cos, dow_sin, dow_cos (7) — cyclic calendar replaces "
-                    "raw month/day_of_week",
+                    "month_sin, month_cos, dow_sin, dow_cos (7)",
         "rationale": "Full combined feature set with corrected calendar encoding. "
                      "OLS uses LassoCV pre-screening; trees use OOF permutation importance "
                      "feature selection, both stored in the same results file.",
@@ -379,7 +378,7 @@ EXP_INTRO = {
         "and both groups combined (15 features). The split variants test whether the two secondary "
         "groups carry distinct signal or are interchangeable. "
         "<strong>Sub-experiment 2</strong> adds inlet concentrations to the combined secondary set "
-        "with cyclic calendar encoding (21 features), and applies model-specific feature selection "
+        "(21 features) and applies model-specific feature selection "
         "(OLS: LassoCV; trees: OOF permutation importance)."
     ),
     "Exp3": (
@@ -655,7 +654,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
-        ("exp2_s1_split", False), ("exp2_s2_cyc", False),
+        ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -670,7 +669,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
-        ("exp2_s1_split", False), ("exp2_s2_cyc", False),
+        ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -4277,7 +4276,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       <strong>Sub1-Clr</strong> = Sec Clarifier + COMMON (10 features, no FS).
       <strong>Sub1-Sed</strong> = Sec Sedimentation + COMMON (10 features, no FS).
       <strong>Combined</strong> = both secondary groups + COMMON (15 features, original baseline).
-      <strong>Sub2 Full</strong> = Inlet + Secondary + COMMON with cyclic calendar (21 features,
+      <strong>Sub2 Full</strong> = Inlet + Secondary + COMMON (21 features,
       no FS applied; for OLS this is the pre-LassoCV result).
       <strong>Sub2 FS</strong> = same 21 features after model-specific selection
       (OLS: LassoCV; Ridge: full set; ElNet: internal L1; RF/GB/XGB: OOF permutation importance ≥5%).
@@ -4303,7 +4302,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
           <span class='meta' style='font-weight:normal'>15 feat</span><br>
           <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
       <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 Full<br>
-          <span class='meta' style='font-weight:normal'>21 feat, cyclic</span><br>
+          <span class='meta' style='font-weight:normal'>21 feat</span><br>
           <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
       <th style='text-align:center'>Sub2 FS<br>
           <span class='meta' style='font-weight:normal'>model-specific</span><br>
@@ -4427,8 +4426,8 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
         f"the redundancy, and tree models are not noticeably improved by the additional 5 features."
     )
 
-    # ── Q3: What does adding inlet + cyclic calendar contribute? ──────────────
-    # Compare Combined (15 feat) to Sub2-FS (cyc, model-specific FS)
+    # ── Q3: What does adding inlet concentrations contribute? ──────────────
+    # Compare Combined (15 feat) to Sub2-FS (21 feat, model-specific FS)
     def _cyc_fs(m, t): return _r2(cyc, m, t)
 
     fs_vals = [(m, t, _cyc_fs(m, t)) for m in all_m for t in TARGETS_ORDERED]
@@ -4447,11 +4446,10 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
     loss_cs2  = int((d_comb_s2 < -0.01).sum()) if n_cs2 else 0
 
     q3 = (
-        f"Combined (15) → Sub2-FS (21 + cyclic + FS): mean Δ = {_colored(d_comb_s2)} "
+        f"Combined (15) → Sub2-FS (21 feat + FS): mean Δ = {_colored(d_comb_s2)} "
         f"({wins_cs2}/{n_cs2} improved, {loss_cs2}/{n_cs2} regressed). "
         f"<br><strong>Grab:</strong> {_colored(d_comb_s2_grab)}, "
         f"<strong>Composite:</strong> {_colored(d_comb_s2_comp)}. "
-        f"Cyclic calendar encoding ensures no false December→January discontinuity. "
         f"OLS uses LassoCV to reduce the 21-feature set; tree models use OOF "
         f"permutation importance (≥5% threshold) to select the most informative features. "
         f"Where the delta is positive, the inlet signal and correct calendar encoding "
@@ -4508,7 +4506,7 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
   <div class="exp-body">
   {_qcard(1, "Do Sec Clarifier and Sec Sedimentation features carry distinct signal, or are they interchangeable?", q1)}
   {_qcard(2, "What does combining both secondary groups add over either individually?", q2)}
-  {_qcard(3, "What does adding inlet concentrations and cyclic calendar contribute (Combined → Sub2-FS)?", q3)}
+  {_qcard(3, "What does adding inlet concentrations contribute (Combined → Sub2-FS)?", q3)}
   {_qcard(4, "Do Grab and Composite targets respond differently to the secondary feature transitions?", q4)}
   </div>
 </details>"""
@@ -4529,7 +4527,7 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
     # Sub-exp 2: cyclic, with integrated FS
     sub2_cyc = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s2-cyc",
                                "Sub-experiment 2 — Inlet + Secondary + COMMON "
-                               "(cyclic calendar, 21 features, model-specific FS integrated)",
+                               "(21 features, model-specific FS integrated)",
                                open_default=True)
 
     cmp_div      = _exp2_comparison_panel(df_all)
@@ -4552,13 +4550,13 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
         <strong>Combined</strong> (15 features) is the original baseline — both secondary groups
         together. <strong>Clarifier-only</strong> and <strong>Sed-only</strong> (10 features each)
         isolate each group to test whether they carry distinct signal or are interchangeable.
-        All variants include COMMON (Flow, Power, month, day_of_week, year).
+        All variants include COMMON (Flow, Power, year, month_sin/cos, dow_sin/cos).
         Co-occurring missingness means row counts are nearly identical across the three.
       </p>
     </div>
-    {sub1_combined}
     {sub1_clr}
     {sub1_sed}
+    {sub1_combined}
   </div>
 </details>"""
 
@@ -5222,7 +5220,7 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier only</a>
       <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation only</a>
       <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ Combined (15 feat)</a>
-      <a class="nav-item nav-sub" href="#exp2-s2-cyc">Sub-exp 2 (Inlet+Sec, Cyclic+FS)</a>
+      <a class="nav-item nav-sub" href="#exp2-s2-cyc">Sub-exp 2 (Inlet+Sec, 21 feat)</a>
       <a class="nav-item nav-sub" href="#exp2-comparison">Sub-exp Comparison</a>
       <a class="nav-item nav-sub" href="#exp2-findings">Findings</a>
     </div>
