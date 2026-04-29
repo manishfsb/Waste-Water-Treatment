@@ -1,16 +1,20 @@
 """
-linear_modeling_exp3_s2.py - OLS (LassoCV FS), Ridge, ElNet on Experiment 3 Sub-2.
+linear_modeling_exp3_ks_fs.py - OLS (LassoCV FS), Ridge, ElNet on Experiment 3 KS-FS.
 
-Reads the SAME kitchen-sink datasets as Sub-experiment 1 (experiment3/sub_exp3/)
-and applies model-specific feature selection:
-  - OLS  : LassoCV pre-screen; stores pre-FS metrics as OLS_full_* / R2_test_full
-  - Ridge: full feature set (L2 regularisation handles collinearity)
-  - ElNet: full feature set (L1+L2 selects internally; n_selected logged)
+Reads kitchen-sink datasets from experiment3/sub_exp3/ for LassoCV screening, then:
+  - OLS  : LassoCV selects features → rebuild from All_Years_Full with only those
+           features (fewer missingness constraints → more usable rows) → final OLS fit.
+           n_train / n_test in results reflect the expanded post-FS dataset.
+           Pre-FS metrics stored as OLS_full_* / R2_test_full.
+  - Ridge: full KS feature set (L2 handles collinearity; no row expansion possible).
+  - ElNet: full KS feature set (L1+L2 selects internally; n_selected logged).
 
-This is the "Exp3-KS-FS" experiment key in results — the FS counterpart to "Exp3-KS".
+n_train_ks stores the original kitchen-sink row count for Ridge/ElNet reference.
+
+Experiment key: Exp3-KS-FS
 
 Usage (from project root):
-    .venv/bin/python3 modeling/models/linear/exp3_s2/linear_modeling_exp3_s2.py
+    .venv/bin/python3 modeling/models/linear/exp3_ks_fs/linear_modeling_exp3_ks_fs.py
 """
 
 import os
@@ -31,6 +35,8 @@ import joblib
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(MODELING_DIR, ".."))
+RAW_FILE     = os.path.join(PROJECT_ROOT, "raw_data", "All_Years_Full.xlsx")
 RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models")
 PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
@@ -95,6 +101,45 @@ def _metrics(y_true, y_pred, prefix: str) -> dict:
         f"{prefix}_MAE":  _mae(y_true, y_pred),
         f"{prefix}_MAPE": _mape(y_true, y_pred),
     }
+
+
+# ── Rebuild dataset from raw after LassoCV selection ──────────────────────────
+def _rebuild_from_raw(selected_features: list, target: str,
+                      train_years: list, test_year: int):
+    """Rebuild train/test from All_Years_Full using only selected_features.
+
+    After LassoCV selection, some high-missingness features are dropped. Rebuilding
+    from raw without those columns unlocks rows previously lost to joint missingness,
+    giving OLS more training data than the kitchen-sink baseline.
+
+    Returns (train_df, test_df). Returns (None, None) on missing file or columns.
+    Ridge/ElNet do NOT call this because they use the full KS feature set.
+    """
+    if not os.path.exists(RAW_FILE):
+        print(f"    WARNING: raw file not found — {RAW_FILE}")
+        return None, None
+
+    df = pd.read_excel(RAW_FILE, parse_dates=["Date"])
+    df["year"]      = df["Date"].dt.year
+    df["month_sin"] = np.sin(2 * np.pi * df["Date"].dt.month / 12)
+    df["month_cos"] = np.cos(2 * np.pi * df["Date"].dt.month / 12)
+    df["dow_sin"]   = np.sin(2 * np.pi * df["Date"].dt.dayofweek / 7)
+    df["dow_cos"]   = np.cos(2 * np.pi * df["Date"].dt.dayofweek / 7)
+
+    missing_cols = [c for c in selected_features + [target] if c not in df.columns]
+    if missing_cols:
+        print(f"    WARNING: columns not in raw data — {missing_cols}")
+        return None, None
+
+    sub = df[["year"] + selected_features + [target]].dropna(
+        subset=selected_features + [target])
+
+    train = sub[sub["year"].isin(train_years)].copy()
+    extra = sub[sub["year"] == 2020]
+    if len(extra) > 0:
+        train = pd.concat([extra, train]).drop_duplicates()
+    test = sub[sub["year"] == test_year].copy()
+    return train, test
 
 
 # ── LassoCV feature selection for OLS ─────────────────────────────────────────
@@ -172,18 +217,44 @@ def train_dataset(experiment, ds_id, path, features, target, run):
 
     # ── LassoCV feature selection for OLS ─────────────────────────────────────
     ols_mask, selected_ols = _lasso_select(X_tr_sc, y_train, features, tscv)
-    X_tr_ols  = X_tr_sc[:, ols_mask]
-    X_te_ols  = X_te_sc[:, ols_mask]
-    X_all_ols = X_all_sc[:, ols_mask]
     n_sel_ols = int(ols_mask.sum())
+
+    # ── Rebuild dataset from All_Years_Full with only OLS-selected features ────
+    # Ridge/ElNet use the full KS set, so they can't benefit from row expansion.
+    train_ols, test_ols = _rebuild_from_raw(selected_ols, target, TRAIN_YEARS, TEST_YEAR)
+
+    if train_ols is not None and len(train_ols) > 0 and len(test_ols) > 0:
+        n_train_ols = len(train_ols)
+        n_test_ols  = len(test_ols)
+        scaler_ols  = StandardScaler()
+        X_tr_ols    = scaler_ols.fit_transform(train_ols[selected_ols].values)
+        X_te_ols    = scaler_ols.transform(test_ols[selected_ols].values)
+        y_train_ols = train_ols[target].values
+        y_test_ols  = test_ols[target].values
+        # For KS xlsx predictions: apply new scaler to KS feature subset
+        X_all_ols   = scaler_ols.transform(df[selected_ols].values)
+        print(f"  OLS rebuild: {len(train_df)}→{n_train_ols} train rows, "
+              f"{len(test_df)}→{n_test_ols} test rows ({n_sel_ols} features)")
+    else:
+        print(f"  OLS rebuild failed — falling back to KS subset")
+        n_train_ols = len(train_df)
+        n_test_ols  = len(test_df)
+        scaler_ols  = scaler
+        X_tr_ols    = X_tr_sc[:, ols_mask]
+        X_te_ols    = X_te_sc[:, ols_mask]
+        X_all_ols   = X_all_sc[:, ols_mask]
+        y_train_ols = y_train
+        y_test_ols  = y_test
 
     results = {
         "experiment":            experiment,
         "dataset":               ds_id,
         "target":                target,
         "run":                   run,
-        "n_train":               len(train_df),
-        "n_test":                len(test_df),
+        "n_train":               n_train_ols,
+        "n_test":                n_test_ols,
+        "n_train_ks":            len(train_df),
+        "n_test_ks":             len(test_df),
         "n_features":            n_in,
         "n_features_input":      n_in,
         "n_selected_ols":        n_sel_ols,
@@ -191,7 +262,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     }
     preds = {}
 
-    # ── OLS full (pre-LassoCV, for comparison) ────────────────────────────────
+    # ── OLS full (pre-LassoCV on KS data, for comparison) ────────────────────
     ols_full = LinearRegression()
     ols_full.fit(X_tr_sc, y_train)
     tr_ols_full = ols_full.predict(X_tr_sc)
@@ -205,23 +276,24 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     results["RMSE_test_full"]= results["OLS_full_test_RMSE"]
     results["R2_gap_full"]   = results["OLS_full_R2_gap"]
     print(f"    OLS_full - Train R²: {results['OLS_full_train_R2']:+.3f} | "
-          f"Test R²: {results['OLS_full_test_R2']:+.3f}  (all {n_in} features)")
+          f"Test R²: {results['OLS_full_test_R2']:+.3f}  (all {n_in} features, KS data)")
 
-    # ── OLS (LassoCV-selected) ─────────────────────────────────────────────────
+    # ── OLS (LassoCV-selected, rebuilt from raw) ──────────────────────────────
     ols = LinearRegression()
-    ols.fit(X_tr_ols, y_train)
+    ols.fit(X_tr_ols, y_train_ols)
     tr_ols = ols.predict(X_tr_ols)
     te_ols = ols.predict(X_te_ols)
-    results.update(_metrics(y_train, tr_ols, "OLS_train"))
-    results.update(_metrics(y_test,  te_ols, "OLS_test"))
+    results.update(_metrics(y_train_ols, tr_ols, "OLS_train"))
+    results.update(_metrics(y_test_ols,  te_ols, "OLS_test"))
     results["OLS_R2_gap"] = results["OLS_train_R2"] - results["OLS_test_R2"]
     preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_ols), 3)
-    joblib.dump({"scaler": scaler, "model": ols,
+    joblib.dump({"scaler": scaler_ols, "model": ols,
                  "selected_features": selected_ols, "feature_mask": ols_mask},
                 os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
     print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | "
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
-          f"RMSE: {results['OLS_test_RMSE']:.3f}  ({n_sel_ols}/{n_in} via LassoCV)")
+          f"RMSE: {results['OLS_test_RMSE']:.3f}  ({n_sel_ols}/{n_in} via LassoCV, "
+          f"n_train={n_train_ols})")
 
     # ── Ridge (full feature set, L2 handles collinearity) ─────────────────────
     ridge_gs = GridSearchCV(

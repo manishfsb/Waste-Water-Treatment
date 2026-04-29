@@ -1227,6 +1227,80 @@ def _dataset_summary(df: pd.DataFrame) -> str:
 </details>"""
 
 
+def _dataset_summary_per_model(df: pd.DataFrame) -> str:
+    """Per-model dataset details for KS-FS where n_train varies after FS rebuild.
+
+    OLS and tree models rebuild from All_Years_Full after feature selection, so
+    their n_train can be substantially larger than the KS baseline (~130 grab rows).
+    Ridge/ElNet use the full KS feature set and cannot expand.
+    n_train_ks (stored in results) shows the original KS row count for reference.
+    """
+    def _safe_int(v):
+        try:
+            f = float(v)
+            return "-" if np.isnan(f) else int(f)
+        except (TypeError, ValueError):
+            return "-"
+
+    rows = []
+    for tgt in TARGETS_ORDERED:
+        sub = df[df["target"] == tgt]
+        if sub.empty:
+            continue
+        slug = TARGET_SLUG.get(tgt, "all")
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+        first_model = True
+        for model in ALL_MODELS_ORD:
+            msub = sub[sub["model"] == model]
+            if msub.empty:
+                continue
+            r = msub.iloc[0]
+            n_tr    = _safe_int(r.get("n_train"))
+            n_te    = _safe_int(r.get("n_test"))
+            n_fe    = _safe_int(r.get("n_features"))
+            n_tr_ks = _safe_int(r.get("n_train_ks"))
+            expanded = (n_tr != "-" and n_tr_ks != "-" and n_tr > n_tr_ks)
+            expand_note = (f" <span style='color:#5BAD6F;font-size:0.85em'>"
+                           f"(+{n_tr - n_tr_ks} vs KS)</span>") if expanded else ""
+            ks_note = (f" <span style='color:var(--text-muted);font-size:0.85em'>"
+                       f"(full KS feat set)</span>") if not expanded and n_tr_ks != "-" else ""
+            tgt_cell = (f'<td rowspan="{sum(1 for m in ALL_MODELS_ORD if not sub[sub["model"]==m].empty)}" '
+                        f'data-target="{slug}">{tgt_short}</td>') if first_model else ""
+            rows.append(
+                f'<tr data-target="{slug}">'
+                f'{tgt_cell}'
+                f'<td style="font-size:0.88em;color:var(--text-muted)">{model}</td>'
+                f'<td>{n_tr}{expand_note}{ks_note}</td>'
+                f'<td>{n_te}</td>'
+                f'<td>{n_fe}</td></tr>'
+            )
+            first_model = False
+
+    if not rows:
+        return _dataset_summary(df)
+
+    note = ("<p class='meta' style='margin:0 0 6px'>"
+            "OLS and tree models (RF/GB/XGB) rebuild from <code>All_Years_Full.xlsx</code> "
+            "after feature selection — rows previously lost to joint missingness of dropped "
+            "features are recovered. Ridge/ElNet use the full KS feature set (no expansion). "
+            "n_features = selected count for FS models; full KS count for Ridge/ElNet.</p>")
+    return f"""
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> Dataset Details — Per-Model (n_train post-FS / n_test / n_features selected)</summary>
+  <div class="fold-body">
+    {note}
+    <table class="summary-table ds-table">
+      <thead><tr>
+        <th>Target</th><th>Model</th>
+        <th>n_train (post-FS rebuild)</th>
+        <th>n_test (2025)</th><th>n_features selected</th>
+      </tr></thead>
+      <tbody>{"".join(rows)}</tbody>
+    </table>
+  </div>
+</details>"""
+
+
 def _feature_selection_table(df: pd.DataFrame) -> str:
     """
     Render a per-target feature selection comparison table showing which
@@ -2902,7 +2976,8 @@ def _best_model_box(df: pd.DataFrame, label: str) -> str:
 
 def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
                     section_id: str, title: str,
-                    models_linear=None, models_nl=None, open_default=True) -> str:
+                    models_linear=None, models_nl=None, open_default=True,
+                    dataset_summary_fn=None) -> str:
     """Build a standard sub-section for one experiment variant."""
     df = df_all[df_all["exp_key"] == exp_key].copy()
     if df.empty:
@@ -2913,7 +2988,8 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
 
     feat_html   = _feature_card(exp_key)
     fs_html     = _feature_selection_details(exp_key)
-    ds_html     = _dataset_summary(df)
+    summary_fn  = dataset_summary_fn or _dataset_summary
+    ds_html     = summary_fn(df)
     fs_sel_html = _feature_selection_table(df)
     lin_tbl     = _metrics_table(df[df["model"].isin(ml)], ml, f"{section_id}-lin", df_all)
     nl_tbl      = _metrics_table(df[df["model"].isin(mn)], mn, f"{section_id}-nl", df_all)
@@ -5151,7 +5227,8 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
                            open_default=False)
     ks_fs = _exp_subsection(df_all, "Exp3-KS-FS", "exp3-ks-fs",
                             "Sub-experiment 3b — All Remaining Features with FS",
-                            open_default=False)
+                            open_default=False,
+                            dataset_summary_fn=_dataset_summary_per_model)
     cmp_div      = _exp3_comparison_panel(df_all)
     findings_div = _exp3_qna(df_all)
 
@@ -5819,7 +5896,7 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp3-s1">S1 — ADD-tier (28 feat)</a>
       <a class="nav-item nav-sub" href="#exp3-s2">S2 — ADD+CONSIDER+FS</a>
       <a class="nav-item nav-sub" href="#exp3-ks">S3 — All features (KS)</a>
-      <a class="nav-item nav-sub" href="#exp3-ks-fs">S3b — KS with FS</a>
+      <a class="nav-item nav-sub nav-subsub" href="#exp3-ks-fs">↳ S3b — KS with FS</a>
       <a class="nav-item nav-sub" href="#exp3-comparison">Comparison</a>
       <a class="nav-item nav-sub" href="#exp3-findings">Findings</a>
       <a class="nav-item nav-sub" href="#exp3-vif">Collinearity → Exp4</a>
@@ -5847,9 +5924,9 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
       <a class="nav-item nav-sub" href="#p9-comparison">Combined</a>
       <a class="nav-item nav-sub" href="#p9-ann-exploration">ANN Dataset Exploration</a>
-      <a class="nav-item nav-sub" href="#p9-ann-exp1">→ ANN Exp1</a>
-      <a class="nav-item nav-sub" href="#p9-ann-exp2s1">→ ANN Exp2-Sub1</a>
-      <a class="nav-item nav-sub" href="#p9-ann-exp2s2">→ ANN Exp2-Sub2</a>
+      <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp1">↳ ANN Exp1</a>
+      <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s1">↳ ANN Exp2-Sub1</a>
+      <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s2">↳ ANN Exp2-Sub2</a>
     </div>
   </div>
 
@@ -5859,7 +5936,7 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-p10">
       <a class="nav-item nav-sub" href="#p10-full">Full FE</a>
-      <a class="nav-item nav-sub" href="#p10b">Selective FE ★</a>
+      <a class="nav-item nav-sub nav-subsub" href="#p10b">↳ Selective FE ★</a>
     </div>
   </div>
 
