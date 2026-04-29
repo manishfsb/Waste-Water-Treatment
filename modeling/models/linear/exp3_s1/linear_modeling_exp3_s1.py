@@ -1,19 +1,19 @@
 """
-linear_modeling_exp3_s1.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 subsets.
+linear_modeling_exp3_s1.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 datasets.
 
-Identical training protocol to all prior linear modeling scripts.
-Differences:
-  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py -
-    Exp2 Sub-2 baseline + ADD-tier candidate features per target)
-  - Feature list is inferred from each file's columns at load time
-  - Writes all artifacts to linear_modeling_exp3_s1/ (results.xlsx, models/, plots/)
+Feature set: Exp2-Sub2 baseline (21 features) + ADD-tier features (7 Aeration cols)
+= 28 features per target. No feature selection applied.
+
+  ADD tier: Aeration DO/MLSS/SV30/SVI (Existing) + pH (Existing) + DO/SV30 (New)
+
+Datasets: experiment3/sub_exp1/ (built by make_sub1_datasets.py)
+Exp key: Exp3-S1
 
 Usage (from project root):
-    .venv/bin/python3 21-25/modeling/linear_modeling_exp3_s1/linear_modeling_exp3_s1.py
+    .venv/bin/python3 modeling/models/linear/exp3_s1/linear_modeling_exp3_s1.py
 """
 
 import os
-import sys
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -53,7 +53,6 @@ _EXCLUDE_COLS     = {"Date", "year"}
 _EXCLUDE_PREFIXES = ("predicted_",)
 
 def infer_features(df: pd.DataFrame, target: str) -> list:
-    """Return feature columns by excluding metadata and prediction columns."""
     return [
         c for c in df.columns
         if c != target
@@ -62,22 +61,18 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
     ]
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
-def _e3s1(name):
+def _ds(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1", f"{name}.xlsx")
 
-
-# (experiment_label, dataset_id, file_path, target)
 DATASETS = [
-    # ── Experiment 3 Sub-1 - Grab ─────────────────────────────────────────────
-    ("Exp3-S1", "Exp3S1_Grab_BOD", _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp3-S1", "Exp3S1_Grab_COD", _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp3-S1", "Exp3S1_Grab_TSS", _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp3-S1", "Exp3S1_Grab_pH",  _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    # ── Experiment 3 Sub-1 - Composite ───────────────────────────────────────
-    ("Exp3-S1", "Exp3S1_Comp_BOD", _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp3-S1", "Exp3S1_Comp_COD", _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp3-S1", "Exp3S1_Comp_TSS", _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp3-S1", "Exp3S1_Comp_pH",  _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp3-S1", "Exp3S1_Grab_BOD", _ds("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S1", "Exp3S1_Grab_COD", _ds("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S1", "Exp3S1_Grab_TSS", _ds("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S1", "Exp3S1_Grab_pH",  _ds("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp3-S1", "Exp3S1_Comp_BOD", _ds("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S1", "Exp3S1_Comp_COD", _ds("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S1", "Exp3S1_Comp_TSS", _ds("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S1", "Exp3S1_Comp_pH",  _ds("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 
@@ -149,7 +144,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     y_test  = test_df[target].values
     X_all   = df[features].values
 
-    print(f"  Train: {len(train_df):>4d} rows | Test: {len(test_df):>3d} rows")
+    print(f"  Train: {len(train_df):>4d} rows | Test: {len(test_df):>3d} rows | Features: {len(features)}")
 
     scaler   = StandardScaler()
     X_tr_sc  = scaler.fit_transform(X_train)
@@ -230,7 +225,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['ElNet_test_R2']:+.3f} | "
           f"α={results['ElNet_alpha']}, l1={results['ElNet_l1_ratio']}")
 
-    _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet)
+    _plot_scatter(ds_id, run, y_test, te_ols, te_ridge, te_elnet)
 
     return results, preds
 
@@ -244,7 +239,7 @@ MODEL_COLORS = {
 }
 
 
-def _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
+def _plot_scatter(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
     fig.suptitle(f"{ds_id}  |  Test Set Actual vs Predicted  (run {run})",
                  fontsize=13, fontweight="bold")
@@ -258,9 +253,9 @@ def _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
         lo = min(y_test.min(), preds_arr.min())
         hi = max(y_test.max(), preds_arr.max())
         ax.plot([lo, hi], [lo, hi], "k--", linewidth=1.1)
-        r2       = r2_score(y_test, preds_arr)
+        r2v      = r2_score(y_test, preds_arr)
         rmse_val = _rmse(y_test, preds_arr)
-        ax.set_title(f"{label}\nR²={r2:+.3f}  RMSE={rmse_val:.3f}", fontsize=11)
+        ax.set_title(f"{label}\nR²={r2v:+.3f}  RMSE={rmse_val:.3f}", fontsize=11)
         ax.set_xlabel("Actual", fontsize=10)
         if ax == axes[0]:
             ax.set_ylabel("Predicted", fontsize=10)
@@ -284,32 +279,13 @@ def _plot_r2_barchart(df_results: pd.DataFrame, run: int):
         ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
         ax.set_xticks(x); ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
         ax.set_ylabel("Test R²", fontsize=11)
-        ax.set_title(f"{exp}  |  Test R² Comparison - Feature Selected (run {run})", fontsize=12)
+        ax.set_title(f"{exp}  |  Test R² Comparison (run {run})", fontsize=12)
         ax.legend(fontsize=9)
         ax.set_ylim(bottom=min(-0.15, sub[["OLS_test_R2","Ridge_test_R2","ElNet_test_R2"]].min().min() - 0.05))
         plt.tight_layout()
         path = os.path.join(PLOTS_DIR, f"{exp}_r2_comparison_run_{run}.png")
         fig.savefig(path, dpi=150); plt.close(fig)
         print(f"  R² bar chart → {path}")
-
-
-def _plot_rmse_barchart(df_results: pd.DataFrame, run: int):
-    for exp in df_results["experiment"].unique():
-        sub    = df_results[df_results["experiment"] == exp].copy()
-        labels = [d.split("_", 1)[1] if "_" in d else d for d in sub["dataset"]]
-        x, w   = np.arange(len(sub)), 0.25
-        fig, ax = plt.subplots(figsize=(max(10, len(sub) * 1.2), 5))
-        ax.bar(x - w, sub["OLS_test_RMSE"],   w, label="OLS",   color=MODEL_COLORS["OLS"])
-        ax.bar(x,     sub["Ridge_test_RMSE"],  w, label="Ridge", color=MODEL_COLORS["Ridge"])
-        ax.bar(x + w, sub["ElNet_test_RMSE"],  w, label="ElNet", color=MODEL_COLORS["ElNet"])
-        ax.set_xticks(x); ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
-        ax.set_ylabel("Test RMSE", fontsize=11)
-        ax.set_title(f"{exp}  |  Test RMSE Comparison - Feature Selected (run {run})", fontsize=12)
-        ax.legend(fontsize=9)
-        plt.tight_layout()
-        path = os.path.join(PLOTS_DIR, f"{exp}_rmse_comparison_run_{run}.png")
-        fig.savefig(path, dpi=150); plt.close(fig)
-        print(f"  RMSE bar chart → {path}")
 
 
 # ── Results persistence ────────────────────────────────────────────────────────
@@ -334,7 +310,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Linear Modeling (Feature Selected) - Run {run}")
+    print(f"Linear Modeling — Exp3-S1 (ADD-tier, no FS) — Run {run}")
     print(f"Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElasticNet\n")
 
     all_results = []
@@ -348,7 +324,6 @@ def main():
             print(f"  WARNING: file not found - {path}")
             continue
 
-        # Infer feature list from the file's columns
         df_peek  = pd.read_excel(path, nrows=0)
         features = infer_features(df_peek, target)
         print(f"  Features (inferred): {len(features)}")
@@ -362,16 +337,13 @@ def main():
         all_results.append(results)
 
     if not all_results:
-        print("No results produced - check warnings above.")
+        print("No results produced.")
         return
 
     df_results = pd.DataFrame(all_results)
-
     print(f"\n{'='*60}")
     print("Generating summary plots...")
     _plot_r2_barchart(df_results, run)
-    _plot_rmse_barchart(df_results, run)
-
     save_results(all_results, run)
     print("\nDone.")
 

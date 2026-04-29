@@ -79,8 +79,9 @@ EXP_CHART_LABELS = {
     "Exp2-Sub1-Sed": "E2-S1-Sed",
     "Exp2-Sub2": "E2-S2",      "Exp2-Sub2-FS": "E2-S2-FS",
     "Exp2-Sub2-Cyc": "E2-S2",
-    "Exp3-S1": "E3-S1",        "Exp3-S1-FS": "E3-S1-FS",
-    "Exp3-S2": "E3-S2",
+    "Exp3-S1": "E3-S1",
+    "Exp3-S2-FS": "E3-S2-FS",
+    "Exp3-KS": "E3-KS",        "Exp3-KS-FS": "E3-KS-FS",
     "Exp4-S1": "E4-S1",
     "Exp4-S2": "E4-S2",
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
@@ -103,9 +104,10 @@ EXP_SOURCE_LABELS = {
     "Exp2-Sub2":      "Exp2 S2",
     "Exp2-Sub2-FS":   "Exp2 S2 FS",
     "Exp2-Sub2-Cyc":  "Exp2 S2",
-    "Exp3-S1":        "Exp3 S1",
-    "Exp3-S1-FS":     "Exp3 S1 FS",
-    "Exp3-S2":        "Exp3 S2",
+    "Exp3-S1":        "Exp3 S1 — ADD-tier",
+    "Exp3-S2-FS":     "Exp3 S2 — ADD+CONSIDER (FS)",
+    "Exp3-KS":        "Exp3 KS — All features",
+    "Exp3-KS-FS":     "Exp3 KS — All features (FS)",
     "Exp4-S1":        "Exp4 S1",
     "Exp4-S2":        "Exp4 S2",
     "Phase9-ANN":     "Phase 9 — ANN",
@@ -132,8 +134,9 @@ MDAE_TARGETS = {
 _DS_EXP_MAP = [
     ("experiment4/sub_exp2",                            "Exp4-S2"),
     ("experiment4/sub_exp1",                            "Exp4-S1"),
-    ("experiment3/sub_exp2",                           "Exp3-S2"),
-    ("experiment3/sub_exp1/feature_selected_datasets", "Exp3-S1-FS"),
+    ("experiment3/sub_exp3/feature_selected_datasets", "Exp3-KS-FS"),
+    ("experiment3/sub_exp3",                           "Exp3-KS"),
+    ("experiment3/sub_exp2",                           "Exp3-S2-FS"),
     ("experiment3/sub_exp1",                           "Exp3-S1"),
     ("experiment2/sub_exp2/feature_selected_datasets", "Exp2-Sub2-FS"),
     ("experiment2/sub_exp2",                           "Exp2-Sub2"),
@@ -238,27 +241,47 @@ FEATURE_DESCRIPTIONS = {
                      "feature selection, both stored in the same results file.",
     },
     "Exp3-S1": {
-        "label": "Exp2-S2 + ADD-tier Aeration Features (16-22 features)",
-        "features": "Exp2-S2 baseline + ADD-tier features (MI ≥ 0.20, marginal row "
-                    "cost ≤ 20%): MLSS, SV30, SVI, DO, Aeration pH - adds ~3-7 columns",
+        "label": "Exp2-S2 + ADD-tier Aeration Features (28 features, no FS)",
+        "features": "Exp2-S2 baseline (21 features) + ADD-tier additions (MI ≥ 0.20, "
+                    "marginal row cost ≤ 20%): Aeration DO/MLSS/SV30/SVI (Existing) + "
+                    "Aeration pH (Existing) + Aeration DO/SV30 (New) — 7 extra columns. "
+                    "Grab: ~816 train rows / 202 test. Composite: ~632 train / 181 test.",
         "rationale": "Expand with aeration basin data that shows high mutual information "
-                     "and low missingness cost on top of the Exp2-S2 baseline.",
+                     "and low missingness cost on top of the Exp2-S2 baseline. "
+                     "No feature selection applied — tests the full ADD-tier set.",
     },
-    "Exp3-S1-FS": {
-        "label": "Exp3-S1 - Core + Useful (Feature Selected, 5-8 features)",
-        "features": "RF permutation importance ≥ 0.03 threshold applied to the "
-                    "full Exp3-S1 feature set → 5-8 features per target",
-        "rationale": "Aggressive pruning of the expanded Exp3-S1 set to the most "
-                     "predictive features per target. Tests if less is more.",
+    "Exp3-S2-FS": {
+        "label": "Exp2-S2 + ADD + CONSIDER-tier Features with FS (32 features → 5–24 selected)",
+        "features": "Exp2-S2 + ADD-tier + CONSIDER-tier (Aeration SVI New, Power GE, "
+                    "Inlet Total Coliform, Primary Sludge Totalizer) — 32 features total. "
+                    "Feature selection: OLS uses LassoCV; trees use OOF permutation importance. "
+                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-S1). "
+                    "Composite: ~423 train / 152 test.",
+        "rationale": "Tests whether CONSIDER-tier features (higher missingness cost) add value "
+                     "when combined with model-specific feature selection. Key trade-off: "
+                     "CONSIDER features increase signal but reduce training rows significantly.",
     },
-    "Exp3-S2": {
-        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (20-32 features)",
-        "features": "Exp2-S2 + ADD features + CONSIDER-tier (MI ≥ 0.15 & cost ≤ 35%, "
-                    "or MI ≥ 0.25 & cost ≤ 50%) - 20-32 total features per target",
-        "rationale": "Full feature expansion per the audit-tier logic. Tests whether "
-                     "CONSIDER-tier features help despite higher missingness cost. "
-                     "Key question: do regularised linear models benefit from "
-                     "additional features even if non-linear models overfit?",
+    "Exp3-KS": {
+        "label": "All remaining features — kitchen sink, no FS (44 Grab / 39 Composite features)",
+        "features": "Exp2-S2 baseline + every non-leakage, non-redundant column from "
+                    "All_Years_Full.xlsx including TKN, NH3-N, Fecal/Total Coliform, "
+                    "Grit Classifier TSS, Primary COD/TSS, Power GE/NEA, Primary Sludge Totalizer. "
+                    "Grab: ~130 train rows / 115 test (74 % row loss vs Exp2-S2 due to joint missingness). "
+                    "Composite: ~498 train / 169 test.",
+        "rationale": "Establishes the ceiling of feature availability. Tests whether adding "
+                     "all available measurements, despite severe row loss, improves prediction. "
+                     "No feature selection applied — exposes raw overfitting risk at n/p ≈ 3.",
+    },
+    "Exp3-KS-FS": {
+        "label": "All remaining features — kitchen sink with model-specific FS",
+        "features": "Same 44/39 kitchen-sink features as Exp3-KS, with model-specific "
+                    "feature selection applied inside training scripts: "
+                    "OLS uses LassoCV; trees use OOF permutation importance (threshold=0.05). "
+                    "Selected: 2–24 features per target (OLS collapses to 1–3 on composites).",
+        "rationale": "Tests whether data-driven feature selection can rescue the "
+                     "undersized kitchen-sink dataset (n_train_grab ≈ 130). "
+                     "OOF fold size at n=130 with 3-fold TSS is only ~43 rows — "
+                     "permutation importance estimates are noisy at this scale.",
     },
     "Exp4-S1": {
         "label": "Exp3-S2 minus Derived/Redundant Columns (12-19 features)",
@@ -408,12 +431,29 @@ EXP_INTRO = {
         "(OLS: LassoCV; trees: OOF permutation importance)."
     ),
     "Exp3": (
-        "Experiment 3 extends the Exp2-S2 combined feature set with aeration basin data "
-        "identified in the Phase 6 feature audit. <strong>Sub-experiment 1</strong> adds "
-        "ADD-tier features (high MI, low missingness cost). "
-        "<strong>Sub-experiment 2</strong> further adds CONSIDER-tier features to test "
-        "whether more features - at higher missingness cost - still benefit regularised "
-        "linear models."
+        "Experiment 3 starts from the <strong>Exp2-Sub2 baseline</strong> (Inlet + Secondary + COMMON, "
+        "21 features) and adds features in three steps guided by the "
+        "<a href='../../eda/eda_full_report.html#s11' target='_blank' style='color:#4A90D9'>"
+        "EDA Feature Audit</a>. "
+        "<br><br>"
+        "<strong>Sub-experiment 1 (ADD-tier, 28 features)</strong> adds the seven aeration-basin "
+        "measurements that scored MI ≥ 0.20 with marginal row cost ≤ 20 %: "
+        "Aeration DO/MLSS/SV30/SVI (Existing), Aeration pH (Existing), Aeration DO/SV30 (New). "
+        "Grab training rows stay near ~816 — no meaningful row loss. No feature selection applied. "
+        "<br><br>"
+        "<strong>Sub-experiment 2 (ADD + CONSIDER-tier, 32 features, with model-specific FS)</strong> "
+        "adds four CONSIDER-tier features (Aeration SVI New, Power GE, Inlet Total Coliform, "
+        "Primary Sludge Totalizer). Inlet Total Coliform alone causes ~347 row loss (816 → 469 Grab). "
+        "Feature selection (OLS: LassoCV; trees: OOF permutation importance) is applied inside "
+        "training scripts to identify the most predictive subset. "
+        "<br><br>"
+        "<strong>Sub-experiment 3 (All remaining features, 44/39, with and without FS)</strong> "
+        "includes every non-leakage column — the <em>kitchen-sink</em> upper bound. "
+        "Joint dropna reduces Grab training to ~130 rows (74 % loss vs Exp2-Sub2) "
+        "driven by TKN, Grit Classifier TSS, Primary COD/TSS. "
+        "Both no-FS (Exp3-KS) and FS (Exp3-KS-FS) variants are evaluated. "
+        "This sub-experiment confirms the audit's core finding: "
+        "marginal row cost is the binding constraint for grab targets."
     ),
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
@@ -498,13 +538,14 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp2-Sub1-Clr": "Exp2-Sub1-Clr",
         "Exp2-Sub1-Sed": "Exp2-Sub1-Sed",
         "Exp2-Sub2-Cyc": "Exp2-Sub2-Cyc",
-        "Exp3-S1": "Exp3-S1", "Exp3-S1-FS": "Exp3-S1-FS", "Exp3-S2": "Exp3-S2",
+        "Exp3-S1": "Exp3-S1",
+        "Exp3-S2-FS": "Exp3-S2-FS",
+        "Exp3-KS": "Exp3-KS", "Exp3-KS-FS": "Exp3-KS-FS",
         "Experiment 1": "Exp1",
         "Experiment 2 Sub-1": "Exp2-Sub1",
         "Experiment 2 Sub-2": "Exp2-Sub2",
         "Experiment 3 Sub-1": "Exp3-S1",
-        "Experiment 3 Sub-1 FS": "Exp3-S1-FS",
-        "Experiment 3 Sub-2": "Exp3-S2",
+        "Experiment 3 Sub-2": "Exp3-S2-FS",
         "Exp4-S1": "Exp4-S1",
         "Experiment 4 Sub-1": "Exp4-S1",
         "Exp4-S2": "Exp4-S2",
@@ -677,7 +718,8 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
-        ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
+        ("exp3_s1", False), ("exp3_s2", False),
+        ("exp3_ks", False), ("exp3_ks_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
@@ -692,7 +734,8 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
-        ("exp3_s1", False), ("exp3_s1_fs", False), ("exp3_s2", False),
+        ("exp3_s1", False), ("exp3_s2", False),
+        ("exp3_ks", False), ("exp3_ks_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
@@ -873,7 +916,7 @@ FS_BASE_MAP = {
     "Exp1-FS": "Exp1",
     "Exp2-Sub1-FS": "Exp2-Sub1",
     "Exp2-Sub2-FS": "Exp2-Sub2",
-    "Exp3-S1-FS": "Exp3-S1",
+    "Exp3-KS-FS": "Exp3-KS",
 }
 
 
@@ -931,7 +974,9 @@ def _load_linear_rankings(exp_key: str) -> dict:
     if not full_key:
         return {}
 
-    variant = "exp3_s1" if full_key == "Exp3-S1" else "baseline"
+    variant = ("exp3_ks" if full_key == "Exp3-KS"
+               else "exp3_s1" if full_key == "Exp3-S1"
+               else "baseline")
     results_path = os.path.join(MODELING_DIR, "models", "linear", variant, "results.xlsx")
     models_dir = os.path.join(MODELING_DIR, "models", "linear", variant, "models")
     if not os.path.exists(results_path):
@@ -2410,8 +2455,9 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "exp2-s2":     ["Exp2-Sub2"],
         "exp2-s2-fs":  ["Exp2-Sub2-FS"],
         "exp3-s1":     ["Exp3-S1"],
-        "exp3-s1-fs":  ["Exp3-S1-FS"],
-        "exp3-s2":     ["Exp3-S2"],
+        "exp3-s2":     ["Exp3-S2-FS"],
+        "exp3-ks":     ["Exp3-KS"],
+        "exp3-ks-fs":  ["Exp3-KS-FS"],
         "p9-ann":      ["Phase9-ANN"],
         "p9-voting":   ["Phase9-Voting"],
         "p9-stacking": ["Phase9-Stacking"],
@@ -2614,6 +2660,137 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     return f"""
 <div class="best-box">
   <div class="best-box-title">Best Model in Experiment 1
+    <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
+  </div>
+  <table class="summary-table best-table">
+    <thead><tr>
+      <th>Target</th><th>Model</th>
+      <th>Test R²<br><span class="meta" style="font-weight:normal;font-size:0.8em">gap-adj below</span></th>
+      <th>Gap</th><th>Source (gap-adj winner)</th>
+    </tr></thead>
+    <tbody>{"".join(table_rows)}</tbody>
+  </table>
+  {overfit_note}
+  {criteria_note}
+</div>"""
+
+
+def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
+    """Champion box for Experiment 2 with gap-adjusted selection across all sub-experiments."""
+    exp2_keys = ["Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed", "Exp2-Sub2", "Exp2-Sub2-Cyc"]
+    df = df_all[df_all["exp_key"].isin(exp2_keys)].copy()
+
+    if df.empty:
+        return ""
+
+    table_rows = []
+    overfit_warnings = []
+
+    for tgt in TARGETS_ORDERED:
+        sub = df[df["target"] == tgt].dropna(subset=["R2_test"])
+        if sub.empty:
+            continue
+
+        cands = []
+        for _, r in sub.iterrows():
+            r2  = float(r["R2_test"])
+            gap = float(r["R2_gap"]) if pd.notna(r.get("R2_gap")) else 0.0
+            cands.append((r2, gap, str(r["model"]), str(r["exp_key"])))
+
+        if not cands:
+            continue
+
+        best_gaj = max(cands, key=lambda c: _gap_adj(c[0], c[1]))
+        best_raw = max(cands, key=lambda c: c[0])
+
+        r2_win, gap_win, m_win, exp_win = best_gaj
+        gaj_win      = _gap_adj(r2_win, gap_win)
+        r2_raw_best  = best_raw[0]
+        raw_differs  = abs(r2_raw_best - r2_win) > 0.005
+
+        r2_col  = _r2_color(r2_win)
+        mdl_col = MODEL_COLORS.get(m_win, "#888")
+        gap_col = ("#E15252" if gap_win > 0.10
+                   else "#5BAD6F" if gap_win < -0.10
+                   else "var(--text-muted)")
+        src_win = EXP_SOURCE_LABELS.get(exp_win, EXP_CHART_LABELS.get(exp_win, exp_win))
+
+        overfit_flag = ""
+        if abs(gap_win) > 0.25:
+            overfit_flag = (' <span style="color:#e74c3c;font-size:10px" '
+                            'title="Gap > 0.25 on the gap-adj winner">⚠ overfit</span>')
+            overfit_warnings.append(TARGET_SHORT.get(tgt, tgt))
+
+        alt_note = ""
+        if raw_differs:
+            _, gap_raw_best, m_raw_best, exp_raw_best = best_raw
+            src_raw = EXP_SOURCE_LABELS.get(exp_raw_best,
+                          EXP_CHART_LABELS.get(exp_raw_best, exp_raw_best))
+            alt_note = (
+                f'<br><span style="color:#f39c12;font-size:10px" '
+                f'title="Raw R² winner ({m_raw_best} · {src_raw}: '
+                f'{r2_raw_best:+.3f}) demoted by gap-adj scoring">'
+                f'raw: {m_raw_best} {r2_raw_best:+.3f} ({src_raw})</span>'
+            )
+
+        short = TARGET_SHORT.get(tgt, tgt)
+        slug  = TARGET_SLUG.get(tgt, "all")
+        table_rows.append(
+            f'<tr data-target="{slug}">'
+            f'<td>{short}</td>'
+            f'<td><strong style="color:{mdl_col}">{m_win}</strong></td>'
+            f'<td style="color:{r2_col};font-weight:bold">'
+            f'{r2_win:+.3f}{overfit_flag}'
+            f'<br><span style="font-size:0.78em;color:var(--text-muted)">'
+            f'gap-adj {gaj_win:+.3f}</span></td>'
+            f'<td style="color:{gap_col}">{gap_win:+.3f}</td>'
+            f'<td class="meta" style="font-size:11px">{src_win}{alt_note}</td>'
+            f'</tr>'
+        )
+
+    if not table_rows:
+        return ""
+
+    df_e2 = df_all[df_all["exp_key"].isin(exp2_keys)]
+    grab_best_vals = [float(df_e2[df_e2["target"] == t]["R2_test"].max())
+                      for t in GRAB_TARGETS
+                      if not df_e2[df_e2["target"] == t].dropna(subset=["R2_test"]).empty]
+    comp_best_vals = [float(df_e2[df_e2["target"] == t]["R2_test"].max())
+                      for t in COMP_TARGETS
+                      if not df_e2[df_e2["target"] == t].dropna(subset=["R2_test"]).empty]
+    grab_avg = float(np.nanmean(grab_best_vals)) if grab_best_vals else float("nan")
+    comp_avg = float(np.nanmean(comp_best_vals)) if comp_best_vals else float("nan")
+    avg_r2   = float(np.nanmean(grab_best_vals + comp_best_vals)) \
+               if (grab_best_vals or comp_best_vals) else float("nan")
+
+    avg_detail = ""
+    if not np.isnan(grab_avg) and not np.isnan(comp_avg):
+        avg_detail = (
+            f" · Grab avg {_fmt(grab_avg)}"
+            f" · Composite avg <span style='color:{_r2_color(comp_avg)}'>{_fmt(comp_avg)}</span>"
+        )
+
+    overfit_note = ""
+    if overfit_warnings:
+        overfit_note = (
+            f'<p class="table-note" style="margin-top:8px;color:#f39c12">'
+            f'⚠ <strong>Overfitting note:</strong> '
+            f'{", ".join(overfit_warnings)} show |gap| &gt; 0.25 even on the gap-adj winner — '
+            f'treat these results with caution.</p>'
+        )
+
+    criteria_note = (
+        '<p class="table-note" style="margin-top:4px">'
+        '<strong>Selection:</strong> winner chosen by gap-adjusted score '
+        '= R² − 0.5 · max(0, |gap| − 0.10), consistent with the global leaderboard methodology. '
+        'Where the raw R² winner differs from the gap-adj winner it is shown in orange below the '
+        'source label. avg best Test R² uses the raw per-target best for cross-experiment '
+        'comparability.</p>'
+    )
+
+    return f"""
+<div class="best-box">
+  <div class="best-box-title">Best Model in Experiment 2
     <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
   </div>
   <table class="summary-table best-table">
@@ -4560,11 +4737,7 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
 
     cmp_div      = _exp2_comparison_panel(df_all)
     findings_div = _exp2_qna(df_all)
-    best         = _best_model_box(
-        df_all[df_all["exp_key"].isin([
-            "Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed", "Exp2-Sub2-Cyc",
-        ])],
-        "Experiment 2")
+    best         = _exp2_best_model_box(df_all)
 
     sub1_wrapper = f"""
 <details class="exp-details" open id="exp2-s1">
@@ -4600,46 +4773,430 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
 </section>"""
 
 
-def build_exp3_section(df_all: pd.DataFrame) -> str:
-    sub1   = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
-                             "Sub-experiment 1 - ADD-tier Aeration Features", open_default=True)
-    fs1div = _fs_analysis_div(df_all, "Exp3-S1", "Exp3-S1-FS")
-    sub1fs = _exp_subsection(df_all, "Exp3-S1-FS", "exp3-s1-fs",
-                             "Sub-experiment 1 - Feature Selected", open_default=False)
-    sub2   = _exp_subsection(df_all, "Exp3-S2", "exp3-s2",
-                             "Sub-experiment 2 - ADD + CONSIDER-tier Features", open_default=True)
-    cyclic_div = _cyclic_encoding_callout(df_all)
-    cost_div   = _data_cost_div(df_all, "Exp3-S2", "Exp3-S1")
-    vif_div    = _vif_callout()
+def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Experiment-wide comparison: S1 | S2-FS | Δ | KS | KS-FS | Δ."""
+    s1   = df_all[df_all["exp_key"] == "Exp3-S1"].copy()
+    s2fs = df_all[df_all["exp_key"] == "Exp3-S2-FS"].copy()
+    ks   = df_all[df_all["exp_key"] == "Exp3-KS"].copy()
+    ksfs = df_all[df_all["exp_key"] == "Exp3-KS-FS"].copy()
 
-    # Note: no feature-selected variant exists for Exp3-S2
-    no_fs_note = """
-<div class="info-note">
-  <strong>ℹ No Feature-Selected variant for Sub-experiment 2:</strong>
-  Exp3-S2 represents the broadest feature scope (ADD + CONSIDER tier). A feature-selected
-  variant was not run because: (1) the Exp3-S1-FS result above already provides the
-  "best-features-only" view on the ADD-tier set; (2) GB/XGB already catastrophically
-  overfit composite targets in Exp3-S2, making further FS primarily relevant for the
-  linear models; (3) Exp3-S2 feeds directly into Phase 9 ensemble methods, which handle
-  feature redundancy via regularisation internally. A dedicated Exp3-S2-FS run remains
-  a candidate for future work if Comp COD performance needs further improvement.
+    if s1.empty and s2fs.empty and ks.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    MEANINGFUL  = 0.01
+
+    def _get(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gap_v(df, model, tgt):
+        return _get(df, model, tgt, "R2_gap")
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return "<td class='meta' style='text-align:center'>—</td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw and is_gaj: col = "#5BAD6F"; fw = "bold"
+        elif is_raw:          col = "#E67E22"; fw = "bold"
+        elif is_gaj:          col = "#4A90D9"; fw = "bold"
+        else:                 col = "inherit"; fw = "normal"
+        rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
+        gv     = gap if (gap is not None and gap == gap) else None
+        gs     = f"{gv:+.3f}" if gv is not None else "—"
+        gc     = ("#E15252" if gv is not None and gv > 0.10
+                  else "#5BAD6F" if gv is not None and gv < -0.10
+                  else "var(--text-muted)")
+        sec = (f"<br><span style='font-size:0.72em;color:var(--text-muted);font-weight:normal'>"
+               f"RMSE {rmse_s} · <span style='color:{gc}'>Gap {gs}</span></span>")
+        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{mhtml}{sec}</td>")
+
+    def _delta_td(dr2, drmse=None, dgap=None):
+        if dr2 is None:
+            return "<td class='meta' style='text-align:center'>—</td>"
+        c = ("#5BAD6F" if dr2 >= MEANINGFUL else
+             "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+        ex = ""
+        if drmse is not None and drmse == drmse:
+            rc = ("#5BAD6F" if drmse <= -MEANINGFUL else
+                  "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+            ex += (f"<br><span style='font-size:0.72em;color:{rc};font-weight:normal'>"
+                   f"RMSE {drmse:+.2f}</span>")
+        if dgap is not None and dgap == dgap:
+            gc = ("#E15252" if dgap > MEANINGFUL else
+                  "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+            ex += (f"<br><span style='font-size:0.72em;color:{gc};font-weight:normal'>"
+                   f"Gap {dgap:+.3f}</span>")
+        return (f"<td style='text-align:center;color:{c};font-weight:bold'>"
+                f"{dr2:+.3f}{ex}</td>")
+
+    def _stats_row(deltas, gaj_deltas, from_lbl, to_lbl):
+        if not deltas:
+            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' class='meta'>—</td></tr>")
+        arr  = np.array(deltas); n = len(arr); net = float(arr.mean())
+        wins   = arr[arr >  MEANINGFUL]
+        losses = arr[arr < -MEANINGFUL]
+        ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        mw = float(wins.mean())   if len(wins)   else None
+        ml = float(losses.mean()) if len(losses) else None
+        nc = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        vd = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
+        ws = f"{len(wins)}/{n} (avg {mw:+.3f})"   if mw is not None else f"{len(wins)}/{n}"
+        ls = f"{len(losses)}/{n} (avg {ml:+.3f})" if ml is not None else f"{len(losses)}/{n}"
+        if gaj_deltas:
+            gn = float(np.array(gaj_deltas).mean()); diff = gn - net
+            gc = "#5BAD6F" if gn > MEANINGFUL else ("#E15252" if gn < -MEANINGFUL else "var(--text-muted)")
+            dc = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "var(--text-muted)"
+            interp = ("Raw gains partially inflated by overfitting" if diff < -0.02
+                      else "Raw gains understated — overfitting decreased" if diff > 0.02
+                      else "Overfitting largely unchanged")
+            gs = f"{gn:+.4f}"; ds = f"{diff:+.4f}"
+        else:
+            gs = ds = "—"; gc = dc = "var(--text-muted)"; interp = "—"
+        return (f"<tr><td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                f"<td style='text-align:center;color:{nc};font-weight:bold'>{net:+.4f}</td>"
+                f"<td style='text-align:center;color:#5BAD6F'>{ws}</td>"
+                f"<td style='text-align:center;color:#E15252'>{ls}</td>"
+                f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
+                f"<td style='text-align:center;color:{gc};font-weight:bold'>{gs}</td>"
+                f"<td style='text-align:center;color:{dc}'>{ds}</td>"
+                f"<td class='meta'><strong>{vd}</strong><br>"
+                f"<span style='font-size:0.82em;color:{dc}'>{interp}</span></td></tr>")
+
+    d_s1_s2fs  = []; gaj_s1_s2fs  = []
+    d_ks_ksfs  = []; gaj_ks_ksfs  = []
+
+    tbody = ""
+    for tgt in TARGETS_ORDERED:
+        short = TARGET_SHORT.get(tgt, tgt)
+        tbody += (
+            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,"
+            f"var(--bg-alt) 100%)'><td colspan='7' style='font-weight:bold;"
+            f"padding:0.5rem 0.8rem;font-size:0.9em;border-left:4px solid "
+            f"var(--accent-blue,#4A90D9)'>{short}</td></tr>"
+        )
+        for m in models_ord:
+            v1  = _get(s1,   m, tgt); g1  = _gap_v(s1,   m, tgt)
+            v2  = _get(s2fs, m, tgt); g2  = _gap_v(s2fs, m, tgt)
+            vk  = _get(ks,   m, tgt); gk  = _gap_v(ks,   m, tgt)
+            vkf = _get(ksfs, m, tgt); gkf = _gap_v(ksfs, m, tgt)
+
+            r1  = _get(s1,   m, tgt, "RMSE_test")
+            r2  = _get(s2fs, m, tgt, "RMSE_test")
+            rk  = _get(ks,   m, tgt, "RMSE_test")
+            rkf = _get(ksfs, m, tgt, "RMSE_test")
+
+            sc1  = _gaj(v1,  g1);  sc2  = _gaj(v2,  g2)
+            sck  = _gaj(vk,  gk);  sckf = _gaj(vkf, gkf)
+
+            d12 = (v2  - v1)  if (v1  is not None and v2  is not None) else None
+            dkk = (vkf - vk)  if (vk  is not None and vkf is not None) else None
+
+            d12_rmse = ((r2  - r1)  if (r1  is not None and r2  is not None) else None)
+            dkk_rmse = ((rkf - rk)  if (rk  is not None and rkf is not None) else None)
+            d12_gap  = ((g2  - g1)  if (g1  is not None and g2  is not None) else None)
+            dkk_gap  = ((gkf - gk)  if (gk  is not None and gkf is not None) else None)
+
+            sd12 = (sc2  - sc1)  if (sc1  is not None and sc2  is not None) else None
+            sdkk = (sckf - sck)  if (sck  is not None and sckf is not None) else None
+
+            if d12  is not None: d_s1_s2fs.append(d12)
+            if dkk  is not None: d_ks_ksfs.append(dkk)
+            if sd12 is not None: gaj_s1_s2fs.append(sd12)
+            if sdkk is not None: gaj_ks_ksfs.append(sdkk)
+
+            raw_c = {k: vv for k, vv in [("s1",v1),("s2",v2),("ks",vk),("ksfs",vkf)] if vv is not None}
+            gaj_c = {k: vv for k, vv in [("s1",sc1),("s2",sc2),("ks",sck),("ksfs",sckf)] if vv is not None}
+            br = max(raw_c.values()) if raw_c else None
+            bg = max(gaj_c.values()) if gaj_c else None
+
+            def _ir(v_): return br is not None and v_ is not None and abs(v_ - br) < 1e-9
+            def _ig(s_): return bg is not None and s_ is not None and abs(s_ - bg) < 1e-9
+
+            mc = MODEL_COLORS.get(m, "#888")
+            tbody += (
+                f"<tr><td><strong style='color:{mc}'>{m}</strong></td>"
+                f"{_val_td(v1,  r1,  g1,  _ir(v1),  _ig(sc1))}"
+                f"{_val_td(v2,  r2,  g2,  _ir(v2),  _ig(sc2))}"
+                f"{_delta_td(d12, d12_rmse, d12_gap)}"
+                f"{_val_td(vk,  rk,  gk,  _ir(vk),  _ig(sck))}"
+                f"{_val_td(vkf, rkf, gkf, _ir(vkf), _ig(sckf))}"
+                f"{_delta_td(dkk, dkk_rmse, dkk_gap)}"
+                f"</tr>"
+            )
+
+    n_cells = len(models_ord) * len(TARGETS_ORDERED)
+    stats_block = f"""
+<div style='margin-top:1.4rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
+  <div style='overflow-x:auto'>
+  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
+    <thead><tr>
+      <th>Transition</th>
+      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
+      <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
+      <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
+      <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
+      <th style='text-align:center'>Gap-Adj Net ΔR²<br><span class='meta'>R²−0.5·max(0,|gap|−0.10)</span></th>
+      <th style='text-align:center'>Gap-Adj − Raw<br><span class='meta'>overfitting shift</span></th>
+      <th>Verdict</th>
+    </tr></thead>
+    <tbody>
+      {_stats_row(d_s1_s2fs, gaj_s1_s2fs, "S1 (ADD)", "S2-FS (ADD+CONSIDER)")}
+      {_stats_row(d_ks_ksfs, gaj_ks_ksfs, "KS (no FS)", "KS-FS")}
+    </tbody>
+  </table>
+  </div>
+  <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
+    <p class='meta'>
+      <strong>Reading the table.</strong>
+      Net Mean ΔR² is the signed average across all {n_cells} (model × target) cells.
+      <strong>S1 → S2-FS</strong>: adds CONSIDER-tier features (32 total) with model-specific FS
+      on ~469 Grab train rows (−43 % vs S1's ~816).
+      <strong>KS → KS-FS</strong>: applies FS to the 44/39-feature kitchen-sink set on ~130 Grab rows.
+      <strong>Gap-Adj − Raw</strong>: negative = raw gains inflated by overfitting;
+      positive = gains understated because overfitting decreased.
+      <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score ·
+      <span style='color:#5BAD6F'>green</span> = both ·
+      <span style='color:#E67E22'>orange</span> = raw only ·
+      <span style='color:#4A90D9'>blue</span> = gap-adj only.
+    </p>
+  </div>
 </div>"""
 
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem'>
+<table class='summary-table' style='font-size:0.83em;min-width:1100px;border-collapse:collapse'>
+  <thead>
+    <tr style='background:var(--bg-secondary)'>
+      <th style='min-width:60px'>Model</th>
+      <th style='text-align:center;border-left:3px solid #888'>S1 — ADD<br>
+          <span class='meta' style='font-weight:normal'>28 feat · ~816 rows</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center;border-left:3px solid #4A90D9'>S2-FS — ADD+CONSIDER<br>
+          <span class='meta' style='font-weight:normal'>32 feat → selected · ~469 rows</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ (S1 → S2-FS)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='text-align:center;border-left:3px solid #9B59B6'>KS — All features<br>
+          <span class='meta' style='font-weight:normal'>44/39 feat · ~130 rows · no FS</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center;border-left:3px solid #5BAD6F'>KS-FS — All features<br>
+          <span class='meta' style='font-weight:normal'>44/39 feat → selected</span><br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+      <th style='text-align:center'>Δ (KS → KS-FS)<br>
+          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="exp3-comparison" open>
+  <summary><span class="fold-icon">▶</span>
+    Sub-experiment Comparison — S1 / S2-FS / KS / KS-FS
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #E67E22">
+      <p class="meta">
+        <strong>S1</strong> (ADD-tier, 28 features, ~816 Grab train rows) →
+        <strong>S2-FS</strong> (ADD+CONSIDER, 32 features → model-selected, ~469 rows) →
+        <strong>KS</strong> (all 44/39 features, ~130 Grab rows, no FS) →
+        <strong>KS-FS</strong> (same data, model-specific FS applied).
+        <strong>★</strong> = best raw Test R² per (model, target) ·
+        <strong>✦</strong> = best gap-adjusted ·
+        <span style='color:#5BAD6F;font-weight:bold'>green</span> = both ·
+        <span style='color:#E67E22;font-weight:bold'>orange</span> = raw only ·
+        <span style='color:#4A90D9;font-weight:bold'>blue</span> = gap-adj only.
+        RMSE in native units (mg/L or pH). Gap = Train R² − Test R²;
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+      </p>
+    </div>
+    {main_table}
+    {stats_block}
+  </div>
+</details>"""
+
+
+def _exp3_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for Experiment 3."""
+    s1 = df_all[df_all["exp_key"] == "Exp3-S1"].dropna(subset=["R2_test"])
+    s2 = df_all[df_all["exp_key"] == "Exp3-S2-FS"].dropna(subset=["R2_test"])
+    ks = df_all[df_all["exp_key"] == "Exp3-KS"].dropna(subset=["R2_test"])
+
+    # Per-group averages
+    grab_tgts = set(GRAB_TARGETS)
+    comp_tgts = set(COMP_TARGETS)
+
+    def _avg_r2(df, tgts):
+        vals = [float(df[df["target"] == t]["R2_test"].max())
+                for t in tgts
+                if not df[df["target"] == t].empty]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    def _avg_gap(df, tgts):
+        vals = [float(df[df["target"] == t]["R2_gap"].mean())
+                for t in tgts
+                if not df[df["target"] == t].empty
+                and "R2_gap" in df.columns]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    s1_grab = _avg_r2(s1, grab_tgts)
+    s1_comp = _avg_r2(s1, comp_tgts)
+    s2_grab = _avg_r2(s2, grab_tgts)
+    s2_comp = _avg_r2(s2, comp_tgts)
+    ks_grab = _avg_r2(ks, grab_tgts)
+    ks_comp = _avg_r2(ks, comp_tgts)
+
+    s1_rf_gap  = float(s1[s1["model"] == "RF"]["R2_gap"].mean())  if not s1.empty else float("nan")
+    ks_ols_gap = float(ks[ks["model"] == "OLS"]["R2_gap"].mean()) if not ks.empty else float("nan")
+    ks_rf_gap  = float(ks[ks["model"] == "RF"]["R2_gap"].mean())  if not ks.empty else float("nan")
+
+    def _c(v, positive_good=True):
+        if v != v: return "—"
+        col = ("#5BAD6F" if v > 0.05 else "#E15252" if v < -0.05 else "var(--text-muted)") \
+              if positive_good else \
+              ("#E15252" if v > 0.10 else "#5BAD6F" if v < 0.05 else "var(--text-muted)")
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    q1 = (
+        f"<strong>Sub-exp 1 (ADD-tier)</strong> retains ~816 Grab training rows — negligible "
+        f"row loss vs Exp2-Sub2 (~470 after secondary-data filtering). The 7 aeration ADD features "
+        f"have 0–12 % marginal row cost because secondary data availability already gates the "
+        f"dataset. Best ADD Grab avg = {_c(s1_grab)}; best ADD Comp avg = {_c(s1_comp)}. "
+        f"RF avg Grab gap = {_c(s1_rf_gap, False)} — moderate overfitting with 28 features at n=816. "
+        f"<br><br>"
+        f"<strong>Sub-exp 2 (ADD+CONSIDER)</strong> adds four CONSIDER-tier features. "
+        f"Inlet Total Coliform alone cuts Grab rows from ~816 to ~469 (−43 %). "
+        f"With FS applied, best S2-FS Grab avg = {_c(s2_grab)}, Comp avg = {_c(s2_comp)}. "
+        f"<br><br>"
+        f"<strong>Sub-exp 3 (kitchen sink)</strong> dropped Grab rows to ~130 (−74 % vs Exp2-Sub2). "
+        f"With n/p ≈ 3, OLS avg gap = {_c(ks_ols_gap, False)}, RF avg gap = {_c(ks_rf_gap, False)}. "
+        f"Kitchen-sink Grab avg (best per target) = {_c(ks_grab)}, Comp avg = {_c(ks_comp)}."
+    )
+
+    q2 = (
+        f"<strong>ADD → ADD+CONSIDER+FS</strong>: Mixed results. CONSIDER-tier features trade "
+        f"~347 Grab training rows for four extra columns. Whether FS recovers the loss depends on target: "
+        f"OLS benefits (LassoCV prunes to the strongest ADD features), while tree models see "
+        f"mixed outcomes because OOF fold size at n=469 is ~156 rows — still workable but reduced. "
+        f"<br><br>"
+        f"<strong>Kitchen-sink FS (Sub-exp 3)</strong>: Did not rescue the undersized grab dataset. "
+        f"The OOF fold size on 130 rows (3-fold TSS) is ~43 rows — "
+        f"permutation importance estimates are too noisy at this scale, causing the FS algorithm "
+        f"to prune to only 2–7 features per target, an overly aggressive cut. "
+        f"Composite targets (n_train ≈ 498) benefited more from FS than grab targets."
+    )
+
+    q3 = (
+        f"The Feature Audit tiers (ADD / CONSIDER) exist precisely to avoid the kitchen-sink trap. "
+        f"<strong>ADD-tier features</strong> (MI ≥ 0.20, row cost ≤ 20 %) give the best "
+        f"feature-count-to-row-cost ratio — Sub-exp 1 is the recommended baseline for Exp3. "
+        f"<strong>CONSIDER-tier features</strong> can help individual targets if FS is applied, "
+        f"but Inlet Total Coliform's 43 % Grab row loss is a steep price that must be weighed "
+        f"per-target. "
+        f"<br><br>"
+        f"The kitchen-sink sub-experiment (Sub-exp 3) confirms the audit's core conclusion: "
+        f"<strong>data-driven FS cannot rescue an undersized dataset</strong> — "
+        f"the FS algorithm itself operates in a high-variance regime when fold sizes are "
+        f"below ~50 rows. Feature selection should happen <em>before</em> the experiment "
+        f"based on MI signal and row cost, not purely inside the training script."
+    )
+
+    def _qcard(n, question, answer):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);
+              display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
+  </div>
+</div>"""
+
+    cards = "".join([
+        _qcard(1, "How did each sub-experiment's feature set affect sample size and performance?", q1),
+        _qcard(2, "Did ADD+CONSIDER (Sub-exp 2) and kitchen-sink FS (Sub-exp 3) improve on ADD-only?", q2),
+        _qcard(3, "What is the takeaway for feature engineering strategy?", q3),
+    ])
+
+    return f"""
+<details class="exp-details" id="exp3-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings — Experiment 3</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def build_exp3_section(df_all: pd.DataFrame) -> str:
+    sub1 = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
+                           "Sub-experiment 1 — ADD-tier Aeration Features (28 features, no FS)",
+                           open_default=True)
+    sub2 = _exp_subsection(df_all, "Exp3-S2-FS", "exp3-s2",
+                           "Sub-experiment 2 — ADD + CONSIDER-tier with FS (LassoCV / OOF perm. importance)",
+                           open_default=True)
+    ks   = _exp_subsection(df_all, "Exp3-KS",    "exp3-ks",
+                           "Sub-experiment 3 — All Remaining Features, no FS (44/39 features)",
+                           open_default=False)
+    ks_fs = _exp_subsection(df_all, "Exp3-KS-FS", "exp3-ks-fs",
+                            "Sub-experiment 3b — All Remaining Features with FS",
+                            open_default=False)
+    cmp_div      = _exp3_comparison_panel(df_all)
+    findings_div = _exp3_qna(df_all)
+
+    vif_div    = _vif_callout()
+    vif_bridge = f"""
+<details class="exp-details" id="exp3-vif">
+  <summary><span class="fold-icon">▶</span>
+    Collinearity Diagnosis — Why Exp4 Was Designed
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #9B59B6;margin-bottom:0.8rem">
+      <p class="meta">
+        The kitchen-sink feature set (Sub-exp 3) contains several correlated groups
+        (Sec Clarifier ↔ Sec Sedimentation; Aeration MLSS ↔ SVI;
+        Power GE + Power NEA = Power Total). VIF analysis below quantifies this for OLS.
+        Key context: VIF matters primarily for <strong>OLS</strong> (unregularised linear
+        regression), where high VIF inflates coefficient standard errors and causes instability.
+        <strong>Ridge</strong> and <strong>ElasticNet</strong> handle collinearity by
+        design via their L2/L1 penalties, and <strong>tree models</strong> (RF, GB, XGB)
+        are entirely unaffected — correlated features simply share split importance without
+        degrading prediction.
+        <br><br>
+        This collinearity observation motivated <strong>Experiment 4</strong>: a direct test
+        of whether manually removing the most collinear groups (SVI, New aeration, Sec Sed)
+        would improve generalisation. Spoiler: it did not — see Exp4 findings.
+      </p>
+    </div>
+    {vif_div}
+  </div>
+</details>"""
+
     best = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Exp3-S1","Exp3-S1-FS","Exp3-S2"])],
+        df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2-FS", "Exp3-KS", "Exp3-KS-FS"])],
         "Experiment 3")
     return f"""
 <section id="exp3">
-  <h1 class="section-title">Experiment 3 - Expanded Feature Sets</h1>
+  <h1 class="section-title">Experiment 3 — Feature Audit Tiers &amp; Kitchen Sink</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
-  {sub1fs}
-  {fs1div}
   {sub2}
-  {cyclic_div}
-  {cost_div}
-  {vif_div}
-  {no_fs_note}
+  {ks}
+  {ks_fs}
+  {cmp_div}
+  {findings_div}
+  {vif_bridge}
   {best}
 </section>"""
 
@@ -5259,11 +5816,13 @@ def _sidebar() -> str:
       Experiment 3 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp3">
-      <a class="nav-item nav-sub" href="#exp3-s1">Sub-exp 1 (ADD)</a>
-      <a class="nav-item nav-sub" href="#exp3-s1-fs">Sub-exp 1 FS</a>
-      <a class="nav-item nav-sub" href="#exp3-s2">Sub-exp 2 (CONSIDER)</a>
-      <a class="nav-item nav-sub" href="#exp3-cyclic">Cyclic Encoding</a>
-      <a class="nav-item nav-sub" href="#exp3-vif">VIF Collinearity</a>
+      <a class="nav-item nav-sub" href="#exp3-s1">S1 — ADD-tier (28 feat)</a>
+      <a class="nav-item nav-sub" href="#exp3-s2">S2 — ADD+CONSIDER+FS</a>
+      <a class="nav-item nav-sub" href="#exp3-ks">S3 — All features (KS)</a>
+      <a class="nav-item nav-sub" href="#exp3-ks-fs">S3b — KS with FS</a>
+      <a class="nav-item nav-sub" href="#exp3-comparison">Comparison</a>
+      <a class="nav-item nav-sub" href="#exp3-findings">Findings</a>
+      <a class="nav-item nav-sub" href="#exp3-vif">Collinearity → Exp4</a>
     </div>
   </div>
 
@@ -5802,7 +6361,7 @@ document.addEventListener('DOMContentLoaded', function() {
 (function() {
   // SECTION_BESTS is injected by Python below
   var sectionOrder = ['exp1-sub1','exp1-full','exp1-cyclic','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
-                      'exp3-s1','exp3-s1-fs','exp3-s2','p9-ann','p9-voting','p9-stacking',
+                      'exp3-s1','exp3-s2','p9-ann','p9-voting','p9-stacking',
                       'p10-full','p10b','p11'];
   var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',
                       'Comp BOD','Comp COD','Comp TSS','Comp pH'];

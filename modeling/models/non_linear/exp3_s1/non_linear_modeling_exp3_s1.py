@@ -1,15 +1,16 @@
 """
-non_linear_modeling_exp3_s1.py - RF, GB, XGBoost on Experiment 3 Sub-1 subsets.
+non_linear_modeling_exp3_s1.py - RF, GB, XGBoost on Experiment 3 Sub-1 datasets.
 
-Identical training protocol to non_linear_modeling_baseline/non_linear_modeling.py.
-Differences:
-  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py:
-    Exp2 Sub-2 baseline features + ADD-tier candidate features per target)
-  - Feature list is inferred from each file's columns at load time
-  - Writes all artifacts to non_linear_modeling_exp3_s1/{rf,gb,xgb}/
+Feature set: Exp2-Sub2 baseline (21 features) + ADD-tier features (7 Aeration cols)
+= 28 features per target. No feature selection applied.
+
+  ADD tier: Aeration DO/MLSS/SV30/SVI (Existing) + pH (Existing) + DO/SV30 (New)
+
+Datasets: experiment3/sub_exp1/ (built by make_sub1_datasets.py)
+Exp key: Exp3-S1
 
 Usage (from project root):
-    .venv/bin/python3 21-25/modeling/non_linear_modeling_exp3_s1/non_linear_modeling_exp3_s1.py
+    .venv/bin/python3 modeling/models/non_linear/exp3_s1/non_linear_modeling_exp3_s1.py
 """
 
 import os
@@ -31,7 +32,7 @@ from xgboost import XGBRegressor
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
-def _e3s1(name):
+def _ds(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp1", f"{name}.xlsx")
 
 # ── Splits ─────────────────────────────────────────────────────────────────────
@@ -40,8 +41,8 @@ TEST_YEAR   = 2025
 TSCV        = TimeSeriesSplit(n_splits=3)
 
 # ── Fixed hyperparameters ──────────────────────────────────────────────────────
-RF_BASE = dict(n_estimators=300, max_features="sqrt", random_state=42, n_jobs=1)
-GB_BASE = dict(n_estimators=300, learning_rate=0.05, subsample=0.8, random_state=42)
+RF_BASE  = dict(n_estimators=300, max_features="sqrt", random_state=42, n_jobs=1)
+GB_BASE  = dict(n_estimators=300, learning_rate=0.05, subsample=0.8, random_state=42)
 XGB_BASE = dict(n_estimators=300, learning_rate=0.05, subsample=0.8,
                 colsample_bytree=0.8, random_state=42, n_jobs=1, verbosity=0)
 
@@ -64,26 +65,15 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
     ]
 
 # ── Registry ───────────────────────────────────────────────────────────────────
-# (experiment_label, model_name, subset_path, target)
 REGISTRY = [
-    # Experiment 3 Sub-1 - Grab
-    ("Experiment 3 Sub-1", "grab_BOD",
-     _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_COD",
-     _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_TSS",
-     _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_pH",
-     _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    # Experiment 3 Sub-1 - Composite
-    ("Experiment 3 Sub-1", "comp_BOD",
-     _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_COD",
-     _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_TSS",
-     _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_pH",
-     _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp3-S1", "grab_BOD", _ds("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S1", "grab_COD", _ds("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S1", "grab_TSS", _ds("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S1", "grab_pH",  _ds("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp3-S1", "comp_BOD", _ds("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S1", "comp_COD", _ds("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S1", "comp_TSS", _ds("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S1", "comp_pH",  _ds("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Colours ────────────────────────────────────────────────────────────────────
@@ -124,27 +114,6 @@ def _plot_scatter(plots_dir, name, model_tag, run, test_df, y_test, y_pred, targ
     return path
 
 
-def _plot_timeseries(plots_dir, name, model_tag, run, df_all, features, model, target):
-    df_plot = df_all.sort_values("Date").copy()
-    df_plot["_pred"] = model.predict(df_plot[features].values)
-    fig, ax = plt.subplots(figsize=(13, 3.5))
-    ts = df_plot[df_plot["year"] == TEST_YEAR]["Date"]
-    if len(ts):
-        ax.axvspan(ts.min(), ts.max(), alpha=0.10, color="orange",
-                   label=f"Test ({TEST_YEAR})")
-    ax.plot(df_plot["Date"], df_plot[target],
-            color="#2171B5", linewidth=0.8, label="Actual", alpha=0.9)
-    ax.plot(df_plot["Date"], df_plot["_pred"],
-            color=MODEL_COLOURS[model_tag], linewidth=0.8,
-            label=f"{model_tag} Predicted", alpha=0.9)
-    ax.set_ylabel(target, fontsize=9)
-    ax.set_title(f"{model_tag} | {name} | Time series (run {run})", fontsize=10)
-    ax.legend(fontsize=8); fig.autofmt_xdate(); plt.tight_layout()
-    path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_timeseries.png")
-    fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
-    return path
-
-
 def _plot_importance(plots_dir, name, model_tag, run, model, features):
     imps  = model.feature_importances_
     order = np.argsort(imps)
@@ -152,8 +121,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS[model_tag], edgecolor="white")
     ax.set_xlabel("Feature importance (impurity)", fontsize=9)
-    ax.set_title(f"{model_tag} | {name}\nFeature importance - best-CV model (run {run})",
-                 fontsize=10)
+    ax.set_title(f"{model_tag} | {name}\nFeature importance (run {run})", fontsize=10)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
@@ -220,8 +188,6 @@ def train_one(experiment, name, subset_path, features, target,
     plots = {
         "scatter":    _plot_scatter(plots_dir, name, model_tag, run,
                                     test, y_te, te_pred, target),
-        "timeseries": _plot_timeseries(plots_dir, name, model_tag, run,
-                                       df, features, best, target),
         "importance": _plot_importance(plots_dir, name, model_tag, run,
                                        best, features),
     }
@@ -243,18 +209,16 @@ def run_model(model_tag, search_factory):
     os.makedirs(os.path.join(model_dir, "plots"),  exist_ok=True)
 
     print(f"\n{'='*65}")
-    print(f"  {model_tag} (Feature Selected) - run {run}")
+    print(f"  {model_tag} (Exp3-S1, ADD-tier) - run {run}")
     print(f"{'='*65}")
 
-    all_rows  = []
-    all_plots = {}
+    all_rows = []
 
     for experiment, name, subset_path, target in REGISTRY:
         print(f"\n[{experiment}]  {name}")
         if not os.path.exists(subset_path):
             print(f"    SKIP - file not found: {subset_path}"); continue
 
-        # Infer feature list from the file's columns
         df_peek  = pd.read_excel(subset_path, nrows=0)
         features = infer_features(df_peek, target)
 
@@ -263,7 +227,6 @@ def run_model(model_tag, search_factory):
         if row is None:
             continue
         all_rows.append(row)
-        all_plots[name] = plots
         print(f"    R²_train={row['R2_train']:+.3f}  R²_test={row['R2_test']:+.3f}"
               f"  RMSE_test={row['RMSE_test']:.3f}  MAE_test={row['MAE_test']:.3f}")
 
@@ -274,7 +237,7 @@ def run_model(model_tag, search_factory):
         df_out = df_new
     df_out.to_excel(results_fp, index=False)
     print(f"\n  Results → {results_fp}")
-    return all_rows, all_plots, run
+    return all_rows, run
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -298,13 +261,11 @@ def main():
         )),
     ]
 
-    summary = {}
     for tag, factory in models:
-        rows, plots, run = run_model(tag, factory)
-        summary[tag] = {"rows": rows, "plots": plots, "run": run}
+        run_model(tag, factory)
 
     print("\n" + "="*65)
-    print("  All models complete (feature selected, tuned).")
+    print("  Exp3-S1 (ADD-tier) — all models complete.")
     print(f"  Results in: {SCRIPT_DIR}/{{rf,gb,xgb}}/results.xlsx")
     print("="*65)
 
