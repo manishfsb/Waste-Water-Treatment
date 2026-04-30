@@ -3936,45 +3936,47 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     def _s1_rmse(model, tgt):
         return _get(s1, model, tgt, "RMSE_test")
 
+    _TD = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+
     def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
         if r2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
         if is_raw and is_gaj:   col = "#5BAD6F"; fw = "bold"
         elif is_raw:            col = "#E67E22"; fw = "bold"
         elif is_gaj:            col = "#4A90D9"; fw = "bold"
-        else:                   col = "inherit"; fw = "normal"
+        else:                   col = "#1a1a1a"; fw = "normal"
         rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
         gap_val  = gap if (gap is not None and gap == gap) else None
         gap_str  = f"{gap_val:+.3f}" if gap_val is not None else "—"
         gap_col  = ("#E15252" if gap_val is not None and gap_val > 0.10
                     else "#5BAD6F" if gap_val is not None and gap_val < -0.10
-                    else "var(--text-muted)")
-        secondary = (f"<br><span style='font-size:0.72em;color:var(--text-muted);"
+                    else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;"
                      f"font-weight:normal'>RMSE {rmse_str} · "
                      f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
-        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
                 f"{r2:+.3f}{marker_html}{secondary}</td>")
 
     def _delta_td(dr2, drmse=None, dgap=None):
         if dr2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         r2_col = ("#5BAD6F" if dr2 >= MEANINGFUL else
-                  "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+                  "#E15252" if dr2 <= -MEANINGFUL else "#888888")
         extra = ""
         if drmse is not None and drmse == drmse:
             rm_col = ("#5BAD6F" if drmse <= -MEANINGFUL else
-                      "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+                      "#E15252" if drmse >= MEANINGFUL else "#888888")
             extra += (f"<br><span style='font-size:0.72em;color:{rm_col};"
                       f"font-weight:normal'>RMSE {drmse:+.2f}</span>")
         if dgap is not None and dgap == dgap:
             # positive ΔGap = more overfitting (bad); negative = less (good)
             gp_col = ("#E15252" if dgap > MEANINGFUL else
-                      "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+                      "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
             extra += (f"<br><span style='font-size:0.72em;color:{gp_col};"
                       f"font-weight:normal'>Gap {dgap:+.3f}</span>")
-        return (f"<td style='text-align:center;color:{r2_col};font-weight:bold'>"
+        return (f"<td style='{_TD};text-align:center;color:{r2_col};font-weight:bold'>"
                 f"{dr2:+.3f}{extra}</td>")
 
     deltas_s1_full  = []; gaj_deltas_s1_full  = []
@@ -3984,9 +3986,10 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
-            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,var(--bg-alt) 100%)'>"
-            f"<td colspan='6' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
-            f"border-left:4px solid var(--accent-blue,#4A90D9)'>{short}</td></tr>"
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='6' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
         for m in models_ord:
             v1   = _get(s1, m, tgt);   g1   = _gap_v(s1, m, tgt)
@@ -4028,8 +4031,10 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
             def _is_raw(v_): return best_raw is not None and v_ is not None and abs(v_ - best_raw) < 1e-9
             def _is_gaj(s_): return best_gaj is not None and s_ is not None and abs(s_ - best_gaj) < 1e-9
 
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
-                f"<tr><td><strong>{m}</strong></td>"
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
                 f"{_val_td(v1,  r1,  g1,  _is_raw(v1),  _is_gaj(sc1))}"
                 f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(scf))}"
                 f"{_delta_td(d1f, d1f_rmse, d1f_gap)}"
@@ -4038,10 +4043,12 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"</tr>"
             )
 
+    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+
     def _combined_stats_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
         if not raw_deltas:
-            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
-                    f"<td colspan='7' class='meta'>—</td></tr>")
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'>—</td></tr>")
         arr = np.array(raw_deltas)
         n   = len(arr)
         net = float(arr.mean())
@@ -4050,7 +4057,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
         mean_win  = float(wins.mean())   if len(wins)   else None
         mean_loss = float(losses.mean()) if len(losses) else None
-        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
         verdict  = ("Net improvement" if net > MEANINGFUL else
                     "Net regression"  if net < -MEANINGFUL else "Negligible")
         win_str  = (f"{len(wins)}/{n} (avg {mean_win:+.3f})"    if mean_win  is not None else f"{len(wins)}/{n}")
@@ -4058,45 +4065,50 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         if gaj_deltas:
             gaj_net  = float(np.array(gaj_deltas).mean())
             diff     = gaj_net - net
-            gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "var(--text-muted)")
+            gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "#888888")
             if diff < -0.02:   interp = "Raw gains partially inflated by increased overfitting"; diff_col = "#E15252"
             elif diff > 0.02:  interp = "Raw gains understated — overfitting decreased"; diff_col = "#5BAD6F"
-            else:              interp = "Overfitting largely unchanged"; diff_col = "var(--text-muted)"
+            else:              interp = "Overfitting largely unchanged"; diff_col = "#888888"
             gaj_str  = f"{gaj_net:+.4f}"
             diff_str = f"{diff:+.4f}"
         else:
-            gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+            gaj_str = diff_str = "—"; gaj_col = diff_col = "#888888"; interp = "—"
         verdict_cell = (f"<strong>{verdict}</strong><br>"
                         f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span>")
         return (
             f"<tr>"
-            f"<td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
-            f"<td style='text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
-            f"<td style='text-align:center;color:#5BAD6F'>{win_str}</td>"
-            f"<td style='text-align:center;color:#E15252'>{loss_str}</td>"
-            f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
-            f"<td style='text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
-            f"<td style='text-align:center;color:{diff_col}'>{diff_str}</td>"
-            f"<td class='meta'>{verdict_cell}</td>"
+            f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+            f"<td style='{_STD};text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
+            f"<td style='{_STD};text-align:center;color:#5BAD6F'>{win_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#E15252'>{loss_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+            f"<td style='{_STD};text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='{_STD};text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td style='{_STD}'>{verdict_cell}</td>"
             f"</tr>"
         )
+
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
 
     n_cells = len(models_ord) * len(TARGETS_ORDERED)
     stats_block = f"""
 <div style='margin-top:1.4rem'>
-  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
-  <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
-    <thead><tr>
-      <th>Transition</th>
-      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
-      <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
-      <th style='text-align:center'>Gap-Adj Net ΔR²<br><span class='meta'>R²−0.5·max(0,|gap|−0.10)</span></th>
-      <th style='text-align:center'>Gap-Adj − Raw<br><span class='meta'>overfitting shift</span></th>
-      <th>Verdict / Interpretation</th>
-    </tr></thead>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; −{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| ≤ {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²−0.5·max(0,|gap|−0.10)</span></th>
+        <th style='{_THC}'>Gap-Adj − Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+        <th style='{_TH}'>Verdict / Interpretation</th>
+      </tr>
+    </thead>
     <tbody>
       {_combined_stats_row(deltas_s1_full, gaj_deltas_s1_full, "Sub1", "Sub2 Full")}
       {_combined_stats_row(deltas_full_fs, gaj_deltas_full_fs, "Sub2 Full", "Sub2 FS")}
@@ -4158,36 +4170,40 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
             bypass  = False
         status_col = "#7FB3D3" if bypass else "#5BAD6F"
         status     = "✓ Correctly bypassed (L2)" if bypass else "✓ Selection applied"
+        _VR = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
         val_rows.append(
-            f"<tr><td><strong>{m}</strong></td>"
-            f"<td style='font-size:0.82em'>{method}</td>"
-            f"<td style='text-align:center'>11</td>"
-            f"<td style='text-align:center'>{avg_sel}</td>"
-            f"<td style='text-align:center;color:{status_col};font-weight:600'>{status}</td></tr>"
+            f"<tr><td style='{_VR}'><strong>{m}</strong></td>"
+            f"<td style='{_VR};font-size:0.80rem'>{method}</td>"
+            f"<td style='{_VR};text-align:center'>11</td>"
+            f"<td style='{_VR};text-align:center'>{avg_sel}</td>"
+            f"<td style='{_VR};text-align:center;color:{status_col};font-weight:600'>{status}</td></tr>"
         )
 
     val_card = f"""
 <div style='margin:1rem 0 0.6rem'>
-  <p style='font-weight:bold;margin-bottom:0.3rem;font-size:0.88em;color:var(--text-main)'>
+  <p style='font-weight:bold;margin-bottom:0.3rem;font-size:0.88em;color:#1a1a1a'>
     Feature Selection Validation — Sub-experiment 2 (11 cyclic features input)
   </p>
-  <p class='meta' style='margin-bottom:0.6rem;font-size:0.82em'>
+  <p style='margin-bottom:0.6rem;font-size:0.82em;color:#555555'>
     Each model applies a distinct selection protocol to the shared 11-feature pool.
     The table confirms which method was used, how many features were retained on average
     across the 8 targets, and whether the protocol was correctly applied.
   </p>
-  <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.83em'>
-    <thead><tr>
-      <th>Model</th><th>FS Method</th>
-      <th style='text-align:center'>Input<br>Feats</th>
-      <th style='text-align:center'>Avg Selected<br>(across 8 targets)</th>
-      <th style='text-align:center'>Status</th>
-    </tr></thead>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Model</th>
+        <th style='{_TH}'>FS Method</th>
+        <th style='{_THC}'>Input<br>Feats</th>
+        <th style='{_THC}'>Avg Selected<br>(across 8 targets)</th>
+        <th style='{_THC}'>Status</th>
+      </tr>
+    </thead>
     <tbody>{"".join(val_rows)}</tbody>
   </table>
   </div>
-  <p class='meta' style='font-size:0.78em;margin-top:0.3rem'>
+  <p style='font-size:0.78em;margin-top:0.3rem;color:#555555'>
     Ridge is the only model that intentionally bypasses feature removal — L2 shrinks
     uninformative coefficients toward zero without discarding them. All other models
     reduce the feature space. Per-target selected feature lists are in the
@@ -4196,24 +4212,24 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem'>
-<table class='summary-table' style='font-size:0.83em;min-width:860px;border-collapse:collapse'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:860px'>
   <thead>
-    <tr style='background:var(--bg-secondary)'>
-      <th style='min-width:60px'>Model</th>
-      <th style='text-align:center;border-left:3px solid #888'>Sub1<br>
-          <span class='meta' style='font-weight:normal'>4 feat · no FS</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center;border-left:3px solid #4A90D9'>Sub2 Full<br>
-          <span class='meta' style='font-weight:normal'>11 feat · full set</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ (S1→Full)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
-      <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 FS<br>
-          <span class='meta' style='font-weight:normal'>model-specific</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ (Full→FS)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:60px'>Model</th>
+      <th style='{_THC}'>Sub1<br>
+          <span style='color:#888888;font-weight:400'>4 feat · no FS</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Sub2 Full<br>
+          <span style='color:#888888;font-weight:400'>11 feat · full set</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ (S1→Full)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='{_THC}'>Sub2 FS<br>
+          <span style='color:#888888;font-weight:400'>model-specific</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ (Full→FS)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
@@ -4341,44 +4357,48 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         else:
             return _get(cyc, model, tgt, "RMSE_test")
 
+    _TD = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
     def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
         if r2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
         if is_raw and is_gaj:   col = "#5BAD6F"; fw = "bold"
         elif is_raw:            col = "#E67E22"; fw = "bold"
         elif is_gaj:            col = "#4A90D9"; fw = "bold"
-        else:                   col = "inherit"; fw = "normal"
+        else:                   col = "#1a1a1a"; fw = "normal"
         rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
         gap_val  = gap if (gap is not None and gap == gap) else None
         gap_str  = f"{gap_val:+.3f}" if gap_val is not None else "—"
         gap_col  = ("#E15252" if gap_val is not None and gap_val > 0.10
                     else "#5BAD6F" if gap_val is not None and gap_val < -0.10
-                    else "var(--text-muted)")
-        secondary = (f"<br><span style='font-size:0.72em;color:var(--text-muted);"
+                    else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;"
                      f"font-weight:normal'>RMSE {rmse_str} · "
                      f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
-        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
                 f"{r2:+.3f}{marker_html}{secondary}</td>")
 
     def _delta_td(dr2, drmse=None, dgap=None):
         if dr2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         r2_col = ("#5BAD6F" if dr2 >= MEANINGFUL else
-                  "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+                  "#E15252" if dr2 <= -MEANINGFUL else "#888888")
         extra = ""
         if drmse is not None and drmse == drmse:
             rm_col = ("#5BAD6F" if drmse <= -MEANINGFUL else
-                      "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+                      "#E15252" if drmse >= MEANINGFUL else "#888888")
             extra += (f"<br><span style='font-size:0.72em;color:{rm_col};"
                       f"font-weight:normal'>RMSE {drmse:+.2f}</span>")
         if dgap is not None and dgap == dgap:
             gp_col = ("#E15252" if dgap > MEANINGFUL else
-                      "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+                      "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
             extra += (f"<br><span style='font-size:0.72em;color:{gp_col};"
                       f"font-weight:normal'>Gap {dgap:+.3f}</span>")
-        return (f"<td style='text-align:center;color:{r2_col};font-weight:bold'>"
+        return (f"<td style='{_TD};text-align:center;color:{r2_col};font-weight:bold'>"
                 f"{dr2:+.3f}{extra}</td>")
 
     # Collect deltas for summary rows
@@ -4395,9 +4415,10 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
-            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,var(--bg-alt) 100%)'>"
-            f"<td colspan='6' style='font-weight:bold;padding:0.5rem 0.8rem;font-size:0.9em;"
-            f"border-left:4px solid var(--accent-blue,#4A90D9)'>{short}</td></tr>"
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='6' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
         for m in models_ord:
             vc  = _get(clr,  m, tgt); gc  = _gap_v(clr,  m, tgt)
@@ -4467,8 +4488,10 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             def _is_raw(v_): return best_raw is not None and v_ is not None and abs(v_ - best_raw) < 1e-9
             def _is_gaj(s_): return best_gaj is not None and s_ is not None and abs(s_ - best_gaj) < 1e-9
 
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
-                f"<tr><td><strong>{m}</strong></td>"
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
                 f"{_val_td(vc,  rc,  gc,  _is_raw(vc),  _is_gaj(sc))}"
                 f"{_val_td(vs,  rs,  gs,  _is_raw(vs),  _is_gaj(ss))}"
                 f"{_val_td(vco, rco, gco, _is_raw(vco), _is_gaj(sco))}"
@@ -4477,10 +4500,12 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"</tr>"
             )
 
+    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+
     def _combined_stats_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
         if not raw_deltas:
-            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
-                    f"<td colspan='7' class='meta'>—</td></tr>")
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'>—</td></tr>")
         arr = np.array(raw_deltas)
         n   = len(arr)
         net = float(arr.mean())
@@ -4489,7 +4514,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
         mean_win  = float(wins.mean())   if len(wins)   else None
         mean_loss = float(losses.mean()) if len(losses) else None
-        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        net_col  = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
         verdict  = ("Net improvement" if net > MEANINGFUL else
                     "Net regression"  if net < -MEANINGFUL else "Negligible")
         win_str  = (f"{len(wins)}/{n} (avg {mean_win:+.3f})"    if mean_win  is not None else f"{len(wins)}/{n}")
@@ -4499,46 +4524,48 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             if gaj_arr:
                 gaj_net  = float(np.array(gaj_arr).mean())
                 diff     = gaj_net - net
-                gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "var(--text-muted)")
+                gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "#888888")
                 if diff < -0.02:   interp = "Raw gains partially inflated by increased overfitting"; diff_col = "#E15252"
                 elif diff > 0.02:  interp = "Raw gains understated — overfitting decreased"; diff_col = "#5BAD6F"
-                else:              interp = "Overfitting largely unchanged"; diff_col = "var(--text-muted)"
+                else:              interp = "Overfitting largely unchanged"; diff_col = "#888888"
                 gaj_str  = f"{gaj_net:+.4f}"
                 diff_str = f"{diff:+.4f}"
             else:
-                gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+                gaj_str = diff_str = "—"; gaj_col = diff_col = "#888888"; interp = "—"
         else:
-            gaj_str = diff_str = "—"; gaj_col = diff_col = "var(--text-muted)"; interp = "—"
+            gaj_str = diff_str = "—"; gaj_col = diff_col = "#888888"; interp = "—"
         verdict_cell = (f"<strong>{verdict}</strong><br>"
                         f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span>")
         return (
             f"<tr>"
-            f"<td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
-            f"<td style='text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
-            f"<td style='text-align:center;color:#5BAD6F'>{win_str}</td>"
-            f"<td style='text-align:center;color:#E15252'>{loss_str}</td>"
-            f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
-            f"<td style='text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
-            f"<td style='text-align:center;color:{diff_col}'>{diff_str}</td>"
-            f"<td class='meta'>{verdict_cell}</td>"
+            f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+            f"<td style='{_STD};text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
+            f"<td style='{_STD};text-align:center;color:#5BAD6F'>{win_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#E15252'>{loss_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+            f"<td style='{_STD};text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='{_STD};text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td style='{_STD}'>{verdict_cell}</td>"
             f"</tr>"
         )
 
     stats_block = f"""
 <div style='margin-top:1.4rem'>
-  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
-  <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
-    <thead><tr>
-      <th>Transition</th>
-      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
-      <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
-      <th style='text-align:center'>Gap-Adj Net ΔR²</th>
-      <th style='text-align:center'>Gap-Adj − Raw</th>
-      <th>Verdict</th>
-    </tr></thead>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; −{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| ≤ {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²</th>
+        <th style='{_THC}'>Gap-Adj − Raw</th>
+        <th style='{_TH}'>Verdict</th>
+      </tr>
+    </thead>
     <tbody>
       {_combined_stats_row(d_clr_sed,      gaj_d_clr_sed,      "Clarifier", "Sed")}
       {_combined_stats_row(d_clr_comb,     gaj_d_clr_comb,     "Clarifier", "Combined")}
@@ -4568,26 +4595,26 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem'>
-<table class='summary-table' style='font-size:0.82em;min-width:860px;border-collapse:collapse'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:860px'>
   <thead>
-    <tr style='background:var(--bg-secondary)'>
-      <th style='min-width:60px'>Model</th>
-      <th style='text-align:center;border-left:3px solid #888'>Sub1-Clr<br>
-          <span class='meta' style='font-weight:normal'>10 feat</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Sub1-Sed<br>
-          <span class='meta' style='font-weight:normal'>10 feat</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center;border-left:3px solid #4A90D9'>Combined<br>
-          <span class='meta' style='font-weight:normal'>15 feat</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center;border-left:3px solid #5BAD6F'>Sub2 Full<br>
-          <span class='meta' style='font-weight:normal'>21 feat</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Sub2 FS<br>
-          <span class='meta' style='font-weight:normal'>model-specific</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:60px'>Model</th>
+      <th style='{_THC}'>Sub1-Clr<br>
+          <span style='color:#888888;font-weight:400'>10 feat</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Sub1-Sed<br>
+          <span style='color:#888888;font-weight:400'>10 feat</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Combined<br>
+          <span style='color:#888888;font-weight:400'>15 feat</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Sub2 Full<br>
+          <span style='color:#888888;font-weight:400'>21 feat</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Sub2 FS<br>
+          <span style='color:#888888;font-weight:400'>model-specific</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
@@ -4875,77 +4902,83 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
         if r2 is None: return None
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
+    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
     def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
         if r2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
         if is_raw and is_gaj: col = "#5BAD6F"; fw = "bold"
         elif is_raw:          col = "#E67E22"; fw = "bold"
         elif is_gaj:          col = "#4A90D9"; fw = "bold"
-        else:                 col = "inherit"; fw = "normal"
+        else:                 col = "#1a1a1a"; fw = "normal"
         rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "—"
         gv     = gap if (gap is not None and gap == gap) else None
         gs     = f"{gv:+.3f}" if gv is not None else "—"
         gc     = ("#E15252" if gv is not None and gv > 0.10
                   else "#5BAD6F" if gv is not None and gv < -0.10
-                  else "var(--text-muted)")
-        sec = (f"<br><span style='font-size:0.72em;color:var(--text-muted);font-weight:normal'>"
+                  else "#888888")
+        sec = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
                f"RMSE {rmse_s} · <span style='color:{gc}'>Gap {gs}</span></span>")
-        return (f"<td style='text-align:center;color:{col};font-weight:{fw}'>"
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
                 f"{r2:+.3f}{mhtml}{sec}</td>")
 
     def _delta_td(dr2, drmse=None, dgap=None):
         if dr2 is None:
-            return "<td class='meta' style='text-align:center'>—</td>"
+            return f"<td style='{_TD};text-align:center;color:#999'>—</td>"
         c = ("#5BAD6F" if dr2 >= MEANINGFUL else
-             "#E15252" if dr2 <= -MEANINGFUL else "var(--text-muted)")
+             "#E15252" if dr2 <= -MEANINGFUL else "#888888")
         ex = ""
         if drmse is not None and drmse == drmse:
             rc = ("#5BAD6F" if drmse <= -MEANINGFUL else
-                  "#E15252" if drmse >= MEANINGFUL else "var(--text-muted)")
+                  "#E15252" if drmse >= MEANINGFUL else "#888888")
             ex += (f"<br><span style='font-size:0.72em;color:{rc};font-weight:normal'>"
                    f"RMSE {drmse:+.2f}</span>")
         if dgap is not None and dgap == dgap:
             gc = ("#E15252" if dgap > MEANINGFUL else
-                  "#5BAD6F" if dgap < -MEANINGFUL else "var(--text-muted)")
+                  "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
             ex += (f"<br><span style='font-size:0.72em;color:{gc};font-weight:normal'>"
                    f"Gap {dgap:+.3f}</span>")
-        return (f"<td style='text-align:center;color:{c};font-weight:bold'>"
+        return (f"<td style='{_TD};text-align:center;color:{c};font-weight:bold'>"
                 f"{dr2:+.3f}{ex}</td>")
 
     def _stats_row(deltas, gaj_deltas, from_lbl, to_lbl):
         if not deltas:
-            return (f"<tr><td><strong>{from_lbl} → {to_lbl}</strong></td>"
-                    f"<td colspan='7' class='meta'>—</td></tr>")
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'>—</td></tr>")
         arr  = np.array(deltas); n = len(arr); net = float(arr.mean())
         wins   = arr[arr >  MEANINGFUL]
         losses = arr[arr < -MEANINGFUL]
         ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
         mw = float(wins.mean())   if len(wins)   else None
         ml = float(losses.mean()) if len(losses) else None
-        nc = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "var(--text-muted)")
+        nc = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
         vd = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
         ws = f"{len(wins)}/{n} (avg {mw:+.3f})"   if mw is not None else f"{len(wins)}/{n}"
         ls = f"{len(losses)}/{n} (avg {ml:+.3f})" if ml is not None else f"{len(losses)}/{n}"
         if gaj_deltas:
             gn = float(np.array(gaj_deltas).mean()); diff = gn - net
-            gc = "#5BAD6F" if gn > MEANINGFUL else ("#E15252" if gn < -MEANINGFUL else "var(--text-muted)")
-            dc = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "var(--text-muted)"
+            gc = "#5BAD6F" if gn > MEANINGFUL else ("#E15252" if gn < -MEANINGFUL else "#888888")
+            dc = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "#888888"
             interp = ("Raw gains partially inflated by overfitting" if diff < -0.02
                       else "Raw gains understated — overfitting decreased" if diff > 0.02
                       else "Overfitting largely unchanged")
             gs = f"{gn:+.4f}"; ds = f"{diff:+.4f}"
         else:
-            gs = ds = "—"; gc = dc = "var(--text-muted)"; interp = "—"
-        return (f"<tr><td style='white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
-                f"<td style='text-align:center;color:{nc};font-weight:bold'>{net:+.4f}</td>"
-                f"<td style='text-align:center;color:#5BAD6F'>{ws}</td>"
-                f"<td style='text-align:center;color:#E15252'>{ls}</td>"
-                f"<td style='text-align:center;color:var(--text-muted)'>{len(ties)}/{n}</td>"
-                f"<td style='text-align:center;color:{gc};font-weight:bold'>{gs}</td>"
-                f"<td style='text-align:center;color:{dc}'>{ds}</td>"
-                f"<td class='meta'><strong>{vd}</strong><br>"
+            gs = ds = "—"; gc = dc = "#888888"; interp = "—"
+        return (f"<tr>"
+                f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                f"<td style='{_STD};text-align:center;color:{nc};font-weight:bold'>{net:+.4f}</td>"
+                f"<td style='{_STD};text-align:center;color:#5BAD6F'>{ws}</td>"
+                f"<td style='{_STD};text-align:center;color:#E15252'>{ls}</td>"
+                f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+                f"<td style='{_STD};text-align:center;color:{gc};font-weight:bold'>{gs}</td>"
+                f"<td style='{_STD};text-align:center;color:{dc}'>{ds}</td>"
+                f"<td style='{_STD}'><strong>{vd}</strong><br>"
                 f"<span style='font-size:0.82em;color:{dc}'>{interp}</span></td></tr>")
 
     d_s1_s2fs  = []; gaj_s1_s2fs  = []
@@ -4955,10 +4988,10 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
-            f"<tr style='background:linear-gradient(90deg,var(--bg-secondary) 0%,"
-            f"var(--bg-alt) 100%)'><td colspan='7' style='font-weight:bold;"
-            f"padding:0.5rem 0.8rem;font-size:0.9em;border-left:4px solid "
-            f"var(--accent-blue,#4A90D9)'>{short}</td></tr>"
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='7' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
         for m in models_ord:
             v1  = _get(s1,   m, tgt); g1  = _gap_v(s1,   m, tgt)
@@ -4998,9 +5031,10 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
             def _ir(v_): return br is not None and v_ is not None and abs(v_ - br) < 1e-9
             def _ig(s_): return bg is not None and s_ is not None and abs(s_ - bg) < 1e-9
 
-            mc = MODEL_COLORS.get(m, "#888")
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
-                f"<tr><td><strong style='color:{mc}'>{m}</strong></td>"
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
                 f"{_val_td(v1,  r1,  g1,  _ir(v1),  _ig(sc1))}"
                 f"{_val_td(v2,  r2,  g2,  _ir(v2),  _ig(sc2))}"
                 f"{_delta_td(d12, d12_rmse, d12_gap)}"
@@ -5013,19 +5047,21 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     n_cells = len(models_ord) * len(TARGETS_ORDERED)
     stats_block = f"""
 <div style='margin-top:1.4rem'>
-  <p style='font-weight:bold;margin-bottom:0.4rem'>Transition Summary</p>
-  <div style='overflow-x:auto'>
-  <table class='summary-table' style='font-size:0.85em;min-width:960px'>
-    <thead><tr>
-      <th>Transition</th>
-      <th style='text-align:center'>Net Mean ΔR²<br><span class='meta'>raw</span></th>
-      <th style='text-align:center'>Improvements<br><span class='meta'>Δ &gt; +{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Regressions<br><span class='meta'>Δ &lt; −{MEANINGFUL}</span></th>
-      <th style='text-align:center'>Negligible<br><span class='meta'>|Δ| ≤ {MEANINGFUL}</span></th>
-      <th style='text-align:center'>Gap-Adj Net ΔR²<br><span class='meta'>R²−0.5·max(0,|gap|−0.10)</span></th>
-      <th style='text-align:center'>Gap-Adj − Raw<br><span class='meta'>overfitting shift</span></th>
-      <th>Verdict</th>
-    </tr></thead>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; −{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| ≤ {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²−0.5·max(0,|gap|−0.10)</span></th>
+        <th style='{_THC}'>Gap-Adj − Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+        <th style='{_TH}'>Verdict</th>
+      </tr>
+    </thead>
     <tbody>
       {_stats_row(d_s1_s2fs, gaj_s1_s2fs, "S1 (ADD)", "S2-FS (ADD+CONSIDER)")}
       {_stats_row(d_ks_ksfs, gaj_ks_ksfs, "KS (no FS)", "KS-FS")}
@@ -5050,27 +5086,27 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem'>
-<table class='summary-table' style='font-size:0.83em;min-width:1100px;border-collapse:collapse'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:1100px'>
   <thead>
-    <tr style='background:var(--bg-secondary)'>
-      <th style='min-width:60px'>Model</th>
-      <th style='text-align:center;border-left:3px solid #888'>S1 — ADD<br>
-          <span class='meta' style='font-weight:normal'>28 feat · ~816 rows</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center;border-left:3px solid #4A90D9'>S2-FS — ADD+CONSIDER<br>
-          <span class='meta' style='font-weight:normal'>32 feat → selected · ~469 rows</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ (S1 → S2-FS)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
-      <th style='text-align:center;border-left:3px solid #9B59B6'>KS — All features<br>
-          <span class='meta' style='font-weight:normal'>44/39 feat · ~130 rows · no FS</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center;border-left:3px solid #5BAD6F'>KS-FS — All features<br>
-          <span class='meta' style='font-weight:normal'>44/39 feat → selected</span><br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>R² · RMSE · Gap</span></th>
-      <th style='text-align:center'>Δ (KS → KS-FS)<br>
-          <span class='meta' style='font-size:0.78em;font-weight:normal'>ΔR² · ΔRMSE · ΔGap</span></th>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:60px'>Model</th>
+      <th style='{_THC}'>S1 — ADD<br>
+          <span style='color:#888888;font-weight:400'>28 feat · ~816 rows</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>S2-FS — ADD+CONSIDER<br>
+          <span style='color:#888888;font-weight:400'>32 feat → selected · ~469 rows</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ (S1 → S2-FS)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='{_THC}'>KS — All features<br>
+          <span style='color:#888888;font-weight:400'>44/39 feat · ~130 rows · no FS</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>KS-FS — All features<br>
+          <span style='color:#888888;font-weight:400'>44/39 feat → selected</span><br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ (KS → KS-FS)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
