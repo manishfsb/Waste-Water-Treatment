@@ -1,7 +1,7 @@
 """
 make_sub2_datasets.py - Experiment 3 Sub-experiment 2: ADD+CONSIDER-tier datasets.
 
-Builds one xlsx per target using the Exp2-Sub2 baseline features PLUS the
+Builds one xlsx per target using the Inlet + Secondary + COMMON baseline features (21 cols) PLUS the
 ADD- and CONSIDER-tier features from the Phase 6 Feature Audit.
 
   ADD-tier (MI >= 0.20, marginal cost <= 20%):
@@ -25,7 +25,7 @@ Cyclic calendar encoding (month/dow → sin/cos) is the unconditional standard
 from Exp2 onwards.
 
 Feature selection (LassoCV for OLS; OOF permutation importance for trees) is
-run in the training scripts (exp3_s2/) on these datasets — not at dataset-build time.
+run in the training scripts (exp3_s2/) on these datasets  -  not at dataset-build time.
 
 Usage (from project root):
     .venv/bin/python3 modeling/datasets/experiment3/sub_exp2/make_sub2_datasets.py
@@ -41,7 +41,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", ".."))
 RAW_FILE     = os.path.join(PROJECT_ROOT, "raw_data", "All_Years_Full.xlsx")
 OUT_DIR      = SCRIPT_DIR
 
-# ── Exp2-Sub2 baseline feature groups ─────────────────────────────────────────
+# ── Baseline feature groups (Inlet + Secondary + COMMON) ──────────────────────
 GRAB_INLET = [
     "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
     "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)",
@@ -115,7 +115,7 @@ def build_datasets():
 
         out_path = os.path.join(OUT_DIR, f"{name}.xlsx")
         subset.to_excel(out_path, index=False)
-        print(f"  Saved {name}.xlsx — {len(feature_cols)} features  "
+        print(f"  Saved {name}.xlsx  -  {len(feature_cols)} features  "
               f"(train={train_n}, test={test_n})")
 
 

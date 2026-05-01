@@ -169,7 +169,7 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
     mask = lasso.coef_ != 0
 
     if mask.sum() == 0:
-        print("    LassoCV: all features zeroed — keeping full set")
+        print("    LassoCV: all features zeroed  -  keeping full set")
         mask = np.ones(len(features), dtype=bool)
 
     n_in   = len(features)
@@ -179,7 +179,7 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
         print(" (no pruning)")
     else:
         dropped = [f for f, m in zip(features, mask) if not m]
-        print(f" — dropped: {dropped}")
+        print(f"  -  dropped: {dropped}")
 
     selected = [f for f, m in zip(features, mask) if m]
     return mask, selected
@@ -300,7 +300,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['OLS_full_test_R2']:+.3f} | "
           f"RMSE: {results['OLS_full_test_RMSE']:.3f}  [no FS]")
 
-    # ── Ridge (full feature set — L2 handles collinearity internally) ───────────
+    # ── Ridge (full feature set  -  L2 handles collinearity internally) ───────────
     ridge_gs = GridSearchCV(
         Ridge(), {"alpha": RIDGE_ALPHAS},
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
@@ -322,7 +322,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
           f"α={results['Ridge_alpha']}")
 
-    # ── ElasticNet (full feature set — it performs its own L1 selection) ───────
+    # ── ElasticNet (full feature set  -  it performs its own L1 selection) ───────
     elnet_gs = GridSearchCV(
         ElasticNet(max_iter=10000), ELNET_PARAM_GRID,
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,

@@ -137,7 +137,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     fig, ax = plt.subplots(figsize=(7, max(3, len(features) * 0.35)))
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS.get(model_tag, "#888"))
-    ax.set_title(f"{name} · {model_tag} — Feature Importance (run {run})", fontsize=11)
+    ax.set_title(f"{name} · {model_tag}  -  Feature Importance (run {run})", fontsize=11)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=150); plt.close(fig)
@@ -229,7 +229,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
     run = _run_number(model_dir)
     print(f"\n{'='*60}")
-    print(f"{model_tag} — Exp2-Sub1-Split  (run {run})")
+    print(f"{model_tag}  -  Exp2-Sub1-Split  (run {run})")
     print(f"{'='*60}")
 
     results = []
@@ -262,7 +262,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    print("Non-Linear Modeling — Exp2-Sub1-Split  (RF / GB / XGB)")
+    print("Non-Linear Modeling  -  Exp2-Sub1-Split  (RF / GB / XGB)")
     print("Clarifier: 10 features | Sed: 10 features | No OOF FS (baseline runs)\n")
 
     run_model("RF",  RandomForestRegressor(**RF_BASE),     RF_GRID,  GridSearchCV)

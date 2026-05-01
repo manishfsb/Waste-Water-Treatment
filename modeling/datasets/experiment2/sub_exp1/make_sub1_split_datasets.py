@@ -6,7 +6,7 @@ and subsets them into two new directories:
   - sec_clarifier/  : 8 xlsx with only SEC_CLARIFIER_COLS + COMMON_CYCLIC (12 features)
   - sec_sed/        : 8 xlsx with only SEC_SED_COLS + COMMON_CYCLIC (12 features)
 
-Calendar features use cyclic (sin/cos) encoding — no raw month/day_of_week columns.
+Calendar features use cyclic (sin/cos) encoding  -  no raw month/day_of_week columns.
 
 Usage (from project root):
     .venv/bin/python3 modeling/datasets/experiment2/sub_exp1/make_sub1_split_datasets.py
@@ -49,7 +49,7 @@ STEMS = [
 def make_split(stem: str, target: str):
     src = os.path.join(SCRIPT_DIR, f"{stem}.xlsx")
     if not os.path.exists(src):
-        print(f"  WARNING: source not found — {src}")
+        print(f"  WARNING: source not found  -  {src}")
         return
 
     df = pd.read_excel(src, parse_dates=["Date"])
@@ -66,7 +66,7 @@ def make_split(stem: str, target: str):
         keep = ["Date"] + feat_cols + COMMON_CYCLIC + [target]
         missing = [c for c in keep if c not in df.columns and c != "Date"]
         if missing:
-            print(f"  WARNING [{label}] {stem}: missing columns {missing} — skipping")
+            print(f"  WARNING [{label}] {stem}: missing columns {missing}  -  skipping")
             continue
 
         # Keep only available columns

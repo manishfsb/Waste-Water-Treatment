@@ -123,7 +123,7 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
     lasso.fit(X_tr_sc, y_train)
     mask = lasso.coef_ != 0
     if mask.sum() == 0:
-        print("    LassoCV: all features zeroed — keeping full set")
+        print("    LassoCV: all features zeroed  -  keeping full set")
         mask = np.ones(len(features), dtype=bool)
     n_in, n_kept = len(features), int(mask.sum())
     print(f"    LassoCV pre-screen → {n_kept}/{n_in} features kept", end="")
@@ -131,7 +131,7 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
         print(" (no pruning)")
     else:
         dropped = [f for f, m in zip(features, mask) if not m]
-        print(f" — dropped: {dropped}")
+        print(f"  -  dropped: {dropped}")
     selected = [f for f, m in zip(features, mask) if m]
     return mask, selected
 
@@ -212,7 +212,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     }
     preds = {}
 
-    # ── OLS full set (pre-LassoCV baseline — stored as OLS_full_*) ────────────
+    # ── OLS full set (pre-LassoCV baseline  -  stored as OLS_full_*) ────────────
     ols_full = LinearRegression()
     ols_full.fit(X_tr_sc, y_train)
     tr_ols_full = ols_full.predict(X_tr_sc)

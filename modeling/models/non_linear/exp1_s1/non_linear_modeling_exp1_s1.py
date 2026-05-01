@@ -126,7 +126,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     fig, ax = plt.subplots(figsize=(7, max(3, len(features) * 0.35)))
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS.get(model_tag, "#888"))
-    ax.set_title(f"{name} · {model_tag} — Feature Importance (run {run})", fontsize=11)
+    ax.set_title(f"{name} · {model_tag}  -  Feature Importance (run {run})", fontsize=11)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=150); plt.close(fig)
@@ -156,7 +156,7 @@ def train_one(experiment, name, subset_path, features, target,
     X_tr, y_tr = train[features].values, train[target].values
     X_te, y_te = test[features].values,  test[target].values
     n_in = len(features)
-    print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in} (no FS — inlet only)")
+    print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in} (no FS  -  inlet only)")
 
     print(f"    CV search ({n_in} features)...", end="", flush=True)
     gs = search_cls(estimator, param_grid,
@@ -216,7 +216,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
     run = _run_number(model_dir)
     print(f"\n{'='*60}")
-    print(f"{model_tag} — Exp1-Sub1  (run {run})")
+    print(f"{model_tag}  -  Exp1-Sub1  (run {run})")
     print(f"{'='*60}")
 
     results = []
@@ -249,7 +249,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    print("Non-Linear Modeling — Exp1-Sub1  (RF / GB / XGB)")
+    print("Non-Linear Modeling  -  Exp1-Sub1  (RF / GB / XGB)")
     print("Inlet-only feature set: 4 features, no Flow / Power / calendar\n")
 
     run_model("RF",  RandomForestRegressor(**RF_BASE),     RF_GRID,  GridSearchCV)

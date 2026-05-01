@@ -159,7 +159,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     fig, ax = plt.subplots(figsize=(7, max(3, len(features) * 0.35)))
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS.get(model_tag, "#888"))
-    ax.set_title(f"{name} · {model_tag} — Feature Importance (run {run})", fontsize=11)
+    ax.set_title(f"{name} · {model_tag}  -  Feature Importance (run {run})", fontsize=11)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=150); plt.close(fig)
@@ -192,7 +192,7 @@ def train_one(experiment, name, subset_path, features, target,
     print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in}")
 
     # Phase 1: initial CV search on full feature set
-    print(f"    Phase 1 — CV search (all {n_in} features)...", end="", flush=True)
+    print(f"    Phase 1  -  CV search (all {n_in} features)...", end="", flush=True)
     gs1 = search_cls(estimator, param_grid,
                      scoring="neg_root_mean_squared_error",
                      cv=TSCV, n_jobs=-1, refit=True,
@@ -207,7 +207,7 @@ def train_one(experiment, name, subset_path, features, target,
     print(f"  CV_RMSE={cv_rmse1:.3f}  R²_test_full={r2_test_full:+.3f}")
 
     # Phase 2: OOF permutation importance selection
-    print(f"    Phase 2 — OOF selection...", end="", flush=True)
+    print(f"    Phase 2  -  OOF selection...", end="", flush=True)
     oof_mask, selected_nl, norm_imps = _oof_perm_select(
         best1, X_tr, y_tr, features, TSCV, threshold=0.05)
     n_sel = int(oof_mask.sum())
@@ -220,7 +220,7 @@ def train_one(experiment, name, subset_path, features, target,
     X_te_sel = X_te[:, oof_mask]
 
     # Phase 3: refit on selected features
-    print(f"    Phase 3 — refit ({n_sel} features)...", end="", flush=True)
+    print(f"    Phase 3  -  refit ({n_sel} features)...", end="", flush=True)
     gs2 = search_cls(estimator, param_grid,
                      scoring="neg_root_mean_squared_error",
                      cv=TSCV, n_jobs=-1, refit=True,
@@ -291,7 +291,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
     run = _run_number(model_dir)
     print(f"\n{'='*60}")
-    print(f"{model_tag} — Exp2-Sub2  (run {run})")
+    print(f"{model_tag}  -  Exp2-Sub2  (run {run})")
     print(f"{'='*60}")
 
     results = []
@@ -324,7 +324,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    print("Non-Linear Modeling — Exp2-Sub2  (RF / GB / XGB)")
+    print("Non-Linear Modeling  -  Exp2-Sub2  (RF / GB / XGB)")
     print("21 features · cyclic calendar · OOF permutation importance FS (3-phase)\n")
 
     run_model("RF",  RandomForestRegressor(**RF_BASE),     RF_GRID,  GridSearchCV)

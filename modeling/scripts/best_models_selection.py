@@ -742,7 +742,7 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "<p style='color:var(--text-muted);font-size:12px'>",
         "Initially sorted within each target group by naive Test R² (descending). "
         "Click column headers to re-sort within groups - the Experiment column follows "
-        "canonical experiment order (Exp1 → Exp1-FS → Exp2-Sub1 → … → Phase11). "
+        "canonical experiment order (Exp1 → Exp1-FS → Exp2-Sub1 → ... → Phase11). "
         "Click ⓘ on any Gap-adj winner cell for selection reasoning.</p>",
         "<div class='sel-tbl-wrap'>",
         _render_perexp_table(per_exp_df),
@@ -854,11 +854,11 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    print("Loading unified results…")
+    print("Loading unified results...")
     df_all = load_all_data()
     print(f"  {len(df_all)} rows from {df_all['exp_key'].nunique()} experiments")
 
-    print("Applying selection rules…")
+    print("Applying selection rules...")
     global_df  = build_global(df_all)
     per_exp_df = build_per_experiment(df_all)
 

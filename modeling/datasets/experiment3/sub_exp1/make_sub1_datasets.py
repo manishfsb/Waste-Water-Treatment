@@ -1,8 +1,8 @@
 """
 make_sub1_datasets.py - Experiment 3 Sub-experiment 1: ADD-tier datasets.
 
-Builds one xlsx per target using the Exp2-Sub2 baseline features PLUS the
-ADD-tier features identified in the Phase 6 Feature Audit:
+Builds one xlsx per target using the Inlet + Secondary + COMMON baseline features (21 cols)
+PLUS the ADD-tier features identified in the Phase 6 Feature Audit:
 
   ADD-tier additions (MI >= 0.20, marginal row cost <= 20%):
     Aeration DO  (mg/L, Existing)
@@ -13,7 +13,7 @@ ADD-tier features identified in the Phase 6 Feature Audit:
     Aeration DO  (mg/L, New)
     Aeration SV30(ml/L, New)
 
-Baseline (Exp2-Sub2) features:
+Baseline features (21 per dataset):
   Grab:      Inlet pH/BOD/COD/TSS (Grab) + 10 Sec cols + Flow + Power Total
              + year + month_sin/cos + dow_sin/cos  = 21 features
   Composite: same with Composite inlets                              = 21 features
@@ -38,7 +38,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", ".."))
 RAW_FILE     = os.path.join(PROJECT_ROOT, "raw_data", "All_Years_Full.xlsx")
 OUT_DIR      = SCRIPT_DIR
 
-# ── Exp2-Sub2 baseline feature groups ─────────────────────────────────────────
+# ── Baseline feature groups (Inlet + Secondary + COMMON) ──────────────────────
 GRAB_INLET = [
     "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
     "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)",
@@ -103,7 +103,7 @@ def build_datasets():
 
         out_path = os.path.join(OUT_DIR, f"{name}.xlsx")
         subset.to_excel(out_path, index=False)
-        print(f"  Saved {name}.xlsx — {len(feature_cols)} features  "
+        print(f"  Saved {name}.xlsx  -  {len(feature_cols)} features  "
               f"(train={train_n}, test={test_n})")
 
 

@@ -1,7 +1,7 @@
 """
 linear_modeling_exp3_s1.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 datasets.
 
-Feature set: Exp2-Sub2 baseline (21 features) + ADD-tier features (7 Aeration cols)
+Feature set: Inlet + Secondary + COMMON (21 features) + ADD-tier aeration cols (7 cols)
 = 28 features per target. No feature selection applied.
 
   ADD tier: Aeration DO/MLSS/SV30/SVI (Existing) + pH (Existing) + DO/SV30 (New)
@@ -310,7 +310,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Linear Modeling — Exp3-S1 (ADD-tier, no FS) — Run {run}")
+    print(f"Linear Modeling  -  Exp3-S1 (ADD-tier, no FS)  -  Run {run}")
     print(f"Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElasticNet\n")
 
     all_results = []

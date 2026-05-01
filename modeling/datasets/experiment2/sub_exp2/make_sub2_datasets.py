@@ -39,7 +39,7 @@ STEMS = [
 def make_cyclic(stem: str, target: str):
     src = os.path.join(SRC_DIR, f"{stem}.xlsx")
     if not os.path.exists(src):
-        print(f"  WARNING: source not found — {src}")
+        print(f"  WARNING: source not found  -  {src}")
         return
 
     df = pd.read_excel(src, parse_dates=["Date"])

@@ -4,7 +4,7 @@ linear_modeling_exp1_s1.py
 Trains OLS, Ridge, and ElasticNet on Experiment 1 Sub-1 datasets: inlet
 features only, no Flow / Power / calendar columns.
 
-This is the minimal feature set — it answers the question: how well can inlet
+This is the minimal feature set  -  it answers the question: how well can inlet
 concentrations alone predict effluent quality, before adding any process or
 temporal context?
 
@@ -173,7 +173,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     }
     preds = {}
 
-    # ── OLS (all 4 features — no FS at this feature count) ────────────────────
+    # ── OLS (all 4 features  -  no FS at this feature count) ────────────────────
     ols = LinearRegression()
     ols.fit(X_tr_sc, y_train)
     tr_ols = ols.predict(X_tr_sc)
@@ -188,7 +188,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['OLS_test_R2']:+.3f} | "
           f"RMSE: {results['OLS_test_RMSE']:.3f}")
 
-    # ── Ridge (all 4 features — L2 handles everything) ────────────────────────
+    # ── Ridge (all 4 features  -  L2 handles everything) ────────────────────────
     ridge_gs = GridSearchCV(
         Ridge(), {"alpha": RIDGE_ALPHAS},
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
@@ -209,7 +209,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
           f"α={results['Ridge_alpha']}")
 
-    # ── ElasticNet (full set — its own L1 selection) ───────────────────────────
+    # ── ElasticNet (full set  -  its own L1 selection) ───────────────────────────
     elnet_gs = GridSearchCV(
         ElasticNet(max_iter=10000), ELNET_PARAM_GRID,
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,
@@ -316,7 +316,7 @@ def save_results(all_results: list, run: int):
 def main():
     first_path = DATASETS[0][2]
     run = get_run_number(first_path)
-    print(f"Exp1-Sub1 Linear Modeling — Inlet Only — Run {run}")
+    print(f"Exp1-Sub1 Linear Modeling  -  Inlet Only  -  Run {run}")
     print(f"Features: {len(EXP1S1_GRAB)} per target  (inlet concentrations only)\n")
 
     all_results = []

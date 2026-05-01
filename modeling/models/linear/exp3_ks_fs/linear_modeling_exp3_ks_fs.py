@@ -1,7 +1,7 @@
 """
 linear_modeling_exp3_ks_fs.py - OLS (LassoCV FS), Ridge, ElNet on Experiment 3 KS-FS.
 
-Reads kitchen-sink datasets from experiment3/sub_exp3/ for LassoCV screening, then:
+Reads all-features datasets from experiment3/sub_exp3/ for LassoCV screening, then:
   - OLS  : LassoCV selects features → rebuild from All_Years_Full with only those
            features (fewer missingness constraints → more usable rows) → final OLS fit.
            n_train / n_test in results reflect the expanded post-FS dataset.
@@ -9,7 +9,7 @@ Reads kitchen-sink datasets from experiment3/sub_exp3/ for LassoCV screening, th
   - Ridge: full KS feature set (L2 handles collinearity; no row expansion possible).
   - ElNet: full KS feature set (L1+L2 selects internally; n_selected logged).
 
-n_train_ks stores the original kitchen-sink row count for Ridge/ElNet reference.
+n_train_ks stores the original all-features row count for Ridge/ElNet reference.
 
 Experiment key: Exp3-KS-FS
 
@@ -54,20 +54,20 @@ ELNET_PARAM_GRID = {
 }
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
-def _e3s1(name):
-    # Both Sub-1 and Sub-2 read the same kitchen-sink datasets
+def _e3ks(name):
+    # Reads all-features (Sub-3) datasets
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp3", f"{name}.xlsx")
 
 
 DATASETS = [
-    ("Exp3-KS-FS", "E3KSFS_Grab_BOD", _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp3-KS-FS", "E3KSFS_Grab_COD", _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp3-KS-FS", "E3KSFS_Grab_TSS", _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp3-KS-FS", "E3KSFS_Grab_pH",  _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    ("Exp3-KS-FS", "E3KSFS_Comp_BOD", _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp3-KS-FS", "E3KSFS_Comp_COD", _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp3-KS-FS", "E3KSFS_Comp_TSS", _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp3-KS-FS", "E3KSFS_Comp_pH",  _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp3-S3-FS", "E3S3FS_Grab_BOD", _e3ks("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S3-FS", "E3S3FS_Grab_COD", _e3ks("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S3-FS", "E3S3FS_Grab_TSS", _e3ks("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S3-FS", "E3S3FS_Grab_pH",  _e3ks("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp3-S3-FS", "E3S3FS_Comp_BOD", _e3ks("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S3-FS", "E3S3FS_Comp_COD", _e3ks("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S3-FS", "E3S3FS_Comp_TSS", _e3ks("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S3-FS", "E3S3FS_Comp_pH",  _e3ks("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Feature inference ──────────────────────────────────────────────────────────
@@ -110,13 +110,13 @@ def _rebuild_from_raw(selected_features: list, target: str,
 
     After LassoCV selection, some high-missingness features are dropped. Rebuilding
     from raw without those columns unlocks rows previously lost to joint missingness,
-    giving OLS more training data than the kitchen-sink baseline.
+    giving OLS more training data than the all-features baseline.
 
     Returns (train_df, test_df). Returns (None, None) on missing file or columns.
     Ridge/ElNet do NOT call this because they use the full KS feature set.
     """
     if not os.path.exists(RAW_FILE):
-        print(f"    WARNING: raw file not found — {RAW_FILE}")
+        print(f"    WARNING: raw file not found  -  {RAW_FILE}")
         return None, None
 
     df = pd.read_excel(RAW_FILE, parse_dates=["Date"])
@@ -128,7 +128,7 @@ def _rebuild_from_raw(selected_features: list, target: str,
 
     missing_cols = [c for c in selected_features + [target] if c not in df.columns]
     if missing_cols:
-        print(f"    WARNING: columns not in raw data — {missing_cols}")
+        print(f"    WARNING: columns not in raw data  -  {missing_cols}")
         return None, None
 
     sub = df[["year"] + selected_features + [target]].dropna(
@@ -149,13 +149,13 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
     lasso.fit(X_tr_sc, y_train)
     mask = lasso.coef_ != 0
     if mask.sum() == 0:
-        print("    LassoCV: all features zeroed — keeping full set")
+        print("    LassoCV: all features zeroed  -  keeping full set")
         mask = np.ones(len(features), dtype=bool)
     n_in, n_kept = len(features), int(mask.sum())
     print(f"    LassoCV pre-screen → {n_kept}/{n_in} features kept", end="")
     dropped = [f for f, m in zip(features, mask) if not m]
     if dropped:
-        print(f" — dropped: {dropped}")
+        print(f"  -  dropped: {dropped}")
     else:
         print(" (no pruning)")
     selected = [f for f, m in zip(features, mask) if m]
@@ -236,7 +236,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
         print(f"  OLS rebuild: {len(train_df)}→{n_train_ols} train rows, "
               f"{len(test_df)}→{n_test_ols} test rows ({n_sel_ols} features)")
     else:
-        print(f"  OLS rebuild failed — falling back to KS subset")
+        print(f"  OLS rebuild failed  -  falling back to KS subset")
         n_train_ols = len(train_df)
         n_test_ols  = len(test_df)
         scaler_ols  = scaler
@@ -344,7 +344,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"α={results['ElNet_alpha']}, l1={results['ElNet_l1_ratio']} | "
           f"kept {results['ElNet_n_selected']}/{n_in} features")
 
-    _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet)
+    _plot_comparison(ds_id, run, y_test_ols, y_test, te_ols, te_ridge, te_elnet)
     return results, preds
 
 
@@ -352,21 +352,22 @@ def train_dataset(experiment, ds_id, path, features, target, run):
 MODEL_COLORS = {"OLS": "#E15252", "Ridge": "#4A90D9", "ElNet": "#5BAD6F"}
 
 
-def _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
-    fig.suptitle(f"{ds_id}  |  Test Set — LassoCV FS / Full  (run {run})",
+def _plot_comparison(ds_id, run, y_test_ols, y_test_lin, te_ols, te_ridge, te_elnet):
+    # OLS is evaluated on the rebuilt (expanded) dataset; Ridge/ElNet on the KS set.
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.suptitle(f"{ds_id}  |  Test Set  -  LassoCV FS / Full  (run {run})",
                  fontsize=12, fontweight="bold")
-    for ax, (lbl, preds_arr, col) in zip(axes, [
-        ("OLS (LassoCV FS)", te_ols,   MODEL_COLORS["OLS"]),
-        ("Ridge (full)",     te_ridge, MODEL_COLORS["Ridge"]),
-        ("ElNet (full)",     te_elnet, MODEL_COLORS["ElNet"]),
+    for ax, (lbl, y_t, preds_arr, col) in zip(axes, [
+        ("OLS (LassoCV FS)", y_test_ols,  te_ols,   MODEL_COLORS["OLS"]),
+        ("Ridge (full)",     y_test_lin,  te_ridge, MODEL_COLORS["Ridge"]),
+        ("ElNet (full)",     y_test_lin,  te_elnet, MODEL_COLORS["ElNet"]),
     ]):
-        ax.scatter(y_test, preds_arr, color=col, alpha=0.65, s=25, edgecolors="none")
-        lo = min(y_test.min(), preds_arr.min())
-        hi = max(y_test.max(), preds_arr.max())
+        ax.scatter(y_t, preds_arr, color=col, alpha=0.65, s=25, edgecolors="none")
+        lo = min(y_t.min(), preds_arr.min())
+        hi = max(y_t.max(), preds_arr.max())
         ax.plot([lo, hi], [lo, hi], "k--", linewidth=1.1)
-        ax.set_title(f"{lbl}\nR²={r2_score(y_test,preds_arr):+.3f}  "
-                     f"RMSE={_rmse(y_test,preds_arr):.3f}", fontsize=10)
+        ax.set_title(f"{lbl}\nR²={r2_score(y_t, preds_arr):+.3f}  "
+                     f"RMSE={_rmse(y_t, preds_arr):.3f}", fontsize=10)
         ax.set_xlabel("Actual", fontsize=10)
         if ax == axes[0]:
             ax.set_ylabel("Predicted", fontsize=10)
@@ -412,7 +413,7 @@ def save_results(all_results: list, run: int):
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     run = get_run_number()
-    print(f"Linear Modeling — Exp3-KS-FS (LassoCV FS on kitchen-sink features)")
+    print(f"Linear Modeling  -  Exp3-KS-FS (LassoCV FS on all-features features)")
     print(f"Run {run}  |  Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElNet\n")
 
     all_results = []
@@ -439,7 +440,7 @@ def main():
         save_results(all_results, run)
         _plot_r2_barchart(df_res, run)
 
-    print(f"\nExp3-KS-FS Linear Modeling — Run {run} complete")
+    print(f"\nExp3-KS-FS Linear Modeling  -  Run {run} complete")
 
 
 if __name__ == "__main__":

@@ -10,8 +10,8 @@ model-specific feature selection:
 Feature set: Exp2-Sub2 baseline (21) + ADD-tier (7 aeration) + CONSIDER-tier (4) = 32 features.
 
 Exp keys in results:
-  Exp3-S2-FS  — post-LassoCV OLS result  (primary)
-  OLS_full_*  — pre-LassoCV OLS columns stored for comparison
+  Exp3-S2-FS   -  post-LassoCV OLS result  (primary)
+  OLS_full_*   -  pre-LassoCV OLS columns stored for comparison
 
 Usage (from project root):
     .venv/bin/python3 modeling/models/linear/exp3_s2/linear_modeling_exp3_s2.py
@@ -107,13 +107,13 @@ def _lasso_select(X_tr_sc: np.ndarray, y_train: np.ndarray,
     lasso.fit(X_tr_sc, y_train)
     mask = lasso.coef_ != 0
     if mask.sum() == 0:
-        print("    LassoCV: all features zeroed — keeping full set")
+        print("    LassoCV: all features zeroed  -  keeping full set")
         mask = np.ones(len(features), dtype=bool)
     n_in, n_kept = len(features), int(mask.sum())
     print(f"    LassoCV pre-screen → {n_kept}/{n_in} features kept", end="")
     dropped = [f for f, m in zip(features, mask) if not m]
     if dropped:
-        print(f" — dropped: {dropped}")
+        print(f"  -  dropped: {dropped}")
     else:
         print(" (no pruning)")
     selected = [f for f, m in zip(features, mask) if m]
@@ -285,7 +285,7 @@ MODEL_COLORS = {"OLS": "#E15252", "Ridge": "#4A90D9", "ElNet": "#5BAD6F"}
 
 def _plot_comparison(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
-    fig.suptitle(f"{ds_id}  |  Test Set — LassoCV FS / Full  (run {run})",
+    fig.suptitle(f"{ds_id}  |  Test Set  -  LassoCV FS / Full  (run {run})",
                  fontsize=12, fontweight="bold")
     for ax, (lbl, preds_arr, col) in zip(axes, [
         ("OLS (LassoCV FS)", te_ols,   MODEL_COLORS["OLS"]),
@@ -344,7 +344,7 @@ def save_results(all_results: list, run: int):
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     run = get_run_number()
-    print(f"Linear Modeling — Exp3-S2 (LassoCV FS on ADD+CONSIDER features)")
+    print(f"Linear Modeling  -  Exp3-S2 (LassoCV FS on ADD+CONSIDER features)")
     print(f"Run {run}  |  Datasets: {len(DATASETS)}  |  Models: OLS, Ridge, ElNet\n")
 
     all_results = []
@@ -371,7 +371,7 @@ def main():
         save_results(all_results, run)
         _plot_r2_barchart(df_res, run)
 
-    print(f"\nExp3-S2 Linear Modeling — Run {run} complete")
+    print(f"\nExp3-S2 Linear Modeling  -  Run {run} complete")
 
 
 if __name__ == "__main__":

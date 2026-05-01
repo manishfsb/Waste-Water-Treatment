@@ -6,7 +6,7 @@ Exp2-Sub1 (Secondary Clarifier + COMMON, 15 features) has ~924 Grab /
 ~740 Composite training rows vs ~470/290 in Exp3-S2.
 
 Tests the ANN with richer features (secondary process data) and
-adequate sample size — the middle ground between Exp1 (simplest) and
+adequate sample size  -  the middle ground between Exp1 (simplest) and
 Exp3-S2 (richest, data-scarce).
 
 Outputs:

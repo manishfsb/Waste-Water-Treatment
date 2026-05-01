@@ -1,14 +1,14 @@
 """
 non_linear_modeling_exp3_ks_fs.py - RF, GB, XGB on Experiment 3 KS-FS (OOF FS).
 
-Reads the kitchen-sink datasets from experiment3/sub_exp3/ for Phase 1+2 only:
+Reads the all-features datasets from experiment3/sub_exp3/ for Phase 1+2 only:
   Phase 1 : CV search on all KS features → best estimator + full R²/RMSE
   Phase 2 : OOF permutation importance (threshold=0.05) → selected feature mask
   Phase 3 : rebuild dataset from All_Years_Full.xlsx using only selected features
              (fewer missingness constraints → more usable rows), then refit.
 
 Because Phase 3 rebuilds from raw data, n_train / n_test / n_features stored in
-results reflect the expanded post-FS dataset, NOT the original kitchen-sink row count.
+results reflect the expanded post-FS dataset, NOT the original all-features row count.
 n_train_ks stores the original KS count for reference.
 
 Experiment key: Exp3-KS-FS
@@ -71,14 +71,14 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 REGISTRY = [
-    ("Exp3-KS-FS", "grab_BOD", _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp3-KS-FS", "grab_COD", _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp3-KS-FS", "grab_TSS", _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp3-KS-FS", "grab_pH",  _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    ("Exp3-KS-FS", "comp_BOD", _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp3-KS-FS", "comp_COD", _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp3-KS-FS", "comp_TSS", _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp3-KS-FS", "comp_pH",  _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    ("Exp3-S3-FS", "grab_BOD", _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S3-FS", "grab_COD", _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S3-FS", "grab_TSS", _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S3-FS", "grab_pH",  _e3s1("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp3-S3-FS", "comp_BOD", _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S3-FS", "comp_COD", _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S3-FS", "comp_TSS", _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S3-FS", "comp_pH",  _e3s1("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 YEAR_COLOURS  = {2020: "#6BAED6", 2021: "#2171B5", 2022: "#74C476",
@@ -98,13 +98,13 @@ def _rebuild_from_raw(selected_features: list, target: str,
 
     After OOF selection, some high-missingness features are dropped. Rebuilding
     from raw without those columns unlocks rows that were previously lost due to
-    joint missingness, increasing n_train relative to the kitchen-sink baseline.
+    joint missingness, increasing n_train relative to the all-features baseline.
 
     Returns (train_df, test_df) DataFrames with columns [year] + selected_features
     + [target]. Returns (None, None) if RAW_FILE is missing or columns not found.
     """
     if not os.path.exists(RAW_FILE):
-        print(f"    WARNING: raw file not found — {RAW_FILE}")
+        print(f"    WARNING: raw file not found  -  {RAW_FILE}")
         return None, None
 
     df = pd.read_excel(RAW_FILE, parse_dates=["Date"])
@@ -116,7 +116,7 @@ def _rebuild_from_raw(selected_features: list, target: str,
 
     missing_cols = [c for c in selected_features + [target] if c not in df.columns]
     if missing_cols:
-        print(f"    WARNING: columns not in raw data — {missing_cols}")
+        print(f"    WARNING: columns not in raw data  -  {missing_cols}")
         return None, None
 
     sub = df[["year"] + selected_features + [target]].dropna(
@@ -181,7 +181,7 @@ def _plot_importance(plots_dir, name, model_tag, run, model, features):
     fig, ax = plt.subplots(figsize=(7, max(3, len(features) * 0.35)))
     ax.barh([features[i] for i in order], imps[order],
             color=MODEL_COLOURS.get(model_tag, "#888"))
-    ax.set_title(f"{name} · {model_tag} — Feature Importance (run {run})", fontsize=11)
+    ax.set_title(f"{name} · {model_tag}  -  Feature Importance (run {run})", fontsize=11)
     plt.tight_layout()
     path = os.path.join(plots_dir, f"{name}_{model_tag}_run_{run}_importance.png")
     fig.savefig(path, dpi=150); plt.close(fig)
@@ -213,7 +213,7 @@ def train_one(experiment, name, subset_path, features, target,
     print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in}")
 
     # Phase 1: CV search on full feature set
-    print(f"    Phase 1 — CV search ({n_in} features)...", end="", flush=True)
+    print(f"    Phase 1  -  CV search ({n_in} features)...", end="", flush=True)
     gs1 = search_cls(estimator, param_grid,
                      scoring="neg_root_mean_squared_error",
                      cv=TSCV, n_jobs=-1, refit=True,
@@ -228,7 +228,7 @@ def train_one(experiment, name, subset_path, features, target,
     print(f"  CV_RMSE={cv_rmse1:.3f}  R²_test_full={r2_test_full:+.3f}")
 
     # Phase 2: OOF permutation importance selection
-    print(f"    Phase 2 — OOF selection...", end="", flush=True)
+    print(f"    Phase 2  -  OOF selection...", end="", flush=True)
     oof_mask, selected_nl, norm_imps = _oof_perm_select(
         best1, X_tr, y_tr, features, TSCV, threshold=0.05)
     n_sel      = int(oof_mask.sum())
@@ -239,7 +239,7 @@ def train_one(experiment, name, subset_path, features, target,
 
     # Phase 3: rebuild dataset from All_Years_Full using only selected features,
     # then refit. This unlocks rows lost due to joint missingness of dropped features.
-    print(f"    Phase 3 — rebuilding from raw ({n_sel} features)...", end="", flush=True)
+    print(f"    Phase 3  -  rebuilding from raw ({n_sel} features)...", end="", flush=True)
     train_r, test_r = _rebuild_from_raw(selected_nl, target, TRAIN_YEARS, TEST_YEAR)
 
     if train_r is not None and len(train_r) > 0 and len(test_r) > 0:
@@ -251,7 +251,7 @@ def train_one(experiment, name, subset_path, features, target,
         n_test_final  = len(test_r)
         print(f"  n_train {len(train)}→{n_train_final}, n_test {len(test)}→{n_test_final}")
     else:
-        print(f"  rebuild failed — falling back to KS subset")
+        print(f"  rebuild failed  -  falling back to KS subset")
         X_tr_sel = X_tr[:, oof_mask]
         X_te_sel = X_te[:, oof_mask]
         y_tr_fit = y_tr
@@ -331,7 +331,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
     run = _run_number(model_dir)
     print(f"\n{'='*60}")
-    print(f"{model_tag} — Exp3-KS-FS (OOF FS on kitchen-sink, run {run})")
+    print(f"{model_tag}  -  Exp3-KS-FS (OOF FS on all-features, run {run})")
     print(f"{'='*60}")
 
     results = []
@@ -367,7 +367,7 @@ def run_model(model_tag: str, estimator, param_grid, search_cls):
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    print("Non-Linear Modeling — Exp3-KS-FS (RF / GB / XGB)")
+    print("Non-Linear Modeling  -  Exp3-KS-FS (RF / GB / XGB)")
     print("Kitchen-sink features · OOF permutation importance FS (3-phase)\n")
 
     run_model("RF",  RandomForestRegressor(**RF_BASE),     RF_GRID,  GridSearchCV)

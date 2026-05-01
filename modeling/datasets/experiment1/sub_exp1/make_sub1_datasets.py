@@ -2,7 +2,7 @@
 make_sub1_datasets.py
 
 Creates 8 Experiment 1 Sub-1 datasets: inlet features only, no Flow / Power /
-calendar columns.  This is the minimal predictor set — just what enters the
+calendar columns.  This is the minimal predictor set  -  just what enters the
 plant (Grab or Composite) predicts what leaves.
 
 Feature set per target (4 features):

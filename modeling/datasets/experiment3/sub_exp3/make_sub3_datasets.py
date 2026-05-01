@@ -1,5 +1,5 @@
 """
-make_sub3_datasets.py - Experiment 3 Sub-experiment 1: kitchen-sink datasets.
+make_sub3_datasets.py - Experiment 3 Sub-experiment 1: all-features datasets.
 
 Builds one xlsx per target using EVERY available feature from All_Years_Full
 except those explicitly excluded:
@@ -20,7 +20,7 @@ Resulting feature counts:
 Row counts are much lower than Exp2-Sub2 because including all features (especially
 Grit Classifier TSS, Primary COD/TSS, Inlet TKN/O&G/Fecal Coliform) causes joint
 missingness loss.  This illustrates WHY the Phase 6 Feature Suggestions Audit was
-necessary — see EDA report section s11 for tier assignments.
+necessary  -  see EDA report section s11 for tier assignments.
 
 Usage (from project root):
     .venv/bin/python3 modeling/datasets/experiment3/sub_exp3/make_sub3_datasets.py
@@ -94,8 +94,8 @@ def build_datasets():
     GRAB_KS = [c for c in df.columns if c not in grab_exclude]
     COMP_KS = [c for c in df.columns if c not in comp_exclude]
 
-    print(f"  Grab kitchen-sink features ({len(GRAB_KS)}): {GRAB_KS}")
-    print(f"  Comp kitchen-sink features ({len(COMP_KS)}): {COMP_KS}")
+    print(f"  Grab all-features features ({len(GRAB_KS)}): {GRAB_KS}")
+    print(f"  Comp all-features features ({len(COMP_KS)}): {COMP_KS}")
 
     CYCLIC = ["month_sin", "month_cos", "dow_sin", "dow_cos"]
 
@@ -115,7 +115,7 @@ def build_datasets():
 
         out_path = os.path.join(OUT_DIR, f"{name}.xlsx")
         subset.to_excel(out_path, index=False)
-        print(f"  Saved {name}.xlsx  — {len(feat_cols)} feature cols  "
+        print(f"  Saved {name}.xlsx   -  {len(feat_cols)} feature cols  "
               f"(train={train_n}, test={test_n})")
 
 

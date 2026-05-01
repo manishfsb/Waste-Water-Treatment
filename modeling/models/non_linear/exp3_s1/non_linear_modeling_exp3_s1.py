@@ -1,7 +1,7 @@
 """
 non_linear_modeling_exp3_s1.py - RF, GB, XGBoost on Experiment 3 Sub-1 datasets.
 
-Feature set: Exp2-Sub2 baseline (21 features) + ADD-tier features (7 Aeration cols)
+Feature set: Inlet + Secondary + COMMON (21 features) + ADD-tier aeration cols (7 cols)
 = 28 features per target. No feature selection applied.
 
   ADD tier: Aeration DO/MLSS/SV30/SVI (Existing) + pH (Existing) + DO/SV30 (New)
@@ -265,7 +265,7 @@ def main():
         run_model(tag, factory)
 
     print("\n" + "="*65)
-    print("  Exp3-S1 (ADD-tier) — all models complete.")
+    print("  Exp3-S1 (ADD-tier)  -  all models complete.")
     print(f"  Results in: {SCRIPT_DIR}/{{rf,gb,xgb}}/results.xlsx")
     print("="*65)
 

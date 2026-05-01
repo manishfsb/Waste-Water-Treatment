@@ -1,15 +1,14 @@
 """
-linear_modeling_exp3_s1.py - OLS, Ridge, and ElasticNet on Experiment 3 Sub-1 subsets.
+linear_modeling_exp3_ks.py - OLS, Ridge, and ElasticNet on Experiment 3 Kitchen-Sink subsets.
 
-Identical training protocol to all prior linear modeling scripts.
-Differences:
-  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py -
-    Exp2 Sub-2 baseline + ADD-tier candidate features per target)
-  - Feature list is inferred from each file's columns at load time
-  - Writes all artifacts to linear_modeling_exp3_s1/ (results.xlsx, models/, plots/)
+Feature set: all available process columns except leakage/redundant/meta
+(44 grab / 39 composite features). No feature selection applied.
+
+Datasets: experiment3/sub_exp3/ (built by make_sub3_datasets.py)
+Exp key: Exp3-KS
 
 Usage (from project root):
-    .venv/bin/python3 21-25/modeling/linear_modeling_exp3_s1/linear_modeling_exp3_s1.py
+    .venv/bin/python3 modeling/models/linear/exp3_ks/linear_modeling_exp3_ks.py
 """
 
 import os
@@ -62,22 +61,22 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
     ]
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
-def _e3s1(name):
+def _e3ks(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp3", f"{name}.xlsx")
 
 
 # (experiment_label, dataset_id, file_path, target)
 DATASETS = [
-    # ── Experiment 3 Sub-1 - Grab ─────────────────────────────────────────────
-    ("Exp3-KS", "Exp3KS_Grab_BOD", _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp3-KS", "Exp3KS_Grab_COD", _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp3-KS", "Exp3KS_Grab_TSS", _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp3-KS", "Exp3KS_Grab_pH",  _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    # ── Experiment 3 Sub-1 - Composite ───────────────────────────────────────
-    ("Exp3-KS", "Exp3KS_Comp_BOD", _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Exp3-KS", "Exp3KS_Comp_COD", _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Exp3-KS", "Exp3KS_Comp_TSS", _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Exp3-KS", "Exp3KS_Comp_pH",  _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    # ── Experiment 3 KS - Grab ───────────────────────────────────────────────
+    ("Exp3-S3", "Exp3S3_Grab_BOD", _e3ks("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S3", "Exp3S3_Grab_COD", _e3ks("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S3", "Exp3S3_Grab_TSS", _e3ks("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S3", "Exp3S3_Grab_pH",  _e3ks("grab_pH"),  "Effluent pH (Grab)"),
+    # ── Experiment 3 KS - Composite ──────────────────────────────────────────
+    ("Exp3-S3", "Exp3S3_Comp_BOD", _e3ks("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S3", "Exp3S3_Comp_COD", _e3ks("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S3", "Exp3S3_Comp_TSS", _e3ks("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S3", "Exp3S3_Comp_pH",  _e3ks("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 

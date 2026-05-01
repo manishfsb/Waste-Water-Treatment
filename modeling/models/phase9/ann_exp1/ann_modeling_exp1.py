@@ -6,7 +6,7 @@ Experiment 1 has ~1175 Grab / ~800 Composite training rows vs ~470/290 in Exp3-S
 Tests whether ANN failure was data-volume limited rather than architecture limited.
 
 Features: Inlet pH, Inlet BOD, Inlet COD, Inlet TSS + Flow, Power (9 features).
-Architecture: same as Phase 9 ANN — StandardScaler + MLPRegressor, GridSearchCV
+Architecture: same as Phase 9 ANN  -  StandardScaler + MLPRegressor, GridSearchCV
 (TimeSeriesSplit). Larger architectures added to param grid given more data.
 
 Outputs:

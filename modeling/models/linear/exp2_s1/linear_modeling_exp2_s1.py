@@ -165,7 +165,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
     }
     preds = {}
 
-    # ── OLS (full feature set — no LassoCV FS for baseline runs) ──────────────
+    # ── OLS (full feature set  -  no LassoCV FS for baseline runs) ──────────────
     ols = LinearRegression()
     ols.fit(X_tr_sc, y_train)
     tr_ols = ols.predict(X_tr_sc)
@@ -201,7 +201,7 @@ def train_dataset(experiment, ds_id, path, features, target, run):
           f"Test R²: {results['Ridge_test_R2']:+.3f} | "
           f"α={results['Ridge_alpha']}  ({n_in} features)")
 
-    # ── ElasticNet (full set — its own L1 selection) ───────────────────────────
+    # ── ElasticNet (full set  -  its own L1 selection) ───────────────────────────
     elnet_gs = GridSearchCV(
         ElasticNet(max_iter=10000), ELNET_PARAM_GRID,
         scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1, refit=True,

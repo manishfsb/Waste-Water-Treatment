@@ -15,7 +15,7 @@ After running this script the sub_exp2 datasets use COMMON_CYCLIC:
    "month_sin", "month_cos", "dow_sin", "dow_cos"]
 
 Re-run the downstream generators if needed:
-  - sub_exp1/make_sub1_datasets.py   (reads sub_exp2, unaffected — inlet cols only)
+  - sub_exp1/make_sub1_datasets.py   (reads sub_exp2, unaffected  -  inlet cols only)
   - sub_exp2_cyclic datasets are now redundant (sub_exp2 IS cyclic)
 
 Usage (from project root):

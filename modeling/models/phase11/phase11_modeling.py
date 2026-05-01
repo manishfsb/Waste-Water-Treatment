@@ -415,7 +415,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
     records = []
     for model_tag, builder in MODEL_BUILDERS:
-        print(f"    [{model_tag}] fitting…")
+        print(f"    [{model_tag}] fitting...")
         try:
             model, params = builder(X_train, y_train_t)
 

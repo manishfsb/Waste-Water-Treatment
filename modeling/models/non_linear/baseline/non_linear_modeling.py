@@ -237,7 +237,7 @@ def _oof_perm_select(fitted_estimator, X_tr: np.ndarray, y_tr: np.ndarray,
     mask      = norm_imps >= threshold
 
     if mask.sum() == 0:
-        print("    OOF selection: all features below threshold — keeping full set")
+        print("    OOF selection: all features below threshold  -  keeping full set")
         mask = np.ones(len(features), dtype=bool)
 
     selected = [f for f, m in zip(features, mask) if m]
@@ -332,7 +332,7 @@ def train_one(experiment, name, subset_path, features, target,
     print(f"    n_train={len(train)} n_test={len(test)} n_features={n_in}")
 
     # ── Phase 1: initial CV search on full feature set ────────────────────────
-    print(f"    Phase 1 — initial CV search (all {n_in} features)...",
+    print(f"    Phase 1  -  initial CV search (all {n_in} features)...",
           end="", flush=True)
     search1 = search_factory()
     search1.fit(X_tr, y_tr)
@@ -351,7 +351,7 @@ def train_one(experiment, name, subset_path, features, target,
     r2_gap_full    = round(r2_train_full - r2_test_full, 4)
 
     # ── Phase 2: OOF permutation importance feature selection ─────────────────
-    print(f"    Phase 2 — OOF permutation importance selection...",
+    print(f"    Phase 2  -  OOF permutation importance selection...",
           end="", flush=True)
     oof_mask, selected_nl, norm_imps = _oof_perm_select(
         best1, X_tr, y_tr, features, TSCV, threshold=0.05
@@ -368,7 +368,7 @@ def train_one(experiment, name, subset_path, features, target,
     X_te_sel = X_te[:, oof_mask]
 
     # ── Phase 3: refit final CV search on selected features only ─────────────
-    print(f"    Phase 3 — final CV search ({n_sel} features)...",
+    print(f"    Phase 3  -  final CV search ({n_sel} features)...",
           end="", flush=True)
     search2  = search_factory()
     search2.fit(X_tr_sel, y_tr)

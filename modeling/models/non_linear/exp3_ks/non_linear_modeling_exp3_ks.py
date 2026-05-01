@@ -1,15 +1,14 @@
 """
-non_linear_modeling_exp3_s1.py - RF, GB, XGBoost on Experiment 3 Sub-1 subsets.
+non_linear_modeling_exp3_ks.py - RF, GB, XGBoost on Experiment 3 Kitchen-Sink subsets.
 
-Identical training protocol to non_linear_modeling_baseline/non_linear_modeling.py.
-Differences:
-  - Reads from experiment3_s1/data/ (subsets built by build_exp3_subsets.py:
-    Exp2 Sub-2 baseline features + ADD-tier candidate features per target)
-  - Feature list is inferred from each file's columns at load time
-  - Writes all artifacts to non_linear_modeling_exp3_s1/{rf,gb,xgb}/
+Feature set: all available process columns except leakage/redundant/meta
+(44 grab / 39 composite features). No feature selection applied.
+
+Datasets: experiment3/sub_exp3/ (built by make_sub3_datasets.py)
+Exp key: Exp3-KS
 
 Usage (from project root):
-    .venv/bin/python3 21-25/modeling/non_linear_modeling_exp3_s1/non_linear_modeling_exp3_s1.py
+    .venv/bin/python3 modeling/models/non_linear/exp3_ks/non_linear_modeling_exp3_ks.py
 """
 
 import os
@@ -31,7 +30,7 @@ from xgboost import XGBRegressor
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
 
-def _e3s1(name):
+def _e3ks(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment3", "sub_exp3", f"{name}.xlsx")
 
 # ── Splits ─────────────────────────────────────────────────────────────────────
@@ -66,24 +65,24 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
 # ── Registry ───────────────────────────────────────────────────────────────────
 # (experiment_label, model_name, subset_path, target)
 REGISTRY = [
-    # Experiment 3 Sub-1 - Grab
-    ("Experiment 3 Sub-1", "grab_BOD",
-     _e3s1("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_COD",
-     _e3s1("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_TSS",
-     _e3s1("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Experiment 3 Sub-1", "grab_pH",
-     _e3s1("grab_pH"),  "Effluent pH (Grab)"),
-    # Experiment 3 Sub-1 - Composite
-    ("Experiment 3 Sub-1", "comp_BOD",
-     _e3s1("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_COD",
-     _e3s1("comp_COD"), "Effluent COD (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_TSS",
-     _e3s1("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
-    ("Experiment 3 Sub-1", "comp_pH",
-     _e3s1("comp_pH"),  "Effluent pH (Composite)"),
+    # Experiment 3 KS - Grab
+    ("Exp3-S3", "grab_BOD",
+     _e3ks("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
+    ("Exp3-S3", "grab_COD",
+     _e3ks("grab_COD"), "Effluent COD (mg/L, Grab)"),
+    ("Exp3-S3", "grab_TSS",
+     _e3ks("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
+    ("Exp3-S3", "grab_pH",
+     _e3ks("grab_pH"),  "Effluent pH (Grab)"),
+    # Experiment 3 KS - Composite
+    ("Exp3-S3", "comp_BOD",
+     _e3ks("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp3-S3", "comp_COD",
+     _e3ks("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp3-S3", "comp_TSS",
+     _e3ks("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp3-S3", "comp_pH",
+     _e3ks("comp_pH"),  "Effluent pH (Composite)"),
 ]
 
 # ── Colours ────────────────────────────────────────────────────────────────────
