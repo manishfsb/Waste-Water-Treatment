@@ -72,44 +72,51 @@ USEFUL_THRESH = 0.03
 
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
-    "Exp1-Sub1": "E1-S1",
+    "Exp1-Sub1": "E1-SE1",
     "Exp1": "Exp1",            "Exp1-FS": "Exp1-FS",  "Exp1-Cyclic": "E1-Cyc",
-    "Exp2-Sub1": "E2-S1-Comb", "Exp2-Sub1-FS": "E2-S1-FS",
-    "Exp2-Sub1-Clr": "E2-S1-Clr",
-    "Exp2-Sub1-Sed": "E2-S1-Sed",
-    "Exp2-Sub2": "E2-S2",      "Exp2-Sub2-FS": "E2-S2-FS",
-    "Exp2-Sub2-Cyc": "E2-S2",
-    "Exp3-S1": "E3-S1",
-    "Exp3-S2-FS": "E3-S2-FS",
-    "Exp3-S3": "E3-S3",        "Exp3-S3-FS": "E3-S3-FS",
-    "Exp4-S1": "E4-S1",
-    "Exp4-S2": "E4-S2",
+    "Exp2-Sub1": "E2-SE1-Comb", "Exp2-Sub1-FS": "E2-SE1-FS",
+    "Exp2-Sub1-Clr": "E2-SE1-Clr",
+    "Exp2-Sub1-Sed": "E2-SE1-Sed",
+    "Exp2-Sub2": "E2-SE2",      "Exp2-Sub2-FS": "E2-SE2-FS",
+    "Exp2-Sub2-Cyc": "E2-SE2",
+    "Exp3-S1": "E3-SE1",
+    "Exp3-S2": "E3-SE2",        "Exp3-S2-FS": "E3-SE2-FS",
+    "Exp3-S3": "E3-SE3",        "Exp3-S3-FS": "E3-SE4-FS",
+    "Exp4-S1": "E4-SE1",
+    "Exp4-S2": "E4-SE2",
+    "Exp5-S1": "E5-SE1",        "Exp5-S1-FS": "E5-SE1-FS",
+    "Exp5-S2": "E5-SE2",        "Exp5-S2-FS": "E5-SE2-FS",
     "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
     "Phase9-Stacking": "P9-Stack",
-    "ANN-Exp1": "ANN-E1", "ANN-Exp2-Sub1": "ANN-E2-S1", "ANN-Exp2-Sub2": "ANN-E2-S2",
+    "ANN-Exp1": "ANN-E1", "ANN-Exp2-Sub1": "ANN-E2-SE1", "ANN-Exp2-Sub2": "ANN-E2-SE2",
     "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
     "Phase11": "P11",
 }
 
 # Longer descriptive labels used only in the "Source" column of best-model tables.
 EXP_SOURCE_LABELS = {
-    "Exp1-Sub1":      "Exp1 S1  -  Inlet only",
-    "Exp1":           "Exp1 S2  -  Inlet+COMMON",
-    "Exp1-FS":        "Exp1 S2 FS",
-    "Exp1-Cyclic":    "Exp1 S2 (cyclic enc.)",
-    "Exp2-Sub1-Clr":  "Exp2 S1  -  Clarifier",
-    "Exp2-Sub1-Sed":  "Exp2 S1  -  Sedimentation",
-    "Exp2-Sub1":      "Exp2 S1  -  Combined",
-    "Exp2-Sub1-FS":   "Exp2 S1 FS",
-    "Exp2-Sub2":      "Exp2 S2",
-    "Exp2-Sub2-FS":   "Exp2 S2 FS",
-    "Exp2-Sub2-Cyc":  "Exp2 S2",
-    "Exp3-S1":        "Exp3 S1  -  ADD-tier",
-    "Exp3-S2-FS":     "Exp3 S2  -  ADD+CONSIDER (FS)",
-    "Exp3-S3":        "Exp3 S3 - All Features",
-    "Exp3-S3-FS":     "Exp3 S3-FS - All Features",
-    "Exp4-S1":        "Exp4 S1",
-    "Exp4-S2":        "Exp4 S2",
+    "Exp1-Sub1":      "Exp1 SE1  -  Inlet only",
+    "Exp1":           "Exp1 SE2  -  Inlet+COMMON",
+    "Exp1-FS":        "Exp1 SE3-FS",
+    "Exp1-Cyclic":    "Exp1 SE2 (cyclic enc.)",
+    "Exp2-Sub1-Clr":  "Exp2 SE1  -  Clarifier",
+    "Exp2-Sub1-Sed":  "Exp2 SE1  -  Sedimentation",
+    "Exp2-Sub1":      "Exp2 SE1  -  Combined",
+    "Exp2-Sub1-FS":   "Exp2 SE1-FS",
+    "Exp2-Sub2":      "Exp2 SE2",
+    "Exp2-Sub2-FS":   "Exp2 SE3-FS",
+    "Exp2-Sub2-Cyc":  "Exp2 SE2",
+    "Exp3-S1":        "Exp3 SE1  -  ADD-tier",
+    "Exp3-S2":        "Exp3 SE2  -  ADD+CONSIDER (no FS)",
+    "Exp3-S2-FS":     "Exp3 SE2  -  ADD+CONSIDER (FS)",
+    "Exp3-S3":        "Exp3 SE3 - All Features",
+    "Exp3-S3-FS":     "Exp3 SE4-FS - All Features",
+    "Exp4-S1":        "Exp4 SE1",
+    "Exp4-S2":        "Exp4 SE2",
+    "Exp5-S1":        "Exp5 SE1  -  Composite + Grab Inlet",
+    "Exp5-S1-FS":     "Exp5 SE1-FS  -  Composite + Grab Inlet (FS)",
+    "Exp5-S2":        "Exp5 SE2  -  Grab + Composite Inlet",
+    "Exp5-S2-FS":     "Exp5 SE2-FS  -  Grab + Composite Inlet (FS)",
     "Phase9-ANN":     "Phase 9  -  ANN",
     "Phase9-Voting":  "Phase 9  -  Voting",
     "Phase9-Stacking":"Phase 9  -  Stacking",
@@ -132,6 +139,8 @@ MDAE_TARGETS = {
 
 # Dataset directory fragment → exp_key (order matters: most-specific first)
 _DS_EXP_MAP = [
+    ("experiment5/sub_exp2",                            "Exp5-S2"),
+    ("experiment5/sub_exp1",                            "Exp5-S1"),
     ("experiment4/sub_exp2",                            "Exp4-S2"),
     ("experiment4/sub_exp1",                            "Exp4-S1"),
     ("experiment3/sub_exp3/feature_selected_datasets", "Exp3-S3-FS"),
@@ -155,7 +164,7 @@ _PRED_MODEL_MAP = {
     "ANN": "ANN", "Voting": "Voting", "Stacking": "Stacking",
 }
 
-# Phase 9 models live inside Exp3-S2 files but belong to a different exp_key
+# Phase 9 models live inside Exp3-SE2 files but belong to a different exp_key
 _PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phase9-Stacking"}
 
 FEATURE_DESCRIPTIONS = {
@@ -229,7 +238,7 @@ FEATURE_DESCRIPTIONS = {
     "Exp2-Sub1-Sed": {
         "label": "Secondary Sedimentation + COMMON (12 features)",
         "features": "Sec Sed pH, TSS, BOD, COD, RAS(New) + Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
-        "rationale": "Isolate the Sedimentation group  -  paired with Exp2-Sub1-Clr to test "
+        "rationale": "Isolate the Sedimentation group  -  paired with Exp2-SE1-Clr to test "
                      "whether one group dominates the other.",
     },
     "Exp2-Sub2-Cyc": {
@@ -247,15 +256,26 @@ FEATURE_DESCRIPTIONS = {
                     "Aeration pH (Existing) + Aeration DO/SV30 (New)  -  7 extra columns. "
                     "Grab: ~816 train rows / 202 test. Composite: ~632 train / 181 test.",
         "rationale": "Expand with aeration basin data that shows high mutual information "
-                     "and low missingness cost on top of the Exp2-S2 baseline. "
+                     "and low missingness cost on top of the Exp2-SE2 baseline. "
                      "No feature selection applied  -  tests the full ADD-tier set.",
+    },
+    "Exp3-S2": {
+        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (32 features, no FS)",
+        "features": "Exp2-S2 + ADD-tier + CONSIDER-tier (Aeration SVI New, Power GE, "
+                    "Inlet Total Coliform, Primary Sludge Totalizer)  -  32 features total. "
+                    "No feature selection applied; full feature set used for all models. "
+                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-SE1). "
+                    "Composite: ~423 train / 152 test.",
+        "rationale": "Baseline (no FS) for the ADD+CONSIDER-tier feature set. "
+                     "Tests the raw performance of 32 features without model-specific selection, "
+                     "enabling a direct comparison with the FS variant (Exp3-S2-FS).",
     },
     "Exp3-S2-FS": {
         "label": "Exp2-S2 + ADD + CONSIDER-tier Features with FS (32 features → 5 - 24 selected)",
         "features": "Exp2-S2 + ADD-tier + CONSIDER-tier (Aeration SVI New, Power GE, "
                     "Inlet Total Coliform, Primary Sludge Totalizer)  -  32 features total. "
                     "Feature selection: OLS uses LassoCV; trees use OOF permutation importance. "
-                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-S1). "
+                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-SE1). "
                     "Composite: ~423 train / 152 test.",
         "rationale": "Tests whether CONSIDER-tier features (higher missingness cost) add value "
                      "when combined with model-specific feature selection. Key trade-off: "
@@ -274,7 +294,7 @@ FEATURE_DESCRIPTIONS = {
     },
     "Exp3-S3-FS": {
         "label": "All remaining features  -  all features with model-specific FS",
-        "features": "Same 44/39 all features as Exp3-S3, with model-specific "
+        "features": "Same 44/39 all features as Exp3-SE3, with model-specific "
                     "feature selection applied inside training scripts: "
                     "OLS uses LassoCV; trees use OOF permutation importance (threshold=0.05). "
                     "Selected: 2 - 24 features per target (OLS collapses to 1 - 3 on composites).",
@@ -284,29 +304,29 @@ FEATURE_DESCRIPTIONS = {
                      "permutation importance estimates are noisy at this scale.",
     },
     "Exp4-S1": {
-        "label": "Exp3-S2 minus Derived/Redundant Columns (12-19 features)",
-        "features": "Exp3-S2 feature set with three redundant groups removed: "
+        "label": "Exp3-SE2 minus Derived/Redundant Columns (12-19 features)",
+        "features": "Exp3-SE2 feature set with three redundant groups removed: "
                     "(1) Aeration SVI (Existing + New) - derived from SV30/MLSS, zero independent information; "
                     "(2) All (New) aeration tank columns - cross-tank r=0.74-0.84, Existing tank wins on every BOD/COD/TSS target; "
                     "(3) All Sec Sedimentation columns - cross-stage r=0.69-0.87, Sec Clarifier wins consistently. "
                     "Remaining: Inlet, COMMON, Existing aeration (MLSS, SV30, DO, pH), Sec Clarifier (pH, TSS, BOD, COD, RAS).",
         "rationale": "Hypothesis: removing collinear and derived features reduces variance inflation and "
-                     "improves generalisation, especially on composite targets where Exp3-S2 GB/XGB catastrophically "
+                     "improves generalisation, especially on composite targets where Exp3-SE2 GB/XGB catastrophically "
                      "overfit. Phase 1 of Exp4 - Phase 2 will address within-group VIF (MLSS vs SV30, "
                      "Sec Clarifier inter-correlations).",
     },
     "Exp4-S2": {
-        "label": "Exp4-S1 + Iterative VIF Pruning (threshold=10) - 5-10 features",
-        "features": "Starting from the Exp4-S1 feature pool, automated iterative VIF pruning "
+        "label": "Exp4-SE1 + Iterative VIF Pruning (threshold=10) - 5-10 features",
+        "features": "Starting from the Exp4-SE1 feature pool, automated iterative VIF pruning "
                     "(drop highest-VIF feature, recompute, repeat until all VIF ≤ 10) run on "
                     "training rows only. Dropped per target: all pH features (Inlet pH, "
                     "Sec Clarifier pH, Aeration pH, Primary Clarifier pH - VIF 600-2400), "
                     "Inlet BOD/COD (VIF 18-34), MLSS (SV30 survives as biomass proxy), "
                     "one of Flow/Power Total. "
                     "Temporal features (month, day_of_week, year) always retained, excluded from VIF. "
-                    "Row gain vs Exp4-S1: +47 to +293 rows (dropped features had high missingness).",
+                    "Row gain vs Exp4-SE1: +47 to +293 rows (dropped features had high missingness).",
         "rationale": "Hypothesis: automated, data-driven VIF pruning removes intra-group "
-                     "multicollinearity more precisely than manual feature removal (Exp4-S1), "
+                     "multicollinearity more precisely than manual feature removal (Exp4-SE1), "
                      "yielding a well-conditioned feature matrix where Ridge/ElNet regularisation "
                      "can work effectively and tree model overfitting may reduce.",
     },
@@ -321,35 +341,35 @@ FEATURE_DESCRIPTIONS = {
                      "limited. Same architecture as Phase 9 ANN; only dataset changed.",
     },
     "ANN-Exp2-Sub1": {
-        "label": "Exp2-Sub1 Features → ANN (Secondary + COMMON, 15 features)",
+        "label": "Exp2-SE1 Features → ANN (Secondary + COMMON, 15 features)",
         "features": "Sec Clarifier pH/TSS/BOD/COD/RAS, Sec Sed pH/TSS/BOD/COD/RAS + "
                     "Flow, Power. StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
                     "~924 Grab / ~740 Composite training rows.",
         "rationale": "Middle ground: richer features (secondary process data) with ~2× the "
-                     "samples of Exp3-S2. Tests whether secondary process data adds meaningful "
+                     "samples of Exp3-SE2. Tests whether secondary process data adds meaningful "
                      "ANN signal at adequate sample size.",
     },
     "ANN-Exp2-Sub2": {
-        "label": "Exp2-Sub2 Features → ANN (Inlet + Secondary + COMMON, 19 features)",
+        "label": "Exp2-SE2 Features → ANN (Inlet + Secondary + COMMON, 19 features)",
         "features": "Inlet (Grab/Composite) + Sec Clarifier + Sec Sed + Flow, Power. "
                     "StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
                     "~920 Grab / ~733 Composite training rows.",
         "rationale": "Combined inlet + secondary features at twice the sample count of "
-                     "Exp3-S2 ANN. The most direct comparison: same feature scope as "
-                     "Exp3-S2 baseline but without the CONSIDER-tier columns that reduced "
+                     "Exp3-SE2 ANN. The most direct comparison: same feature scope as "
+                     "Exp3-SE2 baseline but without the CONSIDER-tier columns that reduced "
                      "training rows via missingness.",
     },
     "Phase9-ANN": {
-        "label": "Exp3-S2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
-        "features": "Same as Exp3-S2 (25 features), StandardScaler + MLPRegressor, "
+        "label": "Exp3-SE2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
+        "features": "Same as Exp3-SE2 (25 features), StandardScaler + MLPRegressor, "
                     "GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit)",
         "rationale": "Tests whether a neural network can outperform regularised linear "
                      "and tree models. Key challenge: ~470 training samples may be "
                      "insufficient for a multi-layer perceptron.",
     },
     "Phase9-Voting": {
-        "label": "Exp3-S2 Features → Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
-        "features": "Same as Exp3-S2 (25 features per target); VotingRegressor averaging "
+        "label": "Exp3-SE2 Features → Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
+        "features": "Same as Exp3-SE2 (25 features per target); VotingRegressor averaging "
                     "ElasticNet, RandomForest, and XGBoost with equal weights. "
                     "Replaces original Ridge+ElNet+RF - Ridge removed because it duplicates "
                     "ElNet's L2 regularisation (redundant voter); XGBoost added for "
@@ -361,8 +381,8 @@ FEATURE_DESCRIPTIONS = {
                      "Three structurally distinct inductive biases.",
     },
     "Phase9-Stacking": {
-        "label": "Exp3-S2 Features → Stacking (ElNet + RF + XGB → Ridge meta, walk-forward OOF)",
-        "features": "Same as Exp3-S2 (25 features); walk-forward stacking with "
+        "label": "Exp3-SE2 Features → Stacking (ElNet + RF + XGB → Ridge meta, walk-forward OOF)",
+        "features": "Same as Exp3-SE2 (25 features); walk-forward stacking with "
                     "TimeSeriesSplit(n_splits=5) OOF generation. "
                     "Base: ElNet + RF + XGBoost. Meta-learner: Ridge (tuned alpha). "
                     "First ~1/6 of training samples excluded from meta-learner training "
@@ -375,8 +395,8 @@ FEATURE_DESCRIPTIONS = {
                      "Approx. 83% OOF coverage across all targets.",
     },
     "Phase10-FE": {
-        "label": "Exp3-S2 + Full Feature Engineering - All Targets (37-52 features)",
-        "features": "Exp3-S2 base + log1p transforms of skewed cols + pairwise "
+        "label": "Exp3-SE2 + Full Feature Engineering - All Targets (37-52 features)",
+        "features": "Exp3-SE2 base + log1p transforms of skewed cols + pairwise "
                     "interaction terms (key pairs) + IQR outlier indicator flags; "
                     "applied uniformly to all 8 targets",
         "rationale": "Feature engineering to capture non-linear relationships and "
@@ -384,17 +404,55 @@ FEATURE_DESCRIPTIONS = {
                      "helps. Hypothesis: log transforms help BOD/COD/TSS (right-skewed).",
     },
     "Phase10b-FE": {
-        "label": "Selective Feature Engineering - Grab: Full FE / Composite: Base Exp3-S2",
+        "label": "Selective Feature Engineering - Grab: Full FE / Composite: Base Exp3-SE2",
         "features": "Grab targets: full FE (37-52 features each). "
-                    "Composite targets: base Exp3-S2 features only (17-27 features) "
+                    "Composite targets: base Exp3-SE2 features only (17-27 features) "
                     "- no engineering applied to avoid overfitting on small composite n.",
         "rationale": "Addresses Phase 10 finding: FE caused severe overfitting on "
                      "composite datasets (n_train ≈ 290). Selective approach preserves "
                      "FE gains on grab targets while stabilising composites.",
     },
+    "Exp5-S1": {
+        "label": "Composite Targets: Composite Inlet + Grab Inlet + Secondary + ADD-tier (32 features)",
+        "features": "COMP_INLET (4) + GRAB_INLET (4) + Secondary Clarifier + Sedimentation (10) "
+                    "+ Flow, Power, year, month_sin/cos, dow_sin/cos (7) "
+                    "+ ADD-tier aeration: DO/MLSS/SV30/SVI/pH (Existing) + DO/SV30 (New) (7) = 32 features. "
+                    "Targets: Composite BOD, COD, TSS, pH only.",
+        "rationale": "Tests whether grab inlet concentrations (same-day co-measurement) provide "
+                     "complementary signal for composite effluent prediction. Row cost: ~22.7% "
+                     "(816 → 629 train rows) due to joint grab + composite sampling availability.",
+    },
+    "Exp5-S2": {
+        "label": "Grab Targets: Grab Inlet + Composite Inlet + Secondary + ADD-tier (32 features)",
+        "features": "GRAB_INLET (4) + COMP_INLET (4) + Secondary Clarifier + Sedimentation (10) "
+                    "+ Flow, Power, year, month_sin/cos, dow_sin/cos (7) "
+                    "+ ADD-tier aeration: DO/MLSS/SV30/SVI/pH (Existing) + DO/SV30 (New) (7) = 32 features. "
+                    "Targets: Grab BOD, COD, TSS, pH only.",
+        "rationale": "Tests whether composite inlet concentrations (integrated daily sample) provide "
+                     "complementary signal for grab effluent prediction. Row cost: ~38.2% "
+                     "(1021 → 631 train rows) - unavoidable due to joint grab + composite sampling days.",
+    },
+    "Exp5-S1-FS": {
+        "label": "Exp5-SE1 with Model-Specific Feature Selection (32 features → selected)",
+        "features": "Same 32-feature set as Exp5-S1 (COMP_INLET + GRAB_INLET + Secondary + ADD-tier). "
+                    "Feature selection applied: OLS uses LassoCV; trees use OOF permutation importance "
+                    "(threshold=0.05). Composite targets only. Same training rows as Exp5-S1.",
+        "rationale": "Tests whether model-specific FS can improve generalisation on the 32-feature "
+                     "Exp5-SE1 dataset (composite targets + cross-type grab inlet columns). "
+                     "Paired with Exp5-S1 (full feature set) for direct comparison.",
+    },
+    "Exp5-S2-FS": {
+        "label": "Exp5-SE2 with Model-Specific Feature Selection (32 features → selected)",
+        "features": "Same 32-feature set as Exp5-S2 (GRAB_INLET + COMP_INLET + Secondary + ADD-tier). "
+                    "Feature selection applied: OLS uses LassoCV; trees use OOF permutation importance "
+                    "(threshold=0.05). Grab targets only. Same training rows as Exp5-S2.",
+        "rationale": "Tests whether model-specific FS can improve generalisation on the 32-feature "
+                     "Exp5-SE2 dataset (grab targets + cross-type composite inlet columns). "
+                     "Paired with Exp5-S2 (full feature set) for direct comparison.",
+    },
     "Phase11": {
-        "label": "Exp3-S2 + Temporal Lags + log1p Target Transform (50-58 features)",
-        "features": "Base Exp3-S2 features + lag 1/3/7-day + 7-day calendar rolling mean "
+        "label": "Exp3-SE2 + Temporal Lags + log1p Target Transform (50-58 features)",
+        "features": "Base Exp3-SE2 features + lag 1/3/7-day + 7-day calendar rolling mean "
                     "applied to inlet + Flow + Power columns only (~50-58 total features per target). "
                     "BOD/COD/TSS targets log1p-transformed; pH untransformed. "
                     "Back-transform via Duan smearing: expm1(ŷ) × mean(exp(training residuals)).",
@@ -409,82 +467,102 @@ FEATURE_DESCRIPTIONS = {
 EXP_INTRO = {
     "Exp1": (
         "Experiment 1 investigates inlet-feature prediction across two feature-set scopes. "
-        "<strong>Sub-experiment 1</strong> uses only the 4 inlet concentration columns  -  the "
-        "absolute floor. <strong>Sub-experiment 2</strong> adds Flow, Power, and cyclic calendar "
+        "<strong>SE1</strong> uses only the 4 inlet concentration columns  -  the "
+        "absolute floor. <strong>SE2</strong> adds Flow, Power, and cyclic calendar "
         "features (month/dow encoded as sin/cos projections), raising the count to 11. "
         "All datasets use cyclic calendar encoding as the standard going forward. "
         "Feature selection is <strong>model-specific</strong> and built into each training run: "
         "OLS uses LassoCV pre-screening, Ridge regularises over the full set (no pruning), "
         "ElNet applies L1 selection internally, and tree models (RF, GB, XGB) use OOF "
         "permutation importance to retain features above a 5% relative importance threshold. "
-        "The <em>Sub-experiment Comparison</em> panel at the bottom shows the full-feature vs "
+        "The <em>SE Comparison</em> panel at the bottom shows the full-feature vs "
         "feature-selected breakdown per model and target with magnitude-weighted deltas."
     ),
     "Exp2": (
         "Experiment 2 expands the feature set from inlet-only to include secondary treatment data. "
-        "<strong>Sub-experiment 1</strong> tests three secondary-only feature scopes side by side: "
+        "<strong>SE1</strong> tests three secondary-only feature scopes side by side: "
         "Sec Clarifier features alone (10 features), Sec Sedimentation features alone (10 features), "
         "and both groups combined (15 features). The split variants test whether the two secondary "
         "groups carry distinct signal or are interchangeable. "
-        "<strong>Sub-experiment 2</strong> adds inlet concentrations to the combined secondary set "
+        "<strong>SE2</strong> adds inlet concentrations to the combined secondary set "
         "(21 features) and applies model-specific feature selection "
         "(OLS: LassoCV; trees: OOF permutation importance)."
     ),
     "Exp3": (
-        "Experiment 3 starts from the <strong>Exp2-Sub2 baseline</strong> (Inlet + Secondary + COMMON, "
+        "Experiment 3 starts from the <strong>Exp2-SE2 baseline</strong> (Inlet + Secondary + COMMON, "
         "21 features) and adds features in three steps guided by the "
         "<a href='../../eda/eda_full_report.html#s11' target='_blank' style='color:#4A90D9'>"
         "EDA Feature Audit</a>. "
         "<br><br>"
-        "<strong>Sub-experiment 1 (ADD-tier, 28 features)</strong> adds the seven aeration-basin "
+        "<strong>SE1 (ADD-tier, 28 features)</strong> adds the seven aeration-basin "
         "measurements that scored MI ≥ 0.20 with marginal row cost ≤ 20 %: "
         "Aeration DO/MLSS/SV30/SVI (Existing), Aeration pH (Existing), Aeration DO/SV30 (New). "
         "Grab training rows stay near ~816  -  no meaningful row loss. No feature selection applied. "
         "<br><br>"
-        "<strong>Sub-experiment 2 (ADD + CONSIDER-tier, 32 features, with model-specific FS)</strong> "
+        "<strong>SE2 (ADD + CONSIDER-tier, 32 features, with model-specific FS)</strong> "
         "adds four CONSIDER-tier features (Aeration SVI New, Power GE, Inlet Total Coliform, "
         "Primary Sludge Totalizer). Inlet Total Coliform alone causes ~347 row loss (816 → 469 Grab). "
         "Feature selection (OLS: LassoCV; trees: OOF permutation importance) is applied inside "
         "training scripts to identify the most predictive subset. "
         "<br><br>"
-        "<strong>Sub-experiment 3 (All remaining features, 44/39, with and without FS)</strong> "
+        "<strong>SE3 (All remaining features, 44/39, with and without FS)</strong> "
         "includes every non-leakage column  -  the <em>all-features</em> upper bound. "
-        "Joint dropna reduces Grab training to ~130 rows (74 % loss vs Exp2-Sub2) "
+        "Joint dropna reduces Grab training to ~130 rows (74 % loss vs Exp2-SE2) "
         "driven by TKN, Grit Classifier TSS, Primary COD/TSS. "
-        "Both no-FS (Exp3-S3) and FS (Exp3-S3-FS) variants are evaluated. "
+        "Both no-FS (Exp3-SE3) and FS (Exp3-SE4-FS) variants are evaluated. "
         "This sub-experiment confirms the audit's core finding: "
         "marginal row cost is the binding constraint for grab targets."
     ),
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
-        "from Exp3-S2 improves generalisation. "
-        "<strong>Sub-experiment 1</strong> manually drops three redundant groups "
+        "from Exp3-SE2 improves generalisation. "
+        "<strong>SE1</strong> manually drops three redundant groups "
         "(SVI, New aeration, Sec Sed - feature count 12-19). "
-        "<strong>Sub-experiment 2</strong> applies automated iterative VIF pruning (threshold=10) "
-        "within the Exp4-S1 feature pool, reducing to 5-10 features per target and gaining "
+        "<strong>SE2</strong> applies automated iterative VIF pruning (threshold=10) "
+        "within the Exp4-SE1 feature pool, reducing to 5-10 features per target and gaining "
         "+47 to +293 rows by dropping high-missingness correlated features. "
         "<strong>Overall result: both sub-experiments refuted the pruning hypothesis.</strong> "
-        "S1 showed performance degraded universally. S2 confirmed the pattern: "
+        "SE1 showed performance degraded universally. SE2 confirmed the pattern: "
         "Ridge alone partially recovered on some targets; tree models failed catastrophically. "
         "See the finding boxes below for per-sub-experiment analysis."
     ),
+    "Exp5": (
+        "Experiment 5 tests the <strong>cross-type inlet hypothesis</strong>: do grab-sample "
+        "inlet measurements help predict composite effluent, and vice versa? "
+        "The base feature set is <strong>Exp3-SE1 ADD-tier</strong> (28 features, "
+        "Inlet + Secondary + COMMON + 7 ADD aeration columns, selected for near-zero row cost). "
+        "Four cross-type inlet columns are added per sub-experiment. "
+        "<br><br>"
+        "<strong>SE1 (Composite targets + Grab inlet, 32 features)</strong>: "
+        "Composite prediction datasets receive GRAB_INLET (Inlet pH/BOD/COD/TSS Grab). "
+        "Row cost: ~22.7% (816 to 629 train rows)  -  within acceptable range. "
+        "<br><br>"
+        "<strong>SE2 (Grab targets + Composite inlet, 32 features)</strong>: "
+        "Grab prediction datasets receive COMP_INLET (Inlet pH/BOD/COD/TSS Composite). "
+        "Row cost: ~38.2% (1021 to 630 train rows)  -  high but unavoidable; "
+        "both grab and composite inlet must be measured on the same day. "
+        "Retained n (~630) is comparable to Exp2-SE2 grab training size. "
+        "<br><br>"
+        "The experiment answers: does same-day co-measurement of the complementary inlet "
+        "sample type add independent predictive signal beyond the same-type inlet columns?"
+    ),
     "ANN-Dataset-Exploration": (
-        "The Phase 9 ANN failed on Exp3-S2 datasets (avg Test R²=−1.12) due to insufficient "
+        "The Phase 9 ANN failed on Exp3-SE2 datasets (avg Test R²=−1.12) due to insufficient "
         "training samples (~470 Grab, ~290 Composite). These runs test the same ANN architecture "
         "on earlier, <strong>data-richer</strong> experiment datasets to isolate whether the failure "
         "was <em>data-volume limited</em> or reflects a fundamental ANN limitation on this type of data."
         "<br><br>"
         "Three datasets are tested: <strong>Exp1</strong> (Inlet + COMMON, 9 features, "
         "~1175 Grab / ~800 Composite rows  -  2.5× more data), "
-        "<strong>Exp2-Sub1</strong> (Secondary + COMMON, 15 features, "
+        "<strong>Exp2-SE1</strong> (Secondary + COMMON, 15 features, "
         "~924 / ~740 rows), and "
-        "<strong>Exp2-Sub2</strong> (Inlet + Secondary + COMMON, 19 features, "
+        "<strong>Exp2-SE2</strong> (Inlet + Secondary + COMMON, 19 features, "
         "~920 / ~733 rows). "
         "The hyperparameter grid includes larger architectures (256-128, 128-64-32 hidden layers) "
         "compared to Phase 9 ANN, appropriate for the larger sample counts."
     ),
     "Phase9": (
-        "Phase 9 evaluates advanced model architectures on the <strong>Exp3-S2 feature set</strong>, "
+        "Phase 9 evaluates advanced model architectures on the <strong>Exp3-SE2 feature set</strong>, "
         "which was selected as the richest validated set (ElNet Test R²=0.684 Grab BOD, "
         "RF 0.504 Grab TSS - new records at the time). "
         "<br><br>"
@@ -506,7 +584,7 @@ EXP_INTRO = {
     ),
     "Phase10": (
         "Phase 10 applies <strong>feature engineering</strong> (log transforms, "
-        "interaction terms, outlier flags) on top of the Exp3-S2 feature set. "
+        "interaction terms, outlier flags) on top of the Exp3-SE2 feature set. "
         "Phase 10 (full) applies this uniformly to all targets. Phase 10b "
         "(selective) applies FE only to grab targets after discovering that "
         "composite datasets overfit severely with the expanded feature count."
@@ -550,6 +628,11 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Experiment 4 Sub-1": "Exp4-S1",
         "Exp4-S2": "Exp4-S2",
         "Experiment 4 Sub-2": "Exp4-S2",
+        "Exp3-S2": "Exp3-S2",
+        "Exp5-S1": "Exp5-S1",
+        "Exp5-S1-FS": "Exp5-S1-FS",
+        "Exp5-S2": "Exp5-S2",
+        "Exp5-S2-FS": "Exp5-S2-FS",
         "Phase9-ANN": "Phase9-ANN",
         "Phase9-Ensemble": "Phase9-Ensemble",
         "Phase10-FE": "Phase10-FE",
@@ -667,10 +750,10 @@ def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _norm_ann_extra(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize ANN results for Exp1/Exp2-Sub1/Exp2-Sub2 dataset runs.
+    """Normalize ANN results for Exp1/Exp2-SE1/Exp2-SE2 dataset runs.
 
     experiment column in results.xlsx is the exp_key directly
-    (e.g. 'ANN-Exp1', 'ANN-Exp2-Sub1', 'ANN-Exp2-Sub2').
+    (e.g. 'ANN-Exp1', 'ANN-Exp2-SE1', 'ANN-Exp2-SE2').
     """
     out = pd.DataFrame(dict(
         exp_key=df["experiment"],
@@ -718,10 +801,12 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
-        ("exp3_s1", False), ("exp3_s2", False),
+        ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
         ("exp3_ks", False), ("exp3_ks_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
+        ("exp5_s1", False), ("exp5_s1_fs", False),
+        ("exp5_s2", False), ("exp5_s2_fs", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
@@ -734,10 +819,12 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
-        ("exp3_s1", False), ("exp3_s2", False),
+        ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
         ("exp3_ks", False), ("exp3_ks_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
+        ("exp5_s1", False), ("exp5_s1_fs", False),
+        ("exp5_s2", False), ("exp5_s2_fs", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
@@ -855,7 +942,7 @@ def compute_all_mdae() -> pd.DataFrame:
             if model is None:
                 continue
 
-            # Phase 9 models stored in Exp3-S2 files need their own exp_key
+            # Phase 9 models stored in Exp3-SE2 files need their own exp_key
             row_exp_key = exp_key
             if exp_key == "Exp3-S2" and model in _PHASE9_EXP:
                 row_exp_key = _PHASE9_EXP[model]
@@ -1232,7 +1319,7 @@ def _dataset_summary_per_model(df: pd.DataFrame) -> str:
     OLS and tree models rebuild from All_Years_Full after feature selection, so
     their n_train can be substantially larger than the baseline (~130 grab rows).
     Ridge/ElNet use the full full feature set and cannot expand.
-    n_train_ks (stored in results) shows the original KS row count for reference.
+    n_train_ks (stored in results) shows the original all-features row count for reference.
     """
     def _safe_int(v):
         try:
@@ -1294,21 +1381,31 @@ def _dataset_summary_per_model(df: pd.DataFrame) -> str:
     if not rows:
         return _dataset_summary(df)
 
-    note = ("<p class='meta' style='margin:0 0 6px'>"
-            "OLS and tree models (RF/GB/XGB) rebuild from <code>All_Years_Full.xlsx</code> "
-            "after feature selection - rows previously lost to joint missingness of dropped "
-            "features are recovered. Ridge uses the full input feature set (no rebuild); "
-            "ElNet selects internally via L1. n_features shown = selected count for FS models, "
-            "full input count for Ridge.</p>")
+    has_rebuild = "n_train_ks" in df.columns and df["n_train_ks"].notna().any()
+    if has_rebuild:
+        note = ("<p class='meta' style='margin:0 0 6px'>"
+                "OLS and tree models (RF/GB/XGB) rebuild from <code>All_Years_Full.xlsx</code> "
+                "after feature selection - rows previously lost to joint missingness of dropped "
+                "features are recovered. Ridge uses the full input feature set (no rebuild); "
+                "ElNet selects internally via L1. n_features shown = selected count for FS models, "
+                "full input count for Ridge.</p>")
+        n_train_header = "n_train (post-FS rebuild)"
+    else:
+        note = ("<p class='meta' style='margin:0 0 6px'>"
+                "Model-specific feature selection: each model may select a different number of "
+                "features. OLS uses LassoCV pre-screen; ElNet selects via internal L1; "
+                "RF/GB/XGB use OOF permutation importance. n_features shown = selected count "
+                "per model.</p>")
+        n_train_header = "n_train (2021-2024)"
     return f"""
 <details class="inner-fold">
-  <summary><span class="fold-icon">▶</span> Dataset Details - Per-Model (n_train post-FS / n_test / n_features selected)</summary>
+  <summary><span class="fold-icon">▶</span> Dataset Details - Per-Model (n_train / n_test / n_features selected)</summary>
   <div class="fold-body">
     {note}
     <table class="summary-table ds-table">
       <thead><tr>
         <th>Target</th><th>Model</th>
-        <th>n_train (post-FS rebuild)</th>
+        <th>{n_train_header}</th>
         <th>n_test (2025)</th><th>n_features selected</th>
       </tr></thead>
       <tbody>{"".join(rows)}</tbody>
@@ -1794,7 +1891,7 @@ _DERIVED_FROM: dict = {
 
 
 def _vif_callout() -> str:
-    """Compute VIF for Exp3-S2 feature sets inline and render as a foldable section."""
+    """Compute VIF for Exp3-SE2 feature sets inline and render as a foldable section."""
     try:
         from statsmodels.stats.outliers_influence import variance_inflation_factor
         from statsmodels.tools.tools import add_constant
@@ -2030,8 +2127,8 @@ def _vif_callout() -> str:
     )
 
     return f"""
-<details class="exp-details" id="exp3-vif">
-  <summary><span class="fold-icon">▶</span> VIF Collinearity Analysis - Exp3-S2 Feature Sets</summary>
+<details class="inner-fold">
+  <summary><span class="fold-icon">▶</span> VIF Collinearity Analysis - Exp3-SE2 Feature Sets</summary>
   <div class="exp-body">
     <p class="meta">
       Variance Inflation Factor computed on training rows (year &lt; 2025) after listwise deletion.
@@ -2180,11 +2277,11 @@ def _ann_failure_callout() -> str:
 # ─── Cyclical Encoding methodology callout ────────────────────────────────────
 
 def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
-    """Foldable Exp3-S2 methodology card explaining sin/cos calendar encoding."""
+    """Foldable Exp3-SE2 methodology card explaining sin/cos calendar encoding."""
     lin = df_all[df_all["model"].isin(LINEAR_MODELS)].copy()
 
     rows_html = ""
-    for exp_key, enc_label in [("Exp3-S1", "Raw integer (1-12 / 0-6)"),
+    for exp_key, enc_label in [("Exp3-SE1", "Raw integer (1-12 / 0-6)"),
                                 ("Exp3-S2", "Cyclic sin/cos (4 columns)")]:
         sub = lin[lin["exp_key"] == exp_key]
         if sub.empty:
@@ -2254,13 +2351,13 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
     <div class="obs-card" style="border-left:4px solid #e67e22;margin-top:1rem">
       <h4 style="margin:0 0 0.6rem">Scope and Interpretation Caveat</h4>
       <p class="meta">
-        Cyclic encoding is applied <strong>only in Exp3-S2 linear models</strong>
+        Cyclic encoding is applied <strong>only in Exp3-SE2 linear models</strong>
         (OLS, Ridge, ElasticNet). All prior experiments (Exp1, Exp2, Exp3 Sub-1) and all
         tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9-11) use raw
         integer encoding.
       </p>
       <p class="meta">
-        Exp3-S2 also introduces new CONSIDER-tier features absent from Exp3-S1, so the two
+        Exp3-SE2 also introduces new CONSIDER-tier features absent from Exp3-SE1, so the two
         experiments are <strong>not a controlled A/B test</strong> for encoding alone. Any R²
         difference in the table below reflects the combined effect of the broader feature set
         <em>and</em> the encoding change.
@@ -2269,7 +2366,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
 
     <details class="inner-fold" style="margin-top:1rem">
       <summary><span class="fold-icon">▶</span>
-        Exp3-S1 (raw integers) vs Exp3-S2 (cyclic) - Linear Model Avg Test R² (all 8 targets)
+        Exp3-SE1 (raw integers) vs Exp3-SE2 (cyclic) - Linear Model Avg Test R² (all 8 targets)
       </summary>
       <div style="overflow-x:auto;margin-top:0.6rem">
       <table style="font-size:0.88em;max-width:560px">
@@ -2281,7 +2378,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
       </table>
       </div>
       <p class="meta" style="margin-top:0.5rem;font-size:0.8em;color:var(--text-muted)">
-        A controlled run of Exp3-S2 features with raw-integer encoding was not performed.
+        A controlled run of Exp3-SE2 features with raw-integer encoding was not performed.
         Isolating the encoding contribution would require a dedicated ablation run.
       </p>
     </details>
@@ -2537,25 +2634,35 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
     """JSON for the dynamic running-leaders sidebar panel."""
     section_exp_keys = {
         "exp1-sub1":   ["Exp1-Sub1"],
-        "exp1-full":   ["Exp1"],
+        "exp1-full":   ["Exp1-Cyclic"],
         "exp1-fs":     ["Exp1-FS"],
-        "exp1-cyclic": ["Exp1-Cyclic"],
         "exp2-s1":     ["Exp2-Sub1"],
-        "exp2-s1-fs":  ["Exp2-Sub1-FS"],
-        "exp2-s2":     ["Exp2-Sub2"],
-        "exp2-s2-fs":  ["Exp2-Sub2-FS"],
-        "exp3-s1":     ["Exp3-S1"],
-        "exp3-s2":     ["Exp3-S2-FS"],
-        "exp3-s3":     ["Exp3-S3"],
-        "exp3-s3-fs":  ["Exp3-S3-FS"],
-        "p9-ann":      ["Phase9-ANN"],
-        "p9-voting":   ["Phase9-Voting"],
-        "p9-stacking": ["Phase9-Stacking"],
-        "p10-full":    ["Phase10-FE"],
-        "p10b":        ["Phase10b-FE"],
-        "p11":         ["Phase11"],
-        "exp4-s1":     ["Exp4-S1"],
-        "exp4-s2":     ["Exp4-S2"],
+        "exp2-s1-clr": ["Exp2-Sub1-Clr"],
+        "exp2-s1-sed": ["Exp2-Sub1-Sed"],
+        "exp2-s2":      ["Exp2-Sub2-Cyc"],
+        "exp2-s2-full": ["Exp2-Sub2-Cyc"],
+        "exp2-s2-fs":   ["Exp2-Sub2-FS"],
+        "exp3-s1":      ["Exp3-S1"],
+        "exp3-s2":      ["Exp3-S2", "Exp3-S2-FS"],
+        "exp3-s2-full": ["Exp3-S2"],
+        "exp3-s2-fs":   ["Exp3-S2-FS"],
+        "exp3-s3":      ["Exp3-S3", "Exp3-S3-FS"],
+        "exp3-s3-full": ["Exp3-S3"],
+        "exp3-s3-fs":   ["Exp3-S3-FS"],
+        "p9-ann":       ["Phase9-ANN"],
+        "p9-voting":    ["Phase9-Voting"],
+        "p9-stacking":  ["Phase9-Stacking"],
+        "p10-full":     ["Phase10-FE"],
+        "p10b":         ["Phase10b-FE"],
+        "p11":          ["Phase11"],
+        "exp4-s1":      ["Exp4-S1"],
+        "exp4-s2":      ["Exp4-S2"],
+        "exp5-s1":      ["Exp5-S1", "Exp5-S1-FS"],
+        "exp5-s1-full": ["Exp5-S1"],
+        "exp5-s1-fs":   ["Exp5-S1-FS"],
+        "exp5-s2":      ["Exp5-S2", "Exp5-S2-FS"],
+        "exp5-s2-full": ["Exp5-S2"],
+        "exp5-s2-fs":   ["Exp5-S2-FS"],
     }
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
@@ -2581,7 +2688,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     """Custom champion box for Experiment 1 with gap-adjusted selection and readable source labels.
 
     Candidates per (model, target):
-      Sub1          → Exp1-Sub1 R2_test / R2_gap
+      Sub1          → Exp1-SE1 R2_test / R2_gap
       Sub2 (linear) → Exp1 R2_test_full (OLS only, unregularised)
                        Exp1 R2_test / R2_gap (OLS LassoCV; Ridge / ElNet full=FS)
       Sub2 (trees)  → Exp1-Cyclic R2_test_full / R2_gap_full  (pre-selection baseline)
@@ -2609,25 +2716,25 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     def _candidates(model, tgt):
         """Return list of (r2, gap, source_label) tuples for this model × target."""
         out = []
-        # Sub1
+        # SE1
         r2 = _g(s1, model, tgt); gap = _g(s1, model, tgt, "R2_gap")
         if r2 is not None:
-            out.append((r2, gap, "Sub1 (4 feat · inlet only)"))
+            out.append((r2, gap, "SE1 (4 feat · inlet only)"))
 
         if model == "OLS":
             # Full (unregularised)
             r2f = _g(s2, model, tgt, "R2_test_full"); gapf = _g(s2, model, tgt, "R2_gap_full")
             if r2f is not None:
-                out.append((r2f, gapf, "Sub2 Full · OLS (unregularised, 11 feat)"))
-            # FS (LassoCV)
+                out.append((r2f, gapf, "SE2 · OLS (unregularised, 11 feat)"))
+            # SE3-FS (LassoCV)
             r2s = _g(s2, model, tgt); gaps = _g(s2, model, tgt, "R2_gap")
             if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
-                out.append((r2s, gaps, "Sub2 FS · OLS (LassoCV)"))
+                out.append((r2s, gaps, "SE3-FS · OLS (LassoCV)"))
         elif model in lin_set:
             # Ridge / ElNet: full = FS (L2 / L1 selects internally)
             r2 = _g(s2, model, tgt); gap = _g(s2, model, tgt, "R2_gap")
-            lbl = ("Sub2 · Ridge (L2 full)" if model == "Ridge"
-                   else "Sub2 · ElNet (L1 internal)")
+            lbl = ("SE2 · Ridge (L2 full)" if model == "Ridge"
+                   else "SE2 · ElNet (L1 internal)")
             if r2 is not None:
                 out.append((r2, gap, lbl))
         else:
@@ -2636,11 +2743,11 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
             gapf = (_g(cyc, model, tgt, "R2_gap_full")
                     if "R2_gap_full" in cyc.columns else None)
             if r2f is not None:
-                out.append((r2f, gapf, f"Sub2 Full Cyclic · {model}"))
-            # Trees FS (OOF-selected refit)
+                out.append((r2f, gapf, f"SE2 · {model} (cyclic full)"))
+            # SE3-FS trees (OOF-selected refit)
             r2s = _g(cyc, model, tgt); gaps = _g(cyc, model, tgt, "R2_gap")
             if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
-                out.append((r2s, gaps, f"Sub2 FS Cyclic · {model} (OOF-sel)"))
+                out.append((r2s, gaps, f"SE3-FS · {model} (OOF-sel)"))
         return out
 
     table_rows = []
@@ -3003,7 +3110,6 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
     all_m = [m for m in ALL_MODELS_ORD if m in df["model"].values]
 
     feat_html   = _feature_card(exp_key)
-    fs_html     = _feature_selection_details(exp_key)
     summary_fn  = dataset_summary_fn or _dataset_summary
     ds_html     = summary_fn(df)
     fs_sel_html = _feature_selection_table(df)
@@ -3018,7 +3124,6 @@ def _exp_subsection(df_all: pd.DataFrame, exp_key: str,
   <summary><span class="fold-icon">▶</span> {title}</summary>
   <div class="exp-body">
     {feat_html}
-    {fs_html}
     {ds_html}
     {fs_sel_html}
 
@@ -3458,7 +3563,7 @@ def _abstract_section() -> str:
   <h2 style="margin-top:0">Abstract</h2>
   <ul style="line-height:1.5;margin-bottom:0;font-size:13px;color:var(--text-color)">
     <li><strong>Baseline (Exp1 & 2):</strong> Established that inlet water quality alone is insufficient for prediction. Secondary clarifier data is essential to achieve meaningful accuracy.</li>
-    <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-S2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
+    <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-SE2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
     <li><strong>Feature Pruning (Exp4):</strong> Removing collinear features (via VIF or manually) degraded generalisation across the board. The collinear features carry structural signal necessary for decision tree models, while regularised linear models already suppress collinearity automatically.</li>
     <li><strong>Advanced Methods (Ensembles & Temporal):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
     <li><strong>Practical significance  -  R² alone is insufficient:</strong> A high Test R² does not guarantee compliance-grade accuracy. Discharge limits for BOD and TSS are 10 mg/L.
@@ -3560,7 +3665,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         f"for those targets. This establishes the floor: inlet data is necessary but not sufficient."
     )
 
-    # ── Q2 : Context gain (Sub1 → Sub2 Full) ─────────────────────────────────
+    # ── Q2 : Context gain (Sub1 → Sub2) ─────────────────────────────────────
     # Sub2 "Full" for linear uses the full-set OLS result and Ridge/ElNet result.
     # For trees we compare Sub1 vs Sub2 baseline (both trained on full sets at their size).
     lin_d12       = _delta_arr(s1, s2, lin_m,  TARGETS_ORDERED)
@@ -3587,7 +3692,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     elif _lin_net < 0 and _tree_net > 0:
         _driver = (
             f"Linear models {_lin_dir} while tree models {_tree_dir}. "
-            f"Tree models recovered from Sub1 composite failures (fewer features → more spurious splits); "
+            f"Tree models recovered from SE1 composite failures (fewer features → more spurious splits); "
             f"linear models, particularly OLS, overfitted on the expanded 11-feature set."
         )
     elif _lin_net > 0 and _tree_net < 0:
@@ -3600,7 +3705,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 
     q2 = (
         f"{_driver} "
-        f"<br><strong>Linear models (Sub2 Full):</strong> mean Δ = {_colored(lin_d12)} overall "
+        f"<br><strong>Linear models (SE2):</strong> mean Δ = {_colored(lin_d12)} overall "
         f"(Grab: {_colored(lin_grab_d12)}, Composite: {_colored(lin_comp_d12)}). "
         f"<br><strong>Tree models:</strong> mean Δ = {_colored(tree_d12)} overall "
         f"(Grab: {_colored(tree_grab_d12)}, Composite: {_colored(tree_comp_d12)}). "
@@ -3609,7 +3714,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         f"not the actual signal in the feature set."
     )
 
-    # ── Q3 : Model-specific FS (Sub2 Full → Sub2 FS) ─────────────────────────
+    # ── Q3 : Model-specific FS (Sub2 → Sub3-FS) ──────────────────────────────
     fs_full_vals = [_full_val(m, t) for m in all_m for t in TARGETS_ORDERED]
     fs_sel_vals  = [_fs_val(m,  t) for m in all_m for t in TARGETS_ORDERED]
     fs_deltas    = [b - a for a, b in zip(fs_full_vals, fs_sel_vals)
@@ -3695,24 +3800,24 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         if r2 is None: return None
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
-    star_counts = {"Sub1": 0, "Sub2 Full": 0, "Sub2 FS": 0}
-    gaj_counts  = {"Sub1": 0, "Sub2 Full": 0, "Sub2 FS": 0}
+    star_counts = {"SE1": 0, "SE2": 0, "SE3-FS": 0}
+    gaj_counts  = {"SE1": 0, "SE2": 0, "SE3-FS": 0}
     tgt_winner_rows = ""
 
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         per_raw = {}; per_gaj = {}
 
-        # Sub1
+        # SE1
         raws1 = [_r2(s1, m, tgt) for m in all_m if _r2(s1, m, tgt) is not None]
         gajs1 = [_gaj_q(_r2(s1, m, tgt), _gap(s1, m, tgt)) for m in all_m
                  if _r2(s1, m, tgt) is not None]
-        per_raw["Sub1"] = max(raws1) if raws1 else None
-        per_gaj["Sub1"] = max((g for g in gajs1 if g is not None), default=None)
+        per_raw["SE1"] = max(raws1) if raws1 else None
+        per_gaj["SE1"] = max((g for g in gajs1 if g is not None), default=None)
 
-        # Sub2 Full
+        # SE2
         rawf = [_full_val(m, tgt) for m in all_m if _full_val(m, tgt) is not None]
-        per_raw["Sub2 Full"] = max(rawf) if rawf else None
+        per_raw["SE2"] = max(rawf) if rawf else None
         # gap for full
         def _full_gap_q(m, t):
             if m == "OLS": return _r2(s2, m, t, "R2_gap_full")
@@ -3720,17 +3825,17 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
             else: return _r2(cyc, m, t, "R2_gap_full") if "R2_gap_full" in cyc.columns else None
         gajf = [_gaj_q(_full_val(m, tgt), _full_gap_q(m, tgt)) for m in all_m
                 if _full_val(m, tgt) is not None]
-        per_gaj["Sub2 Full"] = max((g for g in gajf if g is not None), default=None)
+        per_gaj["SE2"] = max((g for g in gajf if g is not None), default=None)
 
-        # Sub2 FS
+        # SE3-FS
         rawfs = [_fs_val(m, tgt) for m in all_m if _fs_val(m, tgt) is not None]
-        per_raw["Sub2 FS"] = max(rawfs) if rawfs else None
+        per_raw["SE3-FS"] = max(rawfs) if rawfs else None
         def _fs_gap_q(m, t):
             if m in lin_set: return _gap(s2, m, t)
             else: return _gap(cyc, m, t)
         gajfs = [_gaj_q(_fs_val(m, tgt), _fs_gap_q(m, tgt)) for m in all_m
                  if _fs_val(m, tgt) is not None]
-        per_gaj["Sub2 FS"] = max((g for g in gajfs if g is not None), default=None)
+        per_gaj["SE3-FS"] = max((g for g in gajfs if g is not None), default=None)
 
         raw_valid = {lb: v for lb, v in per_raw.items() if v is not None}
         best_raw  = max(raw_valid.values()) if raw_valid else None
@@ -3743,7 +3848,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         for w in gaj_wins: gaj_counts[w] += 1
 
         cells = ""
-        for lb in ["Sub1", "Sub2 Full", "Sub2 FS"]:
+        for lb in ["SE1", "SE2", "SE3-FS"]:
             rv = per_raw.get(lb); gv = per_gaj.get(lb)
             is_raw = lb in raw_wins; is_gaj = lb in gaj_wins
             if rv is None:
@@ -3769,8 +3874,8 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         pr = {}; pg = {}
-        for lb, fn in [("Sub1", lambda m,t: _r2(s1, m, t)),
-                       ("Sub2 Full", _full_val), ("Sub2 FS", _fs_val)]:
+        for lb, fn in [("SE1", lambda m,t: _r2(s1, m, t)),
+                       ("SE2", _full_val), ("SE3-FS", _fs_val)]:
             raws = [fn(m, tgt) for m in all_m if fn(m, tgt) is not None]
             pr[lb] = max(raws) if raws else None
         braw = max((lb for lb, v in pr.items() if v is not None), key=lambda lb: pr[lb], default=None)
@@ -3786,11 +3891,11 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 
     q4 = (
         f"Raw winner: <strong>{best_raw_var}</strong> "
-        f"({star_counts['Sub1']} Sub1 / {star_counts['Sub2 Full']} Sub2-Full / "
-        f"{star_counts['Sub2 FS']} Sub2-FS ★). "
+        f"({star_counts['SE1']} SE1 / {star_counts['SE2']} SE2 / "
+        f"{star_counts['SE3-FS']} SE3-FS ★). "
         f"Gap-adjusted winner: <strong>{best_gaj_var}</strong> "
-        f"({gaj_counts['Sub1']} Sub1 / {gaj_counts['Sub2 Full']} Sub2-Full / "
-        f"{gaj_counts['Sub2 FS']} Sub2-FS ✦).{_div_note} "
+        f"({gaj_counts['SE1']} SE1 / {gaj_counts['SE2']} SE2 / "
+        f"{gaj_counts['SE3-FS']} SE3-FS ✦).{_div_note} "
         f"The table below shows the best raw Test R² (large) and gap-adjusted score (small, grey) "
         f"each variant achieves per target:"
     )
@@ -3800,9 +3905,9 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 <table class='summary-table' style='font-size:0.83em;width:auto;min-width:420px'>
   <thead><tr>
     <th>Target</th>
-    <th style='text-align:center'>Sub1</th>
-    <th style='text-align:center'>Sub2 Full</th>
-    <th style='text-align:center'>Sub2 FS</th>
+    <th style='text-align:center'>SE1</th>
+    <th style='text-align:center'>SE2</th>
+    <th style='text-align:center'>SE3-FS</th>
   </tr></thead>
   <tbody>{tgt_winner_rows}</tbody>
 </table>
@@ -3822,8 +3927,8 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     q5 = (
         f"Consistently, yes. Grab targets respond more positively to every transition. "
         f"<br>"
-        f"<strong>Sub1 → Sub2 Full:</strong> Grab {_colored(grab_d12)}, Composite {_colored(comp_d12)}. "
-        f"<strong>Full → FS:</strong> Grab {_colored(grab_fs_d2)}, Composite {_colored(comp_fs_d2)}. "
+        f"<strong>SE1 → SE2:</strong> Grab {_colored(grab_d12)}, Composite {_colored(comp_d12)}. "
+        f"<strong>SE2 → SE3-FS:</strong> Grab {_colored(grab_fs_d2)}, Composite {_colored(comp_fs_d2)}. "
         f"The pattern is structural: Composite targets have roughly 800 training rows vs ~1,175 "
         f"for Grab. Any feature change that expands dimensionality amplifies overfitting risk "
         f"proportionally more on the smaller composite sets. "
@@ -3850,7 +3955,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
   <div class="exp-body">
   {_qcard(1, "Do inlet concentrations alone carry meaningful predictive power?", q1)}
   {_qcard(2, "What does adding process context (Flow, Power, cyclic calendar) contribute?", q2)}
-  {_qcard(3, "Does model-specific feature selection improve accuracy or generalisation within Sub2?", q3)}
+  {_qcard(3, "Does model-specific feature selection improve accuracy or generalisation within SE2?", q3)}
   {_qcard(4, "Which variant achieves the best performance per target?", q4, q4_table)}
   {_qcard(5, "Do Grab and Composite targets respond differently to feature changes?", q5)}
   </div>
@@ -3959,10 +4064,9 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
             return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
-        if is_raw and is_gaj:   col = "#5BAD6F"; fw = "bold"
-        elif is_raw:            col = "#E67E22"; fw = "bold"
-        elif is_gaj:            col = "#4A90D9"; fw = "bold"
-        else:                   col = "#1a1a1a"; fw = "normal"
+        if is_raw:               col = "#5BAD6F"; fw = "bold"
+        elif is_gaj:             col = "#4A90D9"; fw = "bold"
+        else:                    col = "#1a1a1a"; fw = "normal"
         rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else " - "
         gap_val  = gap if (gap is not None and gap == gap) else None
         gap_str  = f"{gap_val:+.3f}" if gap_val is not None else " - "
@@ -4007,6 +4111,47 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
+
+        # --- pre-pass: global best for this target across all models and SEs ---
+        _all_raw_e1 = {}
+        _all_gaj_e1 = {}
+        _all_gap_e1 = {}
+        for m_ in models_ord:
+            v1_   = _get(s1, m_, tgt);  g1_   = _gap_v(s1, m_, tgt)
+            vf_   = _full_val(m_, tgt); gf_   = _full_gap(m_, tgt)
+            vs_   = _fs_val(m_, tgt);   gs_   = _fs_gap(m_, tgt)
+            sc1_  = _gaj(v1_, g1_);     scf_  = _gaj(vf_, gf_); scs_ = _gaj(vs_, gs_)
+            for key_, rv_, gv_, sv_ in [
+                ((m_, "s1"), v1_, g1_, sc1_),
+                ((m_, "full"), vf_, gf_, scf_),
+                ((m_, "fs"), vs_, gs_, scs_),
+            ]:
+                if rv_ is not None:
+                    _all_raw_e1[key_] = rv_
+                    _all_gap_e1[key_] = gv_
+                if sv_ is not None:
+                    _all_gaj_e1[key_] = sv_
+
+        tgt_br_e1 = max(_all_raw_e1.values()) if _all_raw_e1 else None
+        tgt_bg_e1 = max(_all_gaj_e1.values()) if _all_gaj_e1 else None
+
+        _raw_win_gap_e1 = None
+        if tgt_br_e1 is not None:
+            for k_, v_ in _all_raw_e1.items():
+                if abs(v_ - tgt_br_e1) < 1e-9:
+                    _raw_win_gap_e1 = _all_gap_e1.get(k_)
+                    break
+
+        tgt_show_gaj_e1 = False
+        if (tgt_bg_e1 is not None and tgt_br_e1 is not None
+                and _raw_win_gap_e1 is not None and _raw_win_gap_e1 > 0.10):
+            _raw_win_gaj_e1 = _gaj(tgt_br_e1, _raw_win_gap_e1)
+            if _raw_win_gaj_e1 is None or abs(tgt_bg_e1 - _raw_win_gaj_e1) > 1e-9:
+                tgt_show_gaj_e1 = True
+
+        def _ir(v_): return tgt_br_e1 is not None and v_ is not None and abs(v_ - tgt_br_e1) < 1e-9
+        def _ig(s_): return tgt_show_gaj_e1 and tgt_bg_e1 is not None and s_ is not None and abs(s_ - tgt_bg_e1) < 1e-9
+
         for m in models_ord:
             v1   = _get(s1, m, tgt);   g1   = _gap_v(s1, m, tgt)
             vf   = _full_val(m, tgt);  gf   = _full_gap(m, tgt)
@@ -4039,22 +4184,14 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
             if sd1f is not None: gaj_deltas_s1_full.append(sd1f)
             if sdfs is not None: gaj_deltas_full_fs.append(sdfs)
 
-            raw_cands = {k: vv for k, vv in [("s1",v1),("full",vf),("fs",vs)] if vv is not None}
-            gaj_cands = {k: vv for k, vv in [("s1",sc1),("full",scf),("fs",scs)] if vv is not None}
-            best_raw = max(raw_cands.values()) if raw_cands else None
-            best_gaj = max(gaj_cands.values()) if gaj_cands else None
-
-            def _is_raw(v_): return best_raw is not None and v_ is not None and abs(v_ - best_raw) < 1e-9
-            def _is_gaj(s_): return best_gaj is not None and s_ is not None and abs(s_ - best_gaj) < 1e-9
-
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
                 f"<tr style='background:{row_bg}'>"
                 f"<td style='{_TD}'><strong>{m}</strong></td>"
-                f"{_val_td(v1,  r1,  g1,  _is_raw(v1),  _is_gaj(sc1))}"
-                f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(scf))}"
+                f"{_val_td(v1,  r1,  g1,  _ir(v1),  _ig(sc1))}"
+                f"{_val_td(vf,  rf_, gf,  _ir(vf),  _ig(scf))}"
                 f"{_delta_td(d1f, d1f_rmse, d1f_gap)}"
-                f"{_val_td(vs,  rs_, gs,  _is_raw(vs),  _is_gaj(scs))}"
+                f"{_val_td(vs,  rs_, gs,  _ir(vs),  _ig(scs))}"
                 f"{_delta_td(dfs, dfs_rmse, dfs_gap)}"
                 f"</tr>"
             )
@@ -4126,8 +4263,8 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
       </tr>
     </thead>
     <tbody>
-      {_combined_stats_row(deltas_s1_full, gaj_deltas_s1_full, "Sub1", "Sub2 Full")}
-      {_combined_stats_row(deltas_full_fs, gaj_deltas_full_fs, "Sub2 Full", "Sub2 FS")}
+      {_combined_stats_row(deltas_s1_full, gaj_deltas_s1_full, "SE1", "SE2")}
+      {_combined_stats_row(deltas_full_fs, gaj_deltas_full_fs, "SE2", "SE3-FS")}
     </tbody>
   </table>
   </div>
@@ -4136,17 +4273,14 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     <p class='meta'>
       <strong>Reading the table.</strong>
       Net Mean ΔR² is the signed average across all {n_cells} (model × target) cells.
-      <strong>Sub2 Full</strong> = full 11-feature set before any pruning
+      <strong>SE2</strong> = full 11-feature set before any pruning
       (OLS: unregularised on all features; Ridge/ElNet: full set; RF/GB/XGB: Phase 1 CV model).
-      <strong>Sub2 FS</strong> = model-specific selection applied
+      <strong>SE3-FS</strong> = model-specific selection applied
       (OLS: LassoCV; Ridge: no change  -  L2 handles it; ElNet: no change  -  L1 selects internally;
       RF/GB/XGB: OOF permutation importance refit on features with ≥5% relative importance).
       <strong>Gap-Adj − Raw</strong> indicates whether raw gains are inflated by increased overfitting
       (negative = gains overstated) or understated by reduced overfitting (positive = gains understated).
-      <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score ·
-      <span style='color:#5BAD6F'>green</span> = both ·
-      <span style='color:#E67E22'>orange</span> = raw only ·
-      <span style='color:#4A90D9'>blue</span> = gap-adj only.
+      <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
       In the delta columns: <span style='color:#5BAD6F;font-weight:bold'>green ΔR²</span> = improvement ·
       <span style='color:#E15252;font-weight:bold'>red ΔR²</span> = regression ·
       <span style='color:#E15252'>red ΔGap</span> = gap widened (more overfit) ·
@@ -4198,7 +4332,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     val_card = f"""
 <div style='margin:1rem 0 0.6rem'>
   <p style='font-weight:bold;margin-bottom:0.3rem;font-size:0.88em;color:#1a1a1a'>
-    Feature Selection Validation  -  Sub-experiment 2 (11 cyclic features input)
+    Feature Selection Validation  -  SE3-FS (11 cyclic features input)
   </p>
   <p style='margin-bottom:0.6rem;font-size:0.82em;color:#555555'>
     Each model applies a distinct selection protocol to the shared 11-feature pool.
@@ -4223,7 +4357,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     Ridge is the only model that intentionally bypasses feature removal  -  L2 shrinks
     uninformative coefficients toward zero without discarding them. All other models
     reduce the feature space. Per-target selected feature lists are in the
-    <em>Model-Specific Feature Selection</em> fold within Sub-experiment 2 above.
+    <em>Model-Specific Feature Selection</em> fold within SE2 above.
   </p>
 </div>"""
 
@@ -4233,18 +4367,15 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
       <th style='{_TH};min-width:60px'>Model</th>
-      <th style='{_THC}'>Sub1<br>
-          <span style='color:#888888;font-weight:400'>4 feat · no FS</span><br>
+      <th style='{_THC}'>SE1<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Sub2 Full<br>
-          <span style='color:#888888;font-weight:400'>11 feat · full set</span><br>
+      <th style='{_THC}'>SE2<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Δ (S1→Full)<br>
+      <th style='{_THC}'>Δ (SE1→SE2)<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
-      <th style='{_THC}'>Sub2 FS<br>
-          <span style='color:#888888;font-weight:400'>model-specific</span><br>
+      <th style='{_THC}'>SE3-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Δ (Full→FS)<br>
+      <th style='{_THC}'>Δ (SE2→SE3-FS)<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
@@ -4255,26 +4386,16 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     return f"""
 <details class="exp-details" id="exp1-comparison">
   <summary><span class="fold-icon">▶</span>
-    Sub-experiment Comparison  -  Sub1 / Sub2 Full / Sub2 Feature-Selected
+    Comparisons
   </summary>
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #E67E22">
       <p class="meta">
-        <strong>Sub1</strong> (inlet only, 4 features, no FS) →
-        <strong>Sub2 Full</strong> (cyclic calendar + process, 11 features, no pruning) →
-        <strong>Sub2 FS</strong> (same 11 features, model-specific selection applied).
-        For linear models, Full and FS differ only for OLS (LassoCV may prune);
-        Ridge keeps the full set (L2 handles collinearity), ElNet runs L1 on the full set.
-        For tree models, Full = Phase 1 CV result (all features);
-        FS = Phase 3 result after OOF permutation importance pruning (≥5% threshold).
-        <strong>★</strong> = best raw Test R² per (model, target) ·
-        <strong>✦</strong> = best gap-adjusted score ·
-        <span style='color:#5BAD6F;font-weight:bold'>green</span> = both ·
-        <span style='color:#E67E22;font-weight:bold'>orange</span> = raw only ·
-        <span style='color:#4A90D9;font-weight:bold'>blue</span> = gap-adj only ·
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10) ·
         <span style='color:#5BAD6F;font-weight:bold'>green Δ</span> = improvement ·
         <span style='color:#E15252;font-weight:bold'>red Δ</span> = regression.
-        RMSE reported in native units (mg/L or pH units). Gap = Train R² − Test R²;
+        RMSE reported in native units (mg/L or pH units). Gap = Train R² - Test R²;
         <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
       </p>
     </div>
@@ -4287,12 +4408,15 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 
 def build_exp1_section(df_all: pd.DataFrame) -> str:
     sub_s1 = _exp_subsection(df_all, "Exp1-Sub1", "exp1-sub1",
-                             "Sub-experiment 1  -  Inlet Only (4 features, no FS)",
+                             "SE1  -  Inlet Only",
                              open_default=False)
-    sub_s2 = _exp_subsection(df_all, "Exp1", "exp1-full",
-                             "Sub-experiment 2  -  Inlet + Process + Cyclic Calendar "
-                             "(11 features, model-specific FS)",
+    sub_s2 = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-full",
+                             "SE2  -  Cyclic Inlet + Common",
                              open_default=True)
+    sub_s3_fs = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
+                                "SE3  -  Feature Selection on Cyclic Inlet + Common",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
     cmp_div      = _exp1_comparison_panel(df_all)
     findings_div = _exp1_qna(df_all)
     best         = _exp1_best_model_box(df_all)
@@ -4302,6 +4426,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub_s1}
   {sub_s2}
+  {sub_s3_fs}
   {cmp_div}
   {findings_div}
   {best}
@@ -4311,12 +4436,13 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
 def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     """Sub-experiment comparison table for Experiment 2.
 
-    Columns: Sub1-Clr | Sub1-Sed | Combined | Δ(Clr→Comb) | Sub2 Full | Sub2 FS | Δ(Comb→S2-FS)
+    Columns: Sub1-Clr | Sub1-Sed | Combined | Δ(Clr→Comb) | Sub2 | Δ(Comb→Sub2) | Sub3-FS | Δ(Sub2→Sub3-FS)
     """
     clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
     sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
     comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
     cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
+    fs2  = df_all[df_all["exp_key"] == "Exp2-Sub2-FS"].copy()
 
     if clr.empty and sed.empty and comb.empty:
         return ""
@@ -4339,39 +4465,21 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
     def _sub2_full(model, tgt):
-        """R² on full feature set before FS for Sub2."""
-        if model == "OLS":
-            v = _get(cyc, model, tgt, "R2_test_full")
-            return v if v is not None else _get(cyc, model, tgt)
-        elif model in lin_models:
-            return _get(cyc, model, tgt)
-        else:
-            v = _get(cyc, model, tgt, "R2_test_full")
-            return v if v is not None else _get(cyc, model, tgt)
+        """R² on full feature set (Exp2-Sub2, no FS)."""
+        return _get(cyc, model, tgt, "R2_test")
 
     def _sub2_fs(model, tgt):
-        """Feature-selected R² for Sub2."""
-        return _get(cyc, model, tgt)
+        """Feature-selected R² (Exp2-Sub2-FS)."""
+        return _get(fs2, model, tgt, "R2_test")
 
     def _sub2_full_gap(model, tgt):
-        if model == "OLS":
-            v = _get(cyc, model, tgt, "R2_gap_full")
-            return v if v is not None else _gap_v(cyc, model, tgt)
-        elif model in lin_models:
-            return _gap_v(cyc, model, tgt)
-        else:
-            v = _get(cyc, model, tgt, "R2_gap_full")
-            return v if v is not None else _gap_v(cyc, model, tgt)
-
-    def _sub2_fs_gap(model, tgt):
         return _gap_v(cyc, model, tgt)
 
+    def _sub2_fs_gap(model, tgt):
+        return _gap_v(fs2, model, tgt)
+
     def _sub2_full_rmse(model, tgt):
-        if model == "OLS":
-            v = _get(cyc, model, tgt, "RMSE_test_full")
-            return v if v is not None else _get(cyc, model, tgt, "RMSE_test")
-        else:
-            return _get(cyc, model, tgt, "RMSE_test")
+        return _get(cyc, model, tgt, "RMSE_test")
 
     _TD = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
     _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
@@ -4382,10 +4490,9 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
-        if is_raw and is_gaj:   col = "#5BAD6F"; fw = "bold"
-        elif is_raw:            col = "#E67E22"; fw = "bold"
-        elif is_gaj:            col = "#4A90D9"; fw = "bold"
-        else:                   col = "#1a1a1a"; fw = "normal"
+        if is_raw:               col = "#5BAD6F"; fw = "bold"
+        elif is_gaj:             col = "#4A90D9"; fw = "bold"
+        else:                    col = "#1a1a1a"; fw = "normal"
         rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else " - "
         gap_val  = gap if (gap is not None and gap == gap) else None
         gap_str  = f"{gap_val:+.3f}" if gap_val is not None else " - "
@@ -4436,6 +4543,52 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
+
+        # --- pre-pass: global best for this target across all models and SEs ---
+        _all_raw_e2 = {}
+        _all_gaj_e2 = {}
+        _all_gap_e2 = {}
+        for m_ in models_ord:
+            vc_  = _get(clr,  m_, tgt); gc_  = _gap_v(clr,  m_, tgt)
+            vs_  = _get(sed,  m_, tgt); gs_  = _gap_v(sed,  m_, tgt)
+            vco_ = _get(comb, m_, tgt); gco_ = _gap_v(comb, m_, tgt)
+            vf_  = _sub2_full(m_, tgt); gf_  = _sub2_full_gap(m_, tgt)
+            vfs_ = _sub2_fs(m_, tgt);   gfs_ = _sub2_fs_gap(m_, tgt)
+            sc_  = _gaj(vc_, gc_);  ss_  = _gaj(vs_, gs_)
+            sco_ = _gaj(vco_, gco_); sf_ = _gaj(vf_, gf_); sfs_ = _gaj(vfs_, gfs_)
+            for key_, rv_, gv_, sv_ in [
+                ((m_, "clr"), vc_, gc_, sc_),
+                ((m_, "sed"), vs_, gs_, ss_),
+                ((m_, "comb"), vco_, gco_, sco_),
+                ((m_, "s2full"), vf_, gf_, sf_),
+                ((m_, "s2fs"), vfs_, gfs_, sfs_),
+            ]:
+                if rv_ is not None:
+                    _all_raw_e2[key_] = rv_
+                    _all_gap_e2[key_] = gv_
+                if sv_ is not None:
+                    _all_gaj_e2[key_] = sv_
+
+        tgt_br_e2 = max(_all_raw_e2.values()) if _all_raw_e2 else None
+        tgt_bg_e2 = max(_all_gaj_e2.values()) if _all_gaj_e2 else None
+
+        _raw_win_gap_e2 = None
+        if tgt_br_e2 is not None:
+            for k_, v_ in _all_raw_e2.items():
+                if abs(v_ - tgt_br_e2) < 1e-9:
+                    _raw_win_gap_e2 = _all_gap_e2.get(k_)
+                    break
+
+        tgt_show_gaj_e2 = False
+        if (tgt_bg_e2 is not None and tgt_br_e2 is not None
+                and _raw_win_gap_e2 is not None and _raw_win_gap_e2 > 0.10):
+            _raw_win_gaj_e2 = _gaj(tgt_br_e2, _raw_win_gap_e2)
+            if _raw_win_gaj_e2 is None or abs(tgt_bg_e2 - _raw_win_gaj_e2) > 1e-9:
+                tgt_show_gaj_e2 = True
+
+        def _is_raw(v_): return tgt_br_e2 is not None and v_ is not None and abs(v_ - tgt_br_e2) < 1e-9
+        def _is_gaj(s_): return tgt_show_gaj_e2 and tgt_bg_e2 is not None and s_ is not None and abs(s_ - tgt_bg_e2) < 1e-9
+
         for m in models_ord:
             vc  = _get(clr,  m, tgt); gc  = _gap_v(clr,  m, tgt)
             vs  = _get(sed,  m, tgt); gs  = _gap_v(sed,  m, tgt)
@@ -4447,7 +4600,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             rs  = _get(sed,  m, tgt, "RMSE_test")
             rco = _get(comb, m, tgt, "RMSE_test")
             rf_ = _sub2_full_rmse(m, tgt)
-            rfs = _get(cyc,  m, tgt, "RMSE_test")
+            rfs = _get(fs2,  m, tgt, "RMSE_test")
 
             sc  = _gaj(vc,  gc);   ss  = _gaj(vs,  gs)
             sco = _gaj(vco, gco);  sf  = _gaj(vf,  gf); sfs = _gaj(vfs, gfs)
@@ -4495,14 +4648,6 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             if d_sf  is not None: d_sed_s2full.append(d_sf);     gaj_d_sed_s2full.append(gaj_sf)  if gaj_sf  is not None else None
             if d_sfs is not None: d_sed_s2fs.append(d_sfs);      gaj_d_sed_s2fs.append(gaj_sfs)   if gaj_sfs is not None else None
             if d_ff  is not None: d_s2full_s2fs.append(d_ff);    gaj_d_s2full_s2fs.append(gaj_ff) if gaj_ff  is not None else None
-
-            cands_raw = {k: v for k, v in [("Clr",vc),("Sed",vs),("Comb",vco),("S2-Full",vf),("S2-FS",vfs)] if v is not None}
-            cands_gaj = {k: v for k, v in [("Clr",sc),("Sed",ss),("Comb",sco),("S2-Full",sf),("S2-FS",sfs)] if v is not None}
-            best_raw = max(cands_raw.values()) if cands_raw else None
-            best_gaj = max(cands_gaj.values()) if cands_gaj else None
-
-            def _is_raw(v_): return best_raw is not None and v_ is not None and abs(v_ - best_raw) < 1e-9
-            def _is_gaj(s_): return best_gaj is not None and s_ is not None and abs(s_ - best_gaj) < 1e-9
 
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
@@ -4586,25 +4731,18 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       {_combined_stats_row(d_clr_sed,      gaj_d_clr_sed,      "Clarifier", "Sed")}
       {_combined_stats_row(d_clr_comb,     gaj_d_clr_comb,     "Clarifier", "Combined")}
       {_combined_stats_row(d_sed_comb,     gaj_d_sed_comb,     "Sed",       "Combined")}
-      {_combined_stats_row(d_comb_s2full,  gaj_d_comb_s2full,  "Combined",  "Sub2 Full")}
-      {_combined_stats_row(d_sed_s2full,   gaj_d_sed_s2full,   "Sed",       "Sub2 Full")}
-      {_combined_stats_row(d_comb_s2fs,    gaj_d_comb_s2fs,    "Combined",  "Sub2 FS")}
-      {_combined_stats_row(d_sed_s2fs,     gaj_d_sed_s2fs,     "Sed",       "Sub2 FS")}
-      {_combined_stats_row(d_s2full_s2fs,  gaj_d_s2full_s2fs,  "Sub2 Full", "Sub2 FS")}
+      {_combined_stats_row(d_comb_s2full,  gaj_d_comb_s2full,  "Combined",  "SE2")}
+      {_combined_stats_row(d_sed_s2full,   gaj_d_sed_s2full,   "Sed",       "SE2")}
+      {_combined_stats_row(d_comb_s2fs,    gaj_d_comb_s2fs,    "Combined",  "SE2-FS")}
+      {_combined_stats_row(d_sed_s2fs,     gaj_d_sed_s2fs,     "Sed",       "SE2-FS")}
+      {_combined_stats_row(d_s2full_s2fs,  gaj_d_s2full_s2fs,  "SE2",       "SE2-FS")}
     </tbody>
   </table>
   </div>
   <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
     <p class='meta'>
       <strong>Reading the table.</strong>
-      <strong>Sub1-Clr</strong> = Sec Clarifier + COMMON (10 features, no FS).
-      <strong>Sub1-Sed</strong> = Sec Sedimentation + COMMON (10 features, no FS).
-      <strong>Combined</strong> = both secondary groups + COMMON (15 features, original baseline).
-      <strong>Sub2 Full</strong> = Inlet + Secondary + COMMON (21 features,
-      no FS applied; for OLS this is the pre-LassoCV result).
-      <strong>Sub2 FS</strong> = same 21 features after model-specific selection
-      (OLS: LassoCV; Ridge: full set; ElNet: internal L1; RF/GB/XGB: OOF permutation importance ≥5%).
-      <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score.
+      <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
       Detailed transition deltas (win/loss counts and gap-adjusted net) are in the Transition Summary below.
     </p>
   </div>
@@ -4616,20 +4754,15 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
       <th style='{_TH};min-width:60px'>Model</th>
-      <th style='{_THC}'>Sub1-Clr<br>
-          <span style='color:#888888;font-weight:400'>10 feat</span><br>
+      <th style='{_THC}'>SE1-Clr<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Sub1-Sed<br>
-          <span style='color:#888888;font-weight:400'>10 feat</span><br>
+      <th style='{_THC}'>SE1-Sed<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
       <th style='{_THC}'>Combined<br>
-          <span style='color:#888888;font-weight:400'>15 feat</span><br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Sub2 Full<br>
-          <span style='color:#888888;font-weight:400'>21 feat</span><br>
+      <th style='{_THC}'>SE2<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Sub2 FS<br>
-          <span style='color:#888888;font-weight:400'>model-specific</span><br>
+      <th style='{_THC}'>SE2-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
     </tr>
   </thead>
@@ -4640,15 +4773,13 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     return f"""
 <details class="exp-details" id="exp2-comparison">
   <summary><span class="fold-icon">▶</span>
-    Sub-experiment Comparison  -  Clarifier / Sed / Combined / Sub2-FS
+    Comparisons
   </summary>
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #E67E22">
       <p class="meta">
-        Five columns per (model, target): three secondary-only baselines (Clarifier, Sed,
-        Combined) followed by Sub2 Full and Sub2 FS results. Transition deltas are in the
-        Transition Summary table below. <strong>★</strong> = best raw Test R² ·
-        <strong>✦</strong> = best gap-adjusted score.
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
         <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
       </p>
     </div>
@@ -4770,7 +4901,7 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
     loss_cs2  = int((d_comb_s2 < -0.01).sum()) if n_cs2 else 0
 
     q3 = (
-        f"Combined (15) → Sub2-FS (21 feat + FS): mean Δ = {_colored(d_comb_s2)} "
+        f"Combined (15) → SE2-FS (21 feat + FS): mean Δ = {_colored(d_comb_s2)} "
         f"({wins_cs2}/{n_cs2} improved, {loss_cs2}/{n_cs2} regressed). "
         f"<br><strong>Grab:</strong> {_colored(d_comb_s2_grab)}, "
         f"<strong>Composite:</strong> {_colored(d_comb_s2_comp)}. "
@@ -4803,7 +4934,7 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
         f"<br><strong>Sed-only:</strong> Grab avg = {_fmt(ga_sed)}, Composite avg = {_fmt(co_sed)}. "
         f"Grab targets respond better to every secondary-feature configuration. "
         f"Composite targets show mostly negative or near-zero R² from secondary-only features  -  "
-        f"they need inlet concentrations (Sub2) before any linear model generalises. "
+        f"they need inlet concentrations (SE2) before any linear model generalises. "
         f"The structural reason: composite samples are collected on fewer days (~730 - 970 rows) "
         f"and their effluent quality is driven more by inlet load (what goes in) than by "
         f"instantaneous secondary process readings. "
@@ -4830,7 +4961,7 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
   <div class="exp-body">
   {_qcard(1, "Do Sec Clarifier and Sec Sedimentation features carry distinct signal, or are they interchangeable?", q1)}
   {_qcard(2, "What does combining both secondary groups add over either individually?", q2)}
-  {_qcard(3, "What does adding inlet concentrations contribute (Combined → Sub2-FS)?", q3)}
+  {_qcard(3, "What does adding inlet concentrations contribute (Combined → SE2-FS)?", q3)}
   {_qcard(4, "Do Grab and Composite targets respond differently to the secondary feature transitions?", q4)}
   </div>
 </details>"""
@@ -4848,11 +4979,14 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
                                "Sec Sedimentation + COMMON (10 features)",
                                open_default=False)
 
-    # Sub-exp 2: cyclic, with integrated FS
-    sub2_cyc = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s2-cyc",
-                               "Sub-experiment 2  -  Inlet + Secondary + COMMON "
-                               "(21 features, model-specific FS integrated)",
-                               open_default=True)
+    # Sub-exp 2: Inlet + Secondary - full feature set + FS wrapped together
+    sub2_full = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s2-full",
+                                "Full Feature Set",
+                                open_default=True)
+    sub2_fs   = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s2-fs",
+                                "Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
 
     cmp_div      = _exp2_comparison_panel(df_all)
     findings_div = _exp2_qna(df_all)
@@ -4861,12 +4995,12 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
     sub1_wrapper = f"""
 <details class="exp-details" open id="exp2-s1">
   <summary><span class="fold-icon">▶</span>
-    Sub-experiment 1  -  Secondary Features Only (three scopes)
+    SE1  -  Secondary + Common (three scopes)
   </summary>
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #4A90D9">
       <p class="meta">
-        Three feature scopes tested side by side within Sub-experiment 1.
+        Three feature scopes tested side by side within SE1.
         <strong>Combined</strong> (15 features) is the original baseline  -  both secondary groups
         together. <strong>Clarifier-only</strong> and <strong>Sed-only</strong> (10 features each)
         isolate each group to test whether they carry distinct signal or are interchangeable.
@@ -4880,12 +5014,21 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
   </div>
 </details>"""
 
+    sub2_wrapper = f"""
+<details class="exp-details" open id="exp2-s2">
+  <summary><span class="fold-icon">▶</span> SE2  -  Inlet + Secondary (full + FS)</summary>
+  <div class="exp-body">
+    {sub2_full}
+    {sub2_fs}
+  </div>
+</details>"""
+
     return f"""
 <section id="exp2">
   <h1 class="section-title">Experiment 2 - Secondary & Combined Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
   {sub1_wrapper}
-  {sub2_cyc}
+  {sub2_wrapper}
   {cmp_div}
   {findings_div}
   {best}
@@ -4893,7 +5036,7 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
 
 
 def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
-    """Pre-FS vs post-FS breakdown for Exp3-S2-FS.
+    """Pre-FS vs post-FS breakdown for Exp3-SE2-FS.
 
     OLS uses LassoCV; RF/GB/XGB use OOF permutation importance.
     Ridge has no explicit FS (full set always). ElNet uses internal L1+L2.
@@ -5046,7 +5189,7 @@ def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
     RMSE not stored for pre-FS tree runs (shown for post-FS only).
     <strong>Ridge</strong>: no explicit FS - L2 regularisation handles collinearity; the single column is the full-set result.
     <strong>ElNet</strong>: L1+L2 selection is internal - n&nbsp;Selected shows non-zero coefficients; no pre-FS run.
-    Both pre-FS and post-FS use the same ~469 Grab / ~423 Composite training rows (no dataset rebuild in S2).
+    Both pre-FS and post-FS use the same ~469 Grab / ~423 Composite training rows (no dataset rebuild in SE2).
     <span style='color:#5BAD6F;font-weight:bold'>Green DeltaR2</span> = FS improved generalisation.
     <span style='color:#e74c3c;font-weight:bold'>Red DeltaR2</span> = FS hurt generalisation (common for tree models when OOF folds are small).
     A negative pre-FS gap means test R2 exceeded train R2 (underfitting at full feature count).
@@ -5073,10 +5216,10 @@ def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
 
     return f"""<hr style='margin:1.5rem 0;border:none;border-top:1px solid #ddd'>
 <h3 style='margin:0 0 0.4rem;color:#1a1a1a;font-size:1rem'>
-  Feature Selection Impact - S2-FS: pre-FS vs post-FS per model
+  Feature Selection Impact - SE2-FS: pre-FS vs post-FS per model
 </h3>
 <p class='meta' style='margin-bottom:0.6rem'>
-  The metrics in the S2-FS sub-experiment section show <strong>post-FS results only</strong>.
+  The metrics in the SE2-FS sub-experiment section show <strong>post-FS results only</strong>.
   This table shows what each model achieves on the <em>full 31-feature input set</em> (pre-FS) versus
   the <em>feature-selected subset</em> (post-FS), directly answering whether FS helped or hurt for
   each model and target. For Ridge and ElNet there is no distinct pre-FS run.
@@ -5086,8 +5229,9 @@ def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
 
 
 def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Experiment-wide comparison: S1 | S2-FS | S3 | S3-FS."""
+    """Experiment-wide comparison: SE1 | SE2 | SE2-FS | SE3 | SE3-FS."""
     s1   = df_all[df_all["exp_key"] == "Exp3-S1"].copy()
+    s2   = df_all[df_all["exp_key"] == "Exp3-S2"].copy()
     s2fs = df_all[df_all["exp_key"] == "Exp3-S2-FS"].copy()
     ks   = df_all[df_all["exp_key"] == "Exp3-S3"].copy()
     ksfs = df_all[df_all["exp_key"] == "Exp3-S3-FS"].copy()
@@ -5111,28 +5255,27 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
         if r2 is None: return None
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
-    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
-    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
-    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
-    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _TD  = "padding:4px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:5px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:5px 7px;text-align:left;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+    _THC = "padding:5px 7px;text-align:center;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
 
     def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
         if r2 is None:
             return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
         marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
         mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
-        if is_raw and is_gaj: col = "#5BAD6F"; fw = "bold"
-        elif is_raw:          col = "#E67E22"; fw = "bold"
-        elif is_gaj:          col = "#4A90D9"; fw = "bold"
-        else:                 col = "#1a1a1a"; fw = "normal"
-        rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else " - "
+        if is_raw:   col = "#5BAD6F"; fw = "bold"
+        elif is_gaj: col = "#4A90D9"; fw = "bold"
+        else:        col = "#1a1a1a"; fw = "normal"
+        rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "-"
         gv     = gap if (gap is not None and gap == gap) else None
-        gs     = f"{gv:+.3f}" if gv is not None else " - "
+        gs     = f"{gv:+.3f}" if gv is not None else "-"
         gc     = ("#E15252" if gv is not None and gv > 0.10
                   else "#5BAD6F" if gv is not None and gv < -0.10
                   else "#888888")
-        sec = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
-               f"RMSE {rmse_s} · <span style='color:{gc}'>Gap {gs}</span></span>")
+        sec = (f"<br><span style='font-size:0.71em;color:#888888;font-weight:normal'>"
+               f"{rmse_s} · <span style='color:{gc}'>{gs}</span></span>")
         return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
                 f"{r2:+.3f}{mhtml}{sec}</td>")
 
@@ -5142,16 +5285,24 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
         c = ("#5BAD6F" if dr2 >= MEANINGFUL else
              "#E15252" if dr2 <= -MEANINGFUL else "#888888")
         ex = ""
-        if drmse is not None and drmse == drmse:
+        if drmse is not None and drmse == drmse and dgap is not None and dgap == dgap:
             rc = ("#5BAD6F" if drmse <= -MEANINGFUL else
                   "#E15252" if drmse >= MEANINGFUL else "#888888")
-            ex += (f"<br><span style='font-size:0.72em;color:{rc};font-weight:normal'>"
-                   f"RMSE {drmse:+.2f}</span>")
-        if dgap is not None and dgap == dgap:
             gc = ("#E15252" if dgap > MEANINGFUL else
                   "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
-            ex += (f"<br><span style='font-size:0.72em;color:{gc};font-weight:normal'>"
-                   f"Gap {dgap:+.3f}</span>")
+            ex = (f"<br><span style='font-size:0.71em;font-weight:normal'>"
+                  f"<span style='color:{rc}'>{drmse:+.2f}</span>"
+                  f" · <span style='color:{gc}'>{dgap:+.3f}</span></span>")
+        elif drmse is not None and drmse == drmse:
+            rc = ("#5BAD6F" if drmse <= -MEANINGFUL else
+                  "#E15252" if drmse >= MEANINGFUL else "#888888")
+            ex = (f"<br><span style='font-size:0.71em;color:{rc};font-weight:normal'>"
+                  f"{drmse:+.2f}</span>")
+        elif dgap is not None and dgap == dgap:
+            gc = ("#E15252" if dgap > MEANINGFUL else
+                  "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
+            ex = (f"<br><span style='font-size:0.71em;color:{gc};font-weight:normal'>"
+                  f"{dgap:+.3f}</span>")
         return (f"<td style='{_TD};text-align:center;color:{c};font-weight:bold'>"
                 f"{dr2:+.3f}{ex}</td>")
 
@@ -5190,6 +5341,8 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"<td style='{_STD}'><strong>{vd}</strong><br>"
                 f"<span style='font-size:0.82em;color:{dc}'>{interp}</span></td></tr>")
 
+    d_s1_s2    = []; gaj_s1_s2    = []
+    d_s2_s2fs  = []; gaj_s2_s2fs  = []
     d_s1_s2fs  = []; gaj_s1_s2fs  = []
     d_ks_ksfs  = []; gaj_ks_ksfs  = []
 
@@ -5198,57 +5351,106 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
             f"<tr style='background:#e8e8e8'>"
-            f"<td colspan='7' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"<td colspan='9' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
-        for m in models_ord:
-            v1  = _get(s1,   m, tgt); g1  = _gap_v(s1,   m, tgt)
-            v2  = _get(s2fs, m, tgt); g2  = _gap_v(s2fs, m, tgt)
-            vk  = _get(ks,   m, tgt); gk  = _gap_v(ks,   m, tgt)
-            vkf = _get(ksfs, m, tgt); gkf = _gap_v(ksfs, m, tgt)
 
-            r1  = _get(s1,   m, tgt, "RMSE_test")
-            r2  = _get(s2fs, m, tgt, "RMSE_test")
-            rk  = _get(ks,   m, tgt, "RMSE_test")
-            rkf = _get(ksfs, m, tgt, "RMSE_test")
+        # --- pre-pass: global best for this target across all models and SEs ---
+        _all_raw_e3 = {}
+        _all_gaj_e3 = {}
+        _all_gap_e3 = {}
+        for m_ in models_ord:
+            v1_  = _get(s1,   m_, tgt); g1_  = _gap_v(s1,   m_, tgt)
+            v2_  = _get(s2,   m_, tgt); g2_  = _gap_v(s2,   m_, tgt)
+            v2f_ = _get(s2fs, m_, tgt); g2f_ = _gap_v(s2fs, m_, tgt)
+            vk_  = _get(ks,   m_, tgt); gk_  = _gap_v(ks,   m_, tgt)
+            vkf_ = _get(ksfs, m_, tgt); gkf_ = _gap_v(ksfs, m_, tgt)
+            sc1_ = _gaj(v1_, g1_); sc2_ = _gaj(v2_, g2_)
+            sc2f_ = _gaj(v2f_, g2f_); sck_ = _gaj(vk_, gk_); sckf_ = _gaj(vkf_, gkf_)
+            for key_, rv_, gv_, sv_ in [
+                ((m_, "s1"), v1_, g1_, sc1_),
+                ((m_, "s2"), v2_, g2_, sc2_),
+                ((m_, "s2f"), v2f_, g2f_, sc2f_),
+                ((m_, "ks"), vk_, gk_, sck_),
+                ((m_, "ksfs"), vkf_, gkf_, sckf_),
+            ]:
+                if rv_ is not None:
+                    _all_raw_e3[key_] = rv_
+                    _all_gap_e3[key_] = gv_
+                if sv_ is not None:
+                    _all_gaj_e3[key_] = sv_
+
+        tgt_br_e3 = max(_all_raw_e3.values()) if _all_raw_e3 else None
+        tgt_bg_e3 = max(_all_gaj_e3.values()) if _all_gaj_e3 else None
+
+        _raw_win_gap_e3 = None
+        if tgt_br_e3 is not None:
+            for k_, v_ in _all_raw_e3.items():
+                if abs(v_ - tgt_br_e3) < 1e-9:
+                    _raw_win_gap_e3 = _all_gap_e3.get(k_)
+                    break
+
+        tgt_show_gaj_e3 = False
+        if (tgt_bg_e3 is not None and tgt_br_e3 is not None
+                and _raw_win_gap_e3 is not None and _raw_win_gap_e3 > 0.10):
+            _raw_win_gaj_e3 = _gaj(tgt_br_e3, _raw_win_gap_e3)
+            if _raw_win_gaj_e3 is None or abs(tgt_bg_e3 - _raw_win_gaj_e3) > 1e-9:
+                tgt_show_gaj_e3 = True
+
+        def _ir(v_): return tgt_br_e3 is not None and v_ is not None and abs(v_ - tgt_br_e3) < 1e-9
+        def _ig(s_): return tgt_show_gaj_e3 and tgt_bg_e3 is not None and s_ is not None and abs(s_ - tgt_bg_e3) < 1e-9
+
+        for m in models_ord:
+            v1   = _get(s1,   m, tgt); g1   = _gap_v(s1,   m, tgt)
+            v2   = _get(s2,   m, tgt); g2   = _gap_v(s2,   m, tgt)
+            v2f  = _get(s2fs, m, tgt); g2f  = _gap_v(s2fs, m, tgt)
+            vk   = _get(ks,   m, tgt); gk   = _gap_v(ks,   m, tgt)
+            vkf  = _get(ksfs, m, tgt); gkf  = _gap_v(ksfs, m, tgt)
+
+            r1   = _get(s1,   m, tgt, "RMSE_test")
+            r2   = _get(s2,   m, tgt, "RMSE_test")
+            r2f  = _get(s2fs, m, tgt, "RMSE_test")
+            rk   = _get(ks,   m, tgt, "RMSE_test")
+            rkf  = _get(ksfs, m, tgt, "RMSE_test")
 
             sc1  = _gaj(v1,  g1);  sc2  = _gaj(v2,  g2)
-            sck  = _gaj(vk,  gk);  sckf = _gaj(vkf, gkf)
+            sc2f = _gaj(v2f, g2f); sck  = _gaj(vk,  gk);  sckf = _gaj(vkf, gkf)
 
-            d12 = (v2  - v1)  if (v1  is not None and v2  is not None) else None
-            dkk = (vkf - vk)  if (vk  is not None and vkf is not None) else None
+            d12   = (v2  - v1)  if (v1  is not None and v2  is not None) else None
+            d22f  = (v2f - v2)  if (v2  is not None and v2f is not None) else None
+            d12f  = (v2f - v1)  if (v1  is not None and v2f is not None) else None
+            dkk   = (vkf - vk)  if (vk  is not None and vkf is not None) else None
 
-            d12_rmse = ((r2  - r1)  if (r1  is not None and r2  is not None) else None)
-            dkk_rmse = ((rkf - rk)  if (rk  is not None and rkf is not None) else None)
-            d12_gap  = ((g2  - g1)  if (g1  is not None and g2  is not None) else None)
-            dkk_gap  = ((gkf - gk)  if (gk  is not None and gkf is not None) else None)
+            d12_rmse  = ((r2  - r1)  if (r1  is not None and r2  is not None) else None)
+            d22f_rmse = ((r2f - r2)  if (r2  is not None and r2f is not None) else None)
+            d12f_rmse = ((r2f - r1)  if (r1  is not None and r2f is not None) else None)
+            dkk_rmse  = ((rkf - rk)  if (rk  is not None and rkf is not None) else None)
+            d12_gap   = ((g2  - g1)  if (g1  is not None and g2  is not None) else None)
+            d22f_gap  = ((g2f - g2)  if (g2  is not None and g2f is not None) else None)
+            d12f_gap  = ((g2f - g1)  if (g1  is not None and g2f is not None) else None)
+            dkk_gap   = ((gkf - gk)  if (gk  is not None and gkf is not None) else None)
 
-            sd12 = (sc2  - sc1)  if (sc1  is not None and sc2  is not None) else None
-            sdkk = (sckf - sck)  if (sck  is not None and sckf is not None) else None
+            sd12  = (sc2  - sc1)  if (sc1  is not None and sc2  is not None) else None
+            sd22f = (sc2f - sc2)  if (sc2  is not None and sc2f is not None) else None
+            sd12f = (sc2f - sc1)  if (sc1  is not None and sc2f is not None) else None
+            sdkk  = (sckf - sck)  if (sck  is not None and sckf is not None) else None
 
-            if d12  is not None: d_s1_s2fs.append(d12)
-            if dkk  is not None: d_ks_ksfs.append(dkk)
-            if sd12 is not None: gaj_s1_s2fs.append(sd12)
-            if sdkk is not None: gaj_ks_ksfs.append(sdkk)
-
-            raw_c = {k: vv for k, vv in [("s1",v1),("s2",v2),("ks",vk),("ksfs",vkf)] if vv is not None}
-            gaj_c = {k: vv for k, vv in [("s1",sc1),("s2",sc2),("ks",sck),("ksfs",sckf)] if vv is not None}
-            br = max(raw_c.values()) if raw_c else None
-            bg = max(gaj_c.values()) if gaj_c else None
-
-            def _ir(v_): return br is not None and v_ is not None and abs(v_ - br) < 1e-9
-            def _ig(s_): return bg is not None and s_ is not None and abs(s_ - bg) < 1e-9
+            if d12  is not None: d_s1_s2.append(d12);     gaj_s1_s2.append(sd12)   if sd12  is not None else None
+            if d22f is not None: d_s2_s2fs.append(d22f);  gaj_s2_s2fs.append(sd22f) if sd22f is not None else None
+            if d12f is not None: d_s1_s2fs.append(d12f);  gaj_s1_s2fs.append(sd12f) if sd12f is not None else None
+            if dkk  is not None: d_ks_ksfs.append(dkk);   gaj_ks_ksfs.append(sdkk)  if sdkk  is not None else None
 
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
                 f"<tr style='background:{row_bg}'>"
                 f"<td style='{_TD}'><strong>{m}</strong></td>"
-                f"{_val_td(v1,  r1,  g1,  _ir(v1),  _ig(sc1))}"
-                f"{_val_td(v2,  r2,  g2,  _ir(v2),  _ig(sc2))}"
-                f"{_delta_td(d12, d12_rmse, d12_gap)}"
-                f"{_val_td(vk,  rk,  gk,  _ir(vk),  _ig(sck))}"
-                f"{_val_td(vkf, rkf, gkf, _ir(vkf), _ig(sckf))}"
+                f"{_val_td(v1,   r1,   g1,   _ir(v1),   _ig(sc1))}"
+                f"{_val_td(v2,   r2,   g2,   _ir(v2),   _ig(sc2))}"
+                f"{_val_td(v2f,  r2f,  g2f,  _ir(v2f),  _ig(sc2f))}"
+                f"{_delta_td(d12f, d12f_rmse, d12f_gap)}"
+                f"{_val_td(vk,   rk,   gk,   _ir(vk),   _ig(sck))}"
+                f"{_val_td(vkf,  rkf,  gkf,  _ir(vkf),  _ig(sckf))}"
                 f"{_delta_td(dkk, dkk_rmse, dkk_gap)}"
                 f"</tr>"
             )
@@ -5272,8 +5474,10 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
       </tr>
     </thead>
     <tbody>
-      {_stats_row(d_s1_s2fs, gaj_s1_s2fs, "S1 (ADD)", "S2-FS (ADD+CONSIDER)")}
-      {_stats_row(d_ks_ksfs, gaj_ks_ksfs, "S3 (no FS)", "S3-FS")}
+      {_stats_row(d_s1_s2,    gaj_s1_s2,    "SE1 (ADD)", "SE2 (ADD+CONSIDER, no FS)")}
+      {_stats_row(d_s2_s2fs,  gaj_s2_s2fs,  "SE2 (no FS)", "SE2-FS")}
+      {_stats_row(d_s1_s2fs,  gaj_s1_s2fs,  "SE1 (ADD)", "SE2-FS (ADD+CONSIDER)")}
+      {_stats_row(d_ks_ksfs,  gaj_ks_ksfs,  "SE3 (no FS)", "SE3-FS")}
     </tbody>
   </table>
   </div>
@@ -5281,40 +5485,36 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     <p class='meta'>
       <strong>Reading the table.</strong>
       Net Mean ΔR² is the signed average across all {n_cells} (model × target) cells.
-      <strong>S1 → S2-FS</strong>: adds CONSIDER-tier features (32 total) with model-specific FS
-      on ~469 Grab train rows (−43 % vs S1's ~816).
-      <strong>S3 → S3-FS</strong>: applies FS to the 44/39-feature all-features set on ~130 Grab rows.
+      <strong>SE1 → SE2</strong>: adds CONSIDER-tier features (32 total, no FS) on ~469 Grab rows.
+      <strong>SE2 → SE2-FS</strong>: applies model-specific FS to the same 32-feature set.
+      <strong>SE1 → SE2-FS</strong>: net effect of both CONSIDER features and FS together.
+      <strong>SE3 → SE3-FS</strong>: applies FS to the 44/39-feature all-features set on ~130 Grab rows.
       <strong>Gap-Adj − Raw</strong>: negative = raw gains inflated by overfitting;
       positive = gains understated because overfitting decreased.
-      <strong>★</strong> = best raw Test R² · <strong>✦</strong> = best gap-adjusted score ·
-      <span style='color:#5BAD6F'>green</span> = both ·
-      <span style='color:#E67E22'>orange</span> = raw only ·
-      <span style='color:#4A90D9'>blue</span> = gap-adj only.
+      <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
     </p>
   </div>
 </div>"""
 
     main_table = f"""
 <div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
-<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:1100px'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:880px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
-      <th style='{_TH};min-width:60px'>Model</th>
-      <th style='{_THC}'>S1  -  ADD<br>
-          <span style='color:#888888;font-weight:400'>28 feat · ~816 rows</span><br>
+      <th style='{_TH};min-width:52px'>Model</th>
+      <th style='{_THC}'>SE1<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>S2-FS  -  ADD+CONSIDER<br>
-          <span style='color:#888888;font-weight:400'>32 feat → selected · ~469 rows</span><br>
+      <th style='{_THC}'>SE2<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Δ (S1 → S2-FS)<br>
+      <th style='{_THC}'>SE2-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ SE1→SE2-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
-      <th style='{_THC}'>S3 - All Features<br>
-          <span style='color:#888888;font-weight:400'>44/39 feat · ~130 rows · no FS</span><br>
+      <th style='{_THC}'>SE3<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>S3-FS - All Features<br>
-          <span style='color:#888888;font-weight:400'>44/39 feat → selected</span><br>
+      <th style='{_THC}'>SE3-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Delta (S3 -> S3-FS)<br>
+      <th style='{_THC}'>Δ SE3→SE3-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
@@ -5327,20 +5527,13 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     return f"""
 <details class="exp-details" id="exp3-comparison" open>
   <summary><span class="fold-icon">▶</span>
-    Sub-experiment Comparison  -  S1 / S2-FS / S3 / S3-FS
+    Comparisons
   </summary>
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #E67E22">
       <p class="meta">
-        <strong>S1</strong> (ADD-tier, 28 features, ~816 Grab train rows) →
-        <strong>S2-FS</strong> (ADD+CONSIDER, 32 features → model-selected, ~469 rows) →
-        <strong>S3</strong> (all 44/39 features, ~130 Grab rows, no FS) →
-        <strong>S3-FS</strong> (same data, model-specific FS applied).
-        <strong>★</strong> = best raw Test R² per (model, target) ·
-        <strong>✦</strong> = best gap-adjusted ·
-        <span style='color:#5BAD6F;font-weight:bold'>green</span> = both ·
-        <span style='color:#E67E22;font-weight:bold'>orange</span> = raw only ·
-        <span style='color:#4A90D9;font-weight:bold'>blue</span> = gap-adj only.
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
         RMSE in native units (mg/L or pH). Gap = Train R² - Test R²;
         <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
       </p>
@@ -5394,19 +5587,19 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
         return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
 
     q1 = (
-        f"<strong>Sub-exp 1 (ADD-tier)</strong> retains ~816 Grab training rows  -  negligible "
-        f"row loss vs Exp2-Sub2 (~470 after secondary-data filtering). The 7 aeration ADD features "
+        f"<strong>SE1 (ADD-tier)</strong> retains ~816 Grab training rows  -  negligible "
+        f"row loss vs Exp2-SE2 (~470 after secondary-data filtering). The 7 aeration ADD features "
         f"have 0 - 12 % marginal row cost because secondary data availability already gates the "
         f"dataset. Best ADD Grab avg = {_c(s1_grab)}; best ADD Comp avg = {_c(s1_comp)}. "
         f"RF avg Grab gap = {_c(s1_rf_gap, False)}  -  moderate overfitting with 28 features at n=816. "
         f"<br><br>"
-        f"<strong>Sub-exp 2 (ADD+CONSIDER)</strong> adds four CONSIDER-tier features. "
+        f"<strong>SE2 (ADD+CONSIDER)</strong> adds four CONSIDER-tier features. "
         f"Inlet Total Coliform alone cuts Grab rows from ~816 to ~469 (−43 %). "
-        f"With FS applied, best S2-FS Grab avg = {_c(s2_grab)}, Comp avg = {_c(s2_comp)}. "
+        f"With FS applied, best SE2-FS Grab avg = {_c(s2_grab)}, Comp avg = {_c(s2_comp)}. "
         f"<br><br>"
-        f"<strong>Sub-exp 3 (all features)</strong> dropped Grab rows to ~130 (−74 % vs Exp2-Sub2). "
+        f"<strong>SE3 (all features)</strong> dropped Grab rows to ~130 (−74 % vs Exp2-SE2). "
         f"With n/p ≈ 3, OLS avg gap = {_c(ks_ols_gap, False)}, RF avg gap = {_c(ks_rf_gap, False)}. "
-        f"Kitchen-sink Grab avg (best per target) = {_c(ks_grab)}, Comp avg = {_c(ks_comp)}."
+        f"All-features Grab avg (best per target) = {_c(ks_grab)}, Comp avg = {_c(ks_comp)}."
     )
 
     q2 = (
@@ -5415,7 +5608,7 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
         f"OLS benefits (LassoCV prunes to the strongest ADD features), while tree models see "
         f"mixed outcomes because OOF fold size at n=469 is ~156 rows  -  still workable but reduced. "
         f"<br><br>"
-        f"<strong>Kitchen-sink FS (Sub-exp 3)</strong>: Did not rescue the undersized grab dataset. "
+        f"<strong>All-Features FS (SE4)</strong>: Did not rescue the undersized grab dataset. "
         f"The OOF fold size on 130 rows (3-fold TSS) is ~43 rows  -  "
         f"permutation importance estimates are too noisy at this scale, causing the FS algorithm "
         f"to prune to only 2 - 7 features per target, an overly aggressive cut. "
@@ -5425,12 +5618,12 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
     q3 = (
         f"The Feature Audit tiers (ADD / CONSIDER) exist precisely to avoid the all-features trap. "
         f"<strong>ADD-tier features</strong> (MI ≥ 0.20, row cost ≤ 20 %) give the best "
-        f"feature-count-to-row-cost ratio  -  Sub-exp 1 is the recommended baseline for Exp3. "
+        f"feature-count-to-row-cost ratio  -  SE1 is the recommended baseline for Exp3. "
         f"<strong>CONSIDER-tier features</strong> can help individual targets if FS is applied, "
         f"but Inlet Total Coliform's 43 % Grab row loss is a steep price that must be weighed "
         f"per-target. "
         f"<br><br>"
-        f"The all-features sub-experiment (Sub-exp 3) confirms the audit's core conclusion: "
+        f"The all-features sub-experiment (SE3) confirms the audit's core conclusion: "
         f"<strong>data-driven FS cannot rescue an undersized dataset</strong>  -  "
         f"the FS algorithm itself operates in a high-variance regime when fold sizes are "
         f"below ~50 rows. Feature selection should happen <em>before</em> the experiment "
@@ -5451,8 +5644,8 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
 </div>"""
 
     cards = "".join([
-        _qcard(1, "How did each sub-experiment's feature set affect sample size and performance?", q1),
-        _qcard(2, "Did ADD+CONSIDER (Sub-exp 2) and all-features FS (Sub-exp 3) improve on ADD-only?", q2),
+        _qcard(1, "How did each SE's feature set affect sample size and performance?", q1),
+        _qcard(2, "Did ADD+CONSIDER with FS (SE2) and All-Features FS (SE4) improve on ADD-only?", q2),
         _qcard(3, "What is the takeaway for feature engineering strategy?", q3),
     ])
 
@@ -5465,63 +5658,58 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
 
 def build_exp3_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp3-S1", "exp3-s1",
-                           "Sub-experiment 1  -  ADD-tier Aeration Features (28 features, no FS)",
+                           "SE1  -  ADD-tier: Inlet + Secondary + Aeration (no FS)",
                            open_default=True)
-    sub2 = _exp_subsection(df_all, "Exp3-S2-FS", "exp3-s2",
-                           "Sub-experiment 2  -  ADD + CONSIDER-tier with FS (LassoCV / OOF perm. importance)",
-                           open_default=True)
-    ks   = _exp_subsection(df_all, "Exp3-S3",    "exp3-s3",
-                           "Sub-experiment 3  -  All Remaining Features, no FS (44/39 features)",
-                           open_default=False)
-    ks_fs = _exp_subsection(df_all, "Exp3-S3-FS", "exp3-s3-fs",
-                            "Sub-experiment 3b  -  All Remaining Features with FS",
-                            open_default=False,
-                            dataset_summary_fn=_dataset_summary_per_model)
-    cmp_div      = _exp3_comparison_panel(df_all)
-    findings_div = _exp3_qna(df_all)
 
-    vif_div    = _vif_callout()
-    vif_bridge = f"""
-<details class="exp-details" id="exp3-vif">
-  <summary><span class="fold-icon">▶</span>
-    Collinearity Diagnosis  -  Why Exp4 Was Designed
-  </summary>
+    # SE2 wrapper: full (no FS) + FS
+    sub2_full = _exp_subsection(df_all, "Exp3-S2",    "exp3-s2-full",
+                                "Full Feature Set (32 features, no FS)",
+                                open_default=False)
+    sub2_fs   = _exp_subsection(df_all, "Exp3-S2-FS", "exp3-s2-fs",
+                                "With Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
+    sub2_wrapper = f"""
+<details class="exp-details" id="exp3-s2">
+  <summary><span class="fold-icon">▶</span> SE2  -  ADD + CONSIDER-tier (full + FS)</summary>
   <div class="exp-body">
-    <div class="obs-card" style="border-left:4px solid #9B59B6;margin-bottom:0.8rem">
-      <p class="meta">
-        The all-features feature set (Sub-exp 3) contains several correlated groups
-        (Sec Clarifier ↔ Sec Sedimentation; Aeration MLSS ↔ SVI;
-        Power GE + Power NEA = Power Total). VIF analysis below quantifies this for OLS.
-        Key context: VIF matters primarily for <strong>OLS</strong> (unregularised linear
-        regression), where high VIF inflates coefficient standard errors and causes instability.
-        <strong>Ridge</strong> and <strong>ElasticNet</strong> handle collinearity by
-        design via their L2/L1 penalties, and <strong>tree models</strong> (RF, GB, XGB)
-        are entirely unaffected  -  correlated features simply share split importance without
-        degrading prediction.
-        <br><br>
-        This collinearity observation motivated <strong>Experiment 4</strong>: a direct test
-        of whether manually removing the most collinear groups (SVI, New aeration, Sec Sed)
-        would improve generalisation. Spoiler: it did not  -  see Exp4 findings.
-      </p>
-    </div>
-    {vif_div}
+    {sub2_full}
+    {sub2_fs}
   </div>
 </details>"""
 
+    # SE3 wrapper: no FS + FS
+    sub3_full = _exp_subsection(df_all, "Exp3-S3",    "exp3-s3-full",
+                                "All Features (no FS)",
+                                open_default=False)
+    sub3_fs   = _exp_subsection(df_all, "Exp3-S3-FS", "exp3-s3-fs",
+                                "With Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
+    sub3_wrapper = f"""
+<details class="exp-details" id="exp3-s3">
+  <summary><span class="fold-icon">▶</span> SE3  -  All Features (full + FS)</summary>
+  <div class="exp-body">
+    {sub3_full}
+    {sub3_fs}
+  </div>
+</details>"""
+
+    cmp_div      = _exp3_comparison_panel(df_all)
+    findings_div = _exp3_qna(df_all)
+
     best = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2-FS", "Exp3-S3", "Exp3-S3-FS"])],
+        df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2", "Exp3-S2-FS", "Exp3-S3", "Exp3-S3-FS"])],
         "Experiment 3")
     return f"""
 <section id="exp3">
   <h1 class="section-title">Experiment 3  -  Feature Audit Tiers &amp; All Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
-  {sub2}
-  {ks}
-  {ks_fs}
+  {sub2_wrapper}
+  {sub3_wrapper}
   {cmp_div}
   {findings_div}
-  {vif_bridge}
   {best}
 </section>"""
 
@@ -5675,7 +5863,7 @@ def _variance_diagnosis_callout() -> str:
 
 
 def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
-    """Three-way comparison table: Exp3-S2 vs Exp4-S1 vs Exp4-S2 for each target × model."""
+    """Three-way comparison table: Exp3-SE2 vs Exp4-SE1 vs Exp4-SE2 for each target × model."""
     df3  = df_all[df_all["exp_key"] == "Exp3-S2"]
     df4s1 = df_all[df_all["exp_key"] == "Exp4-S1"]
     df4s2 = df_all[df_all["exp_key"] == "Exp4-S2"]
@@ -5707,7 +5895,7 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
                     return '<td style="color:var(--text-muted)">-</td><td style="color:var(--text-muted)">-</td>'
                 r2_str = f"{r2:+.3f}"
                 gap_str = f"{gap:+.3f}"
-                # Colour R2 relative to reference (Exp3-S2)
+                # Colour R2 relative to reference (Exp3-SE2)
                 if ref_r2 is None:
                     r2_col = "var(--text-muted)"
                 elif r2 >= ref_r2 + 0.02:
@@ -5731,9 +5919,9 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
     thead = """<thead><tr>
       <th>Model</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-blue);color:var(--th-col-blue-text)">Exp3-S2 (baseline)</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-red);color:var(--th-col-red-text)">Exp4-S1 (manual prune)</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-green);color:var(--th-col-green-text)">Exp4-S2 (VIF prune)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-blue);color:var(--th-col-blue-text)">Exp3-SE2 (baseline)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-red);color:var(--th-col-red-text)">Exp4-SE1 (manual prune)</th>
+      <th colspan="2" style="text-align:center;background:var(--th-col-green);color:var(--th-col-green-text)">Exp4-SE2 (VIF prune)</th>
     </tr>
     <tr style="font-size:0.82em">
       <th></th>
@@ -5744,9 +5932,9 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
     return f"""
 <div class="obs-card" style="margin-top:24px">
-  <h3 style="margin:0 0 12px">Three-way comparison: Exp3-S2 → Exp4-S1 → Exp4-S2</h3>
+  <h3 style="margin:0 0 12px">Three-way comparison: Exp3-SE2 → Exp4-SE1 → Exp4-SE2</h3>
   <p style="color:var(--text-muted);font-size:0.88em;margin:0 0 10px">
-    Colours vs Exp3-S2 baseline: <span style="color:#2ecc71">green = +0.02 gain</span>,
+    Colours vs Exp3-SE2 baseline: <span style="color:#2ecc71">green = +0.02 gain</span>,
     <span style="color:#e74c3c">red = −0.02 loss</span>, white = within ±0.02.
     Gap column: <span style="color:#e74c3c">red = overfitting gap &gt;0.15</span>.
   </p>
@@ -5760,13 +5948,41 @@ def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
 
 
 def build_exp4_section(df_all: pd.DataFrame) -> str:
+    vif_div    = _vif_callout()
+    vif_bridge = f"""
+<details class="exp-details" id="exp4-vif">
+  <summary><span class="fold-icon">▶</span>
+    Collinearity Diagnosis  -  Motivation for Experiment 4
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #9B59B6;margin-bottom:0.8rem">
+      <p class="meta">
+        The all-features feature set (Exp3 SE3) contains several correlated groups
+        (Sec Clarifier ↔ Sec Sedimentation; Aeration MLSS ↔ SVI;
+        Power GE + Power NEA = Power Total). VIF analysis below quantifies this for OLS.
+        Key context: VIF matters primarily for <strong>OLS</strong> (unregularised linear
+        regression), where high VIF inflates coefficient standard errors and causes instability.
+        <strong>Ridge</strong> and <strong>ElasticNet</strong> handle collinearity by
+        design via their L2/L1 penalties, and <strong>tree models</strong> (RF, GB, XGB)
+        are entirely unaffected  -  correlated features simply share split importance without
+        degrading prediction.
+        <br><br>
+        This collinearity observation motivated <strong>Experiment 4</strong>: a direct test
+        of whether manually removing the most collinear groups (SVI, New aeration, Sec Sed)
+        would improve generalisation. Spoiler: it did not  -  see SE findings below.
+      </p>
+    </div>
+    {vif_div}
+  </div>
+</details>"""
+
     sub1 = _exp_subsection(df_all, "Exp4-S1", "exp4-s1",
-                           "Sub-experiment 1 - Manual Redundancy Pruning (SVI, New Aeration, Sec Sed)",
+                           "SE1 - Manual Group Removal (SVI, New Aeration, Sec Sed)",
                            open_default=True)
 
     note_s1 = """
 <div class="info-note" style="border-left-color:#e74c3c">
-  <strong>⚠ Sub-exp 1 finding - manual pruning hypothesis refuted:</strong>
+  <strong>⚠ SE1 finding - manual pruning hypothesis refuted:</strong>
   Removing the three feature groups made performance <em>worse</em> across every target and every
   model. Row counts barely changed (+5-10, &lt;2%) because Sec Sed and Sec Clarifier are
   collected on the same operational days (co-occurring missingness).
@@ -5781,12 +5997,12 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 </div>"""
 
     sub2 = _exp_subsection(df_all, "Exp4-S2", "exp4-s2",
-                           "Sub-experiment 2 - Automated VIF Pruning (threshold = 10)",
+                           "SE2 - VIF-based Automated Pruning (threshold = 10)",
                            open_default=True)
 
     note_s2 = """
 <div class="info-note" style="border-left-color:#e67e22">
-  <strong>⚠ Sub-exp 2 finding - VIF pruning also refuted, with nuance:</strong>
+  <strong>⚠ SE2 finding - VIF pruning also refuted, with nuance:</strong>
   Automated iterative VIF pruning (drop highest-VIF feature until all VIF ≤ 10) reduced
   feature sets to 5-10 and unlocked +47 to +293 additional rows by eliminating high-missingness
   correlated features (pH columns, Inlet BOD/COD, MLSS).
@@ -5797,9 +6013,9 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
   <br><br><strong>But performance still degraded:</strong>
   <ul style="margin:6px 0 0 16px;padding:0">
     <li><strong>Ridge:</strong> mixed results - Grab BOD Ridge recovered to +0.463 (close to
-        Exp4-S1 +0.518), Grab TSS Ridge stable at +0.373. But Comp pH Ridge collapsed to −1.44
+        Exp4-SE1 +0.518), Grab TSS Ridge stable at +0.373. But Comp pH Ridge collapsed to −1.44
         and Comp COD remains unresolved.</li>
-    <li><strong>ElNet:</strong> Grab BOD dropped to +0.072 (vs Exp3-S2 +0.684). ElNet relies on
+    <li><strong>ElNet:</strong> Grab BOD dropped to +0.072 (vs Exp3-SE2 +0.684). ElNet relies on
         L1 to select from correlated features; pre-selecting them via VIF removes its advantage.</li>
     <li><strong>Tree models (RF, GB, XGB):</strong> catastrophic on most targets. Removing all
         pH features and Inlet BOD/COD strips the primary process-signal columns that trees use
@@ -5816,9 +6032,9 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
   <br><br><strong>Conclusion:</strong> Both manual and automated collinearity pruning are
   counter-productive on this dataset. The collinearity is intrinsic to the process physics and
   should be absorbed by regularisation (Ridge/ElNet), not removed. Tree models require the
-  full feature pool. <strong>Exp3-S2 remains the best feature set for tree models.</strong>
-  For linear models, Ridge on Exp4-S2 is competitive for Grab BOD/TSS but should not replace
-  Exp3-S2 Ridge as the baseline due to losses on other targets.
+  full feature pool. <strong>Exp3-SE2 remains the best feature set for tree models.</strong>
+  For linear models, Ridge on Exp4-SE2 is competitive for Grab BOD/TSS but should not replace
+  Exp3-SE2 Ridge as the baseline due to losses on other targets.
 </div>"""
 
     comparison = _exp4_comparison_table(df_all)
@@ -5828,11 +6044,338 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 <section id="exp4">
   <h1 class="section-title">Experiment 4 - Collinearity Pruning</h1>
   <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
+  {vif_bridge}
   {sub1}
   {note_s1}
   {sub2}
   {note_s2}
   {comparison}
+  {best}
+</section>"""
+
+
+def _exp5_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Side-by-side comparison: Sub1 (Composite+GrabInlet) vs Sub2 (Grab+CompInlet).
+
+    The baseline for each sub-experiment is the corresponding Exp3-SE1 result
+    (same target type, same base feature set without cross-type inlet).
+    """
+    s1    = df_all[df_all["exp_key"] == "Exp5-S1"].copy()
+    s1fs  = df_all[df_all["exp_key"] == "Exp5-S1-FS"].copy()
+    s2    = df_all[df_all["exp_key"] == "Exp5-S2"].copy()
+    s2fs  = df_all[df_all["exp_key"] == "Exp5-S2-FS"].copy()
+    base1 = df_all[df_all["exp_key"] == "Exp3-S1"].copy()
+
+    if s1.empty and s2.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    MEANINGFUL = 0.01
+    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
+    def _get(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gap_v(df, model, tgt):
+        return _get(df, model, tgt, "R2_gap")
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:   col = "#5BAD6F"; fw = "bold"
+        elif is_gaj: col = "#4A90D9"; fw = "bold"
+        else:        col = "#1a1a1a"; fw = "normal"
+        gap_val = gap if (gap is not None and gap == gap) else None
+        gap_str = f"{gap_val:+.3f}" if gap_val is not None else " - "
+        gap_col = ("#E15252" if gap_val is not None and gap_val > 0.10
+                   else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                   else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
+                     f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{mhtml}{secondary}</td>")
+
+    def _delta_td(dr2):
+        if dr2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        col = ("#5BAD6F" if dr2 >= MEANINGFUL else "#E15252" if dr2 <= -MEANINGFUL else "#888888")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:bold'>"
+                f"{dr2:+.3f}</td>")
+
+    tbody = ""
+    for tgt in COMP_TARGETS + GRAB_TARGETS:
+        short = TARGET_SHORT.get(tgt, tgt)
+        tbody += (
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='8' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
+        )
+
+        # --- pre-pass: global best for this target across all models and SEs ---
+        _all_raw_e5 = {}
+        _all_gaj_e5 = {}
+        _all_gap_e5 = {}
+        for m_ in models_ord:
+            vb_ = _get(base1, m_, tgt); gb_ = _gap_v(base1, m_, tgt)
+            v1_ = _get(s1,    m_, tgt); g1_ = _gap_v(s1,    m_, tgt)
+            v1f_= _get(s1fs,  m_, tgt); g1f_= _gap_v(s1fs,  m_, tgt)
+            v2_ = _get(s2,    m_, tgt); g2_ = _gap_v(s2,    m_, tgt)
+            v2f_= _get(s2fs,  m_, tgt); g2f_= _gap_v(s2fs,  m_, tgt)
+            sb_ = _gaj(vb_, gb_); ss1_ = _gaj(v1_, g1_)
+            ss1f_= _gaj(v1f_, g1f_); ss2_ = _gaj(v2_, g2_); ss2f_ = _gaj(v2f_, g2f_)
+            for key_, rv_, gv_, sv_ in [
+                ((m_, "base"), vb_, gb_, sb_),
+                ((m_, "s1"), v1_, g1_, ss1_),
+                ((m_, "s1f"), v1f_, g1f_, ss1f_),
+                ((m_, "s2"), v2_, g2_, ss2_),
+                ((m_, "s2f"), v2f_, g2f_, ss2f_),
+            ]:
+                if rv_ is not None:
+                    _all_raw_e5[key_] = rv_
+                    _all_gap_e5[key_] = gv_
+                if sv_ is not None:
+                    _all_gaj_e5[key_] = sv_
+
+        tgt_br_e5 = max(_all_raw_e5.values()) if _all_raw_e5 else None
+        tgt_bg_e5 = max(_all_gaj_e5.values()) if _all_gaj_e5 else None
+
+        _raw_win_gap_e5 = None
+        if tgt_br_e5 is not None:
+            for k_, v_ in _all_raw_e5.items():
+                if abs(v_ - tgt_br_e5) < 1e-9:
+                    _raw_win_gap_e5 = _all_gap_e5.get(k_)
+                    break
+
+        tgt_show_gaj_e5 = False
+        if (tgt_bg_e5 is not None and tgt_br_e5 is not None
+                and _raw_win_gap_e5 is not None and _raw_win_gap_e5 > 0.10):
+            _raw_win_gaj_e5 = _gaj(tgt_br_e5, _raw_win_gap_e5)
+            if _raw_win_gaj_e5 is None or abs(tgt_bg_e5 - _raw_win_gaj_e5) > 1e-9:
+                tgt_show_gaj_e5 = True
+
+        def _ir(v_): return tgt_br_e5 is not None and v_ is not None and abs(v_ - tgt_br_e5) < 1e-9
+        def _ig(s_): return tgt_show_gaj_e5 and tgt_bg_e5 is not None and s_ is not None and abs(s_ - tgt_bg_e5) < 1e-9
+
+        for m in models_ord:
+            v_base = _get(base1, m, tgt)
+            v_s1   = _get(s1,    m, tgt)
+            v_s1f  = _get(s1fs,  m, tgt)
+            v_s2   = _get(s2,    m, tgt)
+            v_s2f  = _get(s2fs,  m, tgt)
+            g_base = _gap_v(base1, m, tgt)
+            g_s1   = _gap_v(s1,   m, tgt)
+            g_s1f  = _gap_v(s1fs, m, tgt)
+            g_s2   = _gap_v(s2,   m, tgt)
+            g_s2f  = _gap_v(s2fs, m, tgt)
+
+            d1   = (v_s1  - v_base) if (v_base is not None and v_s1  is not None) else None
+            d1fs = (v_s1f - v_s1)   if (v_s1   is not None and v_s1f is not None) else None
+            d2   = (v_s2  - v_base) if (v_base is not None and v_s2  is not None) else None
+            d2fs = (v_s2f - v_s2)   if (v_s2   is not None and v_s2f is not None) else None
+
+            sc_base = _gaj(v_base, g_base)
+            sc_s1   = _gaj(v_s1,   g_s1)
+            sc_s1f  = _gaj(v_s1f,  g_s1f)
+            sc_s2   = _gaj(v_s2,   g_s2)
+            sc_s2f  = _gaj(v_s2f,  g_s2f)
+
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
+            tbody += (
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
+                f"{_val_td(v_base, g_base, _ir(v_base), _ig(sc_base))}"
+                f"{_val_td(v_s1,   g_s1,   _ir(v_s1),   _ig(sc_s1))}"
+                f"{_val_td(v_s1f,  g_s1f,  _ir(v_s1f),  _ig(sc_s1f))}"
+                f"{_delta_td(d1fs)}"
+                f"{_val_td(v_s2,   g_s2,   _ir(v_s2),   _ig(sc_s2))}"
+                f"{_val_td(v_s2f,  g_s2f,  _ir(v_s2f),  _ig(sc_s2f))}"
+                f"{_delta_td(d2fs)}"
+                f"</tr>"
+            )
+
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:1100px'>
+  <thead>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:60px'>Model</th>
+      <th style='{_THC}'>Baseline<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · Gap</span></th>
+      <th style='{_THC}'>SE1<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · Gap</span></th>
+      <th style='{_THC}'>SE1-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · Gap</span></th>
+      <th style='{_THC}'>Δ (SE1 → SE1-FS)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR²</span></th>
+      <th style='{_THC}'>SE2<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · Gap</span></th>
+      <th style='{_THC}'>SE2-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · Gap</span></th>
+      <th style='{_THC}'>Δ (SE2 → SE2-FS)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR²</span></th>
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="exp5-comparison">
+  <summary><span class="fold-icon">▶</span>
+    Comparisons
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #E67E22">
+      <p class="meta">
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+      </p>
+    </div>
+    {main_table}
+  </div>
+</details>"""
+
+
+def _exp5_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for Experiment 5."""
+    s1    = df_all[df_all["exp_key"] == "Exp5-S1"].dropna(subset=["R2_test"])
+    s2    = df_all[df_all["exp_key"] == "Exp5-S2"].dropna(subset=["R2_test"])
+    base1 = df_all[df_all["exp_key"] == "Exp3-S1"].dropna(subset=["R2_test"])
+
+    def _avg(df, tgts):
+        vals = [float(df[df["target"] == t]["R2_test"].max())
+                for t in tgts if not df[df["target"] == t].empty]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    def _c(v, pos=True):
+        if v != v: return " - "
+        col = ("#5BAD6F" if v > 0.05 else "#E15252" if v < -0.05 else "var(--text-muted)") \
+              if pos else \
+              ("#E15252" if v > 0.10 else "#5BAD6F" if v < 0.05 else "var(--text-muted)")
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    s1_comp_avg  = _avg(s1, COMP_TARGETS)
+    s2_grab_avg  = _avg(s2, GRAB_TARGETS)
+    b1_comp_avg  = _avg(base1, COMP_TARGETS)
+    b1_grab_avg  = _avg(base1, GRAB_TARGETS)
+
+    delta_comp = s1_comp_avg - b1_comp_avg if not (np.isnan(s1_comp_avg) or np.isnan(b1_comp_avg)) else float("nan")
+    delta_grab = s2_grab_avg - b1_grab_avg if not (np.isnan(s2_grab_avg) or np.isnan(b1_grab_avg)) else float("nan")
+
+    q1 = (
+        f"<strong>SE1 (Composite + Grab inlet):</strong> "
+        f"avg composite Test R² = {_c(s1_comp_avg)} vs Exp3-SE1 baseline {_c(b1_comp_avg)}. "
+        f"Marginal delta: {_c(delta_comp)}. Row cost ~22.7% (629 from 816 train rows). "
+        f"<br><br>"
+        f"<strong>SE2 (Grab + Composite inlet):</strong> "
+        f"avg grab Test R² = {_c(s2_grab_avg)} vs Exp3-SE1 baseline {_c(b1_grab_avg)}. "
+        f"Marginal delta: {_c(delta_grab)}. Row cost ~38.2% (630 from 1021 train rows). "
+        f"<br><br>"
+        f"Compare deltas against the row-cost paid: if the cross-type columns add less than "
+        f"the baseline R² would have gained from 22-38% more training rows, they carry no net value."
+    )
+
+    q2 = (
+        f"The cross-type inlet hypothesis has an inherent baseline contamination: by requiring "
+        f"co-occurrence of grab and composite inlet measurements, we have <em>changed the training "
+        f"population</em>. Days with both grab and composite measurements may be systematically "
+        f"different from days with only one type (e.g. more routine vs storm-event days). "
+        f"<br><br>"
+        f"Interpretation rule: a positive delta confirms cross-type signal, but a negative or zero "
+        f"delta may reflect <em>selection bias</em> (the joint-availability filter) rather than "
+        f"absence of cross-type signal. To isolate the pure feature effect, compare "
+        f"Exp5-SE1/S2 directly against Exp3-SE1 trained on the <strong>same restricted rows</strong> "
+        f"(an Exp3-SE1 re-run with joint-availability mask). This is a natural follow-up experiment."
+    )
+
+    def _qcard(n, question, answer):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);
+              display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);
+        padding-left:0.6rem'>{answer}</p>
+  </div>
+</div>"""
+
+    cards = "".join([
+        _qcard(1, "Did adding cross-type inlet features improve prediction for each target type?", q1),
+        _qcard(2, "What are the confounds in interpreting the cross-type experiment?", q2),
+    ])
+
+    return f"""
+<details class="exp-details" id="exp5-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Experiment 5</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def build_exp5_section(df_all: pd.DataFrame) -> str:
+    # SE1: Composite targets + Grab inlet - full + FS
+    sub1_full = _exp_subsection(df_all, "Exp5-S1", "exp5-s1-full",
+                                "Full Feature Set (32 features)",
+                                open_default=True)
+    sub1_fs   = _exp_subsection(df_all, "Exp5-S1-FS", "exp5-s1-fs",
+                                "With Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
+    sub1_wrapper = f"""
+<details class="exp-details" open id="exp5-s1">
+  <summary><span class="fold-icon">▶</span> SE1  -  Comp + Grab Inlet (full + FS)</summary>
+  <div class="exp-body">
+    {sub1_full}
+    {sub1_fs}
+  </div>
+</details>"""
+
+    # SE2: Grab targets + Composite inlet - full + FS
+    sub2_full = _exp_subsection(df_all, "Exp5-S2", "exp5-s2-full",
+                                "Full Feature Set (32 features)",
+                                open_default=False)
+    sub2_fs   = _exp_subsection(df_all, "Exp5-S2-FS", "exp5-s2-fs",
+                                "With Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
+    sub2_wrapper = f"""
+<details class="exp-details" id="exp5-s2">
+  <summary><span class="fold-icon">▶</span> SE2  -  Grab + Comp Inlet (full + FS)</summary>
+  <div class="exp-body">
+    {sub2_full}
+    {sub2_fs}
+  </div>
+</details>"""
+
+    cmp_div      = _exp5_comparison_panel(df_all)
+    findings_div = _exp5_qna(df_all)
+    best         = _best_model_box(
+        df_all[df_all["exp_key"].isin(["Exp5-S1", "Exp5-S1-FS", "Exp5-S2", "Exp5-S2-FS"])],
+        "Experiment 5")
+
+    return f"""
+<section id="exp5">
+  <h1 class="section-title">Experiment 5  -  Cross-Type Inlet Features</h1>
+  <p class="section-intro">{EXP_INTRO["Exp5"]}</p>
+  {sub1_wrapper}
+  {sub2_wrapper}
+  {cmp_div}
+  {findings_div}
   {best}
 </section>"""
 
@@ -5843,21 +6386,21 @@ def _ann_dataset_exploration_callout() -> str:
   <h4 style="margin:0 0 0.6rem">ANN Dataset Exploration  -  Key Findings</h4>
   <ul style="margin:0 0 0 1rem;padding:0;font-size:0.9em;line-height:1.7">
     <li><strong>Inlet features alone (Exp1, 9 features) are insufficient for the ANN</strong>  - 
-        avg Test R²=−5.6, worse than Phase 9 (Exp3-S2, −1.1). More data cannot compensate
+        avg Test R²=−5.6, worse than Phase 9 (Exp3-SE2, −1.1). More data cannot compensate
         for missing secondary process signal.</li>
     <li><strong>Secondary features unlock positive Grab R² for the first time</strong>  - 
-        Exp2-Sub1 ANN (Secondary + COMMON, 12 features, ~924 rows) achieves Grab BOD +0.20,
+        Exp2-SE1 ANN (Secondary + COMMON, 12 features, ~924 rows) achieves Grab BOD +0.20,
         Grab TSS +0.27. This is the only dataset × architecture combination where the ANN
         produces positive generalisation on Grab targets.</li>
-    <li><strong>Adding inlet to secondary data (Exp2-Sub2) does not help composites</strong>  - 
+    <li><strong>Adding inlet to secondary data (Exp2-SE2) does not help composites</strong>  - 
         Comp BOD collapses from −0.11 (Exp2-S1) to −1.49 (Exp2-S2). The ANN overfits
         more with 16 features than with 12 on the same 733 composite rows.</li>
     <li><strong>Composite targets fail for the ANN on every dataset tested</strong>  - 
-        all composite test R² are negative across Exp1, Exp2-Sub1, Exp2-Sub2, and Phase 9
-        (Exp3-S2). The pattern is consistent: composite measurements are temporally noisier
+        all composite test R² are negative across Exp1, Exp2-SE1, Exp2-SE2, and Phase 9
+        (Exp3-SE2). The pattern is consistent: composite measurements are temporally noisier
         and the ANN cannot capture the distributional shift from training to 2025.</li>
     <li><strong>Conclusion  -  the ANN failure is not data-volume limited</strong>  - 
-        tripling the training rows (Exp1: 1175 vs Exp3-S2: 470) did not rescue performance.
+        tripling the training rows (Exp1: 1175 vs Exp3-SE2: 470) did not rescue performance.
         The binding constraint is the <em>feature set</em>: secondary process data is a
         prerequisite for positive ANN generalisation on Grab targets. Even with secondary
         features and adequate data (~924 rows), the ANN substantially underperforms the
@@ -5868,13 +6411,13 @@ def _ann_dataset_exploration_callout() -> str:
 
 
 def _ann_dataset_comparison(df_all: pd.DataFrame) -> str:
-    """Three-way ANN comparison table: Exp1 vs Exp2-Sub1 vs Exp2-Sub2 vs Phase9 (Exp3-S2)."""
+    """Three-way ANN comparison table: Exp1 vs Exp2-SE1 vs Exp2-SE2 vs Phase9 (Exp3-SE2)."""
     keys = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
     labels = {
         "ANN-Exp1":      "Exp1 (9 feat, ~1175/800 rows)",
         "ANN-Exp2-Sub1": "Exp2-S1 (15 feat, ~924/740 rows)",
         "ANN-Exp2-Sub2": "Exp2-S2 (19 feat, ~920/733 rows)",
-        "Phase9-ANN":    "Exp3-S2 (25 feat, ~470/290 rows)",
+        "Phase9-ANN":    "Exp3-SE2 (25 feat, ~470/290 rows)",
     }
     available = [k for k in keys if k in df_all["exp_key"].values]
     if len(available) < 2:
@@ -5960,10 +6503,10 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
         "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
     ann_e2s1_sub = _phase9_model_subsection(
         df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
-        "ANN  -  Exp2-Sub1 Datasets (Secondary + COMMON, 15 features)")
+        "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
     ann_e2s2_sub = _phase9_model_subsection(
         df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
-        "ANN  -  Exp2-Sub2 Datasets (Inlet + Secondary + COMMON, 19 features)")
+        "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 19 features)")
     ann_ds_comparison = _ann_dataset_comparison(df_all)
     ann_ds_callout = _ann_dataset_exploration_callout()
 
@@ -6114,9 +6657,10 @@ def _sidebar() -> str:
       Experiment 1 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp1">
-      <a class="nav-item nav-sub" href="#exp1-sub1">Sub1 (Inlet Only)</a>
-      <a class="nav-item nav-sub" href="#exp1-full">Sub2 (Cyclic, 11 feat)</a>
-      <a class="nav-item nav-sub" href="#exp1-comparison">Sub-exp Comparison</a>
+      <a class="nav-item nav-sub" href="#exp1-sub1">SE1 - Inlet Only</a>
+      <a class="nav-item nav-sub" href="#exp1-full">SE2 - Inlet + Common (Cyclic)</a>
+      <a class="nav-item nav-sub" href="#exp1-fs">SE3 - Feature Selection</a>
+      <a class="nav-item nav-sub" href="#exp1-comparison">Comparisons</a>
       <a class="nav-item nav-sub" href="#exp1-findings">Findings</a>
     </div>
   </div>
@@ -6128,17 +6672,26 @@ def _sidebar() -> str:
     <div class="nav-group-items" id="nav-exp2">
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp2-s1">Sub-exp 1 (Secondary)</a>
+          <a class="nav-item nav-sub" href="#exp2-s1">SE1 - Secondary + Common</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier only</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation only</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ Combined (15 feat)</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier + Common</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation + Common</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ All Secondary + Common</a>
         </div>
       </div>
-      <a class="nav-item nav-sub" href="#exp2-s2-cyc">Sub-exp 2 (Inlet+Sec, 21 feat)</a>
-      <a class="nav-item nav-sub" href="#exp2-comparison">Sub-exp Comparison</a>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp2-s2">SE2 - Inlet + Secondary</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-fs">↳ Feature Selection</a>
+        </div>
+      </div>
+      <a class="nav-item nav-sub" href="#exp2-comparison">Comparisons</a>
       <a class="nav-item nav-sub" href="#exp2-findings">Findings</a>
     </div>
   </div>
@@ -6148,20 +6701,29 @@ def _sidebar() -> str:
       Experiment 3 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp3">
-      <a class="nav-item nav-sub" href="#exp3-s1">S1  -  ADD-tier (28 feat)</a>
-      <a class="nav-item nav-sub" href="#exp3-s2">S2  -  ADD+CONSIDER+FS</a>
+      <a class="nav-item nav-sub" href="#exp3-s1">SE1 - ADD-tier</a>
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp3-s3">S3 - All Features</a>
+          <a class="nav-item nav-sub" href="#exp3-s2">SE2 - ADD + CONSIDER-tier</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-fs">↳ S3b - All Features + FS</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-fs">↳ Feature Selection</a>
         </div>
       </div>
-      <a class="nav-item nav-sub" href="#exp3-comparison">Comparison</a>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp3-s3">SE3 - All Features</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-fs">↳ Feature Selection</a>
+        </div>
+      </div>
+      <a class="nav-item nav-sub" href="#exp3-comparison">Comparisons</a>
       <a class="nav-item nav-sub" href="#exp3-findings">Findings</a>
-      <a class="nav-item nav-sub" href="#exp3-vif">Collinearity → Exp4</a>
     </div>
   </div>
 
@@ -6170,8 +6732,39 @@ def _sidebar() -> str:
       Experiment 4 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp4">
-      <a class="nav-item nav-sub" href="#exp4-s1">Sub-exp 1 (Manual Pruning)</a>
-      <a class="nav-item nav-sub" href="#exp4-s2">Sub-exp 2 (VIF Pruning)</a>
+      <a class="nav-item nav-sub" href="#exp4-vif">Collinearity Diagnosis</a>
+      <a class="nav-item nav-sub" href="#exp4-s1">SE1 - Manual Group Removal</a>
+      <a class="nav-item nav-sub" href="#exp4-s2">SE2 - VIF-based Pruning</a>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-exp5">
+      Experiment 5 <span class="nav-chevron">▾</span>
+    </div>
+    <div class="nav-group-items" id="nav-exp5">
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp5-s1">SE1 - Comp + Grab Inlet</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp5-s1-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp5-s1-fs">↳ Feature Selection</a>
+        </div>
+      </div>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp5-s2">SE2 - Grab + Comp Inlet</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp5-s2-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp5-s2-fs">↳ Feature Selection</a>
+        </div>
+      </div>
+      <a class="nav-item nav-sub" href="#exp5-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#exp5-findings">Findings</a>
     </div>
   </div>
 
@@ -6180,7 +6773,7 @@ def _sidebar() -> str:
       Advanced Methods <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p9">
-      <a class="nav-item nav-sub" href="#p9-ann">ANN (Exp3-S2)</a>
+      <a class="nav-item nav-sub" href="#p9-ann">ANN (Exp3-SE2)</a>
       <a class="nav-item nav-sub" href="#p9-ann-diagnosis">ANN Failure Post-Mortem</a>
       <a class="nav-item nav-sub" href="#p9-voting">Voting (ElNet+RF+XGB)</a>
       <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
@@ -6192,8 +6785,8 @@ def _sidebar() -> str:
         </div>
         <div class="nav-subgroup-items">
           <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp1">↳ ANN Exp1</a>
-          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s1">↳ ANN Exp2-Sub1</a>
-          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s2">↳ ANN Exp2-Sub2</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s1">↳ ANN Exp2-SE1</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s2">↳ ANN Exp2-SE2</a>
         </div>
       </div>
     </div>
@@ -6652,15 +7245,19 @@ document.addEventListener('click', function(e) {
   });
 })();
 
-// ── Nav sidebar: collapsible groups ────────────────────────────────────────
+// ── Nav sidebar: collapsible groups (collapsed by default) ─────────────────
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.nav-collapsible').forEach(function(title) {
       var groupId = title.dataset.targetGroup;
       var items   = document.getElementById(groupId);
       if (!items) return;
-      // Store natural height
+      // Measure natural height then collapse by default
       items.style.maxHeight = items.scrollHeight + 'px';
+      void items.offsetHeight;
+      title.classList.add('collapsed');
+      items.style.maxHeight = '0';
+      items.classList.add('collapsed');
       title.addEventListener('click', function() {
         var collapsed = title.classList.toggle('collapsed');
         if (collapsed) {
@@ -6676,23 +7273,21 @@ document.addEventListener('click', function(e) {
 })();
 
 // ── Nav sidebar: subsub group fold/expand toggle ───────────────────────────
+// Fires on the entire header row (link text OR chevron icon), so clicking the
+// section name also toggles the child list - not just the ▾ symbol.
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.nav-sub-toggle').forEach(function(toggle) {
-      toggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var subgroup        = toggle.closest('.nav-subgroup');
-        var items           = subgroup.querySelector('.nav-subgroup-items');
-        var parentGroupEl   = subgroup.closest('.nav-group-items');
-        var wasCollapsed    = toggle.classList.contains('collapsed');
+    document.querySelectorAll('.nav-subgroup-header').forEach(function(header) {
+      header.addEventListener('click', function() {
+        var subgroup      = header.closest('.nav-subgroup');
+        var items         = subgroup.querySelector('.nav-subgroup-items');
+        var toggle        = header.querySelector('.nav-sub-toggle');
+        var parentGroupEl = subgroup.closest('.nav-group-items');
+        var wasCollapsed  = toggle.classList.contains('collapsed');
 
-        // Show or hide the subsub items
         items.style.display = wasCollapsed ? 'block' : 'none';
         toggle.classList.toggle('collapsed', !wasCollapsed);
 
-        // Recalculate the parent group's max-height so expanded items are not clipped.
-        // A forced reflow (offsetHeight read) ensures scrollHeight reflects the new state.
         if (parentGroupEl && parentGroupEl.style.maxHeight) {
           void parentGroupEl.offsetHeight;
           parentGroupEl.style.maxHeight = parentGroupEl.scrollHeight + 'px';
@@ -6932,6 +7527,7 @@ def main():
         build_exp2_section(df_all),
         build_exp3_section(df_all),
         build_exp4_section(df_all),
+        build_exp5_section(df_all),
         build_phase9_section(df_all),
         build_phase10_section(df_all),
         build_phase11_section(df_all),

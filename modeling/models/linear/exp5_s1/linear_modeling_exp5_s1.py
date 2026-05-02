@@ -1,0 +1,237 @@
+"""
+linear_modeling_exp5_s1.py - OLS, Ridge, ElasticNet on Experiment 5 Sub-1.
+
+Hypothesis: adding Grab inlet measurements to composite-target datasets
+improves composite effluent prediction quality.
+
+Feature set: COMP_INLET + GRAB_INLET + Secondary + COMMON + ADD-tier aeration
+             = 32 features per composite dataset
+Datasets:    experiment5/sub_exp1/ (4 composite targets)
+Exp key:     Exp5-S1
+No inline feature selection - full feature set only.
+
+Row info (from row_cost_analysis.py):
+  Composite baseline (Exp3-S1): ~813-816 train rows
+  After adding GRAB_INLET:      ~629-631 train rows (marginal cost ~22.7%)
+
+Usage (from project root):
+    .venv/bin/python3 modeling/models/linear/exp5_s1/linear_modeling_exp5_s1.py
+"""
+
+import os
+import warnings
+warnings.filterwarnings("ignore")
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import ElasticNet, LinearRegression, Ridge
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.preprocessing import StandardScaler
+import joblib
+
+SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
+MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', '..'))
+RESULTS_FILE = os.path.join(SCRIPT_DIR, "results.xlsx")
+MODELS_DIR   = os.path.join(SCRIPT_DIR, "models")
+PLOTS_DIR    = os.path.join(SCRIPT_DIR, "plots")
+os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True)
+
+TRAIN_YEARS = [2021, 2022, 2023, 2024]
+TEST_YEAR   = 2025
+
+RIDGE_ALPHAS = [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+ELNET_PARAM_GRID = {
+    "alpha":    [0.001, 0.01, 0.1, 1.0, 10.0],
+    "l1_ratio": [0.1, 0.3, 0.5, 0.7, 0.9, 1.0],
+}
+
+_EXCLUDE_COLS     = {"Date", "year"}
+_EXCLUDE_PREFIXES = ("predicted_",)
+
+def infer_features(df: pd.DataFrame, target: str) -> list:
+    return [c for c in df.columns if c != target
+            and c not in _EXCLUDE_COLS
+            and not any(c.startswith(p) for p in _EXCLUDE_PREFIXES)]
+
+def _ds(name):
+    return os.path.join(MODELING_DIR, "datasets", "experiment5", "sub_exp1", f"{name}.xlsx")
+
+DATASETS = [
+    ("Exp5-S1", "Exp5S1_Comp_BOD", _ds("comp_BOD"), "Effluent BOD (mg/L, Composite)"),
+    ("Exp5-S1", "Exp5S1_Comp_COD", _ds("comp_COD"), "Effluent COD (mg/L, Composite)"),
+    ("Exp5-S1", "Exp5S1_Comp_TSS", _ds("comp_TSS"), "Effluent TSS (mg/L, Composite)"),
+    ("Exp5-S1", "Exp5S1_Comp_pH",  _ds("comp_pH"),  "Effluent pH (Composite)"),
+]
+
+
+def _rmse(y_true, y_pred) -> float:
+    return float(np.sqrt(mean_squared_error(y_true, y_pred)))
+
+def _mae(y_true, y_pred) -> float:
+    return float(mean_absolute_error(y_true, y_pred))
+
+def _metrics(y_true, y_pred, prefix: str) -> dict:
+    return {
+        f"{prefix}_R2":   float(r2_score(y_true, y_pred)),
+        f"{prefix}_RMSE": _rmse(y_true, y_pred),
+        f"{prefix}_MAE":  _mae(y_true,  y_pred),
+    }
+
+def get_run_number(subset_path: str) -> int:
+    if not os.path.exists(subset_path):
+        return 1
+    cols = pd.read_excel(subset_path, nrows=0).columns.tolist()
+    return sum(1 for c in cols if c.startswith("predicted_OLS_run_")) + 1
+
+def append_predictions(subset_path: str, pred_dict: dict):
+    df = pd.read_excel(subset_path)
+    for col, values in pred_dict.items():
+        df[col] = values
+    df.to_excel(subset_path, index=False)
+
+MODEL_COLORS = {"OLS": "#E15252", "Ridge": "#4A90D9", "ElNet": "#5BAD6F"}
+
+
+def _plot_scatter(ds_id, run, y_test, te_ols, te_ridge, te_elnet):
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
+    fig.suptitle(f"{ds_id}  |  Test Set Actual vs Predicted  (run {run})",
+                 fontsize=13, fontweight="bold")
+    for ax, (label, preds_arr, color) in zip(axes, [
+        ("OLS", te_ols, MODEL_COLORS["OLS"]),
+        ("Ridge", te_ridge, MODEL_COLORS["Ridge"]),
+        ("ElNet", te_elnet, MODEL_COLORS["ElNet"]),
+    ]):
+        ax.scatter(y_test, preds_arr, color=color, alpha=0.65, s=25, edgecolors="none")
+        lo = min(y_test.min(), preds_arr.min())
+        hi = max(y_test.max(), preds_arr.max())
+        ax.plot([lo, hi], [lo, hi], "k--", linewidth=1.1)
+        ax.set_title(f"{label}\nR²={r2_score(y_test, preds_arr):+.3f}  RMSE={_rmse(y_test, preds_arr):.3f}", fontsize=11)
+        ax.set_xlabel("Actual", fontsize=10)
+        if ax == axes[0]:
+            ax.set_ylabel("Predicted", fontsize=10)
+    plt.tight_layout()
+    path = os.path.join(PLOTS_DIR, f"{ds_id}_run_{run}_scatter.png")
+    fig.savefig(path, dpi=150); plt.close(fig)
+
+
+def train_dataset(experiment, ds_id, path, features, target, run):
+    df       = pd.read_excel(path, parse_dates=["Date"])
+    train_df = df[df["year"].isin(TRAIN_YEARS)].copy()
+    extra    = df[df["year"] == 2020]
+    if len(extra) > 0:
+        train_df = pd.concat([extra, train_df]).drop_duplicates()
+    test_df  = df[df["year"] == TEST_YEAR]
+
+    if len(test_df) == 0:
+        print(f"  WARNING: no {TEST_YEAR} rows - skipping {ds_id}")
+        return None, None
+
+    X_train = train_df[features].values
+    y_train = train_df[target].values
+    X_test  = test_df[features].values
+    y_test  = test_df[target].values
+    X_all   = df[features].values
+
+    print(f"  Train: {len(train_df):>4d} rows | Test: {len(test_df):>3d} rows | Features: {len(features)}")
+
+    scaler   = StandardScaler()
+    X_tr_sc  = scaler.fit_transform(X_train)
+    X_te_sc  = scaler.transform(X_test)
+    X_all_sc = scaler.transform(X_all)
+    tscv     = TimeSeriesSplit(n_splits=3)
+
+    results = {
+        "experiment": experiment, "dataset": ds_id,
+        "target": target, "run": run,
+        "n_train": len(train_df), "n_test": len(test_df),
+        "n_features": len(features),
+    }
+    preds = {}
+
+    # OLS
+    ols = LinearRegression()
+    ols.fit(X_tr_sc, y_train)
+    tr_ols = ols.predict(X_tr_sc); te_ols = ols.predict(X_te_sc)
+    results.update(_metrics(y_train, tr_ols, "OLS_train"))
+    results.update(_metrics(y_test,  te_ols, "OLS_test"))
+    results["OLS_R2_gap"] = results["OLS_train_R2"] - results["OLS_test_R2"]
+    preds[f"predicted_OLS_run_{run}"] = np.round(ols.predict(X_all_sc), 3)
+    joblib.dump({"scaler": scaler, "model": ols}, os.path.join(MODELS_DIR, f"{ds_id}_OLS_run_{run}.pkl"))
+    print(f"    OLS    - Train R²: {results['OLS_train_R2']:+.3f} | Test R²: {results['OLS_test_R2']:+.3f}")
+
+    # Ridge
+    ridge_gs = GridSearchCV(Ridge(), {"alpha": RIDGE_ALPHAS},
+                            scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1)
+    ridge_gs.fit(X_tr_sc, y_train)
+    ridge = ridge_gs.best_estimator_
+    tr_ridge = ridge.predict(X_tr_sc); te_ridge = ridge.predict(X_te_sc)
+    results.update(_metrics(y_train, tr_ridge, "Ridge_train"))
+    results.update(_metrics(y_test,  te_ridge, "Ridge_test"))
+    results["Ridge_R2_gap"]  = results["Ridge_train_R2"] - results["Ridge_test_R2"]
+    results["Ridge_alpha"]   = ridge_gs.best_params_["alpha"]
+    preds[f"predicted_Ridge_run_{run}"] = np.round(ridge.predict(X_all_sc), 3)
+    joblib.dump({"scaler": scaler, "model": ridge}, os.path.join(MODELS_DIR, f"{ds_id}_Ridge_run_{run}.pkl"))
+    print(f"    Ridge  - Train R²: {results['Ridge_train_R2']:+.3f} | Test R²: {results['Ridge_test_R2']:+.3f} | alpha={results['Ridge_alpha']}")
+
+    # ElasticNet
+    elnet_gs = GridSearchCV(ElasticNet(max_iter=10000), ELNET_PARAM_GRID,
+                            scoring="neg_root_mean_squared_error", cv=tscv, n_jobs=-1)
+    elnet_gs.fit(X_tr_sc, y_train)
+    elnet = elnet_gs.best_estimator_
+    tr_elnet = elnet.predict(X_tr_sc); te_elnet = elnet.predict(X_te_sc)
+    results.update(_metrics(y_train, tr_elnet, "ElNet_train"))
+    results.update(_metrics(y_test,  te_elnet, "ElNet_test"))
+    results["ElNet_R2_gap"]   = results["ElNet_train_R2"] - results["ElNet_test_R2"]
+    results["ElNet_alpha"]    = elnet_gs.best_params_["alpha"]
+    results["ElNet_l1_ratio"] = elnet_gs.best_params_["l1_ratio"]
+    preds[f"predicted_ElNet_run_{run}"] = np.round(elnet.predict(X_all_sc), 3)
+    joblib.dump({"scaler": scaler, "model": elnet}, os.path.join(MODELS_DIR, f"{ds_id}_ElNet_run_{run}.pkl"))
+    print(f"    ElNet  - Train R²: {results['ElNet_train_R2']:+.3f} | Test R²: {results['ElNet_test_R2']:+.3f}")
+
+    _plot_scatter(ds_id, run, y_test, te_ols, te_ridge, te_elnet)
+    return results, preds
+
+
+def save_results(all_results: list, run: int):
+    df_new = pd.DataFrame(all_results)
+    if os.path.exists(RESULTS_FILE):
+        df_out = pd.concat([pd.read_excel(RESULTS_FILE), df_new], ignore_index=True)
+    else:
+        df_out = df_new
+    df_out.round(4).to_excel(RESULTS_FILE, index=False)
+    key_cols = ["experiment", "dataset", "OLS_test_R2", "Ridge_test_R2", "ElNet_test_R2"]
+    print(f"\nResults -> {RESULTS_FILE}")
+    print(df_new[key_cols].to_string(index=False))
+
+
+def main():
+    first_path = DATASETS[0][2]
+    run = get_run_number(first_path)
+    print(f"Linear Modeling  -  Exp5-S1 (Composite + Grab Inlet)  -  Run {run}")
+
+    all_results = []
+    for experiment, ds_id, path, target in DATASETS:
+        print(f"\n{'─'*60}\n[{experiment}]  {ds_id}\n  Target: {target}")
+        if not os.path.exists(path):
+            print(f"  WARNING: file not found - {path}")
+            continue
+        df_peek  = pd.read_excel(path, nrows=0)
+        features = infer_features(df_peek, target)
+        results, pred_dict = train_dataset(experiment, ds_id, path, features, target, run)
+        if results is None:
+            continue
+        append_predictions(path, pred_dict)
+        all_results.append(results)
+
+    if all_results:
+        save_results(all_results, run)
+    print("\nDone.")
+
+
+if __name__ == "__main__":
+    main()
