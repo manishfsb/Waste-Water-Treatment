@@ -55,7 +55,18 @@ TARGETS = [
     ("comp_pH",  "Effluent pH (Composite)",        "Inlet pH (Composite)"),
 ]
 
-MODEL_COL = "predicted_Voting_run_1"     # Phase 9 ensemble artefact - present in all s2 files
+def _latest_voting_col() -> str:
+    """Return the highest-run predicted_Voting_run_N column present in the first dataset."""
+    import re
+    first = os.path.join(DS_DIR, "grab_BOD.xlsx")
+    if not os.path.exists(first):
+        return "predicted_Voting_run_1"
+    cols = pd.read_excel(first, nrows=0).columns.tolist()
+    runs = [int(m.group(1)) for c in cols
+            if (m := re.match(r"predicted_Voting_run_(\d+)", c))]
+    return f"predicted_Voting_run_{max(runs)}" if runs else "predicted_Voting_run_1"
+
+MODEL_COL = _latest_voting_col()
 SEASON_MAP = {12:"DJF",1:"DJF",2:"DJF", 3:"MAM",4:"MAM",5:"MAM",
               6:"JJA",7:"JJA",8:"JJA",  9:"SON",10:"SON",11:"SON"}
 

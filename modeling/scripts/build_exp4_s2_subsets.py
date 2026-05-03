@@ -41,84 +41,51 @@ TRAIN_YEARS   = [2020, 2021, 2022, 2023, 2024]
 TEMPORAL = ["month", "day_of_week", "year"]
 
 # ── Exp4-S1 feature pool per target ───────────────────────────────────────────
-# Derived from Exp3-S2 by removing: SVI (Existing/New), all (New) aeration cols,
-# all Sec Sedimentation cols.  These pools are the starting point for VIF pruning.
+# Derived from Exp3-S2 (31 features) by removing: SVI (Existing/New), all New aeration cols,
+# and Sec Clarifier (5 cols). Sec Sedimentation is KEPT - Exp2 split analysis showed
+# Sec Sed is the stronger standalone predictor vs Sec Clarifier.
 
 GRAB_BASE = [
     "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
     "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)",
-    "Sec Clarifier pH", "Sec Clarifier TSS (mg/L)",
-    "Sec Clarifier BOD (mg/L)", "Sec Clarifier COD (mg/L)", "Sec Clarifier RAS",
+    "Sec Sed pH", "Sec Sed TSS (mg/L)",
+    "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
     "Flow (MLD)", "Power Total (KW)",
 ]
 COMP_BASE = [
     "Inlet pH (Composite)", "Inlet BOD (mg/L, Composite)",
     "Inlet COD (mg/L, Composite)", "Inlet TSS (mg/L, Composite)",
-    "Sec Clarifier pH", "Sec Clarifier TSS (mg/L)",
-    "Sec Clarifier BOD (mg/L)", "Sec Clarifier COD (mg/L)", "Sec Clarifier RAS",
+    "Sec Sed pH", "Sec Sed TSS (mg/L)",
+    "Sec Sed BOD (mg/L)", "Sec Sed COD (mg/L)", "Sec Sed RAS (New)",
     "Flow (MLD)", "Power Total (KW)",
 ]
 AERATION_EXISTING = [
     "Aeration DO (mg/L, Existing)", "Aeration MLSS (mg/L, Existing)",
     "Aeration SV30 (ml/L, Existing)", "Aeration pH (Existing)",
 ]
+CONSIDER = [
+    "Inlet Total Coliform (CFU/100ml, Grab)",
+    "Primary Sludge Totalizer (m3)",
+]
 
-# Registry: (target, variant, output_stem, min_year, extra_features)
-# extra_features = Exp3-S2 ADD/CONSIDER features that were in Exp4-S1 for this target
+# Registry: uniform SE1 pool for all targets (Exp3-SE2 minus 3 removed groups)
 REGISTRY = [
-    (
-        "Effluent BOD (mg/L, Grab)", "Grab", "grab_BOD", 2020,
-        GRAB_BASE + AERATION_EXISTING + [
-            "Inlet Total Coliform (CFU/100ml, Grab)", "Primary Sludge Totalizer (m3)",
-        ],
-    ),
-    (
-        "Effluent COD (mg/L, Grab)", "Grab", "grab_COD", 2020,
-        GRAB_BASE + [
-            "Inlet Total Coliform (CFU/100ml, Grab)",
-        ],
-    ),
-    (
-        "Effluent TSS (mg/L, Grab)", "Grab", "grab_TSS", 2020,
-        GRAB_BASE + AERATION_EXISTING + [
-            "Inlet Total Coliform (CFU/100ml, Grab)", "Primary BOD (mg/L)",
-            "Primary Sludge Totalizer (m3)", "Power GE (KW)",
-        ],
-    ),
-    (
-        "Effluent pH (Grab)", "Grab", "grab_pH", 2020,
-        GRAB_BASE + [
-            "Aeration pH (Existing)", "Aeration DO (mg/L, Existing)",
-            "Primary Clarifier pH", "Aeration SV30 (ml/L, Existing)",
-        ],
-    ),
-    (
-        "Effluent BOD (mg/L, Composite)", "Composite", "comp_BOD", 2021,
-        COMP_BASE + AERATION_EXISTING + [
-            "Inlet Total Coliform (CFU/100ml, Grab)", "Primary Sludge Totalizer (m3)",
-            "Power GE (KW)",
-        ],
-    ),
-    (
-        "Effluent COD (mg/L, Composite)", "Composite", "comp_COD", 2021,
-        COMP_BASE + [
-            "Inlet Total Coliform (CFU/100ml, Grab)",
-        ],
-    ),
-    (
-        "Effluent TSS (mg/L, Composite)", "Composite", "comp_TSS", 2021,
-        COMP_BASE + AERATION_EXISTING + [
-            "Inlet Total Coliform (CFU/100ml, Grab)", "Inlet PO4/TP (mg/L, Grab)",
-            "Power GE (KW)", "Primary Sludge Totalizer (m3)",
-        ],
-    ),
-    (
-        "Effluent pH (Composite)", "Composite", "comp_pH", 2021,
-        COMP_BASE + [
-            "Aeration pH (Existing)", "Aeration DO (mg/L, Existing)",
-            "Primary Clarifier pH", "Aeration SV30 (ml/L, Existing)",
-        ],
-    ),
+    ("Effluent BOD (mg/L, Grab)",        "Grab",      "grab_BOD", 2020,
+     GRAB_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent COD (mg/L, Grab)",        "Grab",      "grab_COD", 2020,
+     GRAB_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent TSS (mg/L, Grab)",        "Grab",      "grab_TSS", 2020,
+     GRAB_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent pH (Grab)",               "Grab",      "grab_pH",  2020,
+     GRAB_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent BOD (mg/L, Composite)",   "Composite", "comp_BOD", 2021,
+     COMP_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent COD (mg/L, Composite)",   "Composite", "comp_COD", 2021,
+     COMP_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent TSS (mg/L, Composite)",   "Composite", "comp_TSS", 2021,
+     COMP_BASE + AERATION_EXISTING + CONSIDER),
+    ("Effluent pH (Composite)",          "Composite", "comp_pH",  2021,
+     COMP_BASE + AERATION_EXISTING + CONSIDER),
 ]
 
 

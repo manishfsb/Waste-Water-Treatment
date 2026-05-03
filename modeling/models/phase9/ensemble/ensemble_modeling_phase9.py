@@ -56,14 +56,14 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 DATASETS = [
-    {"name": "grab_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
-    {"name": "grab_COD",  "file": os.path.join(DS_DIR, "s2_stage3_grab_COD.xlsx"),  "target": "Effluent COD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
-    {"name": "grab_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_grab_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
-    {"name": "grab_pH",   "file": os.path.join(DS_DIR, "s2_stage3_grab_pH.xlsx"),   "target": "Effluent pH (Grab)",               "experiment": "Phase9-Ensemble"},
-    {"name": "comp_BOD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
-    {"name": "comp_COD",  "file": os.path.join(DS_DIR, "s2_stage3_comp_COD.xlsx"),  "target": "Effluent COD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
-    {"name": "comp_TSS",  "file": os.path.join(DS_DIR, "s2_stage3_comp_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
-    {"name": "comp_pH",   "file": os.path.join(DS_DIR, "s2_stage3_comp_pH.xlsx"),   "target": "Effluent pH (Composite)",          "experiment": "Phase9-Ensemble"},
+    {"name": "grab_BOD",  "file": os.path.join(DS_DIR, "grab_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "grab_COD",  "file": os.path.join(DS_DIR, "grab_COD.xlsx"),  "target": "Effluent COD (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "grab_TSS",  "file": os.path.join(DS_DIR, "grab_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Grab)",        "experiment": "Phase9-Ensemble"},
+    {"name": "grab_pH",   "file": os.path.join(DS_DIR, "grab_pH.xlsx"),   "target": "Effluent pH (Grab)",               "experiment": "Phase9-Ensemble"},
+    {"name": "comp_BOD",  "file": os.path.join(DS_DIR, "comp_BOD.xlsx"),  "target": "Effluent BOD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "comp_COD",  "file": os.path.join(DS_DIR, "comp_COD.xlsx"),  "target": "Effluent COD (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "comp_TSS",  "file": os.path.join(DS_DIR, "comp_TSS.xlsx"),  "target": "Effluent TSS (mg/L, Composite)",   "experiment": "Phase9-Ensemble"},
+    {"name": "comp_pH",   "file": os.path.join(DS_DIR, "comp_pH.xlsx"),   "target": "Effluent pH (Composite)",          "experiment": "Phase9-Ensemble"},
 ]
 
 # ── Hyperparameter grids ───────────────────────────────────────────────────────

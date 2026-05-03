@@ -81,7 +81,8 @@ EXP_CHART_LABELS = {
     "Exp2-Sub2-Cyc": "E2-SE2",
     "Exp3-S1": "E3-SE1",
     "Exp3-S2": "E3-SE2",        "Exp3-S2-FS": "E3-SE2-FS",
-    "Exp3-S3": "E3-SE3",        "Exp3-S3-FS": "E3-SE4-FS",
+    "Exp3-S3": "E3-SE3",        "Exp3-S3-FS": "E3-SE3-FS",
+    "Exp3-S4": "E3-SE4",        "Exp3-S4-FS": "E3-SE4-FS",
     "Exp4-S1": "E4-SE1",
     "Exp4-S2": "E4-SE2",
     "Exp5-S1": "E5-SE1",        "Exp5-S1-FS": "E5-SE1-FS",
@@ -109,8 +110,10 @@ EXP_SOURCE_LABELS = {
     "Exp3-S1":        "Exp3 SE1  -  ADD-tier",
     "Exp3-S2":        "Exp3 SE2  -  ADD+CONSIDER (no FS)",
     "Exp3-S2-FS":     "Exp3 SE2  -  ADD+CONSIDER (FS)",
-    "Exp3-S3":        "Exp3 SE3 - All Features",
-    "Exp3-S3-FS":     "Exp3 SE4-FS - All Features",
+    "Exp3-S3":        "Exp3 SE3 - ADD+CONSIDER minus Coliform",
+    "Exp3-S3-FS":     "Exp3 SE3-FS - ADD+CONSIDER minus Coliform (FS)",
+    "Exp3-S4":        "Exp3 SE4 - All Features",
+    "Exp3-S4-FS":     "Exp3 SE4-FS - All Features",
     "Exp4-S1":        "Exp4 SE1",
     "Exp4-S2":        "Exp4 SE2",
     "Exp5-S1":        "Exp5 SE1  -  Composite + Grab Inlet",
@@ -143,6 +146,8 @@ _DS_EXP_MAP = [
     ("experiment5/sub_exp1",                            "Exp5-S1"),
     ("experiment4/sub_exp2",                            "Exp4-S2"),
     ("experiment4/sub_exp1",                            "Exp4-S1"),
+    ("experiment3/sub_exp4/feature_selected_datasets", "Exp3-S4-FS"),
+    ("experiment3/sub_exp4",                           "Exp3-S4"),
     ("experiment3/sub_exp3/feature_selected_datasets", "Exp3-S3-FS"),
     ("experiment3/sub_exp3",                           "Exp3-S3"),
     ("experiment3/sub_exp2",                           "Exp3-S2-FS"),
@@ -282,38 +287,99 @@ FEATURE_DESCRIPTIONS = {
                      "CONSIDER features increase signal but reduce training rows significantly.",
     },
     "Exp3-S3": {
-        "label": "All remaining features  -  all features, no FS (44 Grab / 39 Composite features)",
-        "features": "Exp2-S2 baseline + every non-leakage, non-redundant column from "
-                    "All_Years_Full.xlsx including TKN, NH3-N, Fecal/Total Coliform, "
-                    "Grit Classifier TSS, Primary COD/TSS, Power GE/NEA, Primary Sludge Totalizer. "
-                    "Grab: ~130 train rows / 115 test (74 % row loss vs Exp2-S2 due to joint missingness). "
-                    "Composite: ~498 train / 169 test.",
-        "rationale": "Establishes the ceiling of feature availability. Tests whether adding "
-                     "all available measurements, despite severe row loss, improves prediction. "
-                     "No feature selection applied  -  exposes raw overfitting risk at n/p ≈ 3.",
+        "label": "ADD + CONSIDER minus Inlet Total Coliform (30 features, no FS)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Removed from SE2:</strong> Inlet Total Coliform (CFU/100ml, Grab) - "
+            "the single highest-missingness CONSIDER-tier feature; caused ~347 row loss (816→469 Grab) in SE2.</li>"
+            "<li><strong>Remaining (30 features):</strong> Inlet (4 Grab or Composite), "
+            "Sec Clarifier (5) + Sec Sedimentation (5), Flow, Power Total, year, "
+            "month/dow cyclic (4), ADD-tier aeration (7: DO/MLSS/SV30/SVI/pH Existing + DO/SV30 New), "
+            "CONSIDER-tier remainder (2: Aeration SVI New, Primary Sludge Totalizer).</li>"
+            "<li><strong>Row recovery:</strong> Grab train ~815 rows (vs ~469 in SE2), "
+            "Composite train ~631 rows (vs ~423 in SE2). Nearly SE1-level data volume.</li>"
+            "</ul>"
+        ),
+        "rationale": "Tests whether the row loss from Inlet Total Coliform was the primary driver "
+                     "of SE2's inconsistent performance. Removing just that one feature recovers ~347 "
+                     "Grab rows at the cost of one CONSIDER-tier signal. Paired with SE3-FS to test "
+                     "whether feature selection further improves results at the higher row count.",
     },
     "Exp3-S3-FS": {
-        "label": "All remaining features  -  all features with model-specific FS",
-        "features": "Same 44/39 all features as Exp3-SE3, with model-specific "
-                    "feature selection applied inside training scripts: "
-                    "OLS uses LassoCV; trees use OOF permutation importance (threshold=0.05). "
-                    "Selected: 2 - 24 features per target (OLS collapses to 1 - 3 on composites).",
-        "rationale": "Tests whether data-driven feature selection can rescue the "
-                     "undersized all-features dataset (n_train_grab ≈ 130). "
-                     "OOF fold size at n=130 with 3-fold TSS is only ~43 rows  -  "
-                     "permutation importance estimates are noisy at this scale.",
+        "label": "ADD + CONSIDER minus Inlet Total Coliform with Model-Specific FS (30 features -> selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 30 features as SE3 (SE2 minus Inlet Total Coliform).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV pre-screen (TimeSeriesSplit). "
+            "RF/GB/XGB use 3-phase OOF permutation importance (threshold=0.05).</li>"
+            "<li><strong>Ridge/ElNet:</strong> Full 30-feature set - L2/L1+L2 regularisation handles collinearity internally.</li>"
+            "<li><strong>Row count:</strong> Same as SE3 (~815 Grab / ~631 Composite train). "
+            "No dataset rebuild needed (no high-missingness columns in starting set).</li>"
+            "</ul>"
+        ),
+        "rationale": "With ~815 Grab training rows (vs ~469 in SE2-FS), OOF folds contain ~272 rows "
+                     "instead of ~156 - permutation importance estimates should be more stable. "
+                     "Tests whether FS on the larger SE3 dataset outperforms SE2-FS.",
+    },
+    "Exp3-S4": {
+        "label": "All Available Features - no FS (44 Grab / 39 Composite features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Added beyond SE2:</strong> TKN, NH3-N, Fecal/Total Coliform, "
+            "Grit Classifier TSS, Primary COD/TSS, Power GE/NEA, Primary Sludge Totalizer, "
+            "and all remaining measured columns not excluded for leakage or redundancy.</li>"
+            "<li><strong>Remaining (44 Grab / 39 Composite features):</strong> Every non-leakage, "
+            "non-redundant column from All_Years_Full.xlsx.</li>"
+            "<li><strong>Row cost:</strong> Grab train ~130 rows (74% loss vs Exp2-SE2 baseline), "
+            "Composite train ~498 rows. Joint dropna from high-missingness columns (TKN, Grit Classifier TSS) "
+            "drives the collapse.</li>"
+            "</ul>"
+        ),
+        "rationale": "Establishes the ceiling of feature availability and tests whether adding "
+                     "all available measurements, despite severe row loss, improves prediction. "
+                     "No feature selection applied - exposes raw overfitting risk at n/p ~= 3. "
+                     "Confirms the Feature Audit methodology: marginal row cost is the binding constraint.",
+    },
+    "Exp3-S4-FS": {
+        "label": "All Available Features with Model-Specific FS (44/39 features -> 1-30 selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 44/39 all features as SE4 full.</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV. Trees use OOF permutation importance "
+            "(threshold=0.05). OOF fold size at n=130 with 3-fold TSS is ~43 rows - noisy estimates.</li>"
+            "<li><strong>Dataset rebuild:</strong> OLS and tree models rebuild the dataset from "
+            "All_Years_Full.xlsx after FS, keeping only selected features. Grab n_train can expand "
+            "from 130 to 216-1133 rows depending on selected features. n_train_ks=130 stored for reference.</li>"
+            "</ul>"
+        ),
+        "rationale": "Tests whether data-driven FS can rescue the undersized all-features dataset. "
+                     "The dataset rebuild partially mitigates the row-loss problem. "
+                     "Key finding: OOF noise at n=130 makes FS unstable; rebuild recovers rows "
+                     "but upstream instability limits gains vs SE3-FS (which starts with ~815 rows).",
     },
     "Exp4-S1": {
-        "label": "Exp3-SE2 minus Derived/Redundant Columns (12-19 features)",
-        "features": "Exp3-SE2 feature set with three redundant groups removed: "
-                    "(1) Aeration SVI (Existing + New) - derived from SV30/MLSS, zero independent information; "
-                    "(2) All (New) aeration tank columns - cross-tank r=0.74-0.84, Existing tank wins on every BOD/COD/TSS target; "
-                    "(3) All Sec Sedimentation columns - cross-stage r=0.69-0.87, Sec Clarifier wins consistently. "
-                    "Remaining: Inlet, COMMON, Existing aeration (MLSS, SV30, DO, pH), Sec Clarifier (pH, TSS, BOD, COD, RAS).",
-        "rationale": "Hypothesis: removing collinear and derived features reduces variance inflation and "
+        "label": "Exp3-SE2 minus Three Feature Groups (18 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Removed: Aeration SVI (Existing + New)</strong> - derived directly from "
+            "SV30/MLSS ratio; carries zero independent information.</li>"
+            "<li><strong>Removed: All New aeration tank columns</strong> (DO New, SV30 New) - "
+            "cross-tank r=0.74-0.84 with Existing tanks; Existing-tank features are the primary "
+            "ADD-tier contributors. Note: Comp pH OLS did select New-tank features in FS runs, "
+            "so this removal is not lossless for all targets.</li>"
+            "<li><strong>Removed: Sec Clarifier (5 columns)</strong> - correlated r=0.69-0.87 "
+            "with Sec Sedimentation group. Exp2 split analysis showed Sec Sedimentation was the "
+            "stronger standalone predictor; Sec Clarifier is removed here to test whether "
+            "Sec Sed alone suffices.</li>"
+            "<li><strong>Remaining (18 features):</strong> Inlet (4), Sec Sedimentation (5: pH, "
+            "TSS, BOD, COD, RAS New), Flow, Power Total, year, Existing aeration (DO, MLSS, "
+            "SV30, pH), Inlet Total Coliform, Primary Sludge Totalizer. "
+            "Cyclic calendar features (month/dow sin/cos) added on the fly by training scripts.</li>"
+            "</ul>"
+        ),
+        "rationale": "Hypothesis: removing correlated and derived feature groups reduces variance inflation and "
                      "improves generalisation, especially on composite targets where Exp3-SE2 GB/XGB catastrophically "
-                     "overfit. Phase 1 of Exp4 - Phase 2 will address within-group VIF (MLSS vs SV30, "
-                     "Sec Clarifier inter-correlations).",
+                     "overfit. SE1 tests manual removal; SE2 tests automated VIF-based pruning within the SE1 pool.",
     },
     "Exp4-S2": {
         "label": "Exp4-SE1 + Iterative VIF Pruning (threshold=10) - 5-10 features",
@@ -490,28 +556,31 @@ EXP_INTRO = {
     ),
     "Exp3": (
         "Experiment 3 starts from the <strong>Exp2-SE2 baseline</strong> (Inlet + Secondary + COMMON, "
-        "21 features) and adds features in three steps guided by the "
+        "21 features) and adds features in four steps guided by the "
         "<a href='../../eda/eda_full_report.html#s11' target='_blank' style='color:#4A90D9'>"
         "EDA Feature Audit</a>. "
         "<br><br>"
         "<strong>SE1 (ADD-tier, 28 features)</strong> adds the seven aeration-basin "
         "measurements that scored MI ≥ 0.20 with marginal row cost ≤ 20 %: "
         "Aeration DO/MLSS/SV30/SVI (Existing), Aeration pH (Existing), Aeration DO/SV30 (New). "
-        "Grab training rows stay near ~816  -  no meaningful row loss. No feature selection applied. "
+        "Grab training rows stay near ~816 - no meaningful row loss. No feature selection applied. "
         "<br><br>"
-        "<strong>SE2 (ADD + CONSIDER-tier, 32 features, with model-specific FS)</strong> "
-        "adds four CONSIDER-tier features (Aeration SVI New, Power GE, Inlet Total Coliform, "
+        "<strong>SE2 (ADD + CONSIDER-tier, 31 features, full and FS)</strong> "
+        "adds three CONSIDER-tier features (Aeration SVI New, Inlet Total Coliform, "
         "Primary Sludge Totalizer). Inlet Total Coliform alone causes ~347 row loss (816 → 469 Grab). "
         "Feature selection (OLS: LassoCV; trees: OOF permutation importance) is applied inside "
         "training scripts to identify the most predictive subset. "
         "<br><br>"
-        "<strong>SE3 (All remaining features, 44/39, with and without FS)</strong> "
-        "includes every non-leakage column  -  the <em>all-features</em> upper bound. "
-        "Joint dropna reduces Grab training to ~130 rows (74 % loss vs Exp2-SE2) "
+        "<strong>SE3 (ADD + CONSIDER minus Coliform, 30 features, full and FS)</strong> "
+        "removes Inlet Total Coliform from SE2, recovering ~347 rows (469 → 815 Grab). "
+        "This isolates the row-cost question: is SE2's performance driven by the Coliform signal "
+        "or by data starvation from Coliform missingness? Both no-FS and FS variants evaluated. "
+        "<br><br>"
+        "<strong>SE4 (All remaining features, 44/39, full and FS)</strong> "
+        "includes every non-leakage column - the all-features upper bound. "
+        "Joint dropna reduces Grab training to ~130 rows (74% loss vs Exp2-SE2) "
         "driven by TKN, Grit Classifier TSS, Primary COD/TSS. "
-        "Both no-FS (Exp3-SE3) and FS (Exp3-SE4-FS) variants are evaluated. "
-        "This sub-experiment confirms the audit's core finding: "
-        "marginal row cost is the binding constraint for grab targets."
+        "Both no-FS and FS variants confirm that marginal row cost is the binding constraint."
     ),
     "Exp4": (
         "Experiment 4 tests the hypothesis that <strong>removing collinear and derived features</strong> "
@@ -619,6 +688,7 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp3-S1": "Exp3-S1",
         "Exp3-S2-FS": "Exp3-S2-FS",
         "Exp3-S3": "Exp3-S3", "Exp3-S3-FS": "Exp3-S3-FS",
+        "Exp3-S4": "Exp3-S4", "Exp3-S4-FS": "Exp3-S4-FS",
         "Experiment 1": "Exp1",
         "Experiment 2 Sub-1": "Exp2-Sub1",
         "Experiment 2 Sub-2": "Exp2-Sub2",
@@ -802,7 +872,8 @@ def load_all_data() -> pd.DataFrame:
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
         ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
-        ("exp3_ks", False), ("exp3_ks_fs", False),
+        ("exp3_s3", False), ("exp3_s3_fs", False),
+        ("exp3_s4", False), ("exp3_s4_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
         ("exp5_s1", False), ("exp5_s1_fs", False),
@@ -820,7 +891,8 @@ def load_all_data() -> pd.DataFrame:
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
         ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
-        ("exp3_ks", False), ("exp3_ks_fs", False),
+        ("exp3_s3", False), ("exp3_s3_fs", False),
+        ("exp3_s4", False), ("exp3_s4_fs", False),
         ("exp4_s1", False),
         ("exp4_s2", False),
         ("exp5_s1", False), ("exp5_s1_fs", False),
@@ -5862,194 +5934,426 @@ def _variance_diagnosis_callout() -> str:
 </div>"""
 
 
-def _exp4_comparison_table(df_all: pd.DataFrame) -> str:
-    """Three-way comparison table: Exp3-SE2 vs Exp4-SE1 vs Exp4-SE2 for each target × model."""
-    df3  = df_all[df_all["exp_key"] == "Exp3-S2"]
-    df4s1 = df_all[df_all["exp_key"] == "Exp4-S1"]
-    df4s2 = df_all[df_all["exp_key"] == "Exp4-S2"]
+def _exp4_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Standard comparison panel: E3-SE2 baseline, E4-SE1, E4-SE2 with Transition Summary."""
+    e3   = df_all[df_all["exp_key"] == "Exp3-S2"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp4-S1"].copy()
+    s2   = df_all[df_all["exp_key"] == "Exp4-S2"].copy()
 
-    all_models = LINEAR_MODELS + NL_MODELS
-    rows_html = []
+    if s1.empty and s2.empty:
+        return ""
 
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    MEANINGFUL = 0.01
+    _TD  = "padding:4px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:5px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:5px 7px;text-align:left;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+    _THC = "padding:5px 7px;text-align:center;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+
+    def _get(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gap_v(df, model, tgt):
+        return _get(df, model, tgt, "R2_gap")
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:   col = "#5BAD6F"; fw = "bold"
+        elif is_gaj: col = "#4A90D9"; fw = "bold"
+        else:        col = "#1a1a1a"; fw = "normal"
+        rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "-"
+        gv     = gap if (gap is not None and gap == gap) else None
+        gs     = f"{gv:+.3f}" if gv is not None else "-"
+        gc     = ("#E15252" if gv is not None and gv > 0.10
+                  else "#5BAD6F" if gv is not None and gv < -0.10
+                  else "#888888")
+        sec = (f"<br><span style='font-size:0.71em;color:#888888;font-weight:normal'>"
+               f"{rmse_s} · <span style='color:{gc}'>{gs}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{mhtml}{sec}</td>")
+
+    def _delta_td(dr2, drmse=None, dgap=None):
+        if dr2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        c = ("#5BAD6F" if dr2 >= MEANINGFUL else
+             "#E15252" if dr2 <= -MEANINGFUL else "#888888")
+        ex = ""
+        if drmse is not None and drmse == drmse and dgap is not None and dgap == dgap:
+            rc = ("#5BAD6F" if drmse <= -MEANINGFUL else
+                  "#E15252" if drmse >= MEANINGFUL else "#888888")
+            gc = ("#E15252" if dgap > MEANINGFUL else
+                  "#5BAD6F" if dgap < -MEANINGFUL else "#888888")
+            ex = (f"<br><span style='font-size:0.71em;font-weight:normal'>"
+                  f"<span style='color:{rc}'>{drmse:+.2f}</span>"
+                  f" · <span style='color:{gc}'>{dgap:+.3f}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{c};font-weight:bold'>"
+                f"{dr2:+.3f}{ex}</td>")
+
+    def _stats_row(deltas, gaj_deltas, from_lbl, to_lbl):
+        if not deltas:
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'> - </td></tr>")
+        arr  = np.array(deltas); n = len(arr); net = float(arr.mean())
+        wins   = arr[arr >  MEANINGFUL]
+        losses = arr[arr < -MEANINGFUL]
+        ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        mw = float(wins.mean())   if len(wins)   else None
+        ml = float(losses.mean()) if len(losses) else None
+        nc = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
+        vd = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
+        ws = f"{len(wins)}/{n} (avg {mw:+.3f})"   if mw is not None else f"{len(wins)}/{n}"
+        ls = f"{len(losses)}/{n} (avg {ml:+.3f})" if ml is not None else f"{len(losses)}/{n}"
+        if gaj_deltas:
+            gn = float(np.array(gaj_deltas).mean()); diff = gn - net
+            gc = "#5BAD6F" if gn > MEANINGFUL else ("#E15252" if gn < -MEANINGFUL else "#888888")
+            dc = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "#888888"
+            interp = ("Raw gains partially inflated by overfitting" if diff < -0.02
+                      else "Raw gains understated - overfitting decreased" if diff > 0.02
+                      else "Overfitting largely unchanged")
+            gs = f"{gn:+.4f}"; ds = f"{diff:+.4f}"
+        else:
+            gs = ds = " - "; gc = dc = "#888888"; interp = " - "
+        return (f"<tr>"
+                f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                f"<td style='{_STD};text-align:center;color:{nc};font-weight:bold'>{net:+.4f}</td>"
+                f"<td style='{_STD};text-align:center;color:#5BAD6F'>{ws}</td>"
+                f"<td style='{_STD};text-align:center;color:#E15252'>{ls}</td>"
+                f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+                f"<td style='{_STD};text-align:center;color:{gc};font-weight:bold'>{gs}</td>"
+                f"<td style='{_STD};text-align:center;color:{dc}'>{ds}</td>"
+                f"<td style='{_STD}'><strong>{vd}</strong><br>"
+                f"<span style='font-size:0.82em;color:{dc}'>{interp}</span></td></tr>")
+
+    d_e3_s1  = []; gaj_e3_s1  = []
+    d_s1_s2  = []; gaj_s1_s2  = []
+    d_e3_s2  = []; gaj_e3_s2  = []
+
+    tbody = ""
     for tgt in TARGETS_ORDERED:
-        tgt_short = (tgt.replace("Effluent ", "").replace(" (mg/L, Grab)", " Grab")
-                        .replace(" (mg/L, Composite)", " Comp")
-                        .replace(" (Grab)", " pH Grab").replace(" (Composite)", " pH Comp"))
-        rows_html.append(
-            f'<tr><td colspan="7" style="background:var(--card-bg);font-weight:600;'
-            f'padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        short = TARGET_SHORT.get(tgt, tgt)
+        tbody += (
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='8' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
-        for mdl in all_models:
-            def _r2(df_exp):
-                s = df_exp[(df_exp["target"] == tgt) & (df_exp["model"] == mdl)]
-                if s.empty or s["R2_test"].isna().all():
-                    return None, None
-                return float(s["R2_test"].iloc[0]), float(s["R2_gap"].iloc[0])
 
-            r2_e3, gap_e3   = _r2(df3)
-            r2_s1, gap_s1   = _r2(df4s1)
-            r2_s2, gap_s2   = _r2(df4s2)
+        # pre-pass: find best raw and gap-adjusted per target across all models and SEs
+        _all_raw = {}; _all_gaj = {}; _all_gap = {}
+        for m_ in models_ord:
+            for key_, df_ in [("e3", e3), ("s1", s1), ("s2", s2)]:
+                v_ = _get(df_, m_, tgt); g_ = _gap_v(df_, m_, tgt)
+                if v_ is not None:
+                    _all_raw[(m_, key_)] = v_
+                    _all_gap[(m_, key_)] = g_
+                    sv_ = _gaj(v_, g_)
+                    if sv_ is not None:
+                        _all_gaj[(m_, key_)] = sv_
 
-            def _fmt_cell(r2, gap, ref_r2):
-                if r2 is None:
-                    return '<td style="color:var(--text-muted)">-</td><td style="color:var(--text-muted)">-</td>'
-                r2_str = f"{r2:+.3f}"
-                gap_str = f"{gap:+.3f}"
-                # Colour R2 relative to reference (Exp3-SE2)
-                if ref_r2 is None:
-                    r2_col = "var(--text-muted)"
-                elif r2 >= ref_r2 + 0.02:
-                    r2_col = "#2ecc71"
-                elif r2 <= ref_r2 - 0.02:
-                    r2_col = "#e74c3c"
-                else:
-                    r2_col = "var(--text-primary)"
-                gap_col = "#e74c3c" if gap > 0.15 else ("var(--text-muted)" if abs(gap) <= 0.05 else "var(--text-primary)")
-                return (f'<td style="color:{r2_col};font-weight:500">{r2_str}</td>'
-                        f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
+        tgt_br = max(_all_raw.values()) if _all_raw else None
+        tgt_bg = max(_all_gaj.values()) if _all_gaj else None
+        _raw_win_gap = None
+        if tgt_br is not None:
+            for k_, v_ in _all_raw.items():
+                if abs(v_ - tgt_br) < 1e-9:
+                    _raw_win_gap = _all_gap.get(k_)
+                    break
+        tgt_show_gaj = False
+        if (tgt_bg is not None and tgt_br is not None
+                and _raw_win_gap is not None and _raw_win_gap > 0.10):
+            _rwg = _gaj(tgt_br, _raw_win_gap)
+            if _rwg is None or abs(tgt_bg - _rwg) > 1e-9:
+                tgt_show_gaj = True
 
-            e3_cells  = _fmt_cell(r2_e3,  gap_e3,  None)
-            s1_cells  = _fmt_cell(r2_s1,  gap_s1,  r2_e3)
-            s2_cells  = _fmt_cell(r2_s2,  gap_s2,  r2_e3)
+        def _ir(v_): return tgt_br is not None and v_ is not None and abs(v_ - tgt_br) < 1e-9
+        def _ig(s_): return tgt_show_gaj and tgt_bg is not None and s_ is not None and abs(s_ - tgt_bg) < 1e-9
 
-            rows_html.append(
-                f'<tr><td style="padding-left:20px;color:var(--text-muted)">{mdl}</td>'
-                f'{e3_cells}{s1_cells}{s2_cells}</tr>'
+        for m in models_ord:
+            ve3  = _get(e3, m, tgt);  ge3  = _gap_v(e3, m, tgt)
+            vs1  = _get(s1, m, tgt);  gs1  = _gap_v(s1, m, tgt)
+            vs2  = _get(s2, m, tgt);  gs2  = _gap_v(s2, m, tgt)
+            re3  = _get(e3, m, tgt, "RMSE_test")
+            rs1  = _get(s1, m, tgt, "RMSE_test")
+            rs2  = _get(s2, m, tgt, "RMSE_test")
+            sce3 = _gaj(ve3, ge3);  scs1 = _gaj(vs1, gs1);  scs2 = _gaj(vs2, gs2)
+
+            d13  = (vs1 - ve3) if (ve3 is not None and vs1 is not None) else None
+            d12  = (vs2 - ve3) if (ve3 is not None and vs2 is not None) else None
+            d13r = (rs1 - re3) if (re3 is not None and rs1 is not None) else None
+            d12r = (rs2 - re3) if (re3 is not None and rs2 is not None) else None
+            d13g = (gs1 - ge3) if (ge3 is not None and gs1 is not None) else None
+            d12g = (gs2 - ge3) if (ge3 is not None and gs2 is not None) else None
+            d32  = (vs2 - vs1) if (vs1 is not None and vs2 is not None) else None
+            d32r = (rs2 - rs1) if (rs1 is not None and rs2 is not None) else None
+            d32g = (gs2 - gs1) if (gs1 is not None and gs2 is not None) else None
+
+            sd13 = (scs1 - sce3) if (sce3 is not None and scs1 is not None) else None
+            sd12 = (scs2 - sce3) if (sce3 is not None and scs2 is not None) else None
+            sd32 = (scs2 - scs1) if (scs1 is not None and scs2 is not None) else None
+
+            if d13 is not None: d_e3_s1.append(d13);  gaj_e3_s1.append(sd13) if sd13 is not None else None
+            if d32 is not None: d_s1_s2.append(d32);  gaj_s1_s2.append(sd32) if sd32 is not None else None
+            if d12 is not None: d_e3_s2.append(d12);  gaj_e3_s2.append(sd12) if sd12 is not None else None
+
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
+            tbody += (
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
+                f"{_val_td(ve3, re3, ge3, _ir(ve3), _ig(sce3))}"
+                f"{_val_td(vs1, rs1, gs1, _ir(vs1), _ig(scs1))}"
+                f"{_delta_td(d13, d13r, d13g)}"
+                f"{_val_td(vs2, rs2, gs2, _ir(vs2), _ig(scs2))}"
+                f"{_delta_td(d12, d12r, d12g)}"
+                f"</tr>"
             )
 
-    thead = """<thead><tr>
-      <th>Model</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-blue);color:var(--th-col-blue-text)">Exp3-SE2 (baseline)</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-red);color:var(--th-col-red-text)">Exp4-SE1 (manual prune)</th>
-      <th colspan="2" style="text-align:center;background:var(--th-col-green);color:var(--th-col-green-text)">Exp4-SE2 (VIF prune)</th>
-    </tr>
-    <tr style="font-size:0.82em">
-      <th></th>
-      <th>R² Test</th><th>R² Gap</th>
-      <th>R² Test</th><th>R² Gap</th>
-      <th>R² Test</th><th>R² Gap</th>
-    </tr></thead>"""
-
-    return f"""
-<div class="obs-card" style="margin-top:24px">
-  <h3 style="margin:0 0 12px">Three-way comparison: Exp3-SE2 → Exp4-SE1 → Exp4-SE2</h3>
-  <p style="color:var(--text-muted);font-size:0.88em;margin:0 0 10px">
-    Colours vs Exp3-SE2 baseline: <span style="color:#2ecc71">green = +0.02 gain</span>,
-    <span style="color:#e74c3c">red = −0.02 loss</span>, white = within ±0.02.
-    Gap column: <span style="color:#e74c3c">red = overfitting gap &gt;0.15</span>.
-  </p>
-  <div style="overflow-x:auto">
-  <table style="width:100%;border-collapse:collapse;font-size:0.87em">
-    {thead}
-    <tbody>{''.join(rows_html)}</tbody>
+    n_cells = len(models_ord) * len(TARGETS_ORDERED)
+    stats_block = f"""
+<div style='margin-top:1.4rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; -{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| ≤ {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²-0.5·max(0,|gap|-0.10)</span></th>
+        <th style='{_THC}'>Gap-Adj - Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+        <th style='{_TH}'>Verdict / Interpretation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {_stats_row(d_e3_s1, gaj_e3_s1, "E3-SE2", "SE1 (manual prune)")}
+      {_stats_row(d_s1_s2, gaj_s1_s2, "SE1", "SE2 (VIF prune)")}
+      {_stats_row(d_e3_s2, gaj_e3_s2, "E3-SE2", "SE2 (combined)")}
+    </tbody>
   </table>
+  </div>
+  <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
+    <p class='meta'>
+      <strong>Reading the table.</strong>
+      Net Mean ΔR² is the signed average across all {n_cells} (model x target) cells.
+      <strong>E3-SE2 → SE1</strong>: removes three feature groups (SVI, New aeration, Sec Sed) from Exp3-SE2.
+      <strong>SE1 → SE2</strong>: applies automated iterative VIF pruning (threshold=10) on the SE1 pool.
+      <strong>E3-SE2 → SE2</strong>: combined effect of both pruning steps vs the Exp3-SE2 baseline.
+      <strong>Gap-Adj - Raw</strong>: negative = raw gains inflated by overfitting;
+      positive = gains understated because overfitting decreased.
+      <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
+    </p>
   </div>
 </div>"""
 
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:880px'>
+  <thead>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:52px'>Model</th>
+      <th style='{_THC}'>E3-SE2<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>SE1<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ E3-SE2→SE1<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='{_THC}'>SE2<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ E3-SE2→SE2<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
 
-def build_exp4_section(df_all: pd.DataFrame) -> str:
-    vif_div    = _vif_callout()
-    vif_bridge = f"""
-<details class="exp-details" id="exp4-vif">
+    return f"""
+<details class="exp-details" id="exp4-comparison" open>
   <summary><span class="fold-icon">▶</span>
-    Collinearity Diagnosis  -  Motivation for Experiment 4
+    Comparisons
   </summary>
   <div class="exp-body">
-    <div class="obs-card" style="border-left:4px solid #9B59B6;margin-bottom:0.8rem">
+    <div class="obs-card" style="border-left:4px solid #E67E22">
       <p class="meta">
-        The all-features feature set (Exp3 SE3) contains several correlated groups
-        (Sec Clarifier ↔ Sec Sedimentation; Aeration MLSS ↔ SVI;
-        Power GE + Power NEA = Power Total). VIF analysis below quantifies this for OLS.
-        Key context: VIF matters primarily for <strong>OLS</strong> (unregularised linear
-        regression), where high VIF inflates coefficient standard errors and causes instability.
-        <strong>Ridge</strong> and <strong>ElasticNet</strong> handle collinearity by
-        design via their L2/L1 penalties, and <strong>tree models</strong> (RF, GB, XGB)
-        are entirely unaffected  -  correlated features simply share split importance without
-        degrading prediction.
-        <br><br>
-        This collinearity observation motivated <strong>Experiment 4</strong>: a direct test
-        of whether manually removing the most collinear groups (SVI, New aeration, Sec Sed)
-        would improve generalisation. Spoiler: it did not  -  see SE findings below.
+        <strong>★</strong> = best raw Test R² per target (across all models and SEs) ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10 and a different cell wins on gap-adjusted score).
+        RMSE in native units (mg/L or pH). Gap = Train R² - Test R²;
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+        Delta columns (Δ): ΔR² · ΔRMSE · ΔGap vs E3-SE2 baseline.
       </p>
     </div>
-    {vif_div}
+    {main_table}
+    {stats_block}
   </div>
 </details>"""
 
+
+def _exp4_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for Experiment 4."""
+    e3 = df_all[df_all["exp_key"] == "Exp3-S2"].dropna(subset=["R2_test"])
+    s1 = df_all[df_all["exp_key"] == "Exp4-S1"].dropna(subset=["R2_test"])
+    s2 = df_all[df_all["exp_key"] == "Exp4-S2"].dropna(subset=["R2_test"])
+
+    grab_tgts = set(GRAB_TARGETS)
+    comp_tgts = set(COMP_TARGETS)
+
+    def _avg(df, tgts, model=None):
+        sub = df[df["model"] == model] if model else df
+        vals = [float(sub[sub["target"] == t]["R2_test"].max())
+                for t in tgts if not sub[sub["target"] == t].empty]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    def _c(v, positive_good=True):
+        if v != v: return " - "
+        col = ("#5BAD6F" if v > 0.05 else "#E15252" if v < -0.05 else "var(--text-muted)") \
+              if positive_good else \
+              ("#E15252" if v > 0.10 else "#5BAD6F" if v < 0.05 else "var(--text-muted)")
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    e3_grab = _avg(e3, grab_tgts); e3_comp = _avg(e3, comp_tgts)
+    s1_grab = _avg(s1, grab_tgts); s1_comp = _avg(s1, comp_tgts)
+    s2_grab = _avg(s2, grab_tgts); s2_comp = _avg(s2, comp_tgts)
+
+    # Row counts: SE1 vs SE2 for representative targets
+    def _rows(df, tgt, year=None):
+        sub = df[df["target"] == tgt]
+        if sub.empty or "n_train" not in sub.columns: return "?"
+        return str(int(sub["n_train"].max()))
+
+    # Gap stats
+    s2_ridge_grab = _avg(s2, grab_tgts, "Ridge")
+    s2_comp_pH_ridge = float(s2[
+        (s2["model"] == "Ridge") &
+        (s2["target"] == "Effluent pH (Composite)")]["R2_test"].max()) if not s2.empty else float("nan")
+
+    q1 = (
+        f"<strong>Sample size:</strong> Row counts barely changed for SE1 (+5-10, &lt;2%) because "
+        f"Sec Sed and Sec Clarifier are collected on the same operational days (co-occurring missingness). "
+        f"Removing Sec Sed does not unlock any additional rows. "
+        f"SE2 (VIF pruning) unlocked meaningful extra rows by eliminating high-missingness pH and Inlet BOD/COD "
+        f"columns: Comp TSS grew from ~448 to ~741 rows (+65%), Comp COD from ~684 to ~866 (+27%). "
+        f"This row gain is the only genuine benefit of VIF pruning in this experiment."
+        f"<br><br>"
+        f"<strong>Performance - SE1:</strong> E3-SE2 baseline grab avg = {_c(e3_grab)}, comp avg = {_c(e3_comp)}. "
+        f"After manual group removal: SE1 grab avg = {_c(s1_grab)}, comp avg = {_c(s1_comp)}. "
+        f"Performance deteriorated on every target and every model. "
+        f"<br><br>"
+        f"<strong>Performance - SE2:</strong> grab avg = {_c(s2_grab)}, comp avg = {_c(s2_comp)}. "
+        f"VIF pruning further degraded results on most targets. Ridge grab recovered partially "
+        f"(Ridge grab avg ~{_c(s2_ridge_grab)}), but Comp pH Ridge collapsed to "
+        f"{_c(s2_comp_pH_ridge)}."
+    )
+
+    q2 = (
+        f"No - both pruning strategies made things worse. "
+        f"<strong>SE1 (manual removal):</strong> removing correlated groups discarded genuine signal. "
+        f"Key degradation: RF Grab COD dropped from +0.40 (Exp3-SE2) to -0.08 (SE1). "
+        f"ElNet Grab BOD: +0.68 to +0.17. The premise that Sec Clarifier alone suffices was wrong - "
+        f"Exp2's split analysis had already shown Sec Sedimentation was the stronger standalone predictor, "
+        f"and FS results from Exp3-SE2 confirm both groups carry non-redundant signal. "
+        f"<br><br>"
+        f"<strong>SE2 (VIF pruning):</strong> VIF is target-agnostic - it removes features correlated "
+        f"with other features regardless of their signal value. Inlet BOD is highly correlated with other "
+        f"inlet features, but it also directly predicts Effluent BOD. Sec Clarifier pH is collinear with "
+        f"other pH columns, but it carries the strongest pH signal for effluent pH prediction. "
+        f"VIF pruning strips precisely the features that matter most. "
+        f"Tree models collapsed catastrophically when pH features and Inlet BOD/COD were removed."
+    )
+
+    q3 = (
+        f"Collinearity in this dataset is best handled by <strong>model-side regularisation</strong>, "
+        f"not manual feature removal. "
+        f"Ridge and ElasticNet suppress collinear features automatically via L2/L1 penalties. "
+        f"Tree models (RF, GB, XGB) are unaffected by collinearity - correlated features simply "
+        f"share split importance, and removing them reduces split diversity, which worsens overfitting. "
+        f"<br><br>"
+        f"The collinearity between Sec Clarifier and Sec Sed, or between aeration Existing and New tanks, "
+        f"reflects real process physics: the plant runs in a correlated steady state. These correlations "
+        f"are not a modelling problem; they are a feature of the data that regularised models handle correctly. "
+        f"<br><br>"
+        f"<strong>Exp3-SE2 remains the recommended feature set for all models.</strong> "
+        f"The only benefit from SE2 (VIF) is the row gain on composite targets, which could be "
+        f"recovered more cleanly by explicitly excluding high-missingness features at dataset-build time "
+        f"rather than through VIF-driven pruning."
+    )
+
+    def _qcard(n, question, answer):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);
+              display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
+  </div>
+</div>"""
+
+    cards = "".join([
+        _qcard(1, "How did each SE's feature set affect sample size and performance?", q1),
+        _qcard(2, "Did removing feature groups (manual SE1 or automated SE2) improve generalization?", q2),
+        _qcard(3, "What is the strategic takeaway for collinearity handling?", q3),
+    ])
+
+    return f"""
+<details class="exp-details" id="exp4-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings - Experiment 4</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def build_exp4_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp4-S1", "exp4-s1",
-                           "SE1 - Manual Group Removal (SVI, New Aeration, Sec Sed)",
+                           "SE1 - Manual Group Removal (SVI, New Aeration, Sec Clarifier)",
                            open_default=True)
 
-    note_s1 = """
-<div class="info-note" style="border-left-color:#e74c3c">
-  <strong>⚠ SE1 finding - manual pruning hypothesis refuted:</strong>
-  Removing the three feature groups made performance <em>worse</em> across every target and every
-  model. Row counts barely changed (+5-10, &lt;2%) because Sec Sed and Sec Clarifier are
-  collected on the same operational days (co-occurring missingness).
-
-  <br><br><strong>Why performance degraded:</strong>
-  <ul style="margin:6px 0 0 16px;padding:0">
-    <li><strong>Linear (ElNet/Ridge):</strong> regularisation already handled collinearity via L1/L2.
-        Manual removal discarded signal the penalties would have downweighted automatically.</li>
-    <li><strong>Tree models (RF, GB, XGB):</strong> Sec Sed COD/TSS carried direct process signal
-        (RF Grab COD: +0.40 → −0.08). Fewer features → less split diversity → faster overfitting.</li>
-  </ul>
+    # SE2: inject the VIF analysis at the top of the section body as its motivation
+    vif_div = _vif_callout()
+    vif_intro = f"""
+<div class="obs-card" style="border-left:4px solid #9B59B6;margin-bottom:1rem">
+  <p class="meta">
+    <strong>Motivation for VIF pruning.</strong>
+    The Exp3-SE2 feature set contains several correlated groups (Sec Clarifier vs Sec Sed;
+    Aeration MLSS vs SVI; pH buffered across all stages). VIF quantifies this for OLS below.
+    VIF matters primarily for <strong>OLS</strong> - high VIF inflates coefficient standard
+    errors and causes instability. <strong>Ridge</strong> and <strong>ElasticNet</strong> handle
+    collinearity via L2/L1 penalties; <strong>tree models</strong> are entirely unaffected.
+    SE2 tests whether automated iterative VIF pruning (threshold=10) on the SE1 pool improves
+    generalisation by removing within-group collinearity more precisely than manual removal.
+  </p>
+  {vif_div}
 </div>"""
 
-    sub2 = _exp_subsection(df_all, "Exp4-S2", "exp4-s2",
-                           "SE2 - VIF-based Automated Pruning (threshold = 10)",
-                           open_default=True)
+    sub2_raw = _exp_subsection(df_all, "Exp4-S2", "exp4-s2",
+                               "SE2 - VIF-based Automated Pruning (threshold = 10)",
+                               open_default=True)
+    # Inject VIF intro at the top of SE2's exp-body
+    sub2 = sub2_raw.replace('<div class="exp-body">', f'<div class="exp-body">{vif_intro}', 1)
 
-    note_s2 = """
-<div class="info-note" style="border-left-color:#e67e22">
-  <strong>⚠ SE2 finding - VIF pruning also refuted, with nuance:</strong>
-  Automated iterative VIF pruning (drop highest-VIF feature until all VIF ≤ 10) reduced
-  feature sets to 5-10 and unlocked +47 to +293 additional rows by eliminating high-missingness
-  correlated features (pH columns, Inlet BOD/COD, MLSS).
-
-  <br><br><strong>Row gain is significant for composites:</strong> Comp TSS grew from 448 → 741
-  rows (+65%), Comp COD from 684 → 866 (+27%). This is a genuine data efficiency gain.
-
-  <br><br><strong>But performance still degraded:</strong>
-  <ul style="margin:6px 0 0 16px;padding:0">
-    <li><strong>Ridge:</strong> mixed results - Grab BOD Ridge recovered to +0.463 (close to
-        Exp4-SE1 +0.518), Grab TSS Ridge stable at +0.373. But Comp pH Ridge collapsed to −1.44
-        and Comp COD remains unresolved.</li>
-    <li><strong>ElNet:</strong> Grab BOD dropped to +0.072 (vs Exp3-SE2 +0.684). ElNet relies on
-        L1 to select from correlated features; pre-selecting them via VIF removes its advantage.</li>
-    <li><strong>Tree models (RF, GB, XGB):</strong> catastrophic on most targets. Removing all
-        pH features and Inlet BOD/COD strips the primary process-signal columns that trees use
-        for their first splits. Without these, boosted trees cannot learn the systematic trend
-        and overfit severely to noise.</li>
-  </ul>
-
-  <br><strong>Root cause:</strong> VIF pruning is <em>target-agnostic</em> - it removes features
-  that are correlated with other features, regardless of their correlation with the target.
-  Inlet BOD predicts Effluent BOD. Sec Clarifier pH predicts Effluent pH. These features have
-  high VIF precisely because the plant operates systematically (pH is buffered across all stages),
-  but they carry the predictive signal the models need.
-
-  <br><br><strong>Conclusion:</strong> Both manual and automated collinearity pruning are
-  counter-productive on this dataset. The collinearity is intrinsic to the process physics and
-  should be absorbed by regularisation (Ridge/ElNet), not removed. Tree models require the
-  full feature pool. <strong>Exp3-SE2 remains the best feature set for tree models.</strong>
-  For linear models, Ridge on Exp4-SE2 is competitive for Grab BOD/TSS but should not replace
-  Exp3-SE2 Ridge as the baseline due to losses on other targets.
-</div>"""
-
-    comparison = _exp4_comparison_table(df_all)
+    comparison = _exp4_comparison_panel(df_all)
+    findings   = _exp4_qna(df_all)
     best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp4-S1", "Exp4-S2"])], "Experiment 4")
 
     return f"""
 <section id="exp4">
   <h1 class="section-title">Experiment 4 - Collinearity Pruning</h1>
   <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
-  {vif_bridge}
   {sub1}
-  {note_s1}
   {sub2}
-  {note_s2}
   {comparison}
+  {findings}
   {best}
 </section>"""
 
@@ -6732,9 +7036,10 @@ def _sidebar() -> str:
       Experiment 4 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp4">
-      <a class="nav-item nav-sub" href="#exp4-vif">Collinearity Diagnosis</a>
       <a class="nav-item nav-sub" href="#exp4-s1">SE1 - Manual Group Removal</a>
       <a class="nav-item nav-sub" href="#exp4-s2">SE2 - VIF-based Pruning</a>
+      <a class="nav-item nav-sub" href="#exp4-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#exp4-findings">Findings</a>
     </div>
   </div>
 

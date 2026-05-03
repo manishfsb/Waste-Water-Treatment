@@ -71,9 +71,9 @@ ADD_FEATURES = [
 ]
 
 # ── CONSIDER-tier extras ───────────────────────────────────────────────────────
+# Power GE removed: Power Total (KW) = Power GE + Power NEA, so both cannot be features simultaneously.
 CONSIDER_FEATURES = [
     "Aeration SVI (New)",
-    "Power GE (KW)",
     "Inlet Total Coliform (CFU/100ml, Grab)",
     "Primary Sludge Totalizer (m3)",
 ]
