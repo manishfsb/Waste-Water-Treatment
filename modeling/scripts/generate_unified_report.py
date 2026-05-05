@@ -175,8 +175,12 @@ _PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phas
 FEATURE_DESCRIPTIONS = {
     "Exp1-Sub1": {
         "label": "Inlet Only (4 features)  -  no process or temporal context",
-        "features": "Inlet pH, Inlet BOD (mg/L), Inlet COD (mg/L), Inlet TSS (mg/L) "
-                    "(Grab or Composite)  -  no Flow, Power, or calendar features",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features (4):</strong> Inlet pH, Inlet BOD (mg/L), Inlet COD (mg/L), Inlet TSS (mg/L) - Grab or Composite.</li>"
+            "<li><strong>Excluded:</strong> Flow (MLD), Power Total (KW), all calendar features - no process or temporal context.</li>"
+            "</ul>"
+        ),
         "rationale": "Absolute minimum feature set: can inlet water quality alone predict "
                      "effluent quality? This sub-experiment establishes the floor and "
                      "quantifies how much process context (Flow, Power, calendar) adds "
@@ -184,17 +188,25 @@ FEATURE_DESCRIPTIONS = {
     },
     "Exp1": {
         "label": "Inlet + COMMON (9 features)",
-        "features": "Inlet pH, Inlet BOD, Inlet COD, Inlet TSS (Grab or Composite) + "
-                    "Flow (MLD), Power Total (KW), month, day_of_week, year",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Inlet (4):</strong> pH, BOD (mg/L), COD (mg/L), TSS (mg/L) - Grab or Composite.</li>"
+            "<li><strong>COMMON (5):</strong> Flow (MLD), Power Total (KW), month, day_of_week, year.</li>"
+            "</ul>"
+        ),
         "rationale": "Baseline: can inlet water quality alone predict effluent quality? "
                      "Tests the simplest, most operationally available feature set - "
                      "no secondary treatment data required.",
     },
     "Exp1-Cyclic": {
         "label": "Inlet + COMMON with Cyclic Calendar Encoding (11 features)",
-        "features": "Inlet pH, BOD, COD, TSS (Grab or Composite) + "
-                    "Flow (MLD), Power Total (KW), year, "
-                    "month_sin, month_cos, dow_sin, dow_cos",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
+            "<li><strong>Changed vs SE2:</strong> raw month/day_of_week replaced by sin/cos projections to remove false discontinuity at Dec-Jan boundary.</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether replacing raw integer month (1 - 12) and day_of_week (0 - 6) "
                      "with sin/cos projections improves generalisation. Raw integers impose a "
                      "false December→January discontinuity on linear models; cyclic encoding "
@@ -202,86 +214,138 @@ FEATURE_DESCRIPTIONS = {
     },
     "Exp1-FS": {
         "label": "Inlet + COMMON - Feature Selected (5-8 features)",
-        "features": "Subset of Exp1 features retained by RF permutation importance "
-                    "(importance ≥ 0.03 threshold) and mutual information screening",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Exp1 SE2 features (9: Inlet + COMMON).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV; trees use OOF permutation importance (threshold 5%).</li>"
+            "<li><strong>Remaining:</strong> 5-8 features per model/target.</li>"
+            "</ul>"
+        ),
         "rationale": "Checks whether pruning the 9-feature set to its most informative "
                      "subset improves generalisation on the 2025 holdout.",
     },
     "Exp2-Sub1": {
         "label": "Combined Secondary + COMMON (15 features)",
-        "features": "Sec Clarifier pH/TSS/BOD/COD/RAS + Sec Sed pH/TSS/BOD/COD/RAS "
-                    "+ Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Sec Clarifier (5):</strong> pH, TSS, BOD, COD, RAS.</li>"
+            "<li><strong>Sec Sedimentation (5):</strong> pH, TSS, BOD, COD, RAS (New).</li>"
+            "<li><strong>COMMON (5):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Excluded:</strong> No inlet features - secondary-only scope.</li>"
+            "</ul>"
+        ),
         "rationale": "Tests secondary treatment process data only (no inlet). "
                      "Do downstream process indicators predict effluent better than inlet?",
     },
     "Exp2-Sub1-FS": {
         "label": "Secondary + COMMON - Feature Selected",
-        "features": "Subset of Exp2-S1 secondary + COMMON features after permutation "
-                    "importance screening",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> SE1 combined secondary + COMMON (15 features).</li>"
+            "<li><strong>Feature selection:</strong> RF permutation importance screening.</li>"
+            "<li><strong>Remaining:</strong> subset of most predictive secondary parameters.</li>"
+            "</ul>"
+        ),
         "rationale": "Feature selection on the secondary feature set to remove noisy "
                      "or redundant secondary parameters.",
     },
     "Exp2-Sub2": {
         "label": "Inlet + Secondary + COMMON (19 features)",
-        "features": "Inlet (Grab/Composite) + Sec Clarifier + Sec Sed + "
-                    "Flow, Power, month, day_of_week, year",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
+            "<li><strong>Secondary (10):</strong> Sec Clarifier (5) + Sec Sedimentation (5).</li>"
+            "<li><strong>COMMON (5):</strong> Flow (MLD), Power Total (KW), month, day_of_week, year.</li>"
+            "</ul>"
+        ),
         "rationale": "Full baseline combining both monitoring points. Tests whether "
                      "joining inlet and secondary data outperforms either alone.",
     },
     "Exp2-Sub2-FS": {
         "label": "Inlet + Secondary + COMMON - Feature Selected",
-        "features": "Subset of Exp2-S2 combined features after permutation importance "
-                    "and mutual information screening",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> SE2 combined features (19: Inlet + Secondary + COMMON).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV; trees use OOF permutation importance (threshold 5%).</li>"
+            "<li><strong>Remaining:</strong> subset of most predictive combined features per model/target.</li>"
+            "</ul>"
+        ),
         "rationale": "Remove redundant or low-signal features from the full Exp2-S2 set.",
     },
     "Exp2-Sub1-Clr": {
         "label": "Secondary Clarifier + COMMON (12 features)",
-        "features": "Sec Clarifier pH, TSS, BOD, COD, RAS + Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Sec Clarifier (5):</strong> pH, TSS, BOD, COD, RAS.</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Removed vs SE1-Combined:</strong> Sec Sedimentation group (5 cols) - isolated to test standalone Clarifier signal.</li>"
+            "</ul>"
+        ),
         "rationale": "Isolate the Clarifier group to test whether Clarifier and Sedimentation "
                      "features carry distinct signal or are interchangeable.",
     },
     "Exp2-Sub1-Sed": {
         "label": "Secondary Sedimentation + COMMON (12 features)",
-        "features": "Sec Sed pH, TSS, BOD, COD, RAS(New) + Flow, Power, year, month_sin, month_cos, dow_sin, dow_cos",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Sec Sedimentation (5):</strong> pH, TSS, BOD, COD, RAS (New).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Removed vs SE1-Combined:</strong> Sec Clarifier group (5 cols) - isolated to test standalone Sedimentation signal.</li>"
+            "</ul>"
+        ),
         "rationale": "Isolate the Sedimentation group  -  paired with Exp2-SE1-Clr to test "
                      "whether one group dominates the other.",
     },
     "Exp2-Sub2-Cyc": {
         "label": "Inlet + Secondary + COMMON (21 features)",
-        "features": "Grab or Composite inlet (4) + all SEC_COLS (10) + Flow, Power, year, "
-                    "month_sin, month_cos, dow_sin, dow_cos (7)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
+            "<li><strong>Secondary (10):</strong> Sec Clarifier (5) + Sec Sedimentation (5).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos (cyclic encoding).</li>"
+            "</ul>"
+        ),
         "rationale": "Full combined feature set with corrected calendar encoding. "
                      "OLS uses LassoCV pre-screening; trees use OOF permutation importance "
                      "feature selection, both stored in the same results file.",
     },
     "Exp3-S1": {
         "label": "Exp2-S2 + ADD-tier Aeration Features (28 features, no FS)",
-        "features": "Exp2-S2 baseline (21 features) + ADD-tier additions (MI ≥ 0.20, "
-                    "marginal row cost ≤ 20%): Aeration DO/MLSS/SV30/SVI (Existing) + "
-                    "Aeration pH (Existing) + Aeration DO/SV30 (New)  -  7 extra columns. "
-                    "Grab: ~816 train rows / 202 test. Composite: ~632 train / 181 test.",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Baseline (21):</strong> Exp2-SE2 - Inlet (4) + Secondary (10) + COMMON (7: Flow, Power, year, month/dow cyclic).</li>"
+            "<li><strong>Added - ADD-tier (7):</strong> Aeration DO/MLSS/SV30/SVI/pH (Existing) + Aeration DO/SV30 (New). MI >= 0.20, marginal row cost <= 20%.</li>"
+            "<li><strong>Row count:</strong> Grab ~816 train / 202 test. Composite ~632 train / 181 test. Near-zero row loss vs Exp2-SE2.</li>"
+            "</ul>"
+        ),
         "rationale": "Expand with aeration basin data that shows high mutual information "
                      "and low missingness cost on top of the Exp2-SE2 baseline. "
                      "No feature selection applied  -  tests the full ADD-tier set.",
     },
     "Exp3-S2": {
-        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (32 features, no FS)",
-        "features": "Exp2-S2 + ADD-tier + CONSIDER-tier (Aeration SVI New, Power GE, "
-                    "Inlet Total Coliform, Primary Sludge Totalizer)  -  32 features total. "
-                    "No feature selection applied; full feature set used for all models. "
-                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-SE1). "
-                    "Composite: ~423 train / 152 test.",
+        "label": "Exp2-S2 + ADD + CONSIDER-tier Features (31 features, no FS)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>SE1 base (28):</strong> Inlet + Secondary + COMMON + ADD-tier aeration (7).</li>"
+            "<li><strong>Added - CONSIDER-tier (3):</strong> Aeration SVI (New), Inlet Total Coliform (CFU/100ml), Primary Sludge Totalizer (m3).</li>"
+            "<li><strong>Removed vs original SE2:</strong> Power GE (KW) - redundant: Power Total = Power GE + Power NEA.</li>"
+            "<li><strong>Row cost:</strong> Grab ~469 train / 168 test (Coliform causes ~347-row loss vs SE1). Composite ~423 train / 152 test.</li>"
+            "</ul>"
+        ),
         "rationale": "Baseline (no FS) for the ADD+CONSIDER-tier feature set. "
                      "Tests the raw performance of 32 features without model-specific selection, "
                      "enabling a direct comparison with the FS variant (Exp3-S2-FS).",
     },
     "Exp3-S2-FS": {
-        "label": "Exp2-S2 + ADD + CONSIDER-tier Features with FS (32 features → 5 - 24 selected)",
-        "features": "Exp2-S2 + ADD-tier + CONSIDER-tier (Aeration SVI New, Power GE, "
-                    "Inlet Total Coliform, Primary Sludge Totalizer)  -  32 features total. "
-                    "Feature selection: OLS uses LassoCV; trees use OOF permutation importance. "
-                    "Grab: ~469 train rows / 168 test (Coliform causes ~347-row loss vs Exp3-SE1). "
-                    "Composite: ~423 train / 152 test.",
+        "label": "Exp2-S2 + ADD + CONSIDER-tier Features with FS (31 features -> 5-24 selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 31 features as SE2 (SE1 + CONSIDER-tier, Power GE excluded).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV pre-screen. RF/GB/XGB use 3-phase OOF permutation importance (threshold=0.05).</li>"
+            "<li><strong>Ridge/ElNet:</strong> Full 31-feature set - L2/L1+L2 regularisation handles collinearity internally.</li>"
+            "<li><strong>Row count:</strong> Same as SE2 (~469 Grab / ~423 Composite train). No dataset rebuild.</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether CONSIDER-tier features (higher missingness cost) add value "
                      "when combined with model-specific feature selection. Key trade-off: "
                      "CONSIDER features increase signal but reduce training rows significantly.",
@@ -382,64 +446,82 @@ FEATURE_DESCRIPTIONS = {
                      "overfit. SE1 tests manual removal; SE2 tests automated VIF-based pruning within the SE1 pool.",
     },
     "Exp4-S2": {
-        "label": "Exp4-SE1 + Iterative VIF Pruning (threshold=10) - 5-10 features",
-        "features": "Starting from the Exp4-SE1 feature pool, automated iterative VIF pruning "
-                    "(drop highest-VIF feature, recompute, repeat until all VIF ≤ 10) run on "
-                    "training rows only. Dropped per target: all pH features (Inlet pH, "
-                    "Sec Clarifier pH, Aeration pH, Primary Clarifier pH - VIF 600-2400), "
-                    "Inlet BOD/COD (VIF 18-34), MLSS (SV30 survives as biomass proxy), "
-                    "one of Flow/Power Total. "
-                    "Temporal features (month, day_of_week, year) always retained, excluded from VIF. "
-                    "Row gain vs Exp4-SE1: +47 to +293 rows (dropped features had high missingness).",
+        "label": "Exp4-SE1 + Iterative VIF Pruning (threshold=10) - 7-8 features",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting pool:</strong> Exp4-SE1 feature set per target (18 features).</li>"
+            "<li><strong>VIF pruning:</strong> Iteratively drop highest-VIF feature until all VIF <= 10. Run on training rows only (no 2025 data leakage).</li>"
+            "<li><strong>Typical drops:</strong> pH features (VIF 600-2400), Inlet BOD/COD (VIF 18-34), MLSS (SV30 survives as biomass proxy).</li>"
+            "<li><strong>Retained (excluded from VIF):</strong> month, day_of_week, year - temporal/categorical, not subject to VIF.</li>"
+            "<li><strong>Remaining:</strong> 7-8 features per target.</li>"
+            "</ul>"
+        ),
         "rationale": "Hypothesis: automated, data-driven VIF pruning removes intra-group "
                      "multicollinearity more precisely than manual feature removal (Exp4-SE1), "
                      "yielding a well-conditioned feature matrix where Ridge/ElNet regularisation "
                      "can work effectively and tree model overfitting may reduce.",
     },
     "ANN-Exp1": {
-        "label": "Exp1 Features → ANN (Inlet + COMMON, 9 features)",
-        "features": "Inlet pH, Inlet BOD, Inlet COD, Inlet TSS (Grab or Composite) + "
-                    "Flow (MLD), Power Total (KW). StandardScaler + MLPRegressor, "
-                    "GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit). "
-                    "~1175 Grab / ~800 Composite training rows.",
+        "label": "Exp1 Features - ANN (Inlet + COMMON, 9 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features (9):</strong> Inlet pH/BOD/COD/TSS (Grab or Composite) + Flow (MLD), Power Total (KW).</li>"
+            "<li><strong>Model:</strong> StandardScaler + MLPRegressor, GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit).</li>"
+            "<li><strong>Row count:</strong> ~1175 Grab / ~800 Composite training rows.</li>"
+            "</ul>"
+        ),
         "rationale": "Phase 9 ANN failed with ~470 Grab training samples. Exp1 has 2.5× more "
                      "data with simpler features. Tests whether ANN failure was data-volume "
                      "limited. Same architecture as Phase 9 ANN; only dataset changed.",
     },
     "ANN-Exp2-Sub1": {
-        "label": "Exp2-SE1 Features → ANN (Secondary + COMMON, 15 features)",
-        "features": "Sec Clarifier pH/TSS/BOD/COD/RAS, Sec Sed pH/TSS/BOD/COD/RAS + "
-                    "Flow, Power. StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
-                    "~924 Grab / ~740 Composite training rows.",
+        "label": "Exp2-SE1 Features - ANN (Secondary + COMMON, 15 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features (15):</strong> Sec Clarifier (5) + Sec Sedimentation (5) + Flow, Power, year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Model:</strong> StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit).</li>"
+            "<li><strong>Row count:</strong> ~924 Grab / ~740 Composite training rows.</li>"
+            "</ul>"
+        ),
         "rationale": "Middle ground: richer features (secondary process data) with ~2× the "
                      "samples of Exp3-SE2. Tests whether secondary process data adds meaningful "
                      "ANN signal at adequate sample size.",
     },
     "ANN-Exp2-Sub2": {
-        "label": "Exp2-SE2 Features → ANN (Inlet + Secondary + COMMON, 19 features)",
-        "features": "Inlet (Grab/Composite) + Sec Clarifier + Sec Sed + Flow, Power. "
-                    "StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit). "
-                    "~920 Grab / ~733 Composite training rows.",
+        "label": "Exp2-SE2 Features - ANN (Inlet + Secondary + COMMON, 19 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features (19):</strong> Inlet (4) + Sec Clarifier (5) + Sec Sedimentation (5) + Flow, Power, year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Model:</strong> StandardScaler + MLPRegressor, GridSearchCV (TimeSeriesSplit).</li>"
+            "<li><strong>Row count:</strong> ~920 Grab / ~733 Composite training rows.</li>"
+            "</ul>"
+        ),
         "rationale": "Combined inlet + secondary features at twice the sample count of "
                      "Exp3-SE2 ANN. The most direct comparison: same feature scope as "
                      "Exp3-SE2 baseline but without the CONSIDER-tier columns that reduced "
                      "training rows via missingness.",
     },
     "Phase9-ANN": {
-        "label": "Exp3-SE2 Features → ANN (MLPRegressor, StandardScaler pipeline)",
-        "features": "Same as Exp3-SE2 (25 features), StandardScaler + MLPRegressor, "
-                    "GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit)",
+        "label": "Exp3-SE2 Features - ANN (MLPRegressor, StandardScaler pipeline)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features:</strong> Same as Exp3-SE2 (~25 per target: Inlet + Secondary + COMMON + ADD + CONSIDER subset).</li>"
+            "<li><strong>Model:</strong> StandardScaler + MLPRegressor, GridSearchCV on hidden_layer_sizes and alpha (TimeSeriesSplit).</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether a neural network can outperform regularised linear "
                      "and tree models. Key challenge: ~470 training samples may be "
                      "insufficient for a multi-layer perceptron.",
     },
     "Phase9-Voting": {
-        "label": "Exp3-SE2 Features → Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
-        "features": "Same as Exp3-SE2 (25 features per target); VotingRegressor averaging "
-                    "ElasticNet, RandomForest, and XGBoost with equal weights. "
-                    "Replaces original Ridge+ElNet+RF - Ridge removed because it duplicates "
-                    "ElNet's L2 regularisation (redundant voter); XGBoost added for "
-                    "structural diversity (gradient boosting vs. bagging vs. linear).",
+        "label": "Exp3-SE2 Features - Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features:</strong> Same as Exp3-SE2 (~25 per target).</li>"
+            "<li><strong>Ensemble:</strong> VotingRegressor averaging ElasticNet, RandomForest, XGBoost with equal weights.</li>"
+            "<li><strong>Composition:</strong> Ridge removed (L2 duplicates ElNet); XGBoost added for structural diversity (boosting vs bagging vs linear).</li>"
+            "</ul>"
+        ),
         "rationale": "Ensemble averaging reduces variance through uncorrelated errors. "
                      "ElNet: regularised linear with feature selection (L1). "
                      "RF: bagging over decision trees, robust to outliers. "
@@ -447,13 +529,14 @@ FEATURE_DESCRIPTIONS = {
                      "Three structurally distinct inductive biases.",
     },
     "Phase9-Stacking": {
-        "label": "Exp3-SE2 Features → Stacking (ElNet + RF + XGB → Ridge meta, walk-forward OOF)",
-        "features": "Same as Exp3-SE2 (25 features); walk-forward stacking with "
-                    "TimeSeriesSplit(n_splits=5) OOF generation. "
-                    "Base: ElNet + RF + XGBoost. Meta-learner: Ridge (tuned alpha). "
-                    "First ~1/6 of training samples excluded from meta-learner training "
-                    "(no OOF fold coverage) - strictly no look-ahead bias. "
-                    "Base models retrained on full training set before inference.",
+        "label": "Exp3-SE2 Features - Stacking (ElNet + RF + XGB -> Ridge meta, walk-forward OOF)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Features:</strong> Same as Exp3-SE2 (~25 per target).</li>"
+            "<li><strong>Base learners:</strong> ElNet + RF + XGBoost. Meta-learner: Ridge (tuned alpha).</li>"
+            "<li><strong>OOF generation:</strong> Walk-forward TimeSeriesSplit(n_splits=5). First ~1/6 of training excluded from meta-learner (no OOF coverage). No look-ahead bias.</li>"
+            "</ul>"
+        ),
         "rationale": "Replaces original KFold(n_splits=5) StackingRegressor which had "
                      "look-ahead bias: predicting 2021 data using models trained on 2022-2024. "
                      "Walk-forward OOF ensures the meta-learner learns how base models "
@@ -462,66 +545,96 @@ FEATURE_DESCRIPTIONS = {
     },
     "Phase10-FE": {
         "label": "Exp3-SE2 + Full Feature Engineering - All Targets (37-52 features)",
-        "features": "Exp3-SE2 base + log1p transforms of skewed cols + pairwise "
-                    "interaction terms (key pairs) + IQR outlier indicator flags; "
-                    "applied uniformly to all 8 targets",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Base:</strong> Exp3-SE2 features per target.</li>"
+            "<li><strong>Added:</strong> log1p transforms of right-skewed columns + pairwise interaction terms (key pairs) + IQR outlier indicator flags.</li>"
+            "<li><strong>Applied:</strong> uniformly to all 8 targets (Grab + Composite).</li>"
+            "<li><strong>Total features:</strong> 37-52 per target.</li>"
+            "</ul>"
+        ),
         "rationale": "Feature engineering to capture non-linear relationships and "
                      "reduce skewness. Applied uniformly to test if it universally "
                      "helps. Hypothesis: log transforms help BOD/COD/TSS (right-skewed).",
     },
     "Phase10b-FE": {
         "label": "Selective Feature Engineering - Grab: Full FE / Composite: Base Exp3-SE2",
-        "features": "Grab targets: full FE (37-52 features each). "
-                    "Composite targets: base Exp3-SE2 features only (17-27 features) "
-                    "- no engineering applied to avoid overfitting on small composite n.",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Grab targets:</strong> Full FE applied (log1p + interactions + IQR flags) - 37-52 features each.</li>"
+            "<li><strong>Composite targets:</strong> Base Exp3-SE2 features only (17-27 features) - no engineering to avoid overfitting (n_train ~290).</li>"
+            "</ul>"
+        ),
         "rationale": "Addresses Phase 10 finding: FE caused severe overfitting on "
                      "composite datasets (n_train ≈ 290). Selective approach preserves "
                      "FE gains on grab targets while stabilising composites.",
     },
     "Exp5-S1": {
         "label": "Composite Targets: Composite Inlet + Grab Inlet + Secondary + ADD-tier (32 features)",
-        "features": "COMP_INLET (4) + GRAB_INLET (4) + Secondary Clarifier + Sedimentation (10) "
-                    "+ Flow, Power, year, month_sin/cos, dow_sin/cos (7) "
-                    "+ ADD-tier aeration: DO/MLSS/SV30/SVI/pH (Existing) + DO/SV30 (New) (7) = 32 features. "
-                    "Targets: Composite BOD, COD, TSS, pH only.",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Composite Inlet (4):</strong> pH, BOD, COD, TSS (Composite) - native inlet.</li>"
+            "<li><strong>Added - Grab Inlet (4):</strong> pH, BOD, COD, TSS (Grab) - cross-type signal.</li>"
+            "<li><strong>Secondary (10):</strong> Sec Clarifier (5) + Sec Sedimentation (5).</li>"
+            "<li><strong>COMMON + ADD-tier (14):</strong> Flow, Power, year, month/dow cyclic (7) + ADD-tier aeration (7).</li>"
+            "<li><strong>Targets:</strong> Composite BOD, COD, TSS, pH only. Row cost: ~22.7% vs SE1 base (~816 to ~629 train).</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether grab inlet concentrations (same-day co-measurement) provide "
                      "complementary signal for composite effluent prediction. Row cost: ~22.7% "
                      "(816 → 629 train rows) due to joint grab + composite sampling availability.",
     },
     "Exp5-S2": {
         "label": "Grab Targets: Grab Inlet + Composite Inlet + Secondary + ADD-tier (32 features)",
-        "features": "GRAB_INLET (4) + COMP_INLET (4) + Secondary Clarifier + Sedimentation (10) "
-                    "+ Flow, Power, year, month_sin/cos, dow_sin/cos (7) "
-                    "+ ADD-tier aeration: DO/MLSS/SV30/SVI/pH (Existing) + DO/SV30 (New) (7) = 32 features. "
-                    "Targets: Grab BOD, COD, TSS, pH only.",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Grab Inlet (4):</strong> pH, BOD, COD, TSS (Grab) - native inlet.</li>"
+            "<li><strong>Added - Composite Inlet (4):</strong> pH, BOD, COD, TSS (Composite) - cross-type signal.</li>"
+            "<li><strong>Secondary (10):</strong> Sec Clarifier (5) + Sec Sedimentation (5).</li>"
+            "<li><strong>COMMON + ADD-tier (14):</strong> Flow, Power, year, month/dow cyclic (7) + ADD-tier aeration (7).</li>"
+            "<li><strong>Targets:</strong> Grab BOD, COD, TSS, pH only. Row cost: ~38.2% vs SE1 base (~1021 to ~630 train).</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether composite inlet concentrations (integrated daily sample) provide "
                      "complementary signal for grab effluent prediction. Row cost: ~38.2% "
                      "(1021 → 631 train rows) - unavoidable due to joint grab + composite sampling days.",
     },
     "Exp5-S1-FS": {
-        "label": "Exp5-SE1 with Model-Specific Feature Selection (32 features → selected)",
-        "features": "Same 32-feature set as Exp5-S1 (COMP_INLET + GRAB_INLET + Secondary + ADD-tier). "
-                    "Feature selection applied: OLS uses LassoCV; trees use OOF permutation importance "
-                    "(threshold=0.05). Composite targets only. Same training rows as Exp5-S1.",
+        "label": "Exp5-SE1 with Model-Specific Feature Selection (32 features -> selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 32 features as SE1 (Composite + Grab Inlet + Secondary + ADD-tier).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV; trees use OOF permutation importance (threshold=0.05). Composite targets only.</li>"
+            "<li><strong>Row count:</strong> Same as SE1 (~629 Composite train).</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether model-specific FS can improve generalisation on the 32-feature "
                      "Exp5-SE1 dataset (composite targets + cross-type grab inlet columns). "
                      "Paired with Exp5-S1 (full feature set) for direct comparison.",
     },
     "Exp5-S2-FS": {
-        "label": "Exp5-SE2 with Model-Specific Feature Selection (32 features → selected)",
-        "features": "Same 32-feature set as Exp5-S2 (GRAB_INLET + COMP_INLET + Secondary + ADD-tier). "
-                    "Feature selection applied: OLS uses LassoCV; trees use OOF permutation importance "
-                    "(threshold=0.05). Grab targets only. Same training rows as Exp5-S2.",
+        "label": "Exp5-SE2 with Model-Specific Feature Selection (32 features -> selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 32 features as SE2 (Grab + Composite Inlet + Secondary + ADD-tier).</li>"
+            "<li><strong>Feature selection:</strong> OLS uses LassoCV; trees use OOF permutation importance (threshold=0.05). Grab targets only.</li>"
+            "<li><strong>Row count:</strong> Same as SE2 (~630 Grab train).</li>"
+            "</ul>"
+        ),
         "rationale": "Tests whether model-specific FS can improve generalisation on the 32-feature "
                      "Exp5-SE2 dataset (grab targets + cross-type composite inlet columns). "
                      "Paired with Exp5-S2 (full feature set) for direct comparison.",
     },
     "Phase11": {
         "label": "Exp3-SE2 + Temporal Lags + log1p Target Transform (50-58 features)",
-        "features": "Base Exp3-SE2 features + lag 1/3/7-day + 7-day calendar rolling mean "
-                    "applied to inlet + Flow + Power columns only (~50-58 total features per target). "
-                    "BOD/COD/TSS targets log1p-transformed; pH untransformed. "
-                    "Back-transform via Duan smearing: expm1(ŷ) × mean(exp(training residuals)).",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Base:</strong> Exp3-SE2 features per target.</li>"
+            "<li><strong>Added temporal:</strong> Lag 1/3/7-day + 7-day calendar rolling mean on inlet + Flow + Power columns only (~50-58 total features).</li>"
+            "<li><strong>Target transform:</strong> log1p on BOD/COD/TSS; pH untransformed. Back-transform via Duan smearing.</li>"
+            "<li><strong>Restriction:</strong> Temporal features limited to inlet+Flow+Power to avoid catastrophic overfitting on Composite (n~290).</li>"
+            "</ul>"
+        ),
         "rationale": "Daily wastewater quality has temporal autocorrelation - yesterday's "
                      "influent predicts today's effluent better than cross-sectional features "
                      "alone. Lag expansion restricted to inlet+Flow+Power columns to avoid "
@@ -631,25 +744,21 @@ EXP_INTRO = {
         "compared to Phase 9 ANN, appropriate for the larger sample counts."
     ),
     "Phase9": (
-        "Phase 9 evaluates advanced model architectures on the <strong>Exp3-SE2 feature set</strong>, "
-        "which was selected as the richest validated set (ElNet Test R²=0.684 Grab BOD, "
-        "RF 0.504 Grab TSS - new records at the time). "
+        "This section evaluates two classes of advanced model architectures on the "
+        "<strong>Exp3-SE2 feature set</strong> (~25 features per target: Inlet + Secondary "
+        "+ ADD+CONSIDER-tier + cyclic calendar), selected as the richest validated set at the "
+        "time (ElNet Test R²=0.684 Grab BOD, RF 0.504 Grab TSS)."
         "<br><br>"
-        "Three architectures are tested: "
-        "<strong>ANN</strong> (MLPRegressor) - failed; ~470 training samples insufficient for "
-        "MLP (avg Test R²=−1.12). All targets selected alpha=1.0 (max regularisation). Not recommended. "
-        "<br>"
-        "<strong>Voting ensemble</strong> (ElNet + RF + XGBoost, equal weights) - "
-        "original composition (Ridge+ElNet+RF) was corrected: Ridge duplicates ElNet's L2 "
-        "penalty, making two of three voters collinear. XGBoost replaces Ridge for structural "
-        "diversity (gradient boosting vs. bagging vs. regularised linear). "
-        "All three voters pre-tuned via TimeSeriesSplit GridSearchCV/RandomizedSearchCV. "
-        "<br>"
-        "<strong>Stacking ensemble</strong> (ElNet + RF + XGB → Ridge meta, walk-forward OOF) - "
-        "original KFold(n_splits=5) stacking had look-ahead bias: 2021 samples were predicted "
-        "using base models trained on 2022-2024 data. Replaced with manual walk-forward OOF "
-        "using TimeSeriesSplit(n_splits=5): each sample's OOF prediction uses only past data. "
-        "~83% OOF coverage per target; first ~17% excluded from meta-learner training."
+        "<strong>Neural Networks</strong>: MLPRegressor (feedforward ANN) failed on all "
+        "datasets tested (avg R²=-1.12 on Exp3-SE2 features). The data-volume diagnostic "
+        "(ANN Exploration sub-section) confirmed the failure is not data-volume limited - "
+        "tripling training rows worsened performance. See the rationale card below for "
+        "why a feedforward ANN was chosen over RNN/LSTM architectures."
+        "<br><br>"
+        "<strong>Ensemble Methods</strong>: Voting (ElNet+RF+XGB, equal weights) is the "
+        "recommended approach - avg Test R²=+0.287, Grab BOD 0.692. Stacking "
+        "(walk-forward OOF, no look-ahead bias after KFold correction) is "
+        "methodologically clean but weaker (avg R²=+0.098)."
     ),
     "Phase10": (
         "Phase 10 applies <strong>feature engineering</strong> (log transforms, "
@@ -1076,6 +1185,7 @@ FS_BASE_MAP = {
     "Exp2-Sub1-FS": "Exp2-Sub1",
     "Exp2-Sub2-FS": "Exp2-Sub2",
     "Exp3-S3-FS": "Exp3-S3",
+    "Exp3-S4-FS": "Exp3-S4",
 }
 
 
@@ -2721,12 +2831,22 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "exp3-s3":      ["Exp3-S3", "Exp3-S3-FS"],
         "exp3-s3-full": ["Exp3-S3"],
         "exp3-s3-fs":   ["Exp3-S3-FS"],
-        "p9-ann":       ["Phase9-ANN"],
-        "p9-voting":    ["Phase9-Voting"],
-        "p9-stacking":  ["Phase9-Stacking"],
-        "p10-full":     ["Phase10-FE"],
-        "p10b":         ["Phase10b-FE"],
-        "p11":          ["Phase11"],
+        "exp3-s4":      ["Exp3-S4", "Exp3-S4-FS"],
+        "exp3-s4-full": ["Exp3-S4"],
+        "exp3-s4-fs":   ["Exp3-S4-FS"],
+        "p9-ann":            ["Phase9-ANN"],
+        "p9-voting":         ["Phase9-Voting"],
+        "p9-stacking":       ["Phase9-Stacking"],
+        "adv-nn-comparison": ["Phase9-ANN", "ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"],
+        "adv-comparison":    ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"],
+        "adv-findings":      ["Phase9-Voting"],
+        "p10-full":          ["Phase10-FE"],
+        "p10b":              ["Phase10b-FE"],
+        "fe-comparison":     ["Phase10-FE", "Phase10b-FE"],
+        "fe-findings":         ["Phase10b-FE"],
+        "p11-se1":             ["Phase11"],
+        "temporal-comparison": ["Phase11"],
+        "temporal-findings":   ["Phase11"],
         "exp4-s1":      ["Exp4-S1"],
         "exp4-s2":      ["Exp4-S2"],
         "exp5-s1":      ["Exp5-S1", "Exp5-S1-FS"],
@@ -5301,14 +5421,16 @@ def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
 
 
 def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Experiment-wide comparison: SE1 | SE2 | SE2-FS | SE3 | SE3-FS."""
+    """Experiment-wide comparison: SE1 | SE2 | SE2-FS | SE3 | SE3-FS | SE4 | SE4-FS."""
     s1   = df_all[df_all["exp_key"] == "Exp3-S1"].copy()
     s2   = df_all[df_all["exp_key"] == "Exp3-S2"].copy()
     s2fs = df_all[df_all["exp_key"] == "Exp3-S2-FS"].copy()
-    ks   = df_all[df_all["exp_key"] == "Exp3-S3"].copy()
-    ksfs = df_all[df_all["exp_key"] == "Exp3-S3-FS"].copy()
+    s3   = df_all[df_all["exp_key"] == "Exp3-S3"].copy()
+    s3fs = df_all[df_all["exp_key"] == "Exp3-S3-FS"].copy()
+    s4   = df_all[df_all["exp_key"] == "Exp3-S4"].copy()
+    s4fs = df_all[df_all["exp_key"] == "Exp3-S4-FS"].copy()
 
-    if s1.empty and s2fs.empty and ks.empty:
+    if s1.empty and s2fs.empty and s3.empty and s4.empty:
         return ""
 
     models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
@@ -5416,14 +5538,15 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     d_s1_s2    = []; gaj_s1_s2    = []
     d_s2_s2fs  = []; gaj_s2_s2fs  = []
     d_s1_s2fs  = []; gaj_s1_s2fs  = []
-    d_ks_ksfs  = []; gaj_ks_ksfs  = []
+    d_s3_s3fs  = []; gaj_s3_s3fs  = []
+    d_s4_s4fs  = []; gaj_s4_s4fs  = []
 
     tbody = ""
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
             f"<tr style='background:#e8e8e8'>"
-            f"<td colspan='9' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"<td colspan='11' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
@@ -5436,16 +5559,21 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
             v1_  = _get(s1,   m_, tgt); g1_  = _gap_v(s1,   m_, tgt)
             v2_  = _get(s2,   m_, tgt); g2_  = _gap_v(s2,   m_, tgt)
             v2f_ = _get(s2fs, m_, tgt); g2f_ = _gap_v(s2fs, m_, tgt)
-            vk_  = _get(ks,   m_, tgt); gk_  = _gap_v(ks,   m_, tgt)
-            vkf_ = _get(ksfs, m_, tgt); gkf_ = _gap_v(ksfs, m_, tgt)
-            sc1_ = _gaj(v1_, g1_); sc2_ = _gaj(v2_, g2_)
-            sc2f_ = _gaj(v2f_, g2f_); sck_ = _gaj(vk_, gk_); sckf_ = _gaj(vkf_, gkf_)
+            v3_  = _get(s3,   m_, tgt); g3_  = _gap_v(s3,   m_, tgt)
+            v3f_ = _get(s3fs, m_, tgt); g3f_ = _gap_v(s3fs, m_, tgt)
+            v4_  = _get(s4,   m_, tgt); g4_  = _gap_v(s4,   m_, tgt)
+            v4f_ = _get(s4fs, m_, tgt); g4f_ = _gap_v(s4fs, m_, tgt)
+            sc1_  = _gaj(v1_,  g1_);  sc2_  = _gaj(v2_,  g2_)
+            sc2f_ = _gaj(v2f_, g2f_); sc3_  = _gaj(v3_,  g3_); sc3f_ = _gaj(v3f_, g3f_)
+            sc4_  = _gaj(v4_,  g4_);  sc4f_ = _gaj(v4f_, g4f_)
             for key_, rv_, gv_, sv_ in [
-                ((m_, "s1"), v1_, g1_, sc1_),
-                ((m_, "s2"), v2_, g2_, sc2_),
+                ((m_, "s1"),  v1_,  g1_,  sc1_),
+                ((m_, "s2"),  v2_,  g2_,  sc2_),
                 ((m_, "s2f"), v2f_, g2f_, sc2f_),
-                ((m_, "ks"), vk_, gk_, sck_),
-                ((m_, "ksfs"), vkf_, gkf_, sckf_),
+                ((m_, "s3"),  v3_,  g3_,  sc3_),
+                ((m_, "s3f"), v3f_, g3f_, sc3f_),
+                ((m_, "s4"),  v4_,  g4_,  sc4_),
+                ((m_, "s4f"), v4f_, g4f_, sc4f_),
             ]:
                 if rv_ is not None:
                     _all_raw_e3[key_] = rv_
@@ -5477,41 +5605,45 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
             v1   = _get(s1,   m, tgt); g1   = _gap_v(s1,   m, tgt)
             v2   = _get(s2,   m, tgt); g2   = _gap_v(s2,   m, tgt)
             v2f  = _get(s2fs, m, tgt); g2f  = _gap_v(s2fs, m, tgt)
-            vk   = _get(ks,   m, tgt); gk   = _gap_v(ks,   m, tgt)
-            vkf  = _get(ksfs, m, tgt); gkf  = _gap_v(ksfs, m, tgt)
+            v3   = _get(s3,   m, tgt); g3   = _gap_v(s3,   m, tgt)
+            v3f  = _get(s3fs, m, tgt); g3f  = _gap_v(s3fs, m, tgt)
+            v4   = _get(s4,   m, tgt); g4   = _gap_v(s4,   m, tgt)
+            v4f  = _get(s4fs, m, tgt); g4f  = _gap_v(s4fs, m, tgt)
 
             r1   = _get(s1,   m, tgt, "RMSE_test")
             r2   = _get(s2,   m, tgt, "RMSE_test")
             r2f  = _get(s2fs, m, tgt, "RMSE_test")
-            rk   = _get(ks,   m, tgt, "RMSE_test")
-            rkf  = _get(ksfs, m, tgt, "RMSE_test")
+            r3   = _get(s3,   m, tgt, "RMSE_test")
+            r3f  = _get(s3fs, m, tgt, "RMSE_test")
+            r4   = _get(s4,   m, tgt, "RMSE_test")
+            r4f  = _get(s4fs, m, tgt, "RMSE_test")
 
             sc1  = _gaj(v1,  g1);  sc2  = _gaj(v2,  g2)
-            sc2f = _gaj(v2f, g2f); sck  = _gaj(vk,  gk);  sckf = _gaj(vkf, gkf)
+            sc2f = _gaj(v2f, g2f); sc3  = _gaj(v3,  g3);  sc3f = _gaj(v3f, g3f)
+            sc4  = _gaj(v4,  g4);  sc4f = _gaj(v4f, g4f)
 
             d12   = (v2  - v1)  if (v1  is not None and v2  is not None) else None
             d22f  = (v2f - v2)  if (v2  is not None and v2f is not None) else None
             d12f  = (v2f - v1)  if (v1  is not None and v2f is not None) else None
-            dkk   = (vkf - vk)  if (vk  is not None and vkf is not None) else None
+            d33f  = (v3f - v3)  if (v3  is not None and v3f is not None) else None
+            d44f  = (v4f - v4)  if (v4  is not None and v4f is not None) else None
 
-            d12_rmse  = ((r2  - r1)  if (r1  is not None and r2  is not None) else None)
-            d22f_rmse = ((r2f - r2)  if (r2  is not None and r2f is not None) else None)
             d12f_rmse = ((r2f - r1)  if (r1  is not None and r2f is not None) else None)
-            dkk_rmse  = ((rkf - rk)  if (rk  is not None and rkf is not None) else None)
-            d12_gap   = ((g2  - g1)  if (g1  is not None and g2  is not None) else None)
-            d22f_gap  = ((g2f - g2)  if (g2  is not None and g2f is not None) else None)
+            d33f_rmse = ((r3f - r3)  if (r3  is not None and r3f is not None) else None)
             d12f_gap  = ((g2f - g1)  if (g1  is not None and g2f is not None) else None)
-            dkk_gap   = ((gkf - gk)  if (gk  is not None and gkf is not None) else None)
+            d33f_gap  = ((g3f - g3)  if (g3  is not None and g3f is not None) else None)
 
             sd12  = (sc2  - sc1)  if (sc1  is not None and sc2  is not None) else None
             sd22f = (sc2f - sc2)  if (sc2  is not None and sc2f is not None) else None
             sd12f = (sc2f - sc1)  if (sc1  is not None and sc2f is not None) else None
-            sdkk  = (sckf - sck)  if (sck  is not None and sckf is not None) else None
+            sd33f = (sc3f - sc3)  if (sc3  is not None and sc3f is not None) else None
+            sd44f = (sc4f - sc4)  if (sc4  is not None and sc4f is not None) else None
 
-            if d12  is not None: d_s1_s2.append(d12);     gaj_s1_s2.append(sd12)   if sd12  is not None else None
-            if d22f is not None: d_s2_s2fs.append(d22f);  gaj_s2_s2fs.append(sd22f) if sd22f is not None else None
-            if d12f is not None: d_s1_s2fs.append(d12f);  gaj_s1_s2fs.append(sd12f) if sd12f is not None else None
-            if dkk  is not None: d_ks_ksfs.append(dkk);   gaj_ks_ksfs.append(sdkk)  if sdkk  is not None else None
+            if d12   is not None: d_s1_s2.append(d12);     gaj_s1_s2.append(sd12)    if sd12  is not None else None
+            if d22f  is not None: d_s2_s2fs.append(d22f);  gaj_s2_s2fs.append(sd22f) if sd22f is not None else None
+            if d12f  is not None: d_s1_s2fs.append(d12f);  gaj_s1_s2fs.append(sd12f) if sd12f is not None else None
+            if d33f  is not None: d_s3_s3fs.append(d33f);  gaj_s3_s3fs.append(sd33f) if sd33f is not None else None
+            if d44f  is not None: d_s4_s4fs.append(d44f);  gaj_s4_s4fs.append(sd44f) if sd44f is not None else None
 
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
@@ -5521,9 +5653,11 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"{_val_td(v2,   r2,   g2,   _ir(v2),   _ig(sc2))}"
                 f"{_val_td(v2f,  r2f,  g2f,  _ir(v2f),  _ig(sc2f))}"
                 f"{_delta_td(d12f, d12f_rmse, d12f_gap)}"
-                f"{_val_td(vk,   rk,   gk,   _ir(vk),   _ig(sck))}"
-                f"{_val_td(vkf,  rkf,  gkf,  _ir(vkf),  _ig(sckf))}"
-                f"{_delta_td(dkk, dkk_rmse, dkk_gap)}"
+                f"{_val_td(v3,   r3,   g3,   _ir(v3),   _ig(sc3))}"
+                f"{_val_td(v3f,  r3f,  g3f,  _ir(v3f),  _ig(sc3f))}"
+                f"{_delta_td(d33f, d33f_rmse, d33f_gap)}"
+                f"{_val_td(v4,   r4,   g4,   _ir(v4),   _ig(sc4))}"
+                f"{_val_td(v4f,  r4f,  g4f,  _ir(v4f),  _ig(sc4f))}"
                 f"</tr>"
             )
 
@@ -5549,7 +5683,8 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
       {_stats_row(d_s1_s2,    gaj_s1_s2,    "SE1 (ADD)", "SE2 (ADD+CONSIDER, no FS)")}
       {_stats_row(d_s2_s2fs,  gaj_s2_s2fs,  "SE2 (no FS)", "SE2-FS")}
       {_stats_row(d_s1_s2fs,  gaj_s1_s2fs,  "SE1 (ADD)", "SE2-FS (ADD+CONSIDER)")}
-      {_stats_row(d_ks_ksfs,  gaj_ks_ksfs,  "SE3 (no FS)", "SE3-FS")}
+      {_stats_row(d_s3_s3fs,  gaj_s3_s3fs,  "SE3 (minus Coliform, no FS)", "SE3-FS")}
+      {_stats_row(d_s4_s4fs,  gaj_s4_s4fs,  "SE4 (All Features, no FS)", "SE4-FS")}
     </tbody>
   </table>
   </div>
@@ -5560,7 +5695,8 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
       <strong>SE1 → SE2</strong>: adds CONSIDER-tier features (32 total, no FS) on ~469 Grab rows.
       <strong>SE2 → SE2-FS</strong>: applies model-specific FS to the same 32-feature set.
       <strong>SE1 → SE2-FS</strong>: net effect of both CONSIDER features and FS together.
-      <strong>SE3 → SE3-FS</strong>: applies FS to the 44/39-feature all-features set on ~130 Grab rows.
+      <strong>SE3 → SE3-FS</strong>: applies FS to the 30-feature set at ~815 Grab rows (Coliform removed).
+      <strong>SE4 → SE4-FS</strong>: applies FS to the 44/39-feature all-features set on ~130 Grab rows.
       <strong>Gap-Adj − Raw</strong>: negative = raw gains inflated by overfitting;
       positive = gains understated because overfitting decreased.
       <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
@@ -5588,6 +5724,10 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
       <th style='{_THC}'>Δ SE3→SE3-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='{_THC}'>SE4<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>SE4-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
@@ -5621,7 +5761,8 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
     """Key findings Q&A for Experiment 3."""
     s1 = df_all[df_all["exp_key"] == "Exp3-S1"].dropna(subset=["R2_test"])
     s2 = df_all[df_all["exp_key"] == "Exp3-S2-FS"].dropna(subset=["R2_test"])
-    ks = df_all[df_all["exp_key"] == "Exp3-S3"].dropna(subset=["R2_test"])
+    s3 = df_all[df_all["exp_key"] == "Exp3-S3"].dropna(subset=["R2_test"])
+    ks = df_all[df_all["exp_key"] == "Exp3-S4"].dropna(subset=["R2_test"])
 
     # Per-group averages
     grab_tgts = set(GRAB_TARGETS)
@@ -5644,10 +5785,13 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
     s1_comp = _avg_r2(s1, comp_tgts)
     s2_grab = _avg_r2(s2, grab_tgts)
     s2_comp = _avg_r2(s2, comp_tgts)
+    s3_grab = _avg_r2(s3, grab_tgts)
+    s3_comp = _avg_r2(s3, comp_tgts)
     ks_grab = _avg_r2(ks, grab_tgts)
     ks_comp = _avg_r2(ks, comp_tgts)
 
     s1_rf_gap  = float(s1[s1["model"] == "RF"]["R2_gap"].mean())  if not s1.empty else float("nan")
+    s3_rf_gap  = float(s3[s3["model"] == "RF"]["R2_gap"].mean())  if not s3.empty else float("nan")
     ks_ols_gap = float(ks[ks["model"] == "OLS"]["R2_gap"].mean()) if not ks.empty else float("nan")
     ks_rf_gap  = float(ks[ks["model"] == "RF"]["R2_gap"].mean())  if not ks.empty else float("nan")
 
@@ -5659,47 +5803,46 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
         return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
 
     q1 = (
-        f"<strong>SE1 (ADD-tier)</strong> retains ~816 Grab training rows  -  negligible "
-        f"row loss vs Exp2-SE2 (~470 after secondary-data filtering). The 7 aeration ADD features "
-        f"have 0 - 12 % marginal row cost because secondary data availability already gates the "
-        f"dataset. Best ADD Grab avg = {_c(s1_grab)}; best ADD Comp avg = {_c(s1_comp)}. "
-        f"RF avg Grab gap = {_c(s1_rf_gap, False)}  -  moderate overfitting with 28 features at n=816. "
+        f"<strong>SE1 (ADD-tier, 28 features)</strong> retains ~816 Grab training rows - negligible "
+        f"row loss vs Exp2-SE2. Best ADD Grab avg = {_c(s1_grab)}; Comp avg = {_c(s1_comp)}. "
+        f"RF avg Grab gap = {_c(s1_rf_gap, False)} - moderate overfitting with 28 features at n=816. "
         f"<br><br>"
-        f"<strong>SE2 (ADD+CONSIDER)</strong> adds four CONSIDER-tier features. "
-        f"Inlet Total Coliform alone cuts Grab rows from ~816 to ~469 (−43 %). "
-        f"With FS applied, best SE2-FS Grab avg = {_c(s2_grab)}, Comp avg = {_c(s2_comp)}. "
+        f"<strong>SE2 (ADD+CONSIDER, 31 features)</strong>: Inlet Total Coliform alone cuts Grab rows "
+        f"from ~816 to ~469 (-43%). With FS, best SE2-FS Grab avg = {_c(s2_grab)}, Comp avg = {_c(s2_comp)}. "
         f"<br><br>"
-        f"<strong>SE3 (all features)</strong> dropped Grab rows to ~130 (−74 % vs Exp2-SE2). "
+        f"<strong>SE3 (ADD+CONSIDER minus Coliform, 30 features)</strong>: Removing Coliform recovers "
+        f"~347 rows, restoring Grab to ~815. RF avg Grab gap = {_c(s3_rf_gap, False)}. "
+        f"Best SE3 Grab avg = {_c(s3_grab)}, Comp avg = {_c(s3_comp)}. "
+        f"<br><br>"
+        f"<strong>SE4 (All Features, 44/39 features)</strong>: Grab rows collapsed to ~130 (-74% vs Exp2-SE2). "
         f"With n/p ≈ 3, OLS avg gap = {_c(ks_ols_gap, False)}, RF avg gap = {_c(ks_rf_gap, False)}. "
-        f"All-features Grab avg (best per target) = {_c(ks_grab)}, Comp avg = {_c(ks_comp)}."
+        f"All-features Grab avg = {_c(ks_grab)}, Comp avg = {_c(ks_comp)}."
     )
 
     q2 = (
-        f"<strong>ADD → ADD+CONSIDER+FS</strong>: Mixed results. CONSIDER-tier features trade "
-        f"~347 Grab training rows for four extra columns. Whether FS recovers the loss depends on target: "
-        f"OLS benefits (LassoCV prunes to the strongest ADD features), while tree models see "
-        f"mixed outcomes because OOF fold size at n=469 is ~156 rows  -  still workable but reduced. "
+        f"<strong>SE3 vs SE2-FS</strong>: SE3 removes only Inlet Total Coliform, recovering ~347 rows. "
+        f"The key question is whether the Coliform signal was worth the row cost. SE3 (no FS) at ~815 rows "
+        f"can be directly compared to SE1 (28 features, ~816 rows) and SE2-FS (31 features, ~469 rows). "
         f"<br><br>"
-        f"<strong>All-Features FS (SE4)</strong>: Did not rescue the undersized grab dataset. "
-        f"The OOF fold size on 130 rows (3-fold TSS) is ~43 rows  -  "
-        f"permutation importance estimates are too noisy at this scale, causing the FS algorithm "
-        f"to prune to only 2 - 7 features per target, an overly aggressive cut. "
-        f"Composite targets (n_train ≈ 498) benefited more from FS than grab targets."
+        f"<strong>SE2-FS (ADD+CONSIDER with FS)</strong>: Mixed results. LassoCV benefits OLS; tree OOF "
+        f"fold size at n=469 is ~156 rows - workable but constrained. "
+        f"<br><br>"
+        f"<strong>SE4-FS (All Features FS)</strong>: Did not rescue the grab dataset. "
+        f"OOF fold size on 130 rows (3-fold TSS) is ~43 rows - permutation importance too noisy, "
+        f"causing overly aggressive pruning (2-7 features). Composite targets (n≈498) fared better."
     )
 
     q3 = (
-        f"The Feature Audit tiers (ADD / CONSIDER) exist precisely to avoid the all-features trap. "
-        f"<strong>ADD-tier features</strong> (MI ≥ 0.20, row cost ≤ 20 %) give the best "
-        f"feature-count-to-row-cost ratio  -  SE1 is the recommended baseline for Exp3. "
-        f"<strong>CONSIDER-tier features</strong> can help individual targets if FS is applied, "
-        f"but Inlet Total Coliform's 43 % Grab row loss is a steep price that must be weighed "
-        f"per-target. "
+        f"The Feature Audit tiers (ADD / CONSIDER) exist to avoid the all-features trap. "
+        f"<strong>SE3 isolates the Coliform row-cost question</strong>: by removing only Coliform, "
+        f"it tests whether SE2's performance was driven by the Coliform signal or by data starvation. "
+        f"<strong>SE1 remains the recommended baseline</strong> (MI ≥ 0.20, row cost ≤ 20%, ~816 rows). "
         f"<br><br>"
-        f"The all-features sub-experiment (SE3) confirms the audit's core conclusion: "
-        f"<strong>data-driven FS cannot rescue an undersized dataset</strong>  -  "
-        f"the FS algorithm itself operates in a high-variance regime when fold sizes are "
-        f"below ~50 rows. Feature selection should happen <em>before</em> the experiment "
-        f"based on MI signal and row cost, not purely inside the training script."
+        f"<strong>SE4 confirms</strong> the audit's core conclusion: "
+        f"<strong>data-driven FS cannot rescue an undersized dataset</strong> - "
+        f"the FS algorithm operates in a high-variance regime when fold sizes fall below ~50 rows. "
+        f"Feature selection should be guided by MI signal and row cost before the experiment, "
+        f"not solely by in-script FS at train time."
     )
 
     def _qcard(n, question, answer):
@@ -5717,8 +5860,8 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
 
     cards = "".join([
         _qcard(1, "How did each SE's feature set affect sample size and performance?", q1),
-        _qcard(2, "Did ADD+CONSIDER with FS (SE2) and All-Features FS (SE4) improve on ADD-only?", q2),
-        _qcard(3, "What is the takeaway for feature engineering strategy?", q3),
+        _qcard(2, "Did SE3 (minus Coliform) isolate the row-cost problem? Did FS variants improve on full sets?", q2),
+        _qcard(3, "What is the strategic takeaway for feature engineering?", q3),
     ])
 
     return f"""
@@ -5750,9 +5893,9 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   </div>
 </details>"""
 
-    # SE3 wrapper: no FS + FS
+    # SE3 wrapper: ADD+CONSIDER minus Coliform, full + FS
     sub3_full = _exp_subsection(df_all, "Exp3-S3",    "exp3-s3-full",
-                                "All Features (no FS)",
+                                "Full Feature Set (no FS)",
                                 open_default=False)
     sub3_fs   = _exp_subsection(df_all, "Exp3-S3-FS", "exp3-s3-fs",
                                 "With Feature Selection",
@@ -5760,10 +5903,27 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
                                 dataset_summary_fn=_dataset_summary_per_model)
     sub3_wrapper = f"""
 <details class="exp-details" id="exp3-s3">
-  <summary><span class="fold-icon">▶</span> SE3  -  All Features (full + FS)</summary>
+  <summary><span class="fold-icon">▶</span> SE3  -  ADD + CONSIDER minus Coliform (full + FS)</summary>
   <div class="exp-body">
     {sub3_full}
     {sub3_fs}
+  </div>
+</details>"""
+
+    # SE4 wrapper: All Features (formerly SE3), full + FS
+    sub4_full = _exp_subsection(df_all, "Exp3-S4",    "exp3-s4-full",
+                                "All Features (no FS)",
+                                open_default=False)
+    sub4_fs   = _exp_subsection(df_all, "Exp3-S4-FS", "exp3-s4-fs",
+                                "With Feature Selection",
+                                open_default=False,
+                                dataset_summary_fn=_dataset_summary_per_model)
+    sub4_wrapper = f"""
+<details class="exp-details" id="exp3-s4">
+  <summary><span class="fold-icon">▶</span> SE4  -  All Features (full + FS)</summary>
+  <div class="exp-body">
+    {sub4_full}
+    {sub4_fs}
   </div>
 </details>"""
 
@@ -5771,7 +5931,9 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
     findings_div = _exp3_qna(df_all)
 
     best = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2", "Exp3-S2-FS", "Exp3-S3", "Exp3-S3-FS"])],
+        df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2", "Exp3-S2-FS",
+                                        "Exp3-S3", "Exp3-S3-FS",
+                                        "Exp3-S4", "Exp3-S4-FS"])],
         "Experiment 3")
     return f"""
 <section id="exp3">
@@ -5780,6 +5942,7 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
   {sub1}
   {sub2_wrapper}
   {sub3_wrapper}
+  {sub4_wrapper}
   {cmp_div}
   {findings_div}
   {best}
@@ -6719,8 +6882,8 @@ def _ann_dataset_comparison(df_all: pd.DataFrame) -> str:
     keys = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
     labels = {
         "ANN-Exp1":      "Exp1 (9 feat, ~1175/800 rows)",
-        "ANN-Exp2-Sub1": "Exp2-S1 (15 feat, ~924/740 rows)",
-        "ANN-Exp2-Sub2": "Exp2-S2 (19 feat, ~920/733 rows)",
+        "ANN-Exp2-Sub1": "Exp2-SE1 (15 feat, ~924/740 rows)",
+        "ANN-Exp2-Sub2": "Exp2-SE2 (19 feat, ~920/733 rows)",
         "Phase9-ANN":    "Exp3-SE2 (25 feat, ~470/290 rows)",
     }
     available = [k for k in keys if k in df_all["exp_key"].values]
@@ -6778,6 +6941,621 @@ def _ann_dataset_comparison(df_all: pd.DataFrame) -> str:
   </table>
   </div>
 </div>"""
+
+
+def _adv_methods_rationale_card() -> str:
+    """Card explaining why feedforward ANN (MLP) was chosen over recurrent architectures."""
+    return """
+<div class="obs-card" style="margin:1rem 0;border-left:4px solid #9B59B6">
+  <h4 style="margin:0 0 0.5rem">Why a Feedforward ANN (MLP) rather than RNN / LSTM?</h4>
+  <p style="margin:0 0 0.6rem;font-size:0.88em;color:var(--text-muted)">
+    Three structural constraints made recurrent architectures a poor fit for this dataset:
+  </p>
+  <ul style="margin:0 0 0.7rem 1rem;padding:0;font-size:0.88em;line-height:1.75">
+    <li><strong>Gapped time series (~30-40% missing days).</strong> LSTM / RNN require a
+        dense sequential input stream. Wastewater measurements - especially composite samples -
+        are only collected on certain operational days, leaving long irregular gaps.
+        Filling these gaps with imputation would introduce substantial synthetic data into a
+        model whose value comes from learning genuine temporal dynamics. A feedforward model
+        treats each observation as an independent row and is unaffected by missingness in
+        neighbouring dates.</li>
+    <li><strong>Largely tabular daily structure.</strong> Each day's prediction is
+        well-described by its own inlet concentrations, secondary clarifier readings, and
+        process conditions. Temporal signal that does exist (seasonal cycles, weekday patterns)
+        is compactly encoded by the cyclic calendar features already present (month_sin/cos,
+        dow_sin/cos). Explicit temporal context - lag 1/3/7-day and 7-day rolling means - was
+        tested separately in the Temporal Features section, which is more data-efficient than
+        feeding raw hidden state through an LSTM cell.</li>
+    <li><strong>Insufficient training samples for recurrent architectures.</strong> With
+        ~470 Grab / ~290 Composite training rows, even a 2-hidden-layer MLP failed severely
+        (every target selected alpha=1.0 - maximum weight decay). An LSTM cell has 4x more
+        parameters than a basic RNN unit and would overfit far worse. The data-volume
+        diagnostic (ANN Exploration) confirmed that tripling training rows to ~1175 still did
+        not rescue performance.</li>
+  </ul>
+  <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
+    <strong>Future conditions for sequential models:</strong> If the dataset grows to 2000+
+    consecutive daily observations with &lt;10% missingness, LSTM is worth revisiting
+    (use a masking layer for irregular gaps). Alternatively, aggregate to weekly averages
+    (~200 data points, minimal gaps) and use a shallow GRU.
+  </p>
+</div>"""
+
+
+def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Comparison panel for all Phase 9 methods: ANN vs Voting vs Stacking."""
+    df_p9 = df_all[
+        df_all["exp_key"].isin(["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"])
+    ].copy()
+    if df_p9.empty:
+        return ""
+    all_m = [m for m in ADV_MODELS if m in df_p9["model"].values]
+    comp_tbl = _metrics_table(df_p9, all_m, "adv-comparison", df_all)
+    return f"""
+<details class="exp-details" id="adv-comparison">
+  <summary><span class="fold-icon">▶</span> Comparisons</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="margin-bottom:1rem">
+      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
+        ANN vs Voting vs Stacking on the same Exp3-SE2 feature set.
+        <strong style="color:#5BAD6F">★</strong> Best raw Test R² per target.
+        <strong style="color:#4A90D9">✦</strong> Best gap-adjusted score
+        (only shown when raw winner has |gap|&gt;0.10 and gap-adj winner differs).
+      </p>
+    </div>
+    {comp_tbl}
+  </div>
+</details>"""
+
+
+def _adv_methods_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for the Advanced Methods section."""
+    p9 = df_all[
+        df_all["exp_key"].isin(["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"])
+    ].dropna(subset=["R2_test"])
+
+    def _avg(exp_key):
+        sub = p9[p9["exp_key"] == exp_key]["R2_test"]
+        return float(sub.mean()) if not sub.empty else float("nan")
+
+    def _best(exp_key, tgt):
+        sub = p9[(p9["exp_key"] == exp_key) & (p9["target"] == tgt)]
+        return float(sub["R2_test"].max()) if not sub.empty else float("nan")
+
+    ann_avg   = _avg("Phase9-ANN")
+    vote_avg  = _avg("Phase9-Voting")
+    stack_avg = _avg("Phase9-Stacking")
+
+    def _c(v, good_above=0.05):
+        if v != v:
+            return " - "
+        col = "#5BAD6F" if v > good_above else "#E15252" if v < 0 else "var(--text-primary)"
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    vote_grab_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Grab)")
+    vote_comp_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Composite)")
+
+    q1 = (
+        f"The MLP must learn all structure - feature interactions, non-linearities, and "
+        f"regularisation paths - from only ~470 Grab / ~290 Composite training rows. "
+        f"Avg Test R² = {_c(ann_avg, 0)}. GridSearchCV selected alpha=1.0 (maximum weight "
+        f"decay) for every target, confirming the model is parameter-starved: it can only "
+        f"fit the data when its weights are maximally shrunk toward zero."
+        f"<br><br>"
+        f"<strong>Voting</strong> bypasses this by combining three pre-tuned learners "
+        f"with complementary inductive biases: ElNet (handles collinearity, L1 feature "
+        f"selection), RF (bagging over decision trees - robust to the TSS outliers up to "
+        f"1266 mg/L in training), XGBoost (gradient boosting, captures residual "
+        f"non-linearities). Uncorrelated errors partially cancel in the average, giving "
+        f"avg Test R² = {_c(vote_avg, 0.10)}. The data-volume diagnostic confirmed that "
+        f"sample count is not the bottleneck: tripling rows to ~1175 (Exp1 dataset) "
+        f"worsened ANN performance to avg R² = -5.6."
+    )
+
+    q2 = (
+        f"<strong>Voting</strong> (equal-weight average): avg R² = {_c(vote_avg, 0.10)}. "
+        f"<strong>Stacking</strong> (walk-forward OOF meta-learner): avg R² = {_c(stack_avg, 0.05)}. "
+        f"<br><br>"
+        f"The meta-learner in Stacking (Ridge fitted on ~390 OOF rows with 3 base-learner "
+        f"predictions as features) adds complexity without proportional lift over simple "
+        f"averaging. With ~83% OOF coverage, the first ~17% of the training set is excluded "
+        f"from the meta-learner entirely - those rows are never seen at meta-training time. "
+        f"Stacking is methodologically clean (no look-ahead bias after the KFold correction) "
+        f"but not worth the added complexity at current sample sizes. "
+        f"Verdict: <strong>Voting is preferred</strong> - simpler, no meta-learner overhead, "
+        f"and consistently better."
+    )
+
+    q3 = (
+        f"<strong>Voting (ElNet+RF+XGB)</strong> is recommended. "
+        f"Best results: Grab BOD {_c(vote_grab_bod, 0.30)}, Comp BOD {_c(vote_comp_bod, 0.20)}. "
+        f"<br><br>"
+        f"For <strong>Grab targets only</strong>, combining Voting with selective feature "
+        f"engineering (Phase 10b - Selective FE) further improves performance "
+        f"(avg Grab R² ~+0.48 vs Voting base +0.28). For <strong>Composite targets</strong>, "
+        f"the base Exp3-SE2 feature set (no FE) is safer - FE causes severe overfitting at "
+        f"n_train ~290 rows."
+        f"<br><br>"
+        f"<strong>Comp COD</strong> is not addressable by any architecture tested: "
+        f"2025 MAE doubled from 2024 (genuine distribution shift). Flag Comp COD predictions "
+        f"as unreliable until more post-2025 data is collected."
+    )
+
+    def _qcard(n, question, answer):
+        return (
+            f"<div style='margin-bottom:1.1rem;border:1px solid var(--border);"
+            f"border-radius:5px;overflow:hidden'>"
+            f"<div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;"
+            f"border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>"
+            f"<span style='color:#4A90D9;font-size:0.78em;font-weight:bold;"
+            f"letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>"
+            f"<span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>"
+            f"</div>"
+            f"<div style='padding:0.6rem 0.8rem 0.55rem'>"
+            f"<p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);"
+            f"padding-left:0.6rem'>{answer}</p>"
+            f"</div></div>"
+        )
+
+    cards = "".join([
+        _qcard(1, "Why did the ANN fail while the Voting ensemble succeeded?", q1),
+        _qcard(2, "Does Stacking improve on Voting?", q2),
+        _qcard(3, "Which advanced method is recommended and for which targets?", q3),
+    ])
+    return f"""
+<details class="exp-details" id="adv-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Advanced Methods</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Side-by-side comparison: Phase 9 Voting baseline vs Full FE vs Selective FE."""
+    keys   = ["Phase9-Voting", "Phase10-FE", "Phase10b-FE"]
+    labels = {
+        "Phase9-Voting": (
+            "P9 Baseline"
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>Voting (Exp3-SE2)</span>"
+        ),
+        "Phase10-FE": (
+            "SE1 - Full FE"
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>All targets</span>"
+        ),
+        "Phase10b-FE": (
+            "SE2 - Selective FE"
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>Grab FE / Comp base</span>"
+        ),
+    }
+    avail = [k for k in keys if k in df_all["exp_key"].values]
+    if len(avail) < 2:
+        return ""
+
+    models_show = ["Voting", "Ridge", "ElNet", "RF"]
+    rows_html = []
+    for tgt in TARGETS_ORDERED:
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+        rows_html.append(
+            f'<tr><td colspan="{len(avail) * 2 + 1}" style="background:var(--card-bg);'
+            f'font-weight:600;padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        )
+        for model in models_show:
+            cells = f'<td style="padding-left:20px;color:var(--text-muted)">{model}</td>'
+            for key in avail:
+                sub = df_all[
+                    (df_all["exp_key"] == key) &
+                    (df_all["target"] == tgt) &
+                    (df_all["model"] == model)
+                ]
+                if sub.empty or sub["R2_test"].isna().all():
+                    cells += ('<td style="color:var(--text-muted)"> - </td>'
+                              '<td style="color:var(--text-muted)"> - </td>')
+                    continue
+                r2  = float(sub["R2_test"].iloc[0])
+                gap = float(sub["R2_gap"].iloc[0]) if not pd.isna(sub["R2_gap"].iloc[0]) else float("nan")
+                r2_col  = "#2ecc71" if r2 > 0.30 else "#e74c3c" if r2 < 0 else "var(--text-primary)"
+                gap_col = "#e74c3c" if gap > 0.15 else "var(--text-muted)"
+                gap_str = f"{gap:+.3f}" if not np.isnan(gap) else "-"
+                cells += (f'<td style="color:{r2_col};font-weight:500">{r2:+.3f}</td>'
+                          f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
+            rows_html.append(f"<tr>{cells}</tr>")
+
+    col_headers = "".join(
+        f'<th colspan="2" style="text-align:center">{labels[k]}</th>' for k in avail
+    )
+    sub_headers = "".join('<th>R² Test</th><th>Gap</th>' for _ in avail)
+    thead = (
+        f'<thead><tr><th>Model</th>{col_headers}</tr>'
+        f'<tr style="font-size:0.82em"><th></th>{sub_headers}</tr></thead>'
+    )
+    return f"""
+<details class="exp-details" id="fe-comparison">
+  <summary><span class="fold-icon">▶</span> Comparisons</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="margin-bottom:1rem">
+      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
+        Phase 9 Voting baseline vs SE1 Full FE (all targets) vs SE2 Selective FE (Grab only).
+        <span style="color:#2ecc71">Green = R² &gt; 0.30</span>,
+        <span style="color:#e74c3c">Red = R² &lt; 0 or Gap &gt; 0.15</span>.
+      </p>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:0.87em">
+      {thead}
+      <tbody>{"".join(rows_html)}</tbody>
+    </table>
+    </div>
+  </div>
+</details>"""
+
+
+def _phase10_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for the Feature Engineering section."""
+    fe_full  = df_all[df_all["exp_key"] == "Phase10-FE"].dropna(subset=["R2_test"])
+    fe_sel   = df_all[df_all["exp_key"] == "Phase10b-FE"].dropna(subset=["R2_test"])
+    p9_vote  = df_all[df_all["exp_key"] == "Phase9-Voting"].dropna(subset=["R2_test"])
+
+    def _avg_tgts(df, tgts):
+        vals = [float(df[df["target"] == t]["R2_test"].max())
+                for t in tgts if not df[df["target"] == t].empty]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    def _best_vote(df, tgt):
+        sub = df[(df["target"] == tgt) & (df["model"] == "Voting")]
+        return float(sub["R2_test"].iloc[0]) if not sub.empty else float("nan")
+
+    def _c(v, good=0.05):
+        if v != v:
+            return " - "
+        col = "#5BAD6F" if v > good else "#E15252" if v < 0 else "var(--text-primary)"
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    grab_full = _avg_tgts(
+        fe_full[fe_full["model"] == "Voting"] if not fe_full.empty else fe_full, GRAB_TARGETS
+    )
+    grab_sel  = _avg_tgts(
+        fe_sel[fe_sel["model"] == "Voting"] if not fe_sel.empty else fe_sel, GRAB_TARGETS
+    )
+    comp_full = _avg_tgts(
+        fe_full[fe_full["model"] == "Voting"] if not fe_full.empty else fe_full, COMP_TARGETS
+    )
+    comp_sel  = _avg_tgts(
+        fe_sel[fe_sel["model"] == "Voting"] if not fe_sel.empty else fe_sel, COMP_TARGETS
+    )
+    p9_grab = _avg_tgts(p9_vote, GRAB_TARGETS)
+    p9_comp = _avg_tgts(p9_vote, COMP_TARGETS)
+
+    tss_sel = _best_vote(fe_sel, "Effluent TSS (mg/L, Grab)")
+    bod_sel = _best_vote(fe_sel, "Effluent BOD (mg/L, Grab)")
+
+    q1 = (
+        f"<strong>Full FE (SE1):</strong> Voting avg Grab = {_c(grab_full, 0.20)}, "
+        f"Comp = {_c(comp_full, 0.10)} vs Phase 9 baseline "
+        f"Grab = {_c(p9_grab, 0.20)}, Comp = {_c(p9_comp, 0.10)}. "
+        f"Composite targets were catastrophically affected: Comp TSS ElNet gap +3.80, "
+        f"Ridge gap +3.31. Root cause: ~290 Composite training rows + 50 engineered features "
+        f"= severe overfitting. Full FE is not suitable for Composite targets at current "
+        f"sample sizes."
+    )
+
+    q2 = (
+        f"<strong>Selective FE (SE2):</strong> apply log1p+interactions+IQR flags to "
+        f"Grab targets only; leave Composite targets at base Exp3-SE2 features."
+        f"<br><br>"
+        f"Voting avg Grab = {_c(grab_sel, 0.20)}, Comp = {_c(comp_sel, 0.10)}. "
+        f"Grab targets gain substantially vs baseline ({_c(p9_grab, 0.20)}). "
+        f"Comp TSS fully recovered (Voting +0.349 vs Full FE -1.267). "
+        f"<strong>Selective FE is the recommended FE configuration.</strong>"
+    )
+
+    q3 = (
+        f"New records for Grab TSS: Voting SE2 = {_c(tss_sel, 0.30)}, Ridge SE2 = +0.633. "
+        f"Grab BOD: Voting SE2 = {_c(bod_sel, 0.30)} (maintains Phase 10 high). "
+        f"<br><br>"
+        f"Comp COD remains unresponsive (best R² = -0.051 across all FE variants). "
+        f"Grab pH is the weakest Grab target (Voting SE2 = +0.244) - narrow dynamic "
+        f"range means engineered interaction terms add noise rather than signal."
+    )
+
+    def _qcard(n, question, answer):
+        return (
+            f"<div style='margin-bottom:1.1rem;border:1px solid var(--border);"
+            f"border-radius:5px;overflow:hidden'>"
+            f"<div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;"
+            f"border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>"
+            f"<span style='color:#4A90D9;font-size:0.78em;font-weight:bold;"
+            f"letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>"
+            f"<span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>"
+            f"</div>"
+            f"<div style='padding:0.6rem 0.8rem 0.55rem'>"
+            f"<p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);"
+            f"padding-left:0.6rem'>{answer}</p>"
+            f"</div></div>"
+        )
+
+    cards = "".join([
+        _qcard(1, "What happens when feature engineering is applied uniformly to all targets?", q1),
+        _qcard(2, "Does selective FE recover the composite regressions while preserving Grab gains?", q2),
+        _qcard(3, "Which targets benefited most and which remained unresponsive?", q3),
+    ])
+    return f"""
+<details class="exp-details" id="fe-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Feature Engineering</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def _phase11_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Contextual comparison: Phase 9 Voting / Phase 10b vs Temporal Features."""
+    keys   = ["Phase9-Voting", "Phase10b-FE", "Phase11"]
+    labels = {
+        "Phase9-Voting": (
+            "P9 Voting"
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>Baseline</span>"
+        ),
+        "Phase10b-FE": (
+            "P10b Sel-FE"
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>Best prior</span>"
+        ),
+        "Phase11": (
+            "Temporal Feat."
+            "<br><span style='font-size:0.8em;font-weight:normal;"
+            "color:var(--text-muted)'>Lags + log1p</span>"
+        ),
+    }
+    avail = [k for k in keys if k in df_all["exp_key"].values]
+    if len(avail) < 2:
+        return ""
+
+    models_show = ["Voting", "Ridge", "ElNet", "RF", "XGB"]
+    rows_html = []
+    for tgt in TARGETS_ORDERED:
+        tgt_short = TARGET_SHORT.get(tgt, tgt)
+        rows_html.append(
+            f'<tr><td colspan="{len(avail) * 2 + 1}" style="background:var(--card-bg);'
+            f'font-weight:600;padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        )
+        for model in models_show:
+            cells = f'<td style="padding-left:20px;color:var(--text-muted)">{model}</td>'
+            for key in avail:
+                sub = df_all[
+                    (df_all["exp_key"] == key) &
+                    (df_all["target"] == tgt) &
+                    (df_all["model"] == model)
+                ]
+                if sub.empty or sub["R2_test"].isna().all():
+                    cells += ('<td style="color:var(--text-muted)"> - </td>'
+                              '<td style="color:var(--text-muted)"> - </td>')
+                    continue
+                r2  = float(sub["R2_test"].iloc[0])
+                gap = float(sub["R2_gap"].iloc[0]) if not pd.isna(sub["R2_gap"].iloc[0]) else float("nan")
+                r2_col  = "#2ecc71" if r2 > 0.30 else "#e74c3c" if r2 < 0 else "var(--text-primary)"
+                gap_col = "#e74c3c" if gap > 0.15 else "var(--text-muted)"
+                gap_str = f"{gap:+.3f}" if not np.isnan(gap) else "-"
+                cells += (f'<td style="color:{r2_col};font-weight:500">{r2:+.3f}</td>'
+                          f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
+            rows_html.append(f"<tr>{cells}</tr>")
+
+    col_headers = "".join(
+        f'<th colspan="2" style="text-align:center">{labels[k]}</th>' for k in avail
+    )
+    sub_headers = "".join('<th>R² Test</th><th>Gap</th>' for _ in avail)
+    thead = (
+        f'<thead><tr><th>Model</th>{col_headers}</tr>'
+        f'<tr style="font-size:0.82em"><th></th>{sub_headers}</tr></thead>'
+    )
+    return f"""
+<details class="exp-details" id="temporal-comparison">
+  <summary><span class="fold-icon">▶</span> Comparisons</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="margin-bottom:1rem">
+      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
+        Temporal Features vs Phase 9 Voting baseline and Phase 10b Selective FE (best prior method).
+        <span style="color:#2ecc71">Green = R² &gt; 0.30</span>,
+        <span style="color:#e74c3c">Red = R² &lt; 0 or Gap &gt; 0.15</span>.
+      </p>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:0.87em">
+      {thead}
+      <tbody>{"".join(rows_html)}</tbody>
+    </table>
+    </div>
+  </div>
+</details>"""
+
+
+def _phase11_qna(df_all: pd.DataFrame) -> str:
+    """Key findings Q&A for the Temporal Features section."""
+    p11    = df_all[df_all["exp_key"] == "Phase11"].dropna(subset=["R2_test"])
+    p10b   = df_all[df_all["exp_key"] == "Phase10b-FE"].dropna(subset=["R2_test"])
+    p9_v   = df_all[df_all["exp_key"] == "Phase9-Voting"].dropna(subset=["R2_test"])
+
+    def _avg_tgts(df, tgts):
+        vals = [float(df[df["target"] == t]["R2_test"].max())
+                for t in tgts if not df[df["target"] == t].empty]
+        return float(np.nanmean(vals)) if vals else float("nan")
+
+    def _best_model(df, tgt, model):
+        sub = df[(df["target"] == tgt) & (df["model"] == model)]
+        return float(sub["R2_test"].iloc[0]) if not sub.empty else float("nan")
+
+    def _c(v, good=0.05):
+        if v != v:
+            return " - "
+        col = "#5BAD6F" if v > good else "#E15252" if v < 0 else "var(--text-primary)"
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    p11_grab_avg  = _avg_tgts(p11, GRAB_TARGETS)
+    p10b_grab_avg = _avg_tgts(p10b, GRAB_TARGETS)
+    p11_comp_avg  = _avg_tgts(p11, COMP_TARGETS)
+    p10b_comp_avg = _avg_tgts(p10b, COMP_TARGETS)
+
+    p11_grab_bod_r  = _best_model(p11, "Effluent BOD (mg/L, Grab)", "Ridge")
+    p11_grab_cod_xgb = _best_model(p11, "Effluent COD (mg/L, Grab)", "XGB")
+    p10b_comp_bod   = _avg_tgts(p10b[p10b["model"] == "Voting"], ["Effluent BOD (mg/L, Composite)"])
+
+    q1 = (
+        f"<strong>Grab targets benefited:</strong> Grab avg R² = {_c(p11_grab_avg, 0.20)} "
+        f"vs Phase 10b baseline {_c(p10b_grab_avg, 0.20)}. "
+        f"Grab BOD Ridge = {_c(p11_grab_bod_r, 0.30)} (gap -0.095 - honest generalisation). "
+        f"Grab COD XGB = {_c(p11_grab_cod_xgb, 0.20)} - new Grab COD high with honest gap (+0.057). "
+        f"Lag features add genuine signal: yesterday's inlet BOD correlates with today's "
+        f"effluent BOD through retention time dynamics."
+        f"<br><br>"
+        f"<strong>Composite targets deteriorated:</strong> Comp avg R² = {_c(p11_comp_avg, 0.10)} "
+        f"vs Phase 10b {_c(p10b_comp_avg, 0.10)}. "
+        f"Comp TSS Ridge = -1.04 (gap +1.82) - catastrophic. With ~290 Composite training "
+        f"rows and 50-58 features after lag expansion, overfitting is severe."
+    )
+
+    q2 = (
+        f"Lag and rolling features were restricted to <strong>inlet + Flow + Power "
+        f"columns only</strong> (not every continuous feature). Even with this restriction, "
+        f"50-58 features result from the expansion. Full expansion across all process columns "
+        f"would produce ~128 features on ~290 composite rows - the ratio is far too high. "
+        f"<br><br>"
+        f"This confirms that temporal features are only beneficial when the training-set size "
+        f"is large relative to the added feature count. For composite targets, temporal "
+        f"structure must be captured via the process parameters already present (secondary "
+        f"clarifier/sedimentation data), not via lag engineering."
+    )
+
+    q3 = (
+        f"<strong>Per-target winners (from Overfit-Aware Selection):</strong><br>"
+        f"Grab BOD: Phase 9 Voting (0.692, gap ~0) - Phase 11 Ridge (0.656) is close but lower.<br>"
+        f"Grab COD: Exp2-SE1 RF (0.489, gap -0.004) - Phase 11 XGB (0.464) is second.<br>"
+        f"Grab TSS: Phase 10b Voting (0.642). Grab pH: Phase 11 ElNet (0.376).<br>"
+        f"Comp BOD: Phase 10b Voting ({_c(p10b_comp_bod, 0.20)}). "
+        f"Comp COD: no model generalises. "
+        f"Comp TSS: Phase 10b ElNet (0.458). Comp pH: Exp3-SE1 Ridge (0.363).<br><br>"
+        f"Temporal features contribute one clear Grab target win (Grab pH) and near-ties "
+        f"on Grab BOD and COD after gap-adjustment. Phase 10b Selective FE remains the "
+        f"overall recommended configuration."
+    )
+
+    def _qcard(n, question, answer):
+        return (
+            f"<div style='margin-bottom:1.1rem;border:1px solid var(--border);"
+            f"border-radius:5px;overflow:hidden'>"
+            f"<div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;"
+            f"border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>"
+            f"<span style='color:#4A90D9;font-size:0.78em;font-weight:bold;"
+            f"letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>"
+            f"<span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>"
+            f"</div>"
+            f"<div style='padding:0.6rem 0.8rem 0.55rem'>"
+            f"<p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);"
+            f"padding-left:0.6rem'>{answer}</p>"
+            f"</div></div>"
+        )
+
+    cards = "".join([
+        _qcard(1, "Do temporal lag features help Grab and Composite targets equally?", q1),
+        _qcard(2, "Why was feature expansion restricted to inlet/Flow/Power columns only?", q2),
+        _qcard(3, "Where does Phase 11 rank per-target, and what is the overall recommendation?", q3),
+    ])
+    return f"""
+<details class="exp-details" id="temporal-findings" open>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Temporal Features</summary>
+  <div class="exp-body">{cards}</div>
+</details>"""
+
+
+def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
+    ann_sub     = _phase9_model_subsection(
+        df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
+        _badge("FAILED avg R²=-1.12", "fail"))
+    ann_failure = _ann_failure_callout()
+    vote_sub = _phase9_model_subsection(
+        df_all, "Phase9-Voting", "p9-voting",
+        "Voting Ensemble (ElNet + RF + XGBoost)",
+        _badge("RECOMMENDED", "rec"))
+    stack_sub = _phase9_model_subsection(
+        df_all, "Phase9-Stacking", "p9-stacking",
+        "Stacking Ensemble (ElNet + RF + XGB - Ridge, walk-forward OOF)",
+        _badge("CONSISTENT - no leakage", "warn"))
+
+    df_p9 = df_all[df_all["exp_key"].isin(["Phase9-ANN","Phase9-Voting","Phase9-Stacking"])].copy()
+    comparison = _adv_comparison_panel(df_all)
+    best = _best_model_box(df_p9, "Advanced Methods")
+    var_dx = _variance_diagnosis_callout()
+    findings = _adv_methods_qna(df_all)
+    rationale = _adv_methods_rationale_card()
+
+    ann_e1_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp1", "p9-ann-exp1",
+        "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
+    ann_e2s1_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
+        "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
+    ann_e2s2_sub = _phase9_model_subsection(
+        df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
+        "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 19 features)")
+    ann_ds_comparison = _ann_dataset_comparison(df_all)
+    ann_ds_callout = _ann_dataset_exploration_callout()
+
+    has_ann_extra = any(
+        k in df_all["exp_key"].values
+        for k in ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"]
+    )
+    ann_exploration_block = ""
+    if has_ann_extra:
+        ann_exploration_block = f"""
+  <h3 class="section-title" id="p9-ann-exploration"
+      style="font-size:1.0rem;margin:1.5rem 0 0.4rem;padding-left:0">
+    ANN Dataset Exploration  -  Data-Volume Diagnostic
+  </h3>
+  <p class="section-intro" style="margin-bottom:0.8rem;font-size:0.9em">
+    {EXP_INTRO["ANN-Dataset-Exploration"]}
+  </p>
+  {ann_e1_sub}
+  {ann_e2s1_sub}
+  {ann_e2s2_sub}
+  {ann_ds_comparison}
+  {ann_ds_callout}
+<details class="exp-details" id="adv-nn-comparison">
+  <summary><span class="fold-icon">▶</span> NN Comparisons  -  ANN Across Datasets</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="margin-bottom:0.6rem">
+      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
+        Same MLP architecture on four dataset configurations: more data, richer features,
+        combined. A positive R² requires secondary process features at adequate sample size.
+      </p>
+    </div>
+  </div>
+</details>"""
+
+    return f"""
+<section id="advanced-methods">
+  <h1 class="section-title">Advanced Methods</h1>
+  <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
+
+  <h2 class="section-title" id="adv-nn"
+      style="font-size:1.25rem;margin:1.8rem 0 0.6rem;border-top:1px solid var(--border);padding-top:1rem">
+    Neural Networks
+  </h2>
+  {rationale}
+  {ann_sub}
+  {ann_failure}
+  {ann_exploration_block}
+
+  <h2 class="section-title" id="adv-ensembles"
+      style="font-size:1.25rem;margin:1.8rem 0 0.6rem;border-top:1px solid var(--border);padding-top:1rem">
+    Ensemble Methods
+  </h2>
+  {vote_sub}
+  {stack_sub}
+
+  {comparison}
+  {var_dx}
+  {best}
+  {findings}
+</section>"""
 
 
 def build_phase9_section(df_all: pd.DataFrame) -> str:
@@ -6882,21 +7660,25 @@ def _phase10_variant(df_all: pd.DataFrame, exp_key: str,
 def build_phase10_section(df_all: pd.DataFrame) -> str:
     full_fe = _phase10_variant(
         df_all, "Phase10-FE", "p10-full",
-        "Feature Engineering - Full (All Targets)",
+        "SE1 - Full Feature Engineering (All Targets)",
         _badge("COMPOSITE OVERFIT", "fail"))
     sel_fe = _phase10_variant(
         df_all, "Phase10b-FE", "p10b",
-        "Phase 10b - Selective Feature Engineering (Grab FE / Composite Base)",
-        _badge("CURRENT BEST", "rec"))
+        "SE2 - Selective Feature Engineering (Grab FE / Composite Base)",
+        _badge("RECOMMENDED", "rec"))
+    comparison = _phase10_comparison_panel(df_all)
+    findings   = _phase10_qna(df_all)
     best = _best_model_box(
         df_all[df_all["exp_key"].isin(["Phase10-FE","Phase10b-FE"])],
-        "Phase 10")
+        "Feature Engineering")
     return f"""
 <section id="phase10">
   <h1 class="section-title">Feature Engineering</h1>
   <p class="section-intro">{EXP_INTRO["Phase10"]}</p>
   {full_fe}
   {sel_fe}
+  {comparison}
+  {findings}
   {best}
 </section>"""
 
@@ -6906,29 +7688,30 @@ def build_phase11_section(df_all: pd.DataFrame) -> str:
     if df.empty:
         return ""
     models = [m for m in ALL_MODELS_ORD if m in df["model"].values]
-    feat_html = _feature_card("Phase11")
-    ds_html   = _dataset_summary(df)
-    tbl       = _metrics_table(df, models, "p11-comp")
-    train_tbl = _train_metrics_table(df, models)
-    best      = _best_model_box(df, "Phase 11")
+    feat_html  = _feature_card("Phase11")
+    ds_html    = _dataset_summary(df)
+    tbl        = _metrics_table(df, models, "p11-detail")
+    train_tbl  = _train_metrics_table(df, models)
+    comparison = _phase11_comparison_panel(df_all)
+    findings   = _phase11_qna(df_all)
+    best       = _best_model_box(df, "Temporal Features")
 
-    # Phase 11-specific callout: CV_R2 is very noisy on first fold
     cv_note = """
 <div class="info-note">
-  <strong>Phase 11 CV note:</strong> <code>CV_R²</code> and <code>Gap_gen = CV_R² − Test_R²</code>
-  are stored in results.xlsx but not shown in the table above (unified schema). They are available
-  in the raw <code>models/phase11/results.xlsx</code>. The first TimeSeriesSplit fold trains on
-  ~80 rows with ~55 features, making CV_R² very noisy for Ridge/ElNet - interpret per-fold
-  rather than as a mean. Key finding: Grab COD RF has CV_R²=0.291, Gap_gen=−0.014 - the most
-  consistent Grab COD model by cross-validation.
+  <strong>CV note:</strong> <code>CV_R²</code> and <code>Gap_gen = CV_R² - Test_R²</code>
+  are stored in results.xlsx but not shown in the table (unified schema). Available in
+  <code>models/phase11/results.xlsx</code>. First TimeSeriesSplit fold trains on ~80 rows
+  with ~55 features - CV_R² is very noisy for Ridge/ElNet; interpret per-fold rather than
+  as a mean. Key: Grab COD RF has CV_R²=0.291, Gap_gen=-0.014 - most consistent Grab COD
+  model by cross-validation.
 </div>"""
 
     return f"""
 <section id="phase11">
   <h1 class="section-title">Temporal Features + log1p Targets</h1>
   <p class="section-intro">{EXP_INTRO["Phase11"]}</p>
-  <details class="exp-details" open id="p11-detail">
-    <summary><span class="fold-icon">▶</span> Temporal Features - All Models</summary>
+  <details class="exp-details" open id="p11-se1">
+    <summary><span class="fold-icon">▶</span> SE1 - Temporal Lags + log1p (All Models)</summary>
     <div class="exp-body">
       {feat_html}
       {ds_html}
@@ -6937,6 +7720,8 @@ def build_phase11_section(df_all: pd.DataFrame) -> str:
     </div>
   </details>
   {cv_note}
+  {comparison}
+  {findings}
   {best}
 </section>"""
 
@@ -7008,22 +7793,32 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp3-s1">SE1 - ADD-tier</a>
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp3-s2">SE2 - ADD + CONSIDER-tier</a>
+          <a class="nav-item nav-sub" href="#exp3-s2">SE2 - ADD+CONSIDER</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-full">↳ Full Feature Set</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-fs">↳ Feature Selection</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-full">&#8627; Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s2-fs">&#8627; Feature Selection</a>
         </div>
       </div>
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp3-s3">SE3 - All Features</a>
+          <a class="nav-item nav-sub" href="#exp3-s3">SE3 - Minus Coliform</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-full">↳ Full Feature Set</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-fs">↳ Feature Selection</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-full">&#8627; Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s3-fs">&#8627; Feature Selection</a>
+        </div>
+      </div>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp3-s4">SE4 - All Features</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s4-full">&#8627; Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp3-s4-fs">&#8627; Feature Selection</a>
         </div>
       </div>
       <a class="nav-item nav-sub" href="#exp3-comparison">Comparisons</a>
@@ -7074,26 +7869,34 @@ def _sidebar() -> str:
   </div>
 
   <div class="nav-group">
-    <div class="nav-group-title nav-collapsible" data-target-group="nav-p9">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-adv">
       Advanced Methods <span class="nav-chevron">▾</span>
     </div>
-    <div class="nav-group-items" id="nav-p9">
-      <a class="nav-item nav-sub" href="#p9-ann">ANN (Exp3-SE2)</a>
-      <a class="nav-item nav-sub" href="#p9-ann-diagnosis">ANN Failure Post-Mortem</a>
-      <a class="nav-item nav-sub" href="#p9-voting">Voting (ElNet+RF+XGB)</a>
-      <a class="nav-item nav-sub" href="#p9-stacking">Stacking (walk-fwd OOF)</a>
-      <a class="nav-item nav-sub" href="#p9-comparison">Combined</a>
+    <div class="nav-group-items" id="nav-adv">
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#p9-ann-exploration">ANN Dataset Exploration</a>
+          <a class="nav-item nav-sub" href="#adv-nn">Neural Networks</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp1">↳ ANN Exp1</a>
-          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s1">↳ ANN Exp2-SE1</a>
-          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exp2s2">↳ ANN Exp2-SE2</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-ann">&#8627; ANN (Exp3-SE2)</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-diagnosis">&#8627; ANN Post-Mortem</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exploration">&#8627; ANN Exploration</a>
+          <a class="nav-item nav-sub nav-subsub" href="#adv-nn-comparison">&#8627; NN Comparisons</a>
         </div>
       </div>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#adv-ensembles">Ensemble Methods</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#p9-voting">&#8627; Voting (ElNet+RF+XGB)</a>
+          <a class="nav-item nav-sub nav-subsub" href="#p9-stacking">&#8627; Stacking (walk-fwd)</a>
+        </div>
+      </div>
+      <a class="nav-item nav-sub" href="#adv-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#adv-findings">Findings</a>
     </div>
   </div>
 
@@ -7102,15 +7905,10 @@ def _sidebar() -> str:
       Feature Engineering <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p10">
-      <div class="nav-subgroup">
-        <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#p10-full">Full FE</a>
-          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
-        </div>
-        <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#p10b">↳ Selective FE ★</a>
-        </div>
-      </div>
+      <a class="nav-item nav-sub" href="#p10-full">SE1 - Full FE (All Tgts)</a>
+      <a class="nav-item nav-sub" href="#p10b">SE2 - Selective FE (Grab)</a>
+      <a class="nav-item nav-sub" href="#fe-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#fe-findings">Findings</a>
     </div>
   </div>
 
@@ -7119,7 +7917,9 @@ def _sidebar() -> str:
       Temporal Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p11">
-      <a class="nav-item nav-sub" href="#phase11">Temporal Lags + log1p</a>
+      <a class="nav-item nav-sub" href="#p11-se1">SE1 - Temporal + log1p</a>
+      <a class="nav-item nav-sub" href="#temporal-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#temporal-findings">Findings</a>
     </div>
   </div>
 
@@ -7833,7 +8633,7 @@ def main():
         build_exp3_section(df_all),
         build_exp4_section(df_all),
         build_exp5_section(df_all),
-        build_phase9_section(df_all),
+        build_advanced_methods_section(df_all),
         build_phase10_section(df_all),
         build_phase11_section(df_all),
     ]
@@ -7871,9 +8671,9 @@ def main():
   <div class="page-header">
     <h1>Wastewater Treatment - Unified Modeling Report</h1>
     <p class="meta">Generated {ts} &nbsp;·&nbsp;
-      Experiments 1-4 + Phases 9-11 &nbsp;·&nbsp;
-      9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp;
-      Train 2021-2024 · Test 2025
+      Experiments 1-5 &nbsp;·&nbsp; Neural Networks &amp; Ensembles &nbsp;·&nbsp;
+      Feature Engineering &nbsp;·&nbsp; Temporal Features &nbsp;·&nbsp;
+      9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp; Train 2021-2024 · Test 2025
     </p>
   </div>
   {_filter_bar()}

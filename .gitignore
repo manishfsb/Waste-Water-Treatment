@@ -11,5 +11,8 @@ ideas.txt
 
 **/data/*.json
 **/extracted_data/*.json
-CLAUDE.md
 *.docx
+
+CLAUDE.md
+FINDINGS.md
+REPORT_STRUCTURE.md
