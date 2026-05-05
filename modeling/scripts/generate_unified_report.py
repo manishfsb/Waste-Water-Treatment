@@ -150,7 +150,8 @@ _DS_EXP_MAP = [
     ("experiment3/sub_exp4",                           "Exp3-S4"),
     ("experiment3/sub_exp3/feature_selected_datasets", "Exp3-S3-FS"),
     ("experiment3/sub_exp3",                           "Exp3-S3"),
-    ("experiment3/sub_exp2",                           "Exp3-S2-FS"),
+    ("experiment3/sub_exp2/feature_selected_datasets", "Exp3-S2-FS"),
+    ("experiment3/sub_exp2",                           "Exp3-S2"),
     ("experiment3/sub_exp1",                           "Exp3-S1"),
     ("experiment2/sub_exp2/feature_selected_datasets", "Exp2-Sub2-FS"),
     ("experiment2/sub_exp2",                           "Exp2-Sub2"),
@@ -165,7 +166,10 @@ _DS_EXP_MAP = [
 # predicted_<TAG>_run_N → canonical model name
 _PRED_MODEL_MAP = {
     "OLS": "OLS", "Ridge": "Ridge", "ElNet": "ElNet",
+    "RF": "RF", "GB": "GB", "XGB": "XGB",
     "RF_NL": "RF", "GB_NL": "GB", "XGB_NL": "XGB",
+    "OLS_nofs": "OLS", "Ridge_nofs": "Ridge", "ElNet_nofs": "ElNet",
+    "RF_nofs": "RF", "GB_nofs": "GB", "XGB_nofs": "XGB",
     "ANN": "ANN", "Voting": "Voting", "Stacking": "Stacking",
 }
 
@@ -2837,8 +2841,7 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
         "p9-ann":            ["Phase9-ANN"],
         "p9-voting":         ["Phase9-Voting"],
         "p9-stacking":       ["Phase9-Stacking"],
-        "adv-nn-comparison": ["Phase9-ANN", "ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"],
-        "adv-comparison":    ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"],
+        "adv-comparison":    ["Phase9-ANN", "ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-Voting", "Phase9-Stacking"],
         "adv-findings":      ["Phase9-Voting"],
         "p10-full":          ["Phase10-FE"],
         "p10b":              ["Phase10b-FE"],
@@ -6072,29 +6075,47 @@ def _variance_diagnosis_callout() -> str:
           <td><span style="color:{badge_col};font-size:0.82em">{diagnosis}</span></td>
         </tr>"""
 
+    _TH  = "padding:5px 7px;text-align:left;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+    _THC = "padding:5px 7px;text-align:center;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+    _TD  = "padding:4px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
     return f"""
-<div class="obs-card" style="margin:1rem 0;border-left:4px solid #e67e22">
-  <h4 style="margin:0 0 0.6rem">Negative R² Diagnosis - Variance Collapse vs Genuine Failure</h4>
-  <p style="font-size:0.85em;color:var(--text-muted);margin:0 0 0.8rem">
-    R² = 1 − SS_res/SS_tot. A low-variance 2025 test set (σ-ratio &lt; 0.5) shrinks the
-    denominator and forces R² negative even when absolute accuracy is unchanged or improving.
-    <strong>ΔMAE</strong> and <strong>ΔRMSE</strong> (2025 − 2024) give scale-grounded evidence:
-    negative = model improved in absolute terms; positive = genuine deterioration.
-    NRMSE = RMSE / (max − min) for scale-normalised cross-target comparison.
-  </p>
-  <div style="overflow-x:auto">
-  <table style="font-size:0.82em;width:100%">
-    <thead><tr>
-      <th>Model</th><th>Target</th><th>Test R²</th>
-      <th>σ_train</th><th>σ_test</th><th>σ-ratio</th>
-      <th>MAE 2024</th><th>MAE 2025</th><th>ΔMAE</th>
-      <th>RMSE 2024</th><th>RMSE 2025</th><th>ΔRMSE</th>
-      <th>NRMSE</th><th>Diagnosis</th>
-    </tr></thead>
-    <tbody>{rows_html}</tbody>
-  </table>
+<details class="exp-details" id="adv-neg-r2">
+  <summary><span class="fold-icon">▶</span> Negative R² Diagnosis - Variance Collapse vs Genuine Failure</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #e67e22">
+      <p class="meta">
+        R² = 1 - SS_res/SS_tot. A low-variance 2025 test set (sigma-ratio &lt; 0.5) shrinks the
+        denominator and forces R² negative even when absolute accuracy is unchanged or improving.
+        <strong>ΔMAE</strong> and <strong>ΔRMSE</strong> (2025 - 2024) give scale-grounded evidence:
+        negative = model improved in absolute terms; positive = genuine deterioration.
+        NRMSE = RMSE / (max - min) for scale-normalised cross-target comparison.
+      </p>
+    </div>
+    <div style="overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden">
+    <table style="border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:960px">
+      <thead>
+        <tr style="border-bottom:2px solid #cccccc">
+          <th style="{_TH}">Model</th>
+          <th style="{_TH}">Target</th>
+          <th style="{_THC}">Test R²</th>
+          <th style="{_THC}">σ_train</th>
+          <th style="{_THC}">σ_test</th>
+          <th style="{_THC}">σ-ratio</th>
+          <th style="{_THC}">MAE 2024</th>
+          <th style="{_THC}">MAE 2025</th>
+          <th style="{_THC}">ΔMAE</th>
+          <th style="{_THC}">RMSE 2024</th>
+          <th style="{_THC}">RMSE 2025</th>
+          <th style="{_THC}">ΔRMSE</th>
+          <th style="{_THC}">NRMSE</th>
+          <th style="{_TH}">Diagnosis</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    </div>
   </div>
-</div>"""
+</details>"""
 
 
 def _exp4_comparison_panel(df_all: pd.DataFrame) -> str:
@@ -6983,27 +7004,302 @@ def _adv_methods_rationale_card() -> str:
 
 
 def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Comparison panel for all Phase 9 methods: ANN vs Voting vs Stacking."""
-    df_p9 = df_all[
-        df_all["exp_key"].isin(["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"])
-    ].copy()
-    if df_p9.empty:
+    """Two focused sub-tables: ANN dataset progression (4 cols) + architecture comparison (3 cols).
+    Star/diamond highlighting is computed across all 6 variants so global winners are marked correctly.
+    """
+    ANN_KEYS  = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
+    ARCH_KEYS = ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"]
+    ALL_KEYS  = ANN_KEYS + ["Phase9-Voting", "Phase9-Stacking"]
+
+    COL_LABELS = {
+        "ANN-Exp1":        "ANN - Exp1<br><span style='color:#888888;font-weight:400;font-size:0.78em'>9 feat, ~1175 tr</span>",
+        "ANN-Exp2-Sub1":   "ANN - Exp2-SE1<br><span style='color:#888888;font-weight:400;font-size:0.78em'>15 feat, ~924 tr</span>",
+        "ANN-Exp2-Sub2":   "ANN - Exp2-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>21 feat, ~920 tr</span>",
+        "Phase9-ANN":      "ANN - Exp3-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>31 feat, ~470 tr · R² · RMSE · Gap</span>",
+        "Phase9-Voting":   "Voting<br><span style='color:#888888;font-weight:400;font-size:0.78em'>ElNet+RF+XGB · R² · RMSE · Gap</span>",
+        "Phase9-Stacking": "Stacking<br><span style='color:#888888;font-weight:400;font-size:0.78em'>walk-fwd OOF · R² · RMSE · Gap</span>",
+    }
+    KEY_MODEL = {
+        "ANN-Exp1": "ANN", "ANN-Exp2-Sub1": "ANN", "ANN-Exp2-Sub2": "ANN",
+        "Phase9-ANN": "ANN", "Phase9-Voting": "Voting", "Phase9-Stacking": "Stacking",
+    }
+
+    avail_all  = [k for k in ALL_KEYS  if k in df_all["exp_key"].values]
+    avail_ann  = [k for k in ANN_KEYS  if k in df_all["exp_key"].values]
+    avail_arch = [k for k in ARCH_KEYS if k in df_all["exp_key"].values]
+    if not avail_arch:
         return ""
-    all_m = [m for m in ADV_MODELS if m in df_p9["model"].values]
-    comp_tbl = _metrics_table(df_p9, all_m, "adv-comparison", df_all)
+
+    MEANINGFUL = 0.01
+    _TD  = "padding:4px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:5px 7px;font-size:0.78rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:5px 7px;text-align:left;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+    _THC = "padding:5px 7px;text-align:center;color:#333;font-weight:600;font-size:0.79rem;background:#eeeeee"
+
+    def _get(key, model, tgt, col="R2_test"):
+        sub = df_all[(df_all["exp_key"] == key) & (df_all["model"] == model) & (df_all["target"] == tgt)]
+        if sub.empty or col not in sub.columns: return None
+        v = sub[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#bbbbbb'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:   col = "#5BAD6F"; fw = "bold"
+        elif is_gaj: col = "#4A90D9"; fw = "bold"
+        else:        col = "#1a1a1a"; fw = "normal"
+        rmse_s = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else "-"
+        gv     = gap if (gap is not None and gap == gap) else None
+        gs     = f"{gv:+.3f}" if gv is not None else "-"
+        gc     = ("#E15252" if gv is not None and gv > 0.10
+                  else "#5BAD6F" if gv is not None and gv < -0.10
+                  else "#888888")
+        sec = (f"<br><span style='font-size:0.71em;color:#888888;font-weight:normal'>"
+               f"{rmse_s} · <span style='color:{gc}'>{gs}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{mhtml}{sec}</td>")
+
+    # Transition delta collectors
+    ANN_TRANSITIONS  = [
+        ("ANN-Exp1",      "ANN-Exp2-Sub1", "ANN"),
+        ("ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "ANN"),
+        ("ANN-Exp2-Sub2", "Phase9-ANN",    "ANN"),
+    ]
+    ARCH_TRANSITIONS = [
+        ("Phase9-ANN", "Phase9-Voting",   None),
+        ("Phase9-ANN", "Phase9-Stacking", None),
+        ("Phase9-Voting", "Phase9-Stacking", None),
+    ]
+    ALL_TRANSITIONS = ANN_TRANSITIONS + ARCH_TRANSITIONS
+    trans_deltas = {t: [] for t in ALL_TRANSITIONS}
+    trans_gaj    = {t: [] for t in ALL_TRANSITIONS}
+
+    tbody_ann  = ""
+    tbody_arch = ""
+
+    for tgt in TARGETS_ORDERED:
+        short = TARGET_SHORT.get(tgt, tgt)
+        hdr_style = ("padding:6px 10px;font-size:0.75rem;font-weight:700;color:#555555;"
+                     "letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid #d0d0d0")
+
+        # pre-pass: best raw and gap-adjusted across ALL 6 variants
+        _all_raw = {}; _all_gaj_d = {}; _all_gap_d = {}
+        for key in avail_all:
+            mdl = KEY_MODEL[key]
+            v = _get(key, mdl, tgt); g = _get(key, mdl, tgt, "R2_gap")
+            if v is not None:
+                _all_raw[(key, mdl)] = v
+                _all_gap_d[(key, mdl)] = g
+                sv = _gaj(v, g)
+                if sv is not None: _all_gaj_d[(key, mdl)] = sv
+
+        tgt_br = max(_all_raw.values())   if _all_raw   else None
+        tgt_bg = max(_all_gaj_d.values()) if _all_gaj_d else None
+        _raw_win_gap = None
+        if tgt_br is not None:
+            for k_, v_ in _all_raw.items():
+                if abs(v_ - tgt_br) < 1e-9:
+                    _raw_win_gap = _all_gap_d.get(k_); break
+        tgt_show_gaj = False
+        if (tgt_bg is not None and tgt_br is not None
+                and _raw_win_gap is not None and _raw_win_gap > 0.10):
+            _rwg = _gaj(tgt_br, _raw_win_gap)
+            if _rwg is None or abs(tgt_bg - _rwg) > 1e-9:
+                tgt_show_gaj = True
+
+        _ir = lambda v_: tgt_br is not None and v_ is not None and abs(v_ - tgt_br) < 1e-9
+        _ig = lambda s_: tgt_show_gaj and tgt_bg is not None and s_ is not None and abs(s_ - tgt_bg) < 1e-9
+
+        # ── Sub-table 1: ANN dataset progression (one ANN row per target) ──
+        tbody_ann += (f"<tr style='background:#e8e8e8'>"
+                      f"<td colspan='{len(avail_ann)+1}' style='{hdr_style}'>{short}</td></tr>")
+        row = f"<tr style='background:#ffffff'><td style='{_TD}'><strong>ANN</strong></td>"
+        ann_vals = {}
+        for key in avail_ann:
+            v = _get(key, "ANN", tgt); r = _get(key, "ANN", tgt, "RMSE_test")
+            g = _get(key, "ANN", tgt, "R2_gap"); sc = _gaj(v, g)
+            ann_vals[key] = (v, g, sc)
+            row += _val_td(v, r, g, _ir(v), _ig(sc))
+        row += "</tr>"
+        tbody_ann += row
+
+        # ANN sequential transition deltas
+        for trans in ANN_TRANSITIONS:
+            fk, tk, _ = trans
+            if fk in avail_ann and tk in avail_ann:
+                vf_t = ann_vals.get(fk); vt_t = ann_vals.get(tk)
+                if vf_t and vt_t and vf_t[0] is not None and vt_t[0] is not None:
+                    trans_deltas[trans].append(vt_t[0] - vf_t[0])
+                    if vf_t[2] is not None and vt_t[2] is not None:
+                        trans_gaj[trans].append(vt_t[2] - vf_t[2])
+
+        # Sub-table 2: architecture comparison (ANN, Voting, Stacking on Exp3-SE2)
+        tbody_arch += (f"<tr style='background:#e8e8e8'>"
+                       f"<td colspan='{len(avail_arch)+1}' style='{hdr_style}'>{short}</td></tr>")
+        row = f"<tr style='background:#ffffff'><td style='{_TD}'><strong>Test R²</strong></td>"
+        for key in avail_arch:
+            row_model = KEY_MODEL[key]
+            v = _get(key, row_model, tgt)
+            r = _get(key, row_model, tgt, "RMSE_test")
+            g = _get(key, row_model, tgt, "R2_gap")
+            sc = _gaj(v, g)
+            row += _val_td(v, r, g, _ir(v), _ig(sc))
+        row += "</tr>"
+        tbody_arch += row
+
+        # Cross-model transition deltas (architecture comparison)
+        for trans in ARCH_TRANSITIONS:
+            fk, tk, _ = trans
+            if fk in avail_arch and tk in avail_arch:
+                fm = KEY_MODEL[fk]; tm2 = KEY_MODEL[tk]
+                vf = _get(fk, fm, tgt); vt = _get(tk, tm2, tgt)
+                if vf is not None and vt is not None:
+                    trans_deltas[trans].append(vt - vf)
+                    gf = _get(fk, fm, tgt, "R2_gap"); gt = _get(tk, tm2, tgt, "R2_gap")
+                    sf = _gaj(vf, gf); st = _gaj(vt, gt)
+                    if sf is not None and st is not None:
+                        trans_gaj[trans].append(st - sf)
+
+    # ── Transition summary builder ──
+    def _stats_row(deltas, gaj_d, from_lbl, to_lbl):
+        if not deltas:
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'> - </td></tr>")
+        arr = np.array(deltas); n = len(arr); net = float(arr.mean())
+        wins   = arr[arr >  MEANINGFUL]; losses = arr[arr < -MEANINGFUL]
+        ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        mw = float(wins.mean())   if len(wins)   else None
+        ml = float(losses.mean()) if len(losses) else None
+        nc = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
+        vd = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
+        ws = f"{len(wins)}/{n} (avg {mw:+.3f})"   if mw is not None else f"{len(wins)}/{n}"
+        ls = f"{len(losses)}/{n} (avg {ml:+.3f})" if ml is not None else f"{len(losses)}/{n}"
+        if gaj_d:
+            gn = float(np.array(gaj_d).mean()); diff = gn - net
+            gc = "#5BAD6F" if gn > MEANINGFUL else ("#E15252" if gn < -MEANINGFUL else "#888888")
+            dc = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "#888888"
+            interp = ("Raw gains partially inflated by overfitting" if diff < -0.02
+                      else "Raw gains understated - overfitting decreased" if diff > 0.02
+                      else "Overfitting largely unchanged")
+            gs2 = f"{gn:+.4f}"; ds = f"{diff:+.4f}"
+        else:
+            gs2 = ds = " - "; gc = dc = "#888888"; interp = " - "
+        return (f"<tr>"
+                f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} → {to_lbl}</strong></td>"
+                f"<td style='{_STD};text-align:center;color:{nc};font-weight:bold'>{net:+.4f}</td>"
+                f"<td style='{_STD};text-align:center;color:#5BAD6F'>{ws}</td>"
+                f"<td style='{_STD};text-align:center;color:#E15252'>{ls}</td>"
+                f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+                f"<td style='{_STD};text-align:center;color:{gc};font-weight:bold'>{gs2}</td>"
+                f"<td style='{_STD};text-align:center;color:{dc}'>{ds}</td>"
+                f"<td style='{_STD}'><strong>{vd}</strong><br>"
+                f"<span style='font-size:0.82em;color:{dc}'>{interp}</span></td></tr>")
+
+    def _summary_table(transitions, trans_labels, note):
+        rows = "".join(_stats_row(trans_deltas[t], trans_gaj[t], *trans_labels[t])
+                       for t in transitions if t in trans_labels)
+        return f"""
+<div style='margin-top:1rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead><tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH}'>Transition</th>
+      <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+      <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+      <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; -{MEANINGFUL}</span></th>
+      <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| ≤ {MEANINGFUL}</span></th>
+      <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²-0.5·max(0,|gap|-0.10)</span></th>
+      <th style='{_THC}'>Gap-Adj - Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+      <th style='{_TH}'>Verdict / Interpretation</th>
+    </tr></thead>
+    <tbody>{rows}</tbody>
+  </table></div>
+  <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.6rem'>
+    <p class='meta'>{note}</p>
+  </div>
+</div>"""
+
+    ANN_TRANS_LABELS = {
+        ("ANN-Exp1",      "ANN-Exp2-Sub1", "ANN"): ("ANN: Exp1",     "Exp2-SE1 (+secondary feat)"),
+        ("ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "ANN"): ("ANN: Exp2-SE1", "Exp2-SE2 (+inlet to secondary)"),
+        ("ANN-Exp2-Sub2", "Phase9-ANN",    "ANN"): ("ANN: Exp2-SE2", "Exp3-SE2 (+more feat, -rows)"),
+    }
+    ARCH_TRANS_LABELS = {
+        ("Phase9-ANN",    "Phase9-Voting",   None): ("ANN Exp3-SE2", "Voting (architecture change)"),
+        ("Phase9-ANN",    "Phase9-Stacking", None): ("ANN Exp3-SE2", "Stacking (architecture change)"),
+        ("Phase9-Voting", "Phase9-Stacking", None): ("Voting",       "Stacking (ensemble method)"),
+    }
+    n_tgts = len(TARGETS_ORDERED)
+    ann_summary  = _summary_table(ANN_TRANSITIONS,  ANN_TRANS_LABELS,
+        f"Net Mean ΔR² is the signed average across {n_tgts} targets. "
+        f"Same MLP architecture across all columns; only dataset (feature set + sample count) changes. "
+        f"<strong>Gap-Adj - Raw</strong>: negative = raw gains inflated by overfitting; "
+        f"positive = overfitting decreased.")
+    arch_summary = _summary_table(ARCH_TRANSITIONS, ARCH_TRANS_LABELS,
+        f"All three variants use the same Exp3-SE2 dataset. "
+        f"Transitions reflect pure architecture differences: ANN vs ensemble methods, "
+        f"and Voting (equal weights) vs Stacking (walk-forward OOF meta-learner). "
+        f"<strong>★</strong> = best raw Test R² per target (across all 6 variants) · "
+        f"<strong>✦</strong> = best gap-adjusted per target "
+        f"(shown only when raw winner has |gap| &gt; 0.10).")
+
+    # Build both tables
+    obs_legend = f"""
+<div class="obs-card" style="border-left:4px solid #E67E22">
+  <p class="meta">
+    <strong>★</strong> = best raw Test R² per target (across all 6 variants) ·
+    <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10 and a different variant wins).
+    RMSE in native units (mg/L or pH). Gap = Train R² - Test R²;
+    <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+  </p>
+</div>"""
+
+    def _make_table(tbody, keys, min_w, left_header="Model"):
+        hdrs = "".join(f'<th style="{_THC}">{COL_LABELS[k]}</th>' for k in keys)
+        return (f"<div style='overflow-x:auto;margin-top:0.6rem;border:1px solid #cccccc;"
+                f"border-radius:4px;overflow:hidden'>"
+                f"<table style='border-collapse:collapse;width:100%;background:#ffffff;"
+                f"font-size:0.79rem;color:#1a1a1a;min-width:{min_w}px'>"
+                f"<thead><tr style='border-bottom:2px solid #cccccc'>"
+                f"<th style='{_TH};min-width:68px'>{left_header}</th>{hdrs}</tr></thead>"
+                f"<tbody>{tbody}</tbody></table></div>")
+
+    ann_sect = ""
+    if avail_ann:
+        ann_sect = f"""
+<h4 style='margin:1.4rem 0 0.3rem;font-size:0.93rem;color:#1a1a1a'>
+  ANN Dataset Progression
+  <span style='font-size:0.80rem;font-weight:normal;color:var(--text-muted)'>
+    - same architecture, different feature set and sample count
+  </span>
+</h4>
+{_make_table(tbody_ann, avail_ann, 680)}
+{ann_summary}"""
+
+    arch_sect = f"""
+<h4 style='margin:1.8rem 0 0.3rem;font-size:0.93rem;color:#1a1a1a'>
+  Architecture Comparison on Exp3-SE2
+  <span style='font-size:0.80rem;font-weight:normal;color:var(--text-muted)'>
+    - same dataset, different model class
+  </span>
+</h4>
+{_make_table(tbody_arch, avail_arch, 560, "Metric")}
+{arch_summary}"""
+
     return f"""
-<details class="exp-details" id="adv-comparison">
+<details class="exp-details" id="adv-comparison" open>
   <summary><span class="fold-icon">▶</span> Comparisons</summary>
   <div class="exp-body">
-    <div class="obs-card" style="margin-bottom:1rem">
-      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
-        ANN vs Voting vs Stacking on the same Exp3-SE2 feature set.
-        <strong style="color:#5BAD6F">★</strong> Best raw Test R² per target.
-        <strong style="color:#4A90D9">✦</strong> Best gap-adjusted score
-        (only shown when raw winner has |gap|&gt;0.10 and gap-adj winner differs).
-      </p>
-    </div>
-    {comp_tbl}
+    {obs_legend}
+    {ann_sect}
+    {arch_sect}
   </div>
 </details>"""
 
@@ -7034,6 +7330,9 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
 
     vote_grab_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Grab)")
     vote_comp_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Composite)")
+    stack_comp_bod = _best("Phase9-Stacking", "Effluent BOD (mg/L, Composite)")
+    stack_comp_cod = _best("Phase9-Stacking", "Effluent COD (mg/L, Composite)")
+    stack_comp_tss = _best("Phase9-Stacking", "Effluent TSS (mg/L, Composite)")
 
     q1 = (
         f"The MLP must learn all structure - feature interactions, non-linearities, and "
@@ -7068,7 +7367,11 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
 
     q3 = (
         f"<strong>Voting (ElNet+RF+XGB)</strong> is recommended. "
-        f"Best results: Grab BOD {_c(vote_grab_bod, 0.30)}, Comp BOD {_c(vote_comp_bod, 0.20)}. "
+        f"It has the best average R² across the Advanced Methods panel and leads the Grab-side "
+        f"ensemble results, including Grab BOD {_c(vote_grab_bod, 0.30)}. "
+        f"Stacking is still important in the comparison: it is the better Advanced Method on "
+        f"several Composite targets in the current results, including Comp BOD {_c(stack_comp_bod, 0.20)}, "
+        f"Comp COD {_c(stack_comp_cod, 0.0)}, and Comp TSS {_c(stack_comp_tss, 0.10)}. "
         f"<br><br>"
         f"For <strong>Grab targets only</strong>, combining Voting with selective feature "
         f"engineering (Phase 10b - Selective FE) further improves performance "
@@ -7097,10 +7400,47 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
             f"</div></div>"
         )
 
+    # Q4: ANN dataset exploration findings
+    ann_e1  = df_all[df_all["exp_key"] == "ANN-Exp1"].dropna(subset=["R2_test"])
+    ann_e2s1 = df_all[df_all["exp_key"] == "ANN-Exp2-Sub1"].dropna(subset=["R2_test"])
+
+    def _ann_avg(df_):
+        return float(df_["R2_test"].mean()) if not df_.empty else float("nan")
+
+    ann_e1_avg   = _ann_avg(ann_e1)
+    ann_e2s1_avg = _ann_avg(ann_e2s1)
+    ann_e2s1_grab_bod = float(ann_e2s1[ann_e2s1["target"] == "Effluent BOD (mg/L, Grab)"]["R2_test"].max()) \
+        if not ann_e2s1[ann_e2s1["target"] == "Effluent BOD (mg/L, Grab)"].empty else float("nan")
+    ann_e2s1_grab_tss = float(ann_e2s1[ann_e2s1["target"] == "Effluent TSS (mg/L, Grab)"]["R2_test"].max()) \
+        if not ann_e2s1[ann_e2s1["target"] == "Effluent TSS (mg/L, Grab)"].empty else float("nan")
+
+    q4 = (
+        f"Tripling the training rows from ~470 (Exp3-SE2) to ~1175 (Exp1) did <em>not</em> rescue ANN "
+        f"performance. Exp1 ANN avg Test R² = {_c(ann_e1_avg, 0)} - worse than Phase 9 (Exp3-SE2) ANN "
+        f"avg R² = {_c(ann_avg, 0)}. More data cannot compensate for missing secondary process signal."
+        f"<br><br>"
+        f"<strong>Secondary features are the prerequisite for positive ANN generalisation.</strong> "
+        f"Exp2-SE1 ANN (Secondary + COMMON, 15 features, ~924 rows) is the only configuration achieving "
+        f"positive Grab R²: Grab BOD {_c(ann_e2s1_grab_bod, 0.1)}, Grab TSS {_c(ann_e2s1_grab_tss, 0.1)}. "
+        f"Adding inlet concentrations to secondary data (Exp2-SE2, 21 features) does not help Composite "
+        f"targets - Comp BOD collapses from -0.11 (Exp2-SE1) to -1.49 (Exp2-SE2) as the additional "
+        f"features increase overfitting on ~733 Composite rows."
+        f"<br><br>"
+        f"<strong>Composite targets fail universally for the ANN</strong> across all four dataset "
+        f"configurations tested (Exp1, Exp2-SE1, Exp2-SE2, Exp3-SE2). The ANN cannot capture the "
+        f"distributional shift in composite measurements from training to 2025."
+        f"<br><br>"
+        f"<strong>Conclusion:</strong> ANN failure is feature-set and temporal-structure limited, "
+        f"not data-volume limited. Even with secondary features and adequate data (~924 rows), "
+        f"the ANN substantially underperforms the Voting ensemble. The ANN is not recommended "
+        f"for any target on this dataset."
+    )
+
     cards = "".join([
         _qcard(1, "Why did the ANN fail while the Voting ensemble succeeded?", q1),
         _qcard(2, "Does Stacking improve on Voting?", q2),
         _qcard(3, "Which advanced method is recommended and for which targets?", q3),
+        _qcard(4, "Does more training data rescue the ANN? What did the dataset exploration reveal?", q4),
     ])
     return f"""
 <details class="exp-details" id="adv-findings" open>
@@ -7487,24 +7827,21 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
     findings = _adv_methods_qna(df_all)
     rationale = _adv_methods_rationale_card()
 
-    ann_e1_sub = _phase9_model_subsection(
-        df_all, "ANN-Exp1", "p9-ann-exp1",
-        "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
-    ann_e2s1_sub = _phase9_model_subsection(
-        df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
-        "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
-    ann_e2s2_sub = _phase9_model_subsection(
-        df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
-        "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 19 features)")
-    ann_ds_comparison = _ann_dataset_comparison(df_all)
-    ann_ds_callout = _ann_dataset_exploration_callout()
-
     has_ann_extra = any(
         k in df_all["exp_key"].values
         for k in ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"]
     )
     ann_exploration_block = ""
     if has_ann_extra:
+        ann_e1_sub = _phase9_model_subsection(
+            df_all, "ANN-Exp1", "p9-ann-exp1",
+            "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
+        ann_e2s1_sub = _phase9_model_subsection(
+            df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
+            "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
+        ann_e2s2_sub = _phase9_model_subsection(
+            df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
+            "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 21 features)")
         ann_exploration_block = f"""
   <h3 class="section-title" id="p9-ann-exploration"
       style="font-size:1.0rem;margin:1.5rem 0 0.4rem;padding-left:0">
@@ -7515,20 +7852,7 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
   </p>
   {ann_e1_sub}
   {ann_e2s1_sub}
-  {ann_e2s2_sub}
-  {ann_ds_comparison}
-  {ann_ds_callout}
-<details class="exp-details" id="adv-nn-comparison">
-  <summary><span class="fold-icon">▶</span> NN Comparisons  -  ANN Across Datasets</summary>
-  <div class="exp-body">
-    <div class="obs-card" style="margin-bottom:0.6rem">
-      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
-        Same MLP architecture on four dataset configurations: more data, richer features,
-        combined. A positive R² requires secondary process features at adequate sample size.
-      </p>
-    </div>
-  </div>
-</details>"""
+  {ann_e2s2_sub}"""
 
     return f"""
 <section id="advanced-methods">
@@ -7882,7 +8206,6 @@ def _sidebar() -> str:
           <a class="nav-item nav-sub nav-subsub" href="#p9-ann">&#8627; ANN (Exp3-SE2)</a>
           <a class="nav-item nav-sub nav-subsub" href="#p9-ann-diagnosis">&#8627; ANN Post-Mortem</a>
           <a class="nav-item nav-sub nav-subsub" href="#p9-ann-exploration">&#8627; ANN Exploration</a>
-          <a class="nav-item nav-sub nav-subsub" href="#adv-nn-comparison">&#8627; NN Comparisons</a>
         </div>
       </div>
       <div class="nav-subgroup">
