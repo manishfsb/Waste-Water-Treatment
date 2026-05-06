@@ -7454,19 +7454,19 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
     keys   = ["Phase9-Voting", "Phase10-FE", "Phase10b-FE"]
     labels = {
         "Phase9-Voting": (
-            "P9 Baseline"
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>Voting (Exp3-SE2)</span>"
+            "P9 Baseline<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Voting · R² · RMSE · Gap</span>"
         ),
         "Phase10-FE": (
-            "SE1 - Full FE"
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>All targets</span>"
+            "SE1<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Full FE · R² · RMSE · Gap</span>"
         ),
         "Phase10b-FE": (
-            "SE2 - Selective FE"
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>Grab FE / Comp base</span>"
+            "SE2<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Selective FE · R² · RMSE · Gap</span>"
         ),
     }
     avail = [k for k in keys if k in df_all["exp_key"].values]
@@ -7474,59 +7474,232 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
         return ""
 
     models_show = ["Voting", "Ridge", "ElNet", "RF"]
-    rows_html = []
+    MEANINGFUL = 0.01
+    transitions = [
+        ("Phase9-Voting", "Phase10-FE"),
+        ("Phase9-Voting", "Phase10b-FE"),
+        ("Phase10-FE", "Phase10b-FE"),
+    ]
+    trans_deltas = {t: [] for t in transitions}
+    trans_gaj = {t: [] for t in transitions}
+
+    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
+    def _get(key, model, tgt, col="R2_test"):
+        sub = df_all[
+            (df_all["exp_key"] == key) &
+            (df_all["target"] == tgt) &
+            (df_all["model"] == model)
+        ]
+        if sub.empty or col not in sub.columns:
+            return None
+        v = sub[col].iloc[0]
+        return None if (v is None or v != v) else float(v)
+
+    def _gaj(r2, gap):
+        if r2 is None:
+            return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _model_for_key(key, model):
+        return model
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999999'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:
+            col = "#5BAD6F"; fw = "bold"
+        elif is_gaj:
+            col = "#4A90D9"; fw = "bold"
+        else:
+            col = "#1a1a1a"; fw = "normal"
+        rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else " - "
+        gap_val = gap if (gap is not None and gap == gap) else None
+        gap_str = f"{gap_val:+.3f}" if gap_val is not None else " - "
+        gap_col = ("#E15252" if gap_val is not None and gap_val > 0.10
+                   else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                   else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
+                     f"RMSE {rmse_str} · <span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{marker_html}{secondary}</td>")
+
+    tbody = ""
     for tgt in TARGETS_ORDERED:
         tgt_short = TARGET_SHORT.get(tgt, tgt)
-        rows_html.append(
-            f'<tr><td colspan="{len(avail) * 2 + 1}" style="background:var(--card-bg);'
-            f'font-weight:600;padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        tbody += (
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='{len(avail) + 1}' style='padding:6px 10px;font-size:0.75rem;"
+            f"font-weight:700;color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{tgt_short}</td></tr>"
         )
-        for model in models_show:
-            cells = f'<td style="padding-left:20px;color:var(--text-muted)">{model}</td>'
-            for key in avail:
-                sub = df_all[
-                    (df_all["exp_key"] == key) &
-                    (df_all["target"] == tgt) &
-                    (df_all["model"] == model)
-                ]
-                if sub.empty or sub["R2_test"].isna().all():
-                    cells += ('<td style="color:var(--text-muted)"> - </td>'
-                              '<td style="color:var(--text-muted)"> - </td>')
-                    continue
-                r2  = float(sub["R2_test"].iloc[0])
-                gap = float(sub["R2_gap"].iloc[0]) if not pd.isna(sub["R2_gap"].iloc[0]) else float("nan")
-                r2_col  = "#2ecc71" if r2 > 0.30 else "#e74c3c" if r2 < 0 else "var(--text-primary)"
-                gap_col = "#e74c3c" if gap > 0.15 else "var(--text-muted)"
-                gap_str = f"{gap:+.3f}" if not np.isnan(gap) else "-"
-                cells += (f'<td style="color:{r2_col};font-weight:500">{r2:+.3f}</td>'
-                          f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
-            rows_html.append(f"<tr>{cells}</tr>")
 
-    col_headers = "".join(
-        f'<th colspan="2" style="text-align:center">{labels[k]}</th>' for k in avail
-    )
-    sub_headers = "".join('<th>R² Test</th><th>Gap</th>' for _ in avail)
-    thead = (
-        f'<thead><tr><th>Model</th>{col_headers}</tr>'
-        f'<tr style="font-size:0.82em"><th></th>{sub_headers}</tr></thead>'
-    )
+        all_raw = {}
+        all_gap = {}
+        all_gaj = {}
+        for model in models_show:
+            for key in avail:
+                key_model = _model_for_key(key, model)
+                r2 = _get(key, key_model, tgt)
+                gap = _get(key, key_model, tgt, "R2_gap")
+                score = _gaj(r2, gap)
+                if r2 is not None:
+                    all_raw[(key, model)] = r2
+                    all_gap[(key, model)] = gap
+                if score is not None:
+                    all_gaj[(key, model)] = score
+
+        best_raw = max(all_raw.values()) if all_raw else None
+        best_gaj = max(all_gaj.values()) if all_gaj else None
+        raw_win_gap = None
+        if best_raw is not None:
+            for k_, v_ in all_raw.items():
+                if abs(v_ - best_raw) < 1e-9:
+                    raw_win_gap = all_gap.get(k_)
+                    break
+        show_gaj = False
+        if (best_gaj is not None and best_raw is not None
+                and raw_win_gap is not None and raw_win_gap > 0.10):
+            raw_win_gaj = _gaj(best_raw, raw_win_gap)
+            if raw_win_gaj is None or abs(best_gaj - raw_win_gaj) > 1e-9:
+                show_gaj = True
+
+        def _is_raw(v):
+            return best_raw is not None and v is not None and abs(v - best_raw) < 1e-9
+
+        def _is_gaj(v):
+            return show_gaj and best_gaj is not None and v is not None and abs(v - best_gaj) < 1e-9
+
+        for model in models_show:
+            row_bg = "#ffffff" if models_show.index(model) % 2 == 0 else "#f7f7f7"
+            cells = f"<td style='{_TD}'><strong>{model}</strong></td>"
+            values = {}
+            for key in avail:
+                key_model = _model_for_key(key, model)
+                r2 = _get(key, key_model, tgt)
+                rmse = _get(key, key_model, tgt, "RMSE_test")
+                gap = _get(key, key_model, tgt, "R2_gap")
+                score = _gaj(r2, gap)
+                values[key] = (r2, score)
+                cells += _val_td(r2, rmse, gap, _is_raw(r2), _is_gaj(score))
+            tbody += f"<tr style='background:{row_bg}'>{cells}</tr>"
+
+            for trans in transitions:
+                from_key, to_key = trans
+                if from_key not in avail or to_key not in avail:
+                    continue
+                from_v, from_s = values.get(from_key, (None, None))
+                to_v, to_s = values.get(to_key, (None, None))
+                if from_v is not None and to_v is not None:
+                    trans_deltas[trans].append(to_v - from_v)
+                if from_s is not None and to_s is not None:
+                    trans_gaj[trans].append(to_s - from_s)
+
+    def _stats_row(trans, from_lbl, to_lbl):
+        deltas = trans_deltas[trans]
+        gaj_d = trans_gaj[trans]
+        if not deltas:
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} &rarr; {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'> - </td></tr>")
+        arr = np.array(deltas)
+        n = len(arr)
+        net = float(arr.mean())
+        wins = arr[arr > MEANINGFUL]
+        losses = arr[arr < -MEANINGFUL]
+        ties = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        win_mean = float(wins.mean()) if len(wins) else None
+        loss_mean = float(losses.mean()) if len(losses) else None
+        net_col = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
+        verdict = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
+        win_str = f"{len(wins)}/{n} (avg {win_mean:+.3f})" if win_mean is not None else f"{len(wins)}/{n}"
+        loss_str = f"{len(losses)}/{n} (avg {loss_mean:+.3f})" if loss_mean is not None else f"{len(losses)}/{n}"
+        if gaj_d:
+            gaj_net = float(np.array(gaj_d).mean())
+            diff = gaj_net - net
+            gaj_col = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "#888888")
+            diff_col = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "#888888"
+            interp = ("Raw gains partially inflated by overfitting" if diff < -0.02
+                      else "Raw gains understated - overfitting decreased" if diff > 0.02
+                      else "Overfitting largely unchanged")
+            gaj_str = f"{gaj_net:+.4f}"
+            diff_str = f"{diff:+.4f}"
+        else:
+            gaj_col = diff_col = "#888888"
+            gaj_str = diff_str = " - "
+            interp = " - "
+        return (
+            f"<tr>"
+            f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} &rarr; {to_lbl}</strong></td>"
+            f"<td style='{_STD};text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
+            f"<td style='{_STD};text-align:center;color:#5BAD6F'>{win_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#E15252'>{loss_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+            f"<td style='{_STD};text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='{_STD};text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td style='{_STD}'><strong>{verdict}</strong><br>"
+            f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span></td>"
+            f"</tr>"
+        )
+
+    col_headers = "".join(f"<th style='{_THC}'>{labels[k]}</th>" for k in avail)
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:760px'>
+  <thead>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:70px'>Model</th>
+      {col_headers}
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    stats_block = f"""
+<div style='margin-top:1.4rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; -{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| &lt;= {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²-0.5·max(0,|gap|-0.10)</span></th>
+        <th style='{_THC}'>Gap-Adj - Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+        <th style='{_TH}'>Verdict / Interpretation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {_stats_row(("Phase9-Voting", "Phase10-FE"), "P9 Baseline", "SE1 Full FE")}
+      {_stats_row(("Phase9-Voting", "Phase10b-FE"), "P9 Baseline", "SE2 Selective FE")}
+      {_stats_row(("Phase10-FE", "Phase10b-FE"), "SE1 Full FE", "SE2 Selective FE")}
+    </tbody>
+  </table>
+  </div>
+</div>"""
+
     return f"""
 <details class="exp-details" id="fe-comparison">
   <summary><span class="fold-icon">▶</span> Comparisons</summary>
   <div class="exp-body">
-    <div class="obs-card" style="margin-bottom:1rem">
-      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
-        Phase 9 Voting baseline vs SE1 Full FE (all targets) vs SE2 Selective FE (Grab only).
-        <span style="color:#2ecc71">Green = R² &gt; 0.30</span>,
-        <span style="color:#e74c3c">Red = R² &lt; 0 or Gap &gt; 0.15</span>.
+    <div class="obs-card" style="border-left:4px solid #E67E22">
+      <p class="meta">
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
+        <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
+        Phase 9 Voting is included as the baseline; SE1 applies FE to all targets; SE2 applies FE to Grab targets only.
       </p>
     </div>
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:0.87em">
-      {thead}
-      <tbody>{"".join(rows_html)}</tbody>
-    </table>
-    </div>
+    {main_table}
+    {stats_block}
   </div>
 </details>"""
 

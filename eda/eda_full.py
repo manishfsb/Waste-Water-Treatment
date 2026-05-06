@@ -12,16 +12,18 @@ Reads raw_data/All_Years_Full.xlsx (60 columns, ~1918 rows) and generates:
   7.  stage_removal           - BOD/COD/TSS concentrations at each treatment stage
   8.  do_vs_effluent          - aeration DO threshold vs effluent BOD / COD
   9.  svi_mlss_vs_tss         - SVI / MLSS vs effluent TSS scatter
-  10. linearity_residuals     - Ridge residuals: linearity diagnostic per target
-  11. operational_overview    - standalone report: annual/monthly distributions,
+  10. skewness_audit          - train-only skewness table + raw/log histograms
+  11. linearity_residuals     - Ridge residuals: linearity diagnostic per target
+  12. operational_overview    - standalone report: annual/monthly distributions,
                                 removal efficiency, compliance, power vs flow
 
 Outputs: eda/plots/               (PNG files)
-         eda/eda_full_report.html  (main EDA report — sections 1-11)
+         eda/eda_full_report.html  (main EDA report - sections 1-12)
          eda/operational_overview.html  (standalone operational dashboard)
 """
 
 import base64
+import html
 import json as _json
 import os
 import sys as _sys
@@ -216,6 +218,115 @@ def pearson_spearman(df, features, target):
         sr, _ = stats.spearmanr(sub[f], sub[target])
         rows.append({"feature": f, "pearson": pr, "spearman": sr})
     return pd.DataFrame(rows).set_index("feature")
+
+
+PHASE10_LOG_CANDIDATES = {
+    "Inlet BOD (mg/L, Grab)",
+    "Inlet COD (mg/L, Grab)",
+    "Inlet TSS (mg/L, Grab)",
+    "Inlet BOD (mg/L, Composite)",
+    "Inlet COD (mg/L, Composite)",
+    "Inlet TSS (mg/L, Composite)",
+    "Sec Clarifier BOD (mg/L)",
+    "Sec Clarifier COD (mg/L)",
+    "Sec Clarifier TSS (mg/L)",
+    "Sec Sed BOD (mg/L)",
+    "Sec Sed COD (mg/L)",
+    "Sec Sed TSS (mg/L)",
+    "Inlet Total Coliform (CFU/100ml, Grab)",
+    "Primary Sludge Totalizer (m3)",
+}
+
+
+def _skewness_table(df):
+    """Compute train-only skewness for numeric process and target columns."""
+    train = df[df["Date"].dt.year <= 2024].copy()
+    skip = {"month", "day_of_week", "year"}
+    rows = []
+    for col in train.select_dtypes(include="number").columns:
+        if col in skip:
+            continue
+        vals = train[col].dropna()
+        n = len(vals)
+        if n < 20:
+            continue
+        raw_skew = float(vals.skew())
+        can_log = bool((vals >= 0).all())
+        log_skew = float(np.log1p(vals).skew()) if can_log else np.nan
+        rows.append({
+            "column": col,
+            "short": s(col),
+            "n_train": n,
+            "missing_pct": (1 - n / len(train)) * 100,
+            "skew_raw": raw_skew,
+            "skew_log1p": log_skew,
+            "abs_skew": abs(raw_skew),
+            "p50": float(vals.median()),
+            "p95": float(vals.quantile(0.95)),
+            "max": float(vals.max()),
+            "phase10_log": col in PHASE10_LOG_CANDIDATES,
+            "can_log": can_log,
+        })
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    return out.sort_values(["abs_skew", "missing_pct"], ascending=[False, True])
+
+
+def plot_skewness_audit(df):
+    """Histogram audit for the most skewed Phase 10 log-transform candidates."""
+    print("10. Skewness audit...")
+    skew_df = _skewness_table(df)
+    if skew_df.empty:
+        return None, skew_df
+
+    plot_rows = skew_df[
+        (skew_df["phase10_log"]) &
+        (skew_df["can_log"]) &
+        (skew_df["skew_raw"] > 1.0)
+    ].head(12)
+    if plot_rows.empty:
+        return None, skew_df
+
+    train = df[df["Date"].dt.year <= 2024].copy()
+    n = len(plot_rows)
+    ncols = 3
+    nrows = int(np.ceil(n / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(17, max(4.2, nrows * 3.6)))
+    axes = np.array(axes).reshape(-1)
+
+    for ax, (_, row) in zip(axes, plot_rows.iterrows()):
+        col = row["column"]
+        vals = train[col].dropna()
+        log_vals = np.log1p(vals)
+        ax.hist(vals, bins=30, color="#2171B5", alpha=0.55, label="raw")
+        ax2 = ax.twiny()
+        ax2.hist(log_vals, bins=30, color="#FD8D3C", alpha=0.35, label="log1p")
+        ax.set_title(
+            f"{s(col)}\nraw skew={row['skew_raw']:.2f}; log1p skew={row['skew_log1p']:.2f}",
+            fontsize=9,
+        )
+        ax.tick_params(axis="x", labelsize=7)
+        ax.tick_params(axis="y", labelsize=7)
+        ax2.tick_params(axis="x", labelsize=7, colors="#A65212")
+        ax.set_ylabel("count", fontsize=8)
+
+    for ax in axes[n:]:
+        ax.axis("off")
+    fig.suptitle(
+        "Skewness audit - raw vs log1p distributions for strongest FE candidates",
+        fontsize=13,
+        fontweight="bold",
+    )
+    fig.text(
+        0.5, 0.01,
+        "Training rows only (Date year <= 2024). Blue axis = raw value; orange top axis = log1p(value).",
+        ha="center",
+        fontsize=9,
+        color="#555",
+    )
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    return save(fig, "10a_skewness_audit"), skew_df
 
 
 # ── Chart 1: Missing data - all columns ───────────────────────────────────────
@@ -2205,6 +2316,114 @@ def _obs(html):
     return f'<div class="obs-card"><h4>Observations</h4>{html}</div>\n'
 
 
+def build_skewness_audit_html(skew_data):
+    """Build the EDA skewness audit section."""
+    path, skew_df = skew_data if skew_data else (None, pd.DataFrame())
+    if skew_df is None or skew_df.empty:
+        table_html = "<p>Skewness audit unavailable - no numeric training columns found.</p>"
+        top_notes = ""
+    else:
+        display = skew_df.copy().head(32)
+
+        def _classify(v):
+            av = abs(v)
+            if av < 0.5:
+                return "roughly symmetric"
+            if av < 1.0:
+                return "moderate"
+            if av < 2.0:
+                return "strong"
+            return "very strong"
+
+        def _num(v, d=2):
+            if v is None or (isinstance(v, float) and np.isnan(v)):
+                return "-"
+            return f"{v:.{d}f}"
+
+        rows = ""
+        for row_i, (_, r) in enumerate(display.iterrows()):
+            bg = "#ffffff" if row_i % 2 == 0 else "#f7f7f7"
+            is_phase10 = bool(r["phase10_log"])
+            log_tag = "yes" if is_phase10 else "no"
+            feature_bg = "#eef8f1" if is_phase10 else bg
+            phase_bg = "#d8f0de" if is_phase10 else "#eeeeee"
+            phase_col = "#155724" if is_phase10 else "#555555"
+            skew_col = "#721c24" if abs(r["skew_raw"]) >= 2 else "#7d5400" if abs(r["skew_raw"]) >= 1 else "#1a1a1a"
+            delta = abs(r["skew_raw"]) - abs(r["skew_log1p"]) if r["can_log"] else np.nan
+            delta_col = "#155724" if delta > 0.5 else "#7d5400" if delta > 0 else "#721c24"
+            rows += (
+                f"<tr style='background:{bg}'>"
+                f"<td style='padding:7px 8px;white-space:nowrap;background:{feature_bg};font-weight:{'600' if is_phase10 else '400'}'>{html.escape(str(r['short']))}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{int(r['n_train'])}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{_num(r['missing_pct'], 1)}%</td>"
+                f"<td style='padding:7px 9px;text-align:right;color:{skew_col};font-weight:600'>{_num(r['skew_raw'])}</td>"
+                f"<td style='padding:7px 9px;white-space:nowrap'>{_classify(r['skew_raw'])}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{_num(r['skew_log1p'])}</td>"
+                f"<td style='padding:7px 8px;text-align:right;color:{delta_col};font-weight:600'>{_num(delta)}</td>"
+                f"<td style='padding:7px 8px;text-align:center;background:{phase_bg};color:{phase_col};font-weight:{'700' if is_phase10 else '500'}'>{log_tag}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{_num(r['p50'])}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{_num(r['p95'])}</td>"
+                f"<td style='padding:7px 8px;text-align:right'>{_num(r['max'])}</td>"
+                f"</tr>"
+            )
+
+        top_phase10 = skew_df[skew_df["phase10_log"]].sort_values("abs_skew", ascending=False).head(6)
+        top_names = ", ".join(html.escape(str(x)) for x in top_phase10["short"].tolist())
+        top_notes = (
+            f"<p><strong>Phase 10 overlap:</strong> the most skewed engineered-log candidates include "
+            f"{top_names}. This confirms that the log1p choices were directionally reasonable, "
+            f"but this audit should be cited as the formal evidence.</p>"
+        )
+        table_html = f"""
+<div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;margin-top:12px'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;color:#1a1a1a;font-size:0.78rem;line-height:1.22'>
+  <thead>
+    <tr style='background:#eeeeee;border-bottom:2px solid #cccccc'>
+      <th style='padding:8px;text-align:left;white-space:nowrap'>Feature</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>n train</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>missing</th>
+      <th style='padding:8px 9px;text-align:right;white-space:nowrap'>raw skew</th>
+      <th style='padding:8px 9px;text-align:left;white-space:nowrap'>class</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>log1p skew</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>|skew| reduction</th>
+      <th style='padding:8px;text-align:center;white-space:nowrap'>Phase 10 log</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>median</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>P95</th>
+      <th style='padding:8px;text-align:right;white-space:nowrap'>max</th>
+    </tr>
+  </thead>
+  <tbody>{rows}</tbody>
+</table>
+</div>"""
+
+    return f"""<div class="card" id="s12">
+<h2><span class="badge badge-decision">Feature engineering</span>
+10. Skewness audit - evidence for log transforms</h2>
+<div class="tldr"><strong class="tldr-label">TL;DR</strong><ul>
+<li>Skewness is computed numerically on non-null training values only, using 2021-2024 rows.</li>
+<li>The histogram grid is visual evidence; the table is the actual skewness calculation.</li>
+<li>Positive skew means a long right tail. log1p is considered only for non-negative concentration/load columns.</li>
+</ul></div>
+<p>This audit answers whether Phase 10's log-transform choices were supported by the EDA.
+For each numeric column, we drop missing training values and compute
+<code>Series.skew()</code>. That is the standardized third-moment skewness measure used by pandas.
+The 2025 holdout is excluded so feature-engineering choices are not influenced by test data.</p>
+{top_notes}
+{img_tag(path)}
+{table_html}
+<div class="obs-card">
+  <h4>How to interpret this audit</h4>
+  <ul>
+    <li><strong>|skew| &lt; 0.5</strong>: roughly symmetric; a log transform is usually unnecessary.</li>
+    <li><strong>0.5 to 1.0</strong>: moderate skew; transform only if there is a modeling reason.</li>
+    <li><strong>&gt; 1.0</strong>: strong skew; log1p is a reasonable candidate for non-negative columns.</li>
+    <li><strong>&gt; 2.0</strong>: very strong skew; raw-scale models can be dominated by a small number of high values.</li>
+  </ul>
+</div>
+</div>
+"""
+
+
 # ── Section 11: Feature suggestions for Experiment 3 ──────────────────────────
 
 def build_suggestions(df):
@@ -2671,7 +2890,7 @@ four questions:</p>
 </p>"""
 
     return f"""<div class="card" id="s11">
-<h2>10. Feature Suggestions &mdash; Experiment&nbsp;3 (Grab Effluents)</h2>
+<h2>11. Feature Suggestions &mdash; Experiment&nbsp;3 (Grab Effluents)</h2>
 {intro}
 {target_blocks}
 </div>
@@ -2822,7 +3041,7 @@ def build_html(data):
     data keys:
       residuals, pearson (dict grab/comp), mi (dict grab/comp/mi_data),
       scatter (list), aeration_ts, cross_heatmap, stage_removal,
-      do_effluent, svi_tss, missing_all, obs (dict s1…s10)
+      do_effluent, svi_tss, skewness, missing_all, obs (dict s1...s10)
     """
     obs = data.get("obs", {})
     title = "EDA Full Report - All_Years_Full.xlsx"
@@ -3058,8 +3277,9 @@ def build_html(data):
     <li class="nav-s"><a href="#s7">7. Aeration Time Series</a></li>
     <li class="nav-s"><a href="#s9">8. DO vs Effluent</a></li>
     <li class="nav-s"><a href="#s10">9. Settleability vs TSS</a></li>
-    <li class="nav-s"><a href="#s11">10. Feature Suggestions - Exp 3</a></li>
-    <li class="nav-s"><a class="nav-toggle" href="#s1">11. Ridge Residuals ⚠</a>
+    <li class="nav-s"><a href="#s12">10. Skewness Audit</a></li>
+    <li class="nav-s"><a href="#s11">11. Feature Suggestions - Exp 3</a></li>
+    <li class="nav-s"><a class="nav-toggle" href="#s1">12. Ridge Residuals ⚠</a>
       <ul class="nav-children">
         {_nav_group("s1", "s1-grab", "Grab Effluent", GRAB_TARGETS)}
         {_nav_group("s1", "s1-comp", "Composite Effluent", COMP_TARGETS)}
@@ -3102,10 +3322,10 @@ The <strong><a href="operational_overview.html">Operational Overview</a></strong
 (plant performance dashboards) is a separate standalone report.</p>
 """]
 
-    # ── Section 11 (display): Ridge residuals ─────────────────────────────────
+    # ── Section 12 (display): Ridge residuals ─────────────────────────────────
     parts.append("""<div class="card" id="s1">
 <h2><span class="badge badge-decision">Model selection</span>
-11. Ridge residuals — linearity diagnostic (appendix)</h2>
+12. Ridge residuals - linearity diagnostic (appendix)</h2>
 <div class="disclaimer"><strong class="disc-label">⚠ Known limitation</strong><ul>
 <li>This section uses <code>feature_cols(df)</code> → <code>dropna()</code>, which retains only ~9% of all rows. Residual patterns reflect a heavily filtered slice of the data and should be treated as indicative, not definitive.</li>
 <li>The signal from this section has been superseded by actual model results (Experiments 1–4, Phases 9–11) and permutation importance analysis. See the Unified Report for authoritative findings.</li>
@@ -3389,6 +3609,7 @@ candidates for the feature selection pool.</p>
 </div>
 """)
 
+    parts.append(build_skewness_audit_html(data.get("skewness")))
     parts.append(data.get("suggestions", ""))
 
     parts.append("""
@@ -3442,7 +3663,7 @@ candidates for the feature selection pool.</p>
 
   // ── section display order (reorder cards without touching Python source) ───
   (function() {
-    var order = ['s6','s4','s2','s3','s5','s8','s7','s9','s10','s11','s1'];
+    var order = ['s6','s4','s2','s3','s5','s8','s7','s9','s10','s12','s11','s1'];
     var mc = document.getElementById('main-content');
     var cards = {};
     mc.querySelectorAll('div.card').forEach(function(el) { cards[el.id] = el; });
@@ -3495,6 +3716,7 @@ def main():
     stage_removal = plot_stage_removal(df)
     do_effluent   = plot_do_vs_effluent(df)
     svi_tss       = plot_svi_mlss_vs_tss(df)
+    skewness      = plot_skewness_audit(df)
     residuals     = plot_linearity_residuals(df)
     ridge_coefs   = plot_ridge_coefficients(df)
     op_year       = plot_op_boxplot_by_year(df)
@@ -3525,6 +3747,7 @@ def main():
         "stage_removal":stage_removal,
         "do_effluent":  do_effluent,
         "svi_tss":      svi_tss,
+        "skewness":     skewness,
         "missing_all":  missing_all,
         "obs":          section_obs,
         "suggestions":  suggestions_html,
