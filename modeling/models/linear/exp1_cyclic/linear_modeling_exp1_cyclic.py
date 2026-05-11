@@ -71,7 +71,7 @@ EXP1_COMP = COMP_INLET + COMMON_CYCLIC   # 11 features
 
 # ── Dataset registry ───────────────────────────────────────────────────────────
 def _cyc(name):
-    return os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2_cyclic", f"{name}.xlsx")
+    return os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp2", f"{name}.xlsx")
 
 
 DATASETS = [

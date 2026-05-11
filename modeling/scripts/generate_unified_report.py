@@ -73,7 +73,8 @@ USEFUL_THRESH = 0.03
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
     "Exp1-Sub1": "E1-SE1",
-    "Exp1": "Exp1",            "Exp1-FS": "Exp1-FS",  "Exp1-Cyclic": "E1-Cyc",
+    "Exp1-Cyclic": "E1-SE2",
+    "Exp1-S3": "E1-SE3",       "Exp1-S3-FS": "E1-SE3-FS",
     "Exp2-Sub1": "E2-SE1-Comb", "Exp2-Sub1-FS": "E2-SE1-FS",
     "Exp2-Sub1-Clr": "E2-SE1-Clr",
     "Exp2-Sub1-Sed": "E2-SE1-Sed",
@@ -97,9 +98,9 @@ EXP_CHART_LABELS = {
 # Longer descriptive labels used only in the "Source" column of best-model tables.
 EXP_SOURCE_LABELS = {
     "Exp1-Sub1":      "Exp1 SE1  -  Inlet only",
-    "Exp1":           "Exp1 SE2  -  Inlet+COMMON",
-    "Exp1-FS":        "Exp1 SE3-FS",
-    "Exp1-Cyclic":    "Exp1 SE2 (cyclic enc.)",
+    "Exp1-Cyclic":    "Exp1 SE2  -  Inlet + COMMON (Cyclic)",
+    "Exp1-S3":        "Exp1 SE3  -  All Grab Inlet + COMMON_CYCLIC",
+    "Exp1-S3-FS":     "Exp1 SE3-FS  -  All Grab Inlet + COMMON_CYCLIC (FS)",
     "Exp2-Sub1-Clr":  "Exp2 SE1  -  Clarifier",
     "Exp2-Sub1-Sed":  "Exp2 SE1  -  Sedimentation",
     "Exp2-Sub1":      "Exp2 SE1  -  Combined",
@@ -158,8 +159,7 @@ _DS_EXP_MAP = [
     ("experiment2/sub_exp1/feature_selected_datasets", "Exp2-Sub1-FS"),
     ("experiment2/sub_exp1",                           "Exp2-Sub1"),
     ("experiment1/sub_exp2/feature_selected_datasets", "Exp1-FS"),
-    ("experiment1/sub_exp2_cyclic",                    "Exp1-Cyclic"),
-    ("experiment1/sub_exp2",                           "Exp1"),
+    ("experiment1/sub_exp2",                           "Exp1-Cyclic"),
     ("experiment1/sub_exp1",                           "Exp1-Sub1"),
 ]
 
@@ -190,43 +190,49 @@ FEATURE_DESCRIPTIONS = {
                      "quantifies how much process context (Flow, Power, calendar) adds "
                      "when compared against Exp1 (Sub 2).",
     },
-    "Exp1": {
-        "label": "Inlet + COMMON (9 features)",
-        "features": (
-            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
-            "<li><strong>Inlet (4):</strong> pH, BOD (mg/L), COD (mg/L), TSS (mg/L) - Grab or Composite.</li>"
-            "<li><strong>COMMON (5):</strong> Flow (MLD), Power Total (KW), month, day_of_week, year.</li>"
-            "</ul>"
-        ),
-        "rationale": "Baseline: can inlet water quality alone predict effluent quality? "
-                     "Tests the simplest, most operationally available feature set - "
-                     "no secondary treatment data required.",
-    },
     "Exp1-Cyclic": {
-        "label": "Inlet + COMMON with Cyclic Calendar Encoding (11 features)",
+        "label": "Inlet + COMMON_CYCLIC (11 features)  -  standard SE2",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
-            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
-            "<li><strong>Changed vs SE2:</strong> raw month/day_of_week replaced by sin/cos projections to remove false discontinuity at Dec-Jan boundary.</li>"
+            "<li><strong>COMMON_CYCLIC (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
+            "<li><strong>Calendar encoding:</strong> raw month/day_of_week replaced by sin/cos projections (cyclic standard from SE2 onwards).</li>"
             "</ul>"
         ),
-        "rationale": "Tests whether replacing raw integer month (1 - 12) and day_of_week (0 - 6) "
-                     "with sin/cos projections improves generalisation. Raw integers impose a "
-                     "false December→January discontinuity on linear models; cyclic encoding "
-                     "preserves the wrap-around topology of both features.",
+        "rationale": "Project-standard inlet feature set with cyclic calendar encoding. "
+                     "Establishes the inlet-only ceiling before adding supplementary inlet "
+                     "measurements in SE3.",
     },
-    "Exp1-FS": {
-        "label": "Inlet + COMMON - Feature Selected (5-8 features)",
+    "Exp1-S3": {
+        "label": "All Grab Inlet + COMMON_CYCLIC (15 features)  -  extended inlet set",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
-            "<li><strong>Starting set:</strong> Exp1 SE2 features (9: Inlet + COMMON).</li>"
-            "<li><strong>Feature selection:</strong> OLS uses LassoCV; trees use OOF permutation importance (threshold 5%).</li>"
-            "<li><strong>Remaining:</strong> 5-8 features per model/target.</li>"
+            "<li><strong>Core Inlet (4):</strong> pH, BOD, COD, TSS (Grab).</li>"
+            "<li><strong>Extended Inlet (5):</strong> TKN/NH3-N, Oil &amp; Grease, PO4/TP, "
+            "Total Coliform, Fecal Coliform (Grab only - no composite equivalents).</li>"
+            "<li><strong>COMMON_CYCLIC (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
+            "<li><strong>Grab targets only:</strong> 4 datasets. ~228 train rows "
+            "(joint missingness of the 5 supplementary inlet columns).</li>"
             "</ul>"
         ),
-        "rationale": "Checks whether pruning the 9-feature set to its most informative "
-                     "subset improves generalisation on the 2025 holdout.",
+        "rationale": "Tests whether the full set of available inlet measurements - "
+                     "including microbiological and nutrient indicators - adds predictive "
+                     "value beyond the 4 core inlet parameters. The ~228 train-row constraint "
+                     "is an inherent data limitation, not a design choice.",
+    },
+    "Exp1-S3-FS": {
+        "label": "All Grab Inlet + COMMON_CYCLIC - Feature Selected (2-15 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> SE3 features (15: 9 inlet + 7 COMMON_CYCLIC).</li>"
+            "<li><strong>OLS:</strong> LassoCV pre-screen. <strong>Ridge:</strong> full set (L2). "
+            "<strong>ElNet:</strong> full set (L1+L2 selects internally).</li>"
+            "<li><strong>Trees:</strong> 3-phase OOF permutation importance (threshold 5%).</li>"
+            "<li><strong>Remaining:</strong> 2-15 features per model/target.</li>"
+            "</ul>"
+        ),
+        "rationale": "Checks whether removing noisy or redundant supplementary inlet features "
+                     "from the SE3 set recovers generalisation on the 2025 holdout.",
     },
     "Exp2-Sub1": {
         "label": "Combined Secondary + COMMON (15 features)",
@@ -649,17 +655,16 @@ FEATURE_DESCRIPTIONS = {
 
 EXP_INTRO = {
     "Exp1": (
-        "Experiment 1 investigates inlet-feature prediction across two feature-set scopes. "
-        "<strong>SE1</strong> uses only the 4 inlet concentration columns  -  the "
-        "absolute floor. <strong>SE2</strong> adds Flow, Power, and cyclic calendar "
-        "features (month/dow encoded as sin/cos projections), raising the count to 11. "
-        "All datasets use cyclic calendar encoding as the standard going forward. "
-        "Feature selection is <strong>model-specific</strong> and built into each training run: "
-        "OLS uses LassoCV pre-screening, Ridge regularises over the full set (no pruning), "
-        "ElNet applies L1 selection internally, and tree models (RF, GB, XGB) use OOF "
-        "permutation importance to retain features above a 5% relative importance threshold. "
-        "The <em>SE Comparison</em> panel at the bottom shows the full-feature vs "
-        "feature-selected breakdown per model and target with magnitude-weighted deltas."
+        "Experiment 1 investigates how far inlet-only features can predict effluent quality. "
+        "<strong>SE1</strong> uses only the 4 core inlet concentrations - the absolute floor. "
+        "<strong>SE2</strong> adds Flow, Power, and cyclic calendar features (sin/cos projections) "
+        "raising the count to 11. <strong>SE3</strong> extends to all 9 available grab inlet "
+        "measurements plus COMMON_CYCLIC (15 features), but is limited to ~228 training rows "
+        "due to joint missingness of the supplementary inlet columns (TKN, O&amp;G, PO4, "
+        "Total/Fecal Coliform). SE3 is grab targets only - no composite equivalents exist "
+        "for the supplementary inlet features. "
+        "Feature selection in SE3-FS is model-specific: OLS uses LassoCV, Ridge uses the "
+        "full set, ElNet selects via L1, and trees use OOF permutation importance (threshold 5%)."
     ),
     "Exp2": (
         "Experiment 2 expands the feature set from inlet-only to include secondary treatment data. "
@@ -794,6 +799,7 @@ EXP_INTRO = {
 def _exp_key(raw: str, is_fs: bool) -> str:
     mapping = {
         "Exp1-Sub1": "Exp1-Sub1", "Exp1": "Exp1", "Exp1-Cyclic": "Exp1-Cyclic",
+        "Exp1-S3": "Exp1-S3", "Exp1-S3-FS": "Exp1-S3-FS",
         "Exp2-Sub1": "Exp2-Sub1", "Exp2-Sub2": "Exp2-Sub2",
         "Exp2-Sub1-Clr": "Exp2-Sub1-Clr",
         "Exp2-Sub1-Sed": "Exp2-Sub1-Sed",
@@ -984,6 +990,7 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
+        ("exp1_s3", False), ("exp1_s3_fs", False),
         ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
         ("exp3_s3", False), ("exp3_s3_fs", False),
         ("exp3_s4", False), ("exp3_s4_fs", False),
@@ -1003,6 +1010,7 @@ def load_all_data() -> pd.DataFrame:
     for variant, is_fs in [
         ("baseline", False), ("feature_selected", True),
         ("exp1_s1", False), ("exp1_cyclic", False),
+        ("exp1_s3", False), ("exp1_s3_fs", False),
         ("exp3_s1", False), ("exp3_s2", False), ("exp3_s2_nofs", False),
         ("exp3_s3", False), ("exp3_s3_fs", False),
         ("exp3_s4", False), ("exp3_s4_fs", False),
@@ -1185,7 +1193,7 @@ def _badge(text, kind="default"):
 _FS_IMPORTANCE_CACHE = {}
 _LINEAR_RANKING_CACHE = {}
 FS_BASE_MAP = {
-    "Exp1-FS": "Exp1",
+    "Exp1-S3-FS": "Exp1-S3",
     "Exp2-Sub1-FS": "Exp2-Sub1",
     "Exp2-Sub2-FS": "Exp2-Sub2",
     "Exp3-S3-FS": "Exp3-S3",
@@ -2880,25 +2888,24 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
 
 
 def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
-    """Custom champion box for Experiment 1 with gap-adjusted selection and readable source labels.
+    """Custom champion box for Experiment 1 with gap-adjusted selection.
 
     Candidates per (model, target):
-      Sub1          → Exp1-SE1 R2_test / R2_gap
-      Sub2 (linear) → Exp1 R2_test_full (OLS only, unregularised)
-                       Exp1 R2_test / R2_gap (OLS LassoCV; Ridge / ElNet full=FS)
-      Sub2 (trees)  → Exp1-Cyclic R2_test_full / R2_gap_full  (pre-selection baseline)
-                       Exp1-Cyclic R2_test / R2_gap            (OOF-selected refit)
+      SE1           → Exp1-Sub1 R2_test / R2_gap
+      SE2           → Exp1-Cyclic R2_test / R2_gap
+      SE3-Full      → Exp1-S3 R2_test (grab only)
+      SE3-FS        → Exp1-S3-FS R2_test (grab only; OLS: post-LassoCV)
     Winner per target = highest gap-adj score across all candidates.
     """
-    s1  = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
-    s2  = df_all[df_all["exp_key"] == "Exp1"].copy()
-    cyc = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
+    s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
 
     if s1.empty and s2.empty:
         return ""
 
     lin_set  = {"OLS", "Ridge", "ElNet"}
-    tree_set = {"RF", "GB", "XGB"}
     models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
 
     def _g(df, model, tgt, col="R2_test"):
@@ -2915,34 +2922,20 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
         r2 = _g(s1, model, tgt); gap = _g(s1, model, tgt, "R2_gap")
         if r2 is not None:
             out.append((r2, gap, "SE1 (4 feat · inlet only)"))
-
-        if model == "OLS":
-            # Full (unregularised)
-            r2f = _g(s2, model, tgt, "R2_test_full"); gapf = _g(s2, model, tgt, "R2_gap_full")
-            if r2f is not None:
-                out.append((r2f, gapf, "SE2 · OLS (unregularised, 11 feat)"))
-            # SE3-FS (LassoCV)
-            r2s = _g(s2, model, tgt); gaps = _g(s2, model, tgt, "R2_gap")
-            if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
-                out.append((r2s, gaps, "SE3-FS · OLS (LassoCV)"))
-        elif model in lin_set:
-            # Ridge / ElNet: full = FS (L2 / L1 selects internally)
-            r2 = _g(s2, model, tgt); gap = _g(s2, model, tgt, "R2_gap")
-            lbl = ("SE2 · Ridge (L2 full)" if model == "Ridge"
-                   else "SE2 · ElNet (L1 internal)")
-            if r2 is not None:
-                out.append((r2, gap, lbl))
-        else:
-            # Trees: full baseline (pre-selection, cyclic dataset)
-            r2f  = _g(cyc, model, tgt, "R2_test_full")
-            gapf = (_g(cyc, model, tgt, "R2_gap_full")
-                    if "R2_gap_full" in cyc.columns else None)
-            if r2f is not None:
-                out.append((r2f, gapf, f"SE2 · {model} (cyclic full)"))
-            # SE3-FS trees (OOF-selected refit)
-            r2s = _g(cyc, model, tgt); gaps = _g(cyc, model, tgt, "R2_gap")
-            if r2s is not None and (r2f is None or abs(r2s - r2f) > 1e-9):
-                out.append((r2s, gaps, f"SE3-FS · {model} (OOF-sel)"))
+        # SE2
+        r2 = _g(s2, model, tgt); gap = _g(s2, model, tgt, "R2_gap")
+        if r2 is not None:
+            lbl = f"SE2 · {model} (11 feat · cyclic)"
+            out.append((r2, gap, lbl))
+        # SE3-Full (grab only)
+        r2 = _g(s3, model, tgt); gap = _g(s3, model, tgt, "R2_gap")
+        if r2 is not None:
+            out.append((r2, gap, f"SE3-Full · {model} (15 feat)"))
+        # SE3-FS (grab only)
+        r2 = _g(s3fs, model, tgt); gap = _g(s3fs, model, tgt, "R2_gap")
+        if r2 is not None:
+            lbl = f"SE3-FS · {model} ({'LassoCV' if model == 'OLS' else 'OOF-sel' if model not in lin_set else 'full-L2' if model == 'Ridge' else 'L1-int'})"
+            out.append((r2, gap, lbl))
         return out
 
     table_rows = []
@@ -3010,7 +3003,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     if not table_rows:
         return ""
 
-    df_exp1 = df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1", "Exp1-Cyclic"])]
+    df_exp1 = df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1-Cyclic", "Exp1-S3", "Exp1-S3-FS"])]
     grab_best_vals = [float(df_exp1[df_exp1["target"] == t]["R2_test"].max())
                       for t in GRAB_TARGETS
                       if not df_exp1[df_exp1["target"] == t].dropna(subset=["R2_test"]).empty]
@@ -3783,9 +3776,10 @@ def build_overview(df_all: pd.DataFrame) -> str:
 
 def _exp1_qna(df_all: pd.DataFrame) -> str:
     """Data-driven Q&A for Experiment 1  -  four key questions."""
-    s1  = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
-    s2  = df_all[df_all["exp_key"] == "Exp1"].copy()
-    cyc = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
+    s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
 
     if s1.empty or s2.empty:
         return ""
@@ -3804,20 +3798,14 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     def _gap(df, model, tgt):
         return _r2(df, model, tgt, "R2_gap")
 
-    def _full_val(model, tgt):
-        if model == "OLS":
-            return _r2(s2, model, tgt, "R2_test_full")
-        elif model in lin_set:
-            return _r2(s2, model, tgt)
-        else:
-            v = _r2(cyc, model, tgt, "R2_test_full")
-            return v if v is not None else _r2(s2, model, tgt)
+    def _s2_val(model, tgt):
+        return _r2(s2, model, tgt)
 
-    def _fs_val(model, tgt):
-        if model in lin_set:
-            return _r2(s2, model, tgt)
-        else:
-            return _r2(cyc, model, tgt)
+    def _s3_val(model, tgt):
+        return _r2(s3, model, tgt)
+
+    def _s3fs_val(model, tgt):
+        return _r2(s3fs, model, tgt)
 
     def _delta_arr_raw(from_fn, to_fn, models, targets):
         vals = []
@@ -3860,9 +3848,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         f"for those targets. This establishes the floor: inlet data is necessary but not sufficient."
     )
 
-    # ── Q2 : Context gain (Sub1 → Sub2) ─────────────────────────────────────
-    # Sub2 "Full" for linear uses the full-set OLS result and Ridge/ElNet result.
-    # For trees we compare Sub1 vs Sub2 baseline (both trained on full sets at their size).
+    # ── Q2 : Context gain (SE1 → SE2) ────────────────────────────────────────
     lin_d12       = _delta_arr(s1, s2, lin_m,  TARGETS_ORDERED)
     tree_d12      = _delta_arr(s1, s2, tree_m, TARGETS_ORDERED)
     lin_grab_d12  = _delta_arr(s1, s2, lin_m,  GRAB_TARGETS)
@@ -3909,36 +3895,22 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         f"not the actual signal in the feature set."
     )
 
-    # ── Q3 : Model-specific FS (Sub2 → Sub3-FS) ──────────────────────────────
-    fs_full_vals = [_full_val(m, t) for m in all_m for t in TARGETS_ORDERED]
-    fs_sel_vals  = [_fs_val(m,  t) for m in all_m for t in TARGETS_ORDERED]
-    fs_deltas    = [b - a for a, b in zip(fs_full_vals, fs_sel_vals)
-                   if a is not None and b is not None]
-    fs_arr = np.array(fs_deltas) if fs_deltas else np.array([])
+    # ── Q3 : SE3 FS (SE3-Full → SE3-FS, grab targets only) ───────────────────
+    lin_fs_d  = _delta_arr_raw(_s3_val, _s3fs_val, lin_m,  GRAB_TARGETS)
+    tree_fs_d = _delta_arr_raw(_s3_val, _s3fs_val, tree_m, GRAB_TARGETS)
+    grab_fs_d = _delta_arr_raw(_s3_val, _s3fs_val, all_m,  GRAB_TARGETS)
 
-    # By model family
-    lin_fs_d  = _delta_arr_raw(_full_val, _fs_val, lin_m,  TARGETS_ORDERED)
-    tree_fs_d = _delta_arr_raw(_full_val, _fs_val, tree_m, TARGETS_ORDERED)
-    grab_fs_d = _delta_arr_raw(_full_val, _fs_val, all_m,  GRAB_TARGETS)
-    comp_fs_d = _delta_arr_raw(_full_val, _fs_val, all_m,  COMP_TARGETS)
-
-    _fs_net  = float(fs_arr.mean())     if len(fs_arr)   else 0
-    _fs_wins = int((fs_arr >  0.01).sum()) if len(fs_arr) else 0
-    _fs_loss = int((fs_arr < -0.01).sum()) if len(fs_arr) else 0
+    fs_arr  = grab_fs_d
+    _fs_net  = float(fs_arr.mean())         if len(fs_arr) else 0
+    _fs_wins = int((fs_arr >  0.01).sum())  if len(fs_arr) else 0
+    _fs_loss = int((fs_arr < -0.01).sum())  if len(fs_arr) else 0
     _fs_n    = len(fs_arr)
 
-    # Gap delta (FS − Full)  -  does FS reduce overfitting?
     gap_deltas = []
     for m in all_m:
-        for t in TARGETS_ORDERED:
-            if m == "OLS":
-                gf = _r2(s2, m, t, "R2_gap_full")
-                gs = _gap(s2, m, t)
-            elif m in lin_set:
-                gf = _gap(s2, m, t); gs = gf
-            else:
-                gf = _r2(cyc, m, t, "R2_gap_full") if "R2_gap_full" in cyc.columns else None
-                gs = _gap(cyc, m, t)
+        for t in GRAB_TARGETS:
+            gf = _r2(s3,   m, t, "R2_gap")
+            gs = _r2(s3fs, m, t, "R2_gap")
             if gf is not None and gs is not None:
                 gap_deltas.append(gs - gf)
     gap_arr  = np.array(gap_deltas) if gap_deltas else np.array([])
@@ -3946,48 +3918,29 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     gap_reduced_n = int((gap_arr < -0.01).sum()) if len(gap_arr) else 0
 
     if _fs_net > 0.01:
-        _fs_verdict = f"Model-specific FS improved mean Test R² overall ({_fs_wins}/{_fs_n} cells gained)."
+        _fs_verdict = f"Model-specific FS improved mean Test R² on grab targets ({_fs_wins}/{_fs_n} cells gained)."
     elif _fs_net < -0.01:
-        _fs_verdict = f"Model-specific FS reduced mean Test R² overall ({_fs_loss}/{_fs_n} cells regressed)."
+        _fs_verdict = f"Model-specific FS reduced mean Test R² on grab targets ({_fs_loss}/{_fs_n} cells regressed)."
     else:
-        _fs_verdict = f"Model-specific FS had negligible net impact on Test R² ({_fs_wins}/{_fs_n} gained, {_fs_loss}/{_fs_n} regressed)."
+        _fs_verdict = f"Model-specific FS had negligible net impact on grab-target Test R² ({_fs_wins}/{_fs_n} gained, {_fs_loss}/{_fs_n} regressed)."
 
     if gap_mean is not None:
         gc = "#5BAD6F" if gap_mean < -0.005 else ("#E15252" if gap_mean > 0.005 else "var(--text-muted)")
         gap_str = (
-            f"Mean Δ R²-gap (FS − Full) = <span style='color:{gc};font-weight:bold'>{gap_mean:+.3f}</span> "
+            f"Mean R²-gap change (FS - Full) = <span style='color:{gc};font-weight:bold'>{gap_mean:+.3f}</span> "
             f"({gap_reduced_n}/{len(gap_arr)} model-target pairs saw the gap narrow)."
         )
     else:
         gap_str = "R²-gap data unavailable."
 
-    _ols_note = (
-        "For OLS: LassoCV kept all 11 features in most cases (regularisation path "
-        "found no features to zero out), so Full ≈ FS. When features were pruned, "
-        "it benefited generalization only modestly."
-    )
-    _ridge_note = "Ridge does not prune  -  L2 distributes weight across all features. Full = FS."
-    _elnet_note = "ElNet's L1 penalty selects internally on the full set  -  Full = FS by construction."
-    _tree_note = (
-        "Tree OOF FS (threshold ≥5% relative importance): "
-        f"mean Δ for trees = {_colored(tree_fs_d)}. "
-        "At 11 features × ~800 - 1175 training rows, the OOF selection step often hurt "
-        "rather than helped  -  the pruned features still contributed signal, and the "
-        "refit on a reduced set introduced a different overfit pattern."
-    )
-
     q3 = (
         f"{_fs_verdict} "
-        f"<br><strong>Overall:</strong> mean Δ = {_colored(fs_arr)} "
-        f"(Grab: {_colored(grab_fs_d)}, Composite: {_colored(comp_fs_d)}). "
+        f"<br><strong>Grab targets:</strong> mean delta = {_colored(grab_fs_d)} "
+        f"(linear: {_colored(lin_fs_d)}, trees: {_colored(tree_fs_d)}). "
         f"<br><strong>Generalisation:</strong> {gap_str} "
-        f"<br><strong>By model:</strong> linear {_colored(lin_fs_d)}, tree {_colored(tree_fs_d)}. "
-        f"<br>{_ols_note} {_ridge_note} {_elnet_note} "
-        f"<br>{_tree_note} "
-        f"<br><em>Implication:</em> at the Exp1 feature-set level (11 features), "
-        f"model-specific FS does not consistently improve on using the full set. "
-        f"Feature selection becomes more valuable when the feature pool grows larger "
-        f"relative to the training size (Exp3 and beyond)."
+        f"<br><em>Note:</em> SE3 has only ~228 training rows. At this dataset size, OOF FS "
+        f"selects 2-10 features per model/target - the supplementary inlet columns (TKN, O&G, PO4, Coliforms) "
+        f"are frequently dropped, suggesting their individual signal is weak relative to the core 4 inlet features."
     )
 
     # ── Q4 : Best variant per target (raw ★ and gap-adj ✦) ──────────────────
@@ -3995,42 +3948,21 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         if r2 is None: return None
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
-    star_counts = {"SE1": 0, "SE2": 0, "SE3-FS": 0}
-    gaj_counts  = {"SE1": 0, "SE2": 0, "SE3-FS": 0}
+    _SE_KEYS = [("SE1", s1), ("SE2", s2), ("SE3-Full", s3), ("SE3-FS", s3fs)]
+    star_counts = {lb: 0 for lb, _ in _SE_KEYS}
+    gaj_counts  = {lb: 0 for lb, _ in _SE_KEYS}
     tgt_winner_rows = ""
 
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         per_raw = {}; per_gaj = {}
 
-        # SE1
-        raws1 = [_r2(s1, m, tgt) for m in all_m if _r2(s1, m, tgt) is not None]
-        gajs1 = [_gaj_q(_r2(s1, m, tgt), _gap(s1, m, tgt)) for m in all_m
-                 if _r2(s1, m, tgt) is not None]
-        per_raw["SE1"] = max(raws1) if raws1 else None
-        per_gaj["SE1"] = max((g for g in gajs1 if g is not None), default=None)
-
-        # SE2
-        rawf = [_full_val(m, tgt) for m in all_m if _full_val(m, tgt) is not None]
-        per_raw["SE2"] = max(rawf) if rawf else None
-        # gap for full
-        def _full_gap_q(m, t):
-            if m == "OLS": return _r2(s2, m, t, "R2_gap_full")
-            elif m in lin_set: return _gap(s2, m, t)
-            else: return _r2(cyc, m, t, "R2_gap_full") if "R2_gap_full" in cyc.columns else None
-        gajf = [_gaj_q(_full_val(m, tgt), _full_gap_q(m, tgt)) for m in all_m
-                if _full_val(m, tgt) is not None]
-        per_gaj["SE2"] = max((g for g in gajf if g is not None), default=None)
-
-        # SE3-FS
-        rawfs = [_fs_val(m, tgt) for m in all_m if _fs_val(m, tgt) is not None]
-        per_raw["SE3-FS"] = max(rawfs) if rawfs else None
-        def _fs_gap_q(m, t):
-            if m in lin_set: return _gap(s2, m, t)
-            else: return _gap(cyc, m, t)
-        gajfs = [_gaj_q(_fs_val(m, tgt), _fs_gap_q(m, tgt)) for m in all_m
-                 if _fs_val(m, tgt) is not None]
-        per_gaj["SE3-FS"] = max((g for g in gajfs if g is not None), default=None)
+        for lb, df_ in _SE_KEYS:
+            raws = [_r2(df_, m, tgt) for m in all_m if _r2(df_, m, tgt) is not None]
+            gajs = [_gaj_q(_r2(df_, m, tgt), _gap(df_, m, tgt)) for m in all_m
+                    if _r2(df_, m, tgt) is not None]
+            per_raw[lb] = max(raws) if raws else None
+            per_gaj[lb] = max((g for g in gajs if g is not None), default=None)
 
         raw_valid = {lb: v for lb, v in per_raw.items() if v is not None}
         best_raw  = max(raw_valid.values()) if raw_valid else None
@@ -4043,7 +3975,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         for w in gaj_wins: gaj_counts[w] += 1
 
         cells = ""
-        for lb in ["SE1", "SE2", "SE3-FS"]:
+        for lb, _ in _SE_KEYS:
             rv = per_raw.get(lb); gv = per_gaj.get(lb)
             is_raw = lb in raw_wins; is_gaj = lb in gaj_wins
             if rv is None:
@@ -4065,43 +3997,25 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     best_raw_var = max(star_counts, key=lambda k: star_counts[k])
     best_gaj_var = max(gaj_counts,  key=lambda k: gaj_counts[k])
 
-    diverged = []
-    for tgt in TARGETS_ORDERED:
-        short = TARGET_SHORT.get(tgt, tgt)
-        pr = {}; pg = {}
-        for lb, fn in [("SE1", lambda m,t: _r2(s1, m, t)),
-                       ("SE2", _full_val), ("SE3-FS", _fs_val)]:
-            raws = [fn(m, tgt) for m in all_m if fn(m, tgt) is not None]
-            pr[lb] = max(raws) if raws else None
-        braw = max((lb for lb, v in pr.items() if v is not None), key=lambda lb: pr[lb], default=None)
-        bg   = max((lb for lb, v in pg.items() if v is not None), key=lambda lb: pg[lb], default=None) if pg else None
-        if braw and bg and braw != bg:
-            diverged.append(f"{short} (raw→{braw}, gap-adj→{bg})")
-
-    _div_note = (
-        f" Raw and gap-adjusted winners diverge on {len(diverged)} target(s): "
-        + ", ".join(diverged) + "." if diverged else
-        " Raw and gap-adjusted winners agree on all targets."
-    )
-
     q4 = (
         f"Raw winner: <strong>{best_raw_var}</strong> "
         f"({star_counts['SE1']} SE1 / {star_counts['SE2']} SE2 / "
-        f"{star_counts['SE3-FS']} SE3-FS ★). "
+        f"{star_counts['SE3-Full']} SE3-Full / {star_counts['SE3-FS']} SE3-FS stars). "
         f"Gap-adjusted winner: <strong>{best_gaj_var}</strong> "
         f"({gaj_counts['SE1']} SE1 / {gaj_counts['SE2']} SE2 / "
-        f"{gaj_counts['SE3-FS']} SE3-FS ✦).{_div_note} "
-        f"The table below shows the best raw Test R² (large) and gap-adjusted score (small, grey) "
-        f"each variant achieves per target:"
+        f"{gaj_counts['SE3-Full']} SE3-Full / {gaj_counts['SE3-FS']} SE3-FS diamonds). "
+        f"SE3/SE3-FS results cover grab targets only (~228 train rows). "
+        f"The table below shows the best raw Test R² per variant per target:"
     )
 
     q4_table = f"""
 <div style='overflow-x:auto;margin-top:0.5rem'>
-<table class='summary-table' style='font-size:0.83em;width:auto;min-width:420px'>
+<table class='summary-table' style='font-size:0.83em;width:auto;min-width:520px'>
   <thead><tr>
     <th>Target</th>
     <th style='text-align:center'>SE1</th>
     <th style='text-align:center'>SE2</th>
+    <th style='text-align:center'>SE3-Full</th>
     <th style='text-align:center'>SE3-FS</th>
   </tr></thead>
   <tbody>{tgt_winner_rows}</tbody>
@@ -4109,26 +4023,22 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 <p class='meta' style='margin-top:0.4rem'>
   <strong>★</strong> = raw R² winner · <strong>✦</strong> = gap-adj winner ·
   green = both · orange = raw only · blue = gap-adj only.
-  Small grey value = gap-adjusted score.
+  Small grey value = gap-adjusted score. Dash (-) = grab-only SE, no composite results.
 </p>
 </div>"""
 
     # ── Q5 : Grab vs Composite split ──────────────────────────────────────────
     grab_d12 = _delta_arr(s1, s2, all_m, GRAB_TARGETS)
     comp_d12 = _delta_arr(s1, s2, all_m, COMP_TARGETS)
-    grab_fs_d2 = _delta_arr_raw(_full_val, _fs_val, all_m, GRAB_TARGETS)
-    comp_fs_d2 = _delta_arr_raw(_full_val, _fs_val, all_m, COMP_TARGETS)
 
     q5 = (
-        f"Consistently, yes. Grab targets respond more positively to every transition. "
+        f"Yes, for SE1→SE2. Grab targets respond more positively than composite. "
         f"<br>"
         f"<strong>SE1 → SE2:</strong> Grab {_colored(grab_d12)}, Composite {_colored(comp_d12)}. "
-        f"<strong>SE2 → SE3-FS:</strong> Grab {_colored(grab_fs_d2)}, Composite {_colored(comp_fs_d2)}. "
-        f"The pattern is structural: Composite targets have roughly 800 training rows vs ~1,175 "
-        f"for Grab. Any feature change that expands dimensionality amplifies overfitting risk "
-        f"proportionally more on the smaller composite sets. "
-        f"Composite COD and pH fail across all variants  -  they need secondary clarifier data "
-        f"(Experiment 2 and beyond) before any model generalises."
+        f"<strong>SE3 scope:</strong> grab targets only - no composite comparison available for SE3/SE3-FS "
+        f"as the supplementary inlet columns (TKN, O&G, PO4, Coliforms) have no composite equivalents. "
+        f"The structural gap persists: Composite targets have fewer training rows "
+        f"and need secondary treatment data to generalise (Experiment 2 and beyond)."
     )
 
     def _qcard(n, question, answer, extra=""):
@@ -4150,7 +4060,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
   <div class="exp-body">
   {_qcard(1, "Do inlet concentrations alone carry meaningful predictive power?", q1)}
   {_qcard(2, "What does adding process context (Flow, Power, cyclic calendar) contribute?", q2)}
-  {_qcard(3, "Does model-specific feature selection improve accuracy or generalisation within SE2?", q3)}
+  {_qcard(3, "Does model-specific feature selection improve accuracy or generalisation within SE3?", q3)}
   {_qcard(4, "Which variant achieves the best performance per target?", q4, q4_table)}
   {_qcard(5, "Do Grab and Composite targets respond differently to feature changes?", q5)}
   </div>
@@ -4158,31 +4068,27 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 
 
 def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Sub-experiment comparison: Sub1 vs Sub2-Full vs Sub2-FS.
+    """Sub-experiment comparison: SE1 | SE2 | SE3-Full | SE3-FS
 
     Columns:
-      Sub1        -  4 inlet features, no FS
-      Sub2 Full   -  11 cyclic features, full set (OLS: R2_test_full; Ridge/ElNet/trees: full set)
-      Δ S1→Full   -  value of adding process + cyclic calendar context
-      Sub2 FS     -  11 cyclic features, model-specific FS
-                   OLS: LassoCV (R2_test from Exp1)
-                   Ridge: same as Full (L2, no pruning)
-                   ElNet: same as Full (L1 selects internally)
-                   RF/GB/XGB: OOF perm importance refit (R2_test from Exp1-Cyclic)
-      Δ Full→FS   -  value of feature selection within Sub2
+      SE1       -  4 inlet features, no FS
+      SE2       -  11 cyclic features (Inlet + COMMON_CYCLIC)
+      Δ S1→S2   -  value of adding process + cyclic calendar context
+      SE3-Full  -  15 features (all grab inlet + COMMON_CYCLIC), grab targets only
+      Δ S2→S3   -  value of adding supplementary inlet measurements
+      SE3-FS    -  SE3 with model-specific FS applied
+      Δ S3→FS   -  value of feature selection within SE3
 
     Data sources:
-      Sub1       → exp_key == "Exp1-Sub1", R2_test
-      Sub2-Full  → OLS: exp_key == "Exp1", R2_test_full
-                   Ridge/ElNet: exp_key == "Exp1", R2_test
-                   Trees: exp_key == "Exp1-Cyclic", R2_test_full
-      Sub2-FS    → OLS: exp_key == "Exp1", R2_test
-                   Ridge/ElNet: exp_key == "Exp1", R2_test
-                   Trees: exp_key == "Exp1-Cyclic", R2_test
+      SE1       → exp_key == "Exp1-Sub1"
+      SE2       → exp_key == "Exp1-Cyclic"
+      SE3-Full  → exp_key == "Exp1-S3"  (OLS: R2_test_full for pre-FS baseline)
+      SE3-FS    → exp_key == "Exp1-S3-FS"
     """
-    s1  = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
-    s2  = df_all[df_all["exp_key"] == "Exp1"].copy()
-    cyc = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
+    s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
+    s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
 
     if s1.empty and s2.empty:
         return ""
@@ -4204,50 +4110,43 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         if r2 is None: return None
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
-    def _full_val(model, tgt):
-        """Full-feature R² for Sub2."""
+    def _s2_val(model, tgt):
+        """SE2 R²."""
+        return _get(s2, model, tgt, "R2_test")
+
+    def _s3_full_val(model, tgt):
+        """SE3 full-feature R²: OLS stores pre-FS in R2_test_full; others in R2_test."""
         if model == "OLS":
-            return _get(s2, model, tgt, "R2_test_full")
-        elif model in lin_models:
-            return _get(s2, model, tgt, "R2_test")
-        else:
-            v = _get(cyc, model, tgt, "R2_test_full")
-            return v if v is not None else _get(s2, model, tgt, "R2_test")
+            v = _get(s3, model, tgt, "R2_test_full")
+            return v if v is not None else _get(s3, model, tgt, "R2_test")
+        return _get(s3, model, tgt, "R2_test")
 
-    def _fs_val(model, tgt):
-        """Feature-selected R² for Sub2."""
-        if model in lin_models:
-            return _get(s2, model, tgt, "R2_test")
-        else:
-            return _get(cyc, model, tgt, "R2_test")
+    def _s3_fs_val(model, tgt):
+        """SE3-FS R²: OLS post-LassoCV; Ridge/ElNet full; trees post-OOF."""
+        return _get(s3fs, model, tgt, "R2_test")
 
-    def _full_gap(model, tgt):
+    def _s2_gap(model, tgt):
+        return _gap_v(s2, model, tgt)
+
+    def _s3_full_gap(model, tgt):
         if model == "OLS":
-            return _get(s2, model, tgt, "R2_gap_full")
-        elif model in lin_models:
-            return _gap_v(s2, model, tgt)
-        else:
-            return _get(s2, model, tgt, "R2_gap_full")  # baseline NL stores full-set gap
+            return _get(s3, model, tgt, "R2_gap_full")
+        return _gap_v(s3, model, tgt)
 
-    def _fs_gap(model, tgt):
-        if model in lin_models:
-            return _gap_v(s2, model, tgt)
-        else:
-            return _gap_v(cyc, model, tgt)
+    def _s3_fs_gap(model, tgt):
+        return _gap_v(s3fs, model, tgt)
 
-    def _full_rmse(model, tgt):
+    def _s2_rmse(model, tgt):
+        return _get(s2, model, tgt, "RMSE_test")
+
+    def _s3_full_rmse(model, tgt):
         if model == "OLS":
-            return _get(s2, model, tgt, "RMSE_test_full")
-        elif model in lin_models:
-            return _get(s2, model, tgt, "RMSE_test")
-        else:
-            return _get(s2, model, tgt, "RMSE_test_full")  # baseline NL stores full-set RMSE
+            v = _get(s3, model, tgt, "RMSE_test_full")
+            return v if v is not None else _get(s3, model, tgt, "RMSE_test")
+        return _get(s3, model, tgt, "RMSE_test")
 
-    def _fs_rmse(model, tgt):
-        if model in lin_models:
-            return _get(s2, model, tgt, "RMSE_test")
-        else:
-            return _get(cyc, model, tgt, "RMSE_test")
+    def _s3_fs_rmse(model, tgt):
+        return _get(s3fs, model, tgt, "RMSE_test")
 
     def _s1_rmse(model, tgt):
         return _get(s1, model, tgt, "RMSE_test")
@@ -4294,15 +4193,16 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         return (f"<td style='{_TD};text-align:center;color:{r2_col};font-weight:bold'>"
                 f"{dr2:+.3f}{extra}</td>")
 
-    deltas_s1_full  = []; gaj_deltas_s1_full  = []
-    deltas_full_fs  = []; gaj_deltas_full_fs  = []
+    deltas_s1_s2    = []; gaj_deltas_s1_s2    = []
+    deltas_s2_s3    = []; gaj_deltas_s2_s3    = []
+    deltas_s3_s3fs  = []; gaj_deltas_s3_s3fs  = []
 
     tbody = ""
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
             f"<tr style='background:#e8e8e8'>"
-            f"<td colspan='6' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"<td colspan='8' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
@@ -4312,14 +4212,17 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         _all_gaj_e1 = {}
         _all_gap_e1 = {}
         for m_ in models_ord:
-            v1_   = _get(s1, m_, tgt);  g1_   = _gap_v(s1, m_, tgt)
-            vf_   = _full_val(m_, tgt); gf_   = _full_gap(m_, tgt)
-            vs_   = _fs_val(m_, tgt);   gs_   = _fs_gap(m_, tgt)
-            sc1_  = _gaj(v1_, g1_);     scf_  = _gaj(vf_, gf_); scs_ = _gaj(vs_, gs_)
+            v1_  = _get(s1, m_, tgt);      g1_  = _gap_v(s1, m_, tgt)
+            v2_  = _s2_val(m_, tgt);       g2_  = _s2_gap(m_, tgt)
+            v3_  = _s3_full_val(m_, tgt);  g3_  = _s3_full_gap(m_, tgt)
+            v3f_ = _s3_fs_val(m_, tgt);    g3f_ = _s3_fs_gap(m_, tgt)
+            sc1_ = _gaj(v1_, g1_); sc2_ = _gaj(v2_, g2_)
+            sc3_ = _gaj(v3_, g3_); sc3f_ = _gaj(v3f_, g3f_)
             for key_, rv_, gv_, sv_ in [
                 ((m_, "s1"), v1_, g1_, sc1_),
-                ((m_, "full"), vf_, gf_, scf_),
-                ((m_, "fs"), vs_, gs_, scs_),
+                ((m_, "s2"), v2_, g2_, sc2_),
+                ((m_, "s3"), v3_, g3_, sc3_),
+                ((m_, "s3fs"), v3f_, g3f_, sc3f_),
             ]:
                 if rv_ is not None:
                     _all_raw_e1[key_] = rv_
@@ -4348,46 +4251,53 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
         def _ig(s_): return tgt_show_gaj_e1 and tgt_bg_e1 is not None and s_ is not None and abs(s_ - tgt_bg_e1) < 1e-9
 
         for m in models_ord:
-            v1   = _get(s1, m, tgt);   g1   = _gap_v(s1, m, tgt)
-            vf   = _full_val(m, tgt);  gf   = _full_gap(m, tgt)
-            vs   = _fs_val(m, tgt);    gs   = _fs_gap(m, tgt)
+            v1   = _get(s1, m, tgt);      g1   = _gap_v(s1, m, tgt)
+            v2   = _s2_val(m, tgt);       g2   = _s2_gap(m, tgt)
+            v3   = _s3_full_val(m, tgt);  g3   = _s3_full_gap(m, tgt)
+            v3f  = _s3_fs_val(m, tgt);    g3f  = _s3_fs_gap(m, tgt)
 
-            r1   = _s1_rmse(m, tgt)
-            rf_  = _full_rmse(m, tgt)
-            rs_  = _fs_rmse(m, tgt)
+            r1  = _s1_rmse(m, tgt)
+            r2  = _s2_rmse(m, tgt)
+            r3  = _s3_full_rmse(m, tgt)
+            r3f = _s3_fs_rmse(m, tgt)
 
-            sc1 = _gaj(v1, g1); scf = _gaj(vf, gf); scs = _gaj(vs, gs)
+            sc1 = _gaj(v1, g1); sc2 = _gaj(v2, g2)
+            sc3 = _gaj(v3, g3); sc3f = _gaj(v3f, g3f)
 
-            d1f = (vf - v1) if (v1 is not None and vf is not None) else None
-            dfs = (vs - vf) if (vf is not None and vs is not None) else None
+            d12  = (v2  - v1)  if (v1  is not None and v2  is not None) else None
+            d23  = (v3  - v2)  if (v2  is not None and v3  is not None) else None
+            d33f = (v3f - v3)  if (v3  is not None and v3f is not None) else None
 
-            d1f_rmse = ((rf_ - r1) if (r1 is not None and rf_ is not None
-                         and r1 == r1 and rf_ == rf_) else None)
-            dfs_rmse = ((rs_ - rf_) if (rf_ is not None and rs_ is not None
-                         and rf_ == rf_ and rs_ == rs_) else None)
+            d12_rmse  = ((r2  - r1)  if (r1  is not None and r2  is not None and r1 == r1 and r2 == r2)  else None)
+            d23_rmse  = ((r3  - r2)  if (r2  is not None and r3  is not None and r2 == r2 and r3 == r3)  else None)
+            d33f_rmse = ((r3f - r3)  if (r3  is not None and r3f is not None and r3 == r3 and r3f == r3f) else None)
 
-            d1f_gap = ((gf - g1) if (g1 is not None and gf is not None
-                        and g1 == g1 and gf == gf) else None)
-            dfs_gap = ((gs - gf) if (gf is not None and gs is not None
-                        and gf == gf and gs == gs) else None)
+            d12_gap  = ((g2  - g1)  if (g1  is not None and g2  is not None and g1 == g1 and g2 == g2)  else None)
+            d23_gap  = ((g3  - g2)  if (g2  is not None and g3  is not None and g2 == g2 and g3 == g3)  else None)
+            d33f_gap = ((g3f - g3)  if (g3  is not None and g3f is not None and g3 == g3 and g3f == g3f) else None)
 
-            sd1f = (scf - sc1) if (sc1 is not None and scf is not None) else None
-            sdfs = (scs - scf) if (scf is not None and scs is not None) else None
+            sd12  = (sc2  - sc1)  if (sc1  is not None and sc2  is not None) else None
+            sd23  = (sc3  - sc2)  if (sc2  is not None and sc3  is not None) else None
+            sd33f = (sc3f - sc3)  if (sc3  is not None and sc3f is not None) else None
 
-            if d1f  is not None: deltas_s1_full.append(d1f)
-            if dfs  is not None: deltas_full_fs.append(dfs)
-            if sd1f is not None: gaj_deltas_s1_full.append(sd1f)
-            if sdfs is not None: gaj_deltas_full_fs.append(sdfs)
+            if d12   is not None: deltas_s1_s2.append(d12)
+            if d23   is not None: deltas_s2_s3.append(d23)
+            if d33f  is not None: deltas_s3_s3fs.append(d33f)
+            if sd12  is not None: gaj_deltas_s1_s2.append(sd12)
+            if sd23  is not None: gaj_deltas_s2_s3.append(sd23)
+            if sd33f is not None: gaj_deltas_s3_s3fs.append(sd33f)
 
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
                 f"<tr style='background:{row_bg}'>"
                 f"<td style='{_TD}'><strong>{m}</strong></td>"
                 f"{_val_td(v1,  r1,  g1,  _ir(v1),  _ig(sc1))}"
-                f"{_val_td(vf,  rf_, gf,  _ir(vf),  _ig(scf))}"
-                f"{_delta_td(d1f, d1f_rmse, d1f_gap)}"
-                f"{_val_td(vs,  rs_, gs,  _ir(vs),  _ig(scs))}"
-                f"{_delta_td(dfs, dfs_rmse, dfs_gap)}"
+                f"{_val_td(v2,  r2,  g2,  _ir(v2),  _ig(sc2))}"
+                f"{_delta_td(d12, d12_rmse, d12_gap)}"
+                f"{_val_td(v3,  r3,  g3,  _ir(v3),  _ig(sc3))}"
+                f"{_delta_td(d23, d23_rmse, d23_gap)}"
+                f"{_val_td(v3f, r3f, g3f, _ir(v3f), _ig(sc3f))}"
+                f"{_delta_td(d33f, d33f_rmse, d33f_gap)}"
                 f"</tr>"
             )
 
@@ -4458,8 +4368,9 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
       </tr>
     </thead>
     <tbody>
-      {_combined_stats_row(deltas_s1_full, gaj_deltas_s1_full, "SE1", "SE2")}
-      {_combined_stats_row(deltas_full_fs, gaj_deltas_full_fs, "SE2", "SE3-FS")}
+      {_combined_stats_row(deltas_s1_s2,   gaj_deltas_s1_s2,   "SE1",     "SE2")}
+      {_combined_stats_row(deltas_s2_s3,   gaj_deltas_s2_s3,   "SE2",     "SE3-Full")}
+      {_combined_stats_row(deltas_s3_s3fs, gaj_deltas_s3_s3fs, "SE3-Full","SE3-FS")}
     </tbody>
   </table>
   </div>
@@ -4467,13 +4378,12 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
   <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.8rem'>
     <p class='meta'>
       <strong>Reading the table.</strong>
-      Net Mean ΔR² is the signed average across all {n_cells} (model × target) cells.
-      <strong>SE2</strong> = full 11-feature set before any pruning
-      (OLS: unregularised on all features; Ridge/ElNet: full set; RF/GB/XGB: Phase 1 CV model).
-      <strong>SE3-FS</strong> = model-specific selection applied
-      (OLS: LassoCV; Ridge: no change  -  L2 handles it; ElNet: no change  -  L1 selects internally;
-      RF/GB/XGB: OOF permutation importance refit on features with ≥5% relative importance).
-      <strong>Gap-Adj − Raw</strong> indicates whether raw gains are inflated by increased overfitting
+      Net Mean ΔR² is the signed average across all model x target cells.
+      <strong>SE2</strong> = 11-feature cyclic inlet set (grab and composite targets).
+      <strong>SE3-Full</strong> = 15-feature full grab inlet set (grab targets only, ~228 train rows).
+      <strong>SE3-FS</strong> = SE3 with model-specific selection applied
+      (OLS: LassoCV; Ridge: full set L2; ElNet: full set L1+L2; RF/GB/XGB: OOF perm-imp refit).
+      <strong>Gap-Adj - Raw</strong> indicates whether raw gains are inflated by increased overfitting
       (negative = gains overstated) or understated by reduced overfitting (positive = gains understated).
       <strong>★</strong> = best raw Test R² per target · <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
       In the delta columns: <span style='color:#5BAD6F;font-weight:bold'>green ΔR²</span> = improvement ·
@@ -4490,36 +4400,36 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     for m in models_ord:
         if m == "OLS":
             method  = "LassoCV  -  L1 cross-validated pre-screen (TimeSeriesSplit)"
-            ns_vals = [v for tgt in TARGETS_ORDERED
-                       for v in [_get(s2, m, tgt, "n_selected_ols")]
+            ns_vals = [v for tgt in GRAB_TARGETS
+                       for v in [_get(s3fs, m, tgt, "n_selected_ols")]
                        if v is not None and v == v]
-            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else " - "
+            avg_sel = f"{np.mean(ns_vals):.1f} / 15" if ns_vals else " - "
             bypass  = False
         elif m == "Ridge":
             method  = "Full set  -  L2 regularisation handles collinearity internally"
-            avg_sel = "11 / 11 (all)"
+            avg_sel = "15 / 15 (all)"
             bypass  = True
         elif m == "ElNet":
             method  = "Internal L1  -  retains features with non-zero fitted coefficients"
-            ns_vals = [v for tgt in TARGETS_ORDERED
-                       for v in [_get(s2, m, tgt, "ElNet_n_selected")]
+            ns_vals = [v for tgt in GRAB_TARGETS
+                       for v in [_get(s3fs, m, tgt, "ElNet_n_selected")]
                        if v is not None and v == v]
-            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else " - "
+            avg_sel = f"{np.mean(ns_vals):.1f} / 15" if ns_vals else " - "
             bypass  = False
         else:
-            method  = "OOF permutation importance ≥ 5% threshold (3-phase: full → select → refit)"
-            ns_vals = [v for tgt in TARGETS_ORDERED
-                       for v in [_get(cyc, m, tgt, "n_selected_nl")]
+            method  = "OOF permutation importance >= 5% threshold (3-phase: full -> select -> refit)"
+            ns_vals = [v for tgt in GRAB_TARGETS
+                       for v in [_get(s3fs, m, tgt, "n_selected_nl")]
                        if v is not None and v == v]
-            avg_sel = f"{np.mean(ns_vals):.1f} / 11" if ns_vals else " - "
+            avg_sel = f"{np.mean(ns_vals):.1f} / 15" if ns_vals else " - "
             bypass  = False
         status_col = "#7FB3D3" if bypass else "#5BAD6F"
-        status     = "✓ Correctly bypassed (L2)" if bypass else "✓ Selection applied"
+        status     = "Correctly bypassed (L2)" if bypass else "Selection applied"
         _VR = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
         val_rows.append(
             f"<tr><td style='{_VR}'><strong>{m}</strong></td>"
             f"<td style='{_VR};font-size:0.80rem'>{method}</td>"
-            f"<td style='{_VR};text-align:center'>11</td>"
+            f"<td style='{_VR};text-align:center'>15</td>"
             f"<td style='{_VR};text-align:center'>{avg_sel}</td>"
             f"<td style='{_VR};text-align:center;color:{status_col};font-weight:600'>{status}</td></tr>"
         )
@@ -4527,12 +4437,12 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     val_card = f"""
 <div style='margin:1rem 0 0.6rem'>
   <p style='font-weight:bold;margin-bottom:0.3rem;font-size:0.88em;color:#1a1a1a'>
-    Feature Selection Validation  -  SE3-FS (11 cyclic features input)
+    Feature Selection Validation  -  SE3-FS (15 features input, grab targets only)
   </p>
   <p style='margin-bottom:0.6rem;font-size:0.82em;color:#555555'>
-    Each model applies a distinct selection protocol to the shared 11-feature pool.
+    Each model applies a distinct selection protocol to the shared 15-feature pool.
     The table confirms which method was used, how many features were retained on average
-    across the 8 targets, and whether the protocol was correctly applied.
+    across the 4 grab targets, and whether the protocol was correctly applied.
   </p>
   <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a'>
@@ -4552,13 +4462,13 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     Ridge is the only model that intentionally bypasses feature removal  -  L2 shrinks
     uninformative coefficients toward zero without discarding them. All other models
     reduce the feature space. Per-target selected feature lists are in the
-    <em>Model-Specific Feature Selection</em> fold within SE2 above.
+    <em>Model-Specific Feature Selection</em> fold within SE3 above.
   </p>
 </div>"""
 
     main_table = f"""
 <div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
-<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:860px'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:1000px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
       <th style='{_TH};min-width:60px'>Model</th>
@@ -4568,9 +4478,13 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
       <th style='{_THC}'>Δ (SE1→SE2)<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
+      <th style='{_THC}'>SE3-Full<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Δ (SE2→SE3)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
       <th style='{_THC}'>SE3-FS<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Δ (SE2→SE3-FS)<br>
+      <th style='{_THC}'>Δ (SE3→FS)<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>ΔR² · ΔRMSE · ΔGap</span></th>
     </tr>
   </thead>
@@ -4605,13 +4519,29 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
     sub_s1 = _exp_subsection(df_all, "Exp1-Sub1", "exp1-sub1",
                              "SE1  -  Inlet Only",
                              open_default=False)
-    sub_s2 = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-full",
-                             "SE2  -  Cyclic Inlet + Common",
+    sub_s2 = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-s2",
+                             "SE2  -  Inlet + COMMON (Cyclic)",
                              open_default=True)
-    sub_s3_fs = _exp_subsection(df_all, "Exp1-FS", "exp1-fs",
-                                "SE3  -  Feature Selection on Cyclic Inlet + Common",
-                                open_default=False,
-                                dataset_summary_fn=_dataset_summary_per_model)
+
+    # SE3: nested Full + FS
+    se3_full = _exp_subsection(df_all, "Exp1-S3", "exp1-s3-full",
+                               "Full Feature Set",
+                               open_default=True)
+    se3_fs = _exp_subsection(df_all, "Exp1-S3-FS", "exp1-s3-fs",
+                             "Feature Selection",
+                             open_default=False,
+                             dataset_summary_fn=_dataset_summary_per_model)
+    sub_s3 = f"""
+<details id="exp1-s3" open>
+  <summary class="exp-summary">
+    <span class="fold-icon">&#9654;</span>
+    SE3  -  All Grab Inlet + COMMON_CYCLIC
+    <span class="fold-hint">click to collapse</span>
+  </summary>
+  {se3_full}
+  {se3_fs}
+</details>"""
+
     cmp_div      = _exp1_comparison_panel(df_all)
     findings_div = _exp1_qna(df_all)
     best         = _exp1_best_model_box(df_all)
@@ -4621,7 +4551,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub_s1}
   {sub_s2}
-  {sub_s3_fs}
+  {sub_s3}
   {cmp_div}
   {findings_div}
   {best}
@@ -8244,8 +8174,12 @@ def _sidebar() -> str:
     </div>
     <div class="nav-group-items" id="nav-exp1">
       <a class="nav-item nav-sub" href="#exp1-sub1">SE1 - Inlet Only</a>
-      <a class="nav-item nav-sub" href="#exp1-full">SE2 - Inlet + Common (Cyclic)</a>
-      <a class="nav-item nav-sub" href="#exp1-fs">SE3 - Feature Selection</a>
+      <a class="nav-item nav-sub" href="#exp1-s2">SE2 - Inlet + COMMON</a>
+      <div class="nav-subgroup">
+        <a class="nav-item nav-sub" href="#exp1-s3">SE3 - All Grab Inlet</a>
+        <a class="nav-item nav-subsub" href="#exp1-s3-full">- Full Feature Set</a>
+        <a class="nav-item nav-subsub" href="#exp1-s3-fs">- Feature Selection</a>
+      </div>
       <a class="nav-item nav-sub" href="#exp1-comparison">Comparisons</a>
       <a class="nav-item nav-sub" href="#exp1-findings">Findings</a>
     </div>
