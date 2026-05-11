@@ -2824,12 +2824,19 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
 </section>"""
 
 
-def _section_bests_json(df_all: pd.DataFrame) -> str:
-    """JSON for the dynamic running-leaders sidebar panel."""
+def _section_bests_json(df_all: pd.DataFrame):
+    """JSON for the dynamic running-leaders sidebar panel.
+
+    Returns (bests_json, order_json) so the JS sectionOrder stays in sync
+    with section_exp_keys without a separate hardcoded array.
+    """
     section_exp_keys = {
         "exp1-sub1":   ["Exp1-Sub1"],
         "exp1-full":   ["Exp1-Cyclic"],
         "exp1-fs":     ["Exp1-FS"],
+        "exp1-s3":      ["Exp1-S3", "Exp1-S3-FS"],
+        "exp1-s3-full": ["Exp1-S3"],
+        "exp1-s3-fs":   ["Exp1-S3-FS"],
         "exp2-s1":     ["Exp2-Sub1"],
         "exp2-s1-clr": ["Exp2-Sub1-Clr"],
         "exp2-s1-sed": ["Exp2-Sub1-Sed"],
@@ -2884,7 +2891,8 @@ def _section_bests_json(df_all: pd.DataFrame) -> str:
                 "color":  MODEL_COLORS.get(str(row["model"]), "#888"),
             }
         result[sec_id] = bests
-    return json.dumps(result, ensure_ascii=False)
+    order = list(section_exp_keys.keys())
+    return json.dumps(result, ensure_ascii=False), json.dumps(order, ensure_ascii=False)
 
 
 def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
@@ -2960,7 +2968,6 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
         best_raw = max(all_cands, key=lambda c: c[0])
 
         r2_win, gap_win, m_win, src_win = best_gaj
-        gaj_win = _gaj_score(r2_win, gap_win)
         r2_raw_best = best_raw[0]
         raw_differs = abs(r2_raw_best - r2_win) > 0.005
 
@@ -2991,10 +2998,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
             f'<tr data-target="{slug}">'
             f'<td>{short}</td>'
             f'<td><strong style="color:{mdl_col}">{m_win}</strong></td>'
-            f'<td style="color:{r2_col};font-weight:bold">'
-            f'{r2_win:+.3f}{overfit_flag}'
-            f'<br><span style="font-size:0.78em;color:var(--text-muted)">'
-            f'gap-adj {gaj_win:+.3f}</span></td>'
+            f'<td style="color:{r2_col};font-weight:bold">{r2_win:+.3f}{overfit_flag}</td>'
             f'<td style="color:{gap_col}">{gap_str}</td>'
             f'<td class="meta" style="font-size:11px">{src_win}{alt_note}</td>'
             f'</tr>'
@@ -3050,7 +3054,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
   <table class="summary-table best-table">
     <thead><tr>
       <th>Target</th><th>Model</th>
-      <th>Test R²<br><span class="meta" style="font-weight:normal;font-size:0.8em">gap-adj below</span></th>
+      <th>Test R²</th>
       <th>Gap</th><th>Source (gap-adj winner)</th>
     </tr></thead>
     <tbody>{"".join(table_rows)}</tbody>
@@ -3089,7 +3093,6 @@ def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
         best_raw = max(cands, key=lambda c: c[0])
 
         r2_win, gap_win, m_win, exp_win = best_gaj
-        gaj_win      = _gap_adj(r2_win, gap_win)
         r2_raw_best  = best_raw[0]
         raw_differs  = abs(r2_raw_best - r2_win) > 0.005
 
@@ -3124,10 +3127,7 @@ def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
             f'<tr data-target="{slug}">'
             f'<td>{short}</td>'
             f'<td><strong style="color:{mdl_col}">{m_win}</strong></td>'
-            f'<td style="color:{r2_col};font-weight:bold">'
-            f'{r2_win:+.3f}{overfit_flag}'
-            f'<br><span style="font-size:0.78em;color:var(--text-muted)">'
-            f'gap-adj {gaj_win:+.3f}</span></td>'
+            f'<td style="color:{r2_col};font-weight:bold">{r2_win:+.3f}{overfit_flag}</td>'
             f'<td style="color:{gap_col}">{gap_win:+.3f}</td>'
             f'<td class="meta" style="font-size:11px">{src_win}{alt_note}</td>'
             f'</tr>'
@@ -3181,7 +3181,7 @@ def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
   <table class="summary-table best-table">
     <thead><tr>
       <th>Target</th><th>Model</th>
-      <th>Test R²<br><span class="meta" style="font-weight:normal;font-size:0.8em">gap-adj below</span></th>
+      <th>Test R²</th>
       <th>Gap</th><th>Source (gap-adj winner)</th>
     </tr></thead>
     <tbody>{"".join(table_rows)}</tbody>
@@ -4240,12 +4240,10 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
                     _raw_win_gap_e1 = _all_gap_e1.get(k_)
                     break
 
-        tgt_show_gaj_e1 = False
-        if (tgt_bg_e1 is not None and tgt_br_e1 is not None
-                and _raw_win_gap_e1 is not None and _raw_win_gap_e1 > 0.10):
-            _raw_win_gaj_e1 = _gaj(tgt_br_e1, _raw_win_gap_e1)
-            if _raw_win_gaj_e1 is None or abs(tgt_bg_e1 - _raw_win_gaj_e1) > 1e-9:
-                tgt_show_gaj_e1 = True
+        tgt_show_gaj_e1 = (
+            tgt_bg_e1 is not None and tgt_br_e1 is not None
+            and _raw_win_gap_e1 is not None and _raw_win_gap_e1 > 0.10
+        )
 
         def _ir(v_): return tgt_br_e1 is not None and v_ is not None and abs(v_ - tgt_br_e1) < 1e-9
         def _ig(s_): return tgt_show_gaj_e1 and tgt_bg_e1 is not None and s_ is not None and abs(s_ - tgt_bg_e1) < 1e-9
@@ -4353,7 +4351,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     stats_block = f"""
 <div style='margin-top:1.4rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -4444,7 +4442,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     The table confirms which method was used, how many features were retained on average
     across the 4 grab targets, and whether the protocol was correctly applied.
   </p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -4467,7 +4465,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:1000px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -4532,14 +4530,12 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
                              open_default=False,
                              dataset_summary_fn=_dataset_summary_per_model)
     sub_s3 = f"""
-<details id="exp1-s3" open>
-  <summary class="exp-summary">
-    <span class="fold-icon">&#9654;</span>
-    SE3  -  All Grab Inlet + COMMON_CYCLIC
-    <span class="fold-hint">click to collapse</span>
-  </summary>
-  {se3_full}
-  {se3_fs}
+<details class="exp-details" id="exp1-s3">
+  <summary><span class="fold-icon">&#9654;</span> SE3  -  All Grab Inlet + COMMON_CYCLIC (full + FS)</summary>
+  <div class="exp-body">
+    {se3_full}
+    {se3_fs}
+  </div>
 </details>"""
 
     cmp_div      = _exp1_comparison_panel(df_all)
@@ -4704,12 +4700,10 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
                     _raw_win_gap_e2 = _all_gap_e2.get(k_)
                     break
 
-        tgt_show_gaj_e2 = False
-        if (tgt_bg_e2 is not None and tgt_br_e2 is not None
-                and _raw_win_gap_e2 is not None and _raw_win_gap_e2 > 0.10):
-            _raw_win_gaj_e2 = _gaj(tgt_br_e2, _raw_win_gap_e2)
-            if _raw_win_gaj_e2 is None or abs(tgt_bg_e2 - _raw_win_gaj_e2) > 1e-9:
-                tgt_show_gaj_e2 = True
+        tgt_show_gaj_e2 = (
+            tgt_bg_e2 is not None and tgt_br_e2 is not None
+            and _raw_win_gap_e2 is not None and _raw_win_gap_e2 > 0.10
+        )
 
         def _is_raw(v_): return tgt_br_e2 is not None and v_ is not None and abs(v_ - tgt_br_e2) < 1e-9
         def _is_gaj(s_): return tgt_show_gaj_e2 and tgt_bg_e2 is not None and s_ is not None and abs(s_ - tgt_bg_e2) < 1e-9
@@ -4838,7 +4832,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     stats_block = f"""
 <div style='margin-top:1.4rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -4874,7 +4868,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:860px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -5321,7 +5315,7 @@ def _e3s2_fs_impact(df_all: pd.DataFrame) -> str:
   </p>
 </div>"""
 
-    table_html = f"""<div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden;margin-top:0.8rem'>
+    table_html = f"""<div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;margin-top:0.8rem'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:920px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -5524,12 +5518,10 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
                     _raw_win_gap_e3 = _all_gap_e3.get(k_)
                     break
 
-        tgt_show_gaj_e3 = False
-        if (tgt_bg_e3 is not None and tgt_br_e3 is not None
-                and _raw_win_gap_e3 is not None and _raw_win_gap_e3 > 0.10):
-            _raw_win_gaj_e3 = _gaj(tgt_br_e3, _raw_win_gap_e3)
-            if _raw_win_gaj_e3 is None or abs(tgt_bg_e3 - _raw_win_gaj_e3) > 1e-9:
-                tgt_show_gaj_e3 = True
+        tgt_show_gaj_e3 = (
+            tgt_bg_e3 is not None and tgt_br_e3 is not None
+            and _raw_win_gap_e3 is not None and _raw_win_gap_e3 > 0.10
+        )
 
         def _ir(v_): return tgt_br_e3 is not None and v_ is not None and abs(v_ - tgt_br_e3) < 1e-9
         def _ig(s_): return tgt_show_gaj_e3 and tgt_bg_e3 is not None and s_ is not None and abs(s_ - tgt_bg_e3) < 1e-9
@@ -5598,7 +5590,7 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
     stats_block = f"""
 <div style='margin-top:1.4rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -5638,7 +5630,7 @@ def _exp3_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:880px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -6021,7 +6013,7 @@ def _variance_diagnosis_callout() -> str:
         NRMSE = RMSE / (max - min) for scale-normalised cross-target comparison.
       </p>
     </div>
-    <div style="overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden">
+    <div style="overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px">
     <table style="border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:960px">
       <thead>
         <tr style="border-bottom:2px solid #cccccc">
@@ -6182,12 +6174,10 @@ def _exp4_comparison_panel(df_all: pd.DataFrame) -> str:
                 if abs(v_ - tgt_br) < 1e-9:
                     _raw_win_gap = _all_gap.get(k_)
                     break
-        tgt_show_gaj = False
-        if (tgt_bg is not None and tgt_br is not None
-                and _raw_win_gap is not None and _raw_win_gap > 0.10):
-            _rwg = _gaj(tgt_br, _raw_win_gap)
-            if _rwg is None or abs(tgt_bg - _rwg) > 1e-9:
-                tgt_show_gaj = True
+        tgt_show_gaj = (
+            tgt_bg is not None and tgt_br is not None
+            and _raw_win_gap is not None and _raw_win_gap > 0.10
+        )
 
         def _ir(v_): return tgt_br is not None and v_ is not None and abs(v_ - tgt_br) < 1e-9
         def _ig(s_): return tgt_show_gaj and tgt_bg is not None and s_ is not None and abs(s_ - tgt_bg) < 1e-9
@@ -6235,7 +6225,7 @@ def _exp4_comparison_panel(df_all: pd.DataFrame) -> str:
     stats_block = f"""
 <div style='margin-top:1.4rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -6271,7 +6261,7 @@ def _exp4_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.79rem;color:#1a1a1a;min-width:880px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -6576,12 +6566,10 @@ def _exp5_comparison_panel(df_all: pd.DataFrame) -> str:
                     _raw_win_gap_e5 = _all_gap_e5.get(k_)
                     break
 
-        tgt_show_gaj_e5 = False
-        if (tgt_bg_e5 is not None and tgt_br_e5 is not None
-                and _raw_win_gap_e5 is not None and _raw_win_gap_e5 > 0.10):
-            _raw_win_gaj_e5 = _gaj(tgt_br_e5, _raw_win_gap_e5)
-            if _raw_win_gaj_e5 is None or abs(tgt_bg_e5 - _raw_win_gaj_e5) > 1e-9:
-                tgt_show_gaj_e5 = True
+        tgt_show_gaj_e5 = (
+            tgt_bg_e5 is not None and tgt_br_e5 is not None
+            and _raw_win_gap_e5 is not None and _raw_win_gap_e5 > 0.10
+        )
 
         def _ir(v_): return tgt_br_e5 is not None and v_ is not None and abs(v_ - tgt_br_e5) < 1e-9
         def _ig(s_): return tgt_show_gaj_e5 and tgt_bg_e5 is not None and s_ is not None and abs(s_ - tgt_bg_e5) < 1e-9
@@ -6624,7 +6612,7 @@ def _exp5_comparison_panel(df_all: pd.DataFrame) -> str:
             )
 
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:1100px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -7036,12 +7024,10 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
             for k_, v_ in _all_raw.items():
                 if abs(v_ - tgt_br) < 1e-9:
                     _raw_win_gap = _all_gap_d.get(k_); break
-        tgt_show_gaj = False
-        if (tgt_bg is not None and tgt_br is not None
-                and _raw_win_gap is not None and _raw_win_gap > 0.10):
-            _rwg = _gaj(tgt_br, _raw_win_gap)
-            if _rwg is None or abs(tgt_bg - _rwg) > 1e-9:
-                tgt_show_gaj = True
+        tgt_show_gaj = (
+            tgt_bg is not None and tgt_br is not None
+            and _raw_win_gap is not None and _raw_win_gap > 0.10
+        )
 
         _ir = lambda v_: tgt_br is not None and v_ is not None and abs(v_ - tgt_br) < 1e-9
         _ig = lambda s_: tgt_show_gaj and tgt_bg is not None and s_ is not None and abs(s_ - tgt_bg) < 1e-9
@@ -7137,7 +7123,7 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
         return f"""
 <div style='margin-top:1rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead><tr style='border-bottom:2px solid #cccccc'>
       <th style='{_TH}'>Transition</th>
@@ -7194,7 +7180,7 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
     def _make_table(tbody, keys, min_w, left_header="Model"):
         hdrs = "".join(f'<th style="{_THC}">{COL_LABELS[k]}</th>' for k in keys)
         return (f"<div style='overflow-x:auto;margin-top:0.6rem;border:1px solid #cccccc;"
-                f"border-radius:4px;overflow:hidden'>"
+                f"border-radius:4px'>"
                 f"<table style='border-collapse:collapse;width:100%;background:#ffffff;"
                 f"font-size:0.79rem;color:#1a1a1a;min-width:{min_w}px'>"
                 f"<thead><tr style='border-bottom:2px solid #cccccc'>"
@@ -7492,12 +7478,10 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
                 if abs(v_ - best_raw) < 1e-9:
                     raw_win_gap = all_gap.get(k_)
                     break
-        show_gaj = False
-        if (best_gaj is not None and best_raw is not None
-                and raw_win_gap is not None and raw_win_gap > 0.10):
-            raw_win_gaj = _gaj(best_raw, raw_win_gap)
-            if raw_win_gaj is None or abs(best_gaj - raw_win_gaj) > 1e-9:
-                show_gaj = True
+        show_gaj = (
+            best_gaj is not None and best_raw is not None
+            and raw_win_gap is not None and raw_win_gap > 0.10
+        )
 
         def _is_raw(v):
             return best_raw is not None and v is not None and abs(v - best_raw) < 1e-9
@@ -7578,7 +7562,7 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
 
     col_headers = "".join(f"<th style='{_THC}'>{labels[k]}</th>" for k in avail)
     main_table = f"""
-<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
 <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:760px'>
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
@@ -7593,7 +7577,7 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
     stats_block = f"""
 <div style='margin-top:1.4rem'>
   <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
-  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px;overflow:hidden'>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
   <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
     <thead>
       <tr style='border-bottom:2px solid #cccccc'>
@@ -8613,6 +8597,8 @@ CUSTOM_CSS = """
 
   /* ── Metric tables ─────────────────────────────────────────────── */
   .tbl-scroll { overflow-x: auto; }
+  /* Ensure all table-containing regions scroll horizontally rather than overflow */
+  .fold-body, .best-box, .exp-body > .obs-card { overflow-x: auto; }
   .metrics-table, .ds-table, .leaderboard-table, .best-table {
     width: 100%; border-collapse: collapse;
     font-size: 12.5px; margin-bottom: 6px;
@@ -8880,10 +8866,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── Running Leaders sidebar ─────────────────────────────────────────────────
 (function() {
-  // SECTION_BESTS is injected by Python below
-  var sectionOrder = ['exp1-sub1','exp1-full','exp1-cyclic','exp1-fs','exp2-s1','exp2-s1-fs','exp2-s2','exp2-s2-fs',
-                      'exp3-s1','exp3-s2','p9-ann','p9-voting','p9-stacking',
-                      'p10-full','p10b','p11'];
+  // SECTION_BESTS and SECTION_ORDER are injected by Python
+  var sectionOrder = window.SECTION_ORDER || [];
   var targetList   = ['Grab BOD','Grab COD','Grab TSS','Grab pH',
                       'Comp BOD','Comp COD','Comp TSS','Comp pH'];
   var modelColors  = {
@@ -9077,9 +9061,12 @@ def main():
     print("  Building Comp COD diagnostic section...")
     sections.append(_build_comp_cod_diagnostic(df_all))
 
-    # Inline section-bests JSON for the running leaders JS widget
-    sec_bests_json = _section_bests_json(df_all)
-    section_data_js = f"<script>window.SECTION_BESTS = {sec_bests_json};</script>"
+    # Inline section-bests JSON and section order for the running leaders JS widget
+    sec_bests_json, sec_order_json = _section_bests_json(df_all)
+    section_data_js = (
+        f"<script>window.SECTION_BESTS = {sec_bests_json};\n"
+        f"window.SECTION_ORDER = {sec_order_json};</script>"
+    )
 
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
     css = dark_mode_css(CUSTOM_CSS)
