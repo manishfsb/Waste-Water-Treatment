@@ -75,11 +75,16 @@ EXP_CHART_LABELS = {
     "Exp1-Sub1": "E1-SE1",
     "Exp1-Cyclic": "E1-SE2",
     "Exp1-S3": "E1-SE3",       "Exp1-S3-FS": "E1-SE3-FS",
-    "Exp2-Sub1": "E2-SE1-Comb", "Exp2-Sub1-FS": "E2-SE1-FS",
-    "Exp2-Sub1-Clr": "E2-SE1-Clr",
-    "Exp2-Sub1-Sed": "E2-SE1-Sed",
-    "Exp2-Sub2": "E2-SE2",      "Exp2-Sub2-FS": "E2-SE2-FS",
-    "Exp2-Sub2-Cyc": "E2-SE2",
+    "Exp2-Sub1": "E2-SE2-Comb", "Exp2-Sub1-FS": "E2-SE2-Comb-FS",
+    "Exp2-Sub1-Clr": "E2-SE2-Clr",
+    "Exp2-Sub1-Sed": "E2-SE2-Sed",
+    "Exp2-Sub2": "E2-CIS",      "Exp2-Sub2-FS": "E2-CIS-FS",
+    "Exp2-Sub2-Cyc": "E2-CIS",
+    "Exp2-S5": "E2-SE1a",
+    "Exp2-S3": "E2-SE1b",
+    "Exp2-S6":    "E2-SE2-Only",
+    "Exp2-S6-FS": "E2-SecOnly-FS",
+    "Exp2-S4": "E2-SE3",
     "Exp3-S1": "E3-SE1",
     "Exp3-S2": "E3-SE2",        "Exp3-S2-FS": "E3-SE2-FS",
     "Exp3-S3": "E3-SE3",        "Exp3-S3-FS": "E3-SE3-FS",
@@ -97,17 +102,22 @@ EXP_CHART_LABELS = {
 
 # Longer descriptive labels used only in the "Source" column of best-model tables.
 EXP_SOURCE_LABELS = {
-    "Exp1-Sub1":      "Exp1 SE1  -  Inlet only",
-    "Exp1-Cyclic":    "Exp1 SE2  -  Inlet + COMMON (Cyclic)",
-    "Exp1-S3":        "Exp1 SE3  -  All Grab Inlet + COMMON_CYCLIC",
-    "Exp1-S3-FS":     "Exp1 SE3-FS  -  All Grab Inlet + COMMON_CYCLIC (FS)",
-    "Exp2-Sub1-Clr":  "Exp2 SE1  -  Clarifier",
-    "Exp2-Sub1-Sed":  "Exp2 SE1  -  Sedimentation",
-    "Exp2-Sub1":      "Exp2 SE1  -  Combined",
-    "Exp2-Sub1-FS":   "Exp2 SE1-FS",
-    "Exp2-Sub2":      "Exp2 SE2",
-    "Exp2-Sub2-FS":   "Exp2 SE3-FS",
-    "Exp2-Sub2-Cyc":  "Exp2 SE2",
+    "Exp1-Sub1":      "Exp1 SE1  -  Inlet Only (4 features)",
+    "Exp1-Cyclic":    "Exp1 SE2  -  Inlet + COMMON (11 features)",
+    "Exp1-S3":        "Exp1 SE3  -  Extended Inlet + COMMON",
+    "Exp1-S3-FS":     "Exp1 SE3-FS  -  Extended Inlet + COMMON (FS)",
+    "Exp2-Sub1-Clr":  "Exp2 SE2-Clr  -  Clarifier + COMMON",
+    "Exp2-Sub1-Sed":  "Exp2 SE2-Sed  -  Sedimentation + COMMON",
+    "Exp2-Sub1":      "Exp2 SE2-Comb  -  All Secondary + COMMON",
+    "Exp2-Sub1-FS":   "Exp2 SE2-Comb-FS  -  All Secondary + COMMON (FS)",
+    "Exp2-Sub2":      "Exp2 CIS  -  Core Inlet + Secondary + COMMON",
+    "Exp2-Sub2-FS":   "Exp2 CIS-FS  -  Core Inlet + Secondary + COMMON (FS)",
+    "Exp2-Sub2-Cyc":  "Exp2 CIS  -  Core Inlet + Secondary + COMMON",
+    "Exp2-S5":        "Exp2 SE1a  -  Primary + COMMON",
+    "Exp2-S3":        "Exp2 SE1b  -  Primary + Inlet + COMMON",
+    "Exp2-S6":        "Exp2 SE2-Only  -  All Secondary (no COMMON)",
+    "Exp2-S6-FS":     "Exp2 Sec-Only-FS  -  All Secondary (FS)",
+    "Exp2-S4":        "Exp2 SE3  -  Inlet + Primary + Secondary + COMMON",
     "Exp3-S1":        "Exp3 SE1  -  ADD-tier",
     "Exp3-S2":        "Exp3 SE2  -  ADD+CONSIDER (no FS)",
     "Exp3-S2-FS":     "Exp3 SE2  -  ADD+CONSIDER (FS)",
@@ -178,7 +188,7 @@ _PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phas
 
 FEATURE_DESCRIPTIONS = {
     "Exp1-Sub1": {
-        "label": "Inlet Only (4 features)  -  no process or temporal context",
+        "label": "Core Inlet (4 features)  -  no process or temporal context",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Features (4):</strong> Inlet pH, Inlet BOD (mg/L), Inlet COD (mg/L), Inlet TSS (mg/L) - Grab or Composite.</li>"
@@ -191,40 +201,43 @@ FEATURE_DESCRIPTIONS = {
                      "when compared against Exp1 (Sub 2).",
     },
     "Exp1-Cyclic": {
-        "label": "Inlet + COMMON_CYCLIC (11 features)  -  standard SE2",
+        "label": "Core Inlet + COMMON (11 features)  -  standard SE2",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
-            "<li><strong>COMMON_CYCLIC (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
-            "<li><strong>Calendar encoding:</strong> raw month/day_of_week replaced by sin/cos projections (cyclic standard from SE2 onwards).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
+            "<li><strong>Calendar encoding:</strong> month and day_of_week replaced by sin/cos projections - the project standard from SE2 onwards.</li>"
             "</ul>"
         ),
-        "rationale": "Project-standard inlet feature set with cyclic calendar encoding. "
+        "rationale": "Project-standard inlet feature set. "
                      "Establishes the inlet-only ceiling before adding supplementary inlet "
                      "measurements in SE3.",
     },
     "Exp1-S3": {
-        "label": "All Grab Inlet + COMMON_CYCLIC (15 features)  -  extended inlet set",
+        "label": "Extended Inlet + COMMON (16 features)  -  grab and composite targets",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Core Inlet (4):</strong> pH, BOD, COD, TSS (Grab).</li>"
             "<li><strong>Extended Inlet (5):</strong> TKN/NH3-N, Oil &amp; Grease, PO4/TP, "
-            "Total Coliform, Fecal Coliform (Grab only - no composite equivalents).</li>"
-            "<li><strong>COMMON_CYCLIC (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
-            "<li><strong>Grab targets only:</strong> 4 datasets. ~228 train rows "
-            "(joint missingness of the 5 supplementary inlet columns).</li>"
+            "Total Coliform, Fecal Coliform. Note: TKN/NH3-N and O&amp;G are measured on "
+            "composite Raw Sewage samples (2022+); on the single grab sample in 2021. "
+            "Column header changed from TKN to NH3-N in 2022 - these are related but "
+            "distinct nitrogen parameters. No separate Grab equivalents exist for TKN/NH3-N or O&amp;G.</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin, month_cos, dow_sin, dow_cos.</li>"
+            "<li><strong>8 datasets:</strong> 4 grab + 4 composite targets. Train row counts "
+            "limited by joint missingness of the 5 supplementary columns - see Findings Q1.</li>"
             "</ul>"
         ),
         "rationale": "Tests whether the full set of available inlet measurements - "
                      "including microbiological and nutrient indicators - adds predictive "
-                     "value beyond the 4 core inlet parameters. The ~228 train-row constraint "
-                     "is an inherent data limitation, not a design choice.",
+                     "value beyond the 4 core inlet parameters. Row count is an inherent "
+                     "data limitation driven by supplementary column missingness, not a design choice.",
     },
     "Exp1-S3-FS": {
-        "label": "All Grab Inlet + COMMON_CYCLIC - Feature Selected (2-15 features)",
+        "label": "All Grab Inlet + COMMON - Feature Selected (2-15 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
-            "<li><strong>Starting set:</strong> SE3 features (15: 9 inlet + 7 COMMON_CYCLIC).</li>"
+            "<li><strong>Starting set:</strong> SE3 features (15: 9 inlet + 7 COMMON - grab targets only).</li>"
             "<li><strong>OLS:</strong> LassoCV pre-screen. <strong>Ridge:</strong> full set (L2). "
             "<strong>ElNet:</strong> full set (L1+L2 selects internally).</li>"
             "<li><strong>Trees:</strong> 3-phase OOF permutation importance (threshold 5%).</li>"
@@ -272,7 +285,7 @@ FEATURE_DESCRIPTIONS = {
                      "joining inlet and secondary data outperforms either alone.",
     },
     "Exp2-Sub2-FS": {
-        "label": "Inlet + Secondary + COMMON - Feature Selected",
+        "label": "CIS - Feature Selected",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Starting set:</strong> SE2 combined features (19: Inlet + Secondary + COMMON).</li>"
@@ -300,14 +313,14 @@ FEATURE_DESCRIPTIONS = {
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Sec Sedimentation (5):</strong> pH, TSS, BOD, COD, RAS (New).</li>"
             "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
-            "<li><strong>Removed vs SE1-Combined:</strong> Sec Clarifier group (5 cols) - isolated to test standalone Sedimentation signal.</li>"
+            "<li><strong>Removed vs SE2-Combined:</strong> Sec Clarifier group (5 cols) - isolated to test standalone Sedimentation signal.</li>"
             "</ul>"
         ),
-        "rationale": "Isolate the Sedimentation group  -  paired with Exp2-SE1-Clr to test "
+        "rationale": "Isolate the Sedimentation group  -  paired with Exp2-SE2-Clr to test "
                      "whether one group dominates the other.",
     },
     "Exp2-Sub2-Cyc": {
-        "label": "Inlet + Secondary + COMMON (21 features)",
+        "label": "Core Inlet + Secondary + Common (CIS) - 21 features",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
             "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
@@ -318,6 +331,105 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Full combined feature set with corrected calendar encoding. "
                      "OLS uses LassoCV pre-screening; trees use OOF permutation importance "
                      "feature selection, both stored in the same results file.",
+    },
+    "Exp2-S4": {
+        "label": "Inlet + Primary + Secondary + COMMON (27 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Core Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
+            "<li><strong>Primary Clarifier (5):</strong> Primary Clarifier pH, Primary TSS, "
+            "Primary BOD, Primary COD, Primary Sludge Totalizer (m3).</li>"
+            "<li><strong>Grit Classifier (1):</strong> Grit Classifier TSS (mg/L).</li>"
+            "<li><strong>Sec Clarifier (5):</strong> pH, TSS, BOD, COD, RAS.</li>"
+            "<li><strong>Sec Sedimentation (5):</strong> pH, TSS, BOD, COD, RAS (New).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Row count:</strong> Grab ~764 train / 197 test. Composite ~595 train / 176 test. "
+            "Secondary co-occurs almost perfectly with Primary days (~14-row additional cost vs SE1).</li>"
+            "</ul>"
+        ),
+        "rationale": "Full stage-based feature set combining all three monitoring points. "
+                     "Directly tests whether primary clarifier data adds predictive value on top of the "
+                     "CIS baseline (Core Inlet + Secondary + Common, ~920 train rows). SE1 showed primary alone"
+                     "adds no signal; this experiment tests whether primary is informative in the "
+                     "presence of secondary data.",
+    },
+    "Exp2-S6": {
+        "label": "All Secondary only (10 features, no COMMON)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Sec Clarifier (5):</strong> pH, TSS (mg/L), BOD (mg/L), COD (mg/L), RAS.</li>"
+            "<li><strong>Sec Sedimentation (5):</strong> pH, TSS (mg/L), BOD (mg/L), COD (mg/L), RAS (New).</li>"
+            "<li><strong>COMMON:</strong> excluded entirely.</li>"
+            "<li><strong>Row count:</strong> Grab ~971-975 train / ~218-220 test. Composite ~785-813 train / ~206-215 test. "
+            "Notably higher than SE2-Comb (+50 grab, +150 comp) because Flow/Power NaN rows are no longer binding.</li>"
+            "</ul>"
+        ),
+        "rationale": "Isolates secondary-stage signal from plant-level operational context (Flow, Power, calendar). "
+                     "Motivated by the Exp1 finding that COMMON sometimes hurts grab targets and substantially "
+                     "helps composite targets. Contrasts with SE2-Comb (All Secondary + COMMON, 17 features) to "
+                     "attribute how much of the SE2 signal comes from secondary measurements vs COMMON features. "
+                     "The extra ~50 grab / ~150 comp rows (vs SE2-Comb) are a secondary benefit of dropping COMMON.",
+    },
+    "Exp2-S6-FS": {
+        "label": "Secondary Only - Feature Selected (10 feat -> selected)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Starting set:</strong> Same 10 secondary features as SE2a (no COMMON, no Inlet).</li>"
+            "<li><strong>Linear FS:</strong> LassoCV pre-screening for OLS (1-4 features retained per target). "
+            "Ridge and ElNet select implicitly via regularisation.</li>"
+            "<li><strong>Non-linear FS:</strong> OOF permutation importance (threshold 5%); 2-6 features retained. "
+            "Three-phase protocol: full CV search -> OOF selection -> refit on selected.</li>"
+            "<li><strong>Row count:</strong> Same as SE2a (Grab ~971-975 / ~785-813 Composite). "
+            "No additional row cost from FS.</li>"
+            "<li><strong>Consistent finding:</strong> Sec Clarifier BOD and Sec Sed COD are the two features "
+            "retained most frequently across all models and targets.</li>"
+            "</ul>"
+        ),
+        "rationale": "Tests whether feature selection on the pure secondary feature pool improves "
+                     "generalisation over the full 10-feature set (SE2a). "
+                     "With only 10 starting features the marginal benefit of FS is expected to be small; "
+                     "the key question is whether it outperforms CIS-FS "
+                     "(21 features -> selected), which includes inlet and COMMON context. "
+                     "A better Secondary Only-FS result would confirm that COMMON and inlet add no net value "
+                     "once noise features are pruned from the secondary pool.",
+    },
+    "Exp2-S5": {
+        "label": "Primary Stage + COMMON only (13 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Primary Clarifier (5):</strong> Primary Clarifier pH, Primary TSS, "
+            "Primary BOD, Primary COD, Primary Sludge Totalizer (m3).</li>"
+            "<li><strong>Grit Classifier (1):</strong> Grit Classifier TSS (mg/L).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Row count:</strong> Grab ~780-784 train / ~204 test. Composite ~611-633 train / ~193-201 test. "
+            "Slightly higher than SE1b since inlet NaN rows are no longer binding.</li>"
+            "</ul>"
+        ),
+        "rationale": "Isolates whether primary treatment features carry any predictive signal WITHOUT "
+                     "inlet concentrations. Directly contrasts with SE1b (Primary + Inlet + COMMON, 17 features) "
+                     "to determine whether inlet adds or destroys signal at the primary stage. "
+                     "If SE1a and SE1b both produce all-negative R², primary features are genuinely "
+                     "non-predictive regardless of inlet pairing. "
+                     "VIF warning remains: Primary Clarifier pH is near-collinear with itself across years.",
+    },
+    "Exp2-S3": {
+        "label": "Primary Stage + Inlet + COMMON (17 features)",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Inlet (4):</strong> pH, BOD, COD, TSS - Grab or Composite.</li>"
+            "<li><strong>Primary Clarifier (5):</strong> Primary Clarifier pH, Primary TSS, "
+            "Primary BOD, Primary COD, Primary Sludge Totalizer (m3).</li>"
+            "<li><strong>Grit Classifier (1):</strong> Grit Classifier TSS (mg/L).</li>"
+            "<li><strong>COMMON (7):</strong> Flow (MLD), Power Total (KW), year, month_sin/cos, dow_sin/cos.</li>"
+            "<li><strong>Row count:</strong> Grab ~778 train / 204 test. Composite ~608 train / 181 test "
+            "(~34% row cost vs Exp1-SE2 baseline; driven by Primary BOD/Grit missingness).</li>"
+            "</ul>"
+        ),
+        "rationale": "Tests whether primary clarification and grit removal measurements add predictive "
+                     "value on top of inlet concentrations. Primary stage sits between inlet and secondary "
+                     "in the treatment process. Pearson correlations to effluent targets are weak (|r| < 0.22 "
+                     "for BOD/COD/TSS), though MI scores suggest modest non-linear signal (0.07-0.19). "
+                     "VIF warning: Primary Clarifier pH shows VIF ~2743 in OLS (collinear with inlet pH).",
     },
     "Exp3-S1": {
         "label": "Exp2-S2 + ADD-tier Aeration Features (28 features, no FS)",
@@ -657,24 +769,29 @@ EXP_INTRO = {
     "Exp1": (
         "Experiment 1 investigates how far inlet-only features can predict effluent quality. "
         "<strong>SE1</strong> uses only the 4 core inlet concentrations - the absolute floor. "
-        "<strong>SE2</strong> adds Flow, Power, and cyclic calendar features (sin/cos projections) "
-        "raising the count to 11. <strong>SE3</strong> extends to all 9 available grab inlet "
-        "measurements plus COMMON_CYCLIC (15 features), but is limited to ~228 training rows "
-        "due to joint missingness of the supplementary inlet columns (TKN, O&amp;G, PO4, "
-        "Total/Fecal Coliform). SE3 is grab targets only - no composite equivalents exist "
-        "for the supplementary inlet features. "
+        "<strong>SE2</strong> adds Flow, Power, and calendar features (sin/cos projections for month and day-of-week) "
+        "raising the count to 11. <strong>SE3</strong> extends to all 9 available extended inlet "
+        "measurements plus COMMON (16 features total), covering both grab and composite targets. "
+        "Training rows are limited by joint missingness of the supplementary inlet columns "
+        "(TKN/NH3-N, O&amp;G, PO4, Total/Fecal Coliform) - see Findings Q1 for current row counts. "
         "Feature selection in SE3-FS is model-specific: OLS uses LassoCV, Ridge uses the "
         "full set, ElNet selects via L1, and trees use OOF permutation importance (threshold 5%)."
     ),
     "Exp2": (
-        "Experiment 2 expands the feature set from inlet-only to include secondary treatment data. "
-        "<strong>SE1</strong> tests three secondary-only feature scopes side by side: "
-        "Sec Clarifier features alone (10 features), Sec Sedimentation features alone (10 features), "
-        "and both groups combined (15 features). The split variants test whether the two secondary "
-        "groups carry distinct signal or are interchangeable. "
-        "<strong>SE2</strong> adds inlet concentrations to the combined secondary set "
-        "(21 features) and applies model-specific feature selection "
-        "(OLS: LassoCV; trees: OOF permutation importance)."
+        "Experiment 2 steps through the treatment plant stage by stage, starting from where Experiment 1 left off. "
+        "<strong>SE1</strong> tests the primary clarification and grit removal stage in two sub-scopes to isolate "
+        "whether primary features carry any standalone signal: "
+        "<em>SE1a</em> (Primary + COMMON, 13 features) excludes inlet entirely; "
+        "<em>SE1b</em> (Primary + Inlet + COMMON, 17 features) adds core inlet as a paired comparison. "
+        "Both sub-scopes produce all-negative R², confirming primary features are genuinely non-predictive "
+        "regardless of whether inlet is included. "
+        "<strong>SE2</strong> replaces the primary group with secondary treatment data, tested in three "
+        "scopes: Sec Clarifier alone (10 features), Sec Sedimentation alone (10 features), and both "
+        "combined (15 features). The split variants establish whether the two secondary sub-groups "
+        "carry distinct signal or are interchangeable. "
+        "<strong>SE3</strong> combines all three monitoring points - inlet, primary, and secondary - "
+        "into a single feature set (27 features). The CIS baseline (Core Inlet + Secondary + Common, 21 features) "
+        "is retained for direct delta comparison."
     ),
     "Exp3": (
         "Experiment 3 starts from the <strong>Exp2-SE2 baseline</strong> (Inlet + Secondary + COMMON, "
@@ -804,6 +921,11 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp2-Sub1-Clr": "Exp2-Sub1-Clr",
         "Exp2-Sub1-Sed": "Exp2-Sub1-Sed",
         "Exp2-Sub2-Cyc": "Exp2-Sub2-Cyc",
+        "Exp2-S6":    "Exp2-S6",
+        "Exp2-S6-FS": "Exp2-S6-FS",
+        "Exp2-S5": "Exp2-S5",
+        "Exp2-S3": "Exp2-S3",
+        "Exp2-S4": "Exp2-S4",
         "Exp3-S1": "Exp3-S1",
         "Exp3-S2-FS": "Exp3-S2-FS",
         "Exp3-S3": "Exp3-S3", "Exp3-S3-FS": "Exp3-S3-FS",
@@ -999,6 +1121,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp5_s1", False), ("exp5_s1_fs", False),
         ("exp5_s2", False), ("exp5_s2_fs", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
+        ("exp2_s6", False), ("exp2_s6_fs", False), ("exp2_s5", False), ("exp2_s3", False), ("exp2_s4", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -1019,6 +1142,7 @@ def load_all_data() -> pd.DataFrame:
         ("exp5_s1", False), ("exp5_s1_fs", False),
         ("exp5_s2", False), ("exp5_s2_fs", False),
         ("exp2_s1", False), ("exp2_s1_split", False), ("exp2_s2", False),
+        ("exp2_s6", False), ("exp2_s6_fs", False), ("exp2_s5", False), ("exp2_s3", False), ("exp2_s4", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -2837,12 +2961,19 @@ def _section_bests_json(df_all: pd.DataFrame):
         "exp1-s3":      ["Exp1-S3", "Exp1-S3-FS"],
         "exp1-s3-full": ["Exp1-S3"],
         "exp1-s3-fs":   ["Exp1-S3-FS"],
-        "exp2-s1":     ["Exp2-Sub1"],
-        "exp2-s1-clr": ["Exp2-Sub1-Clr"],
-        "exp2-s1-sed": ["Exp2-Sub1-Sed"],
-        "exp2-s2":      ["Exp2-Sub2-Cyc"],
-        "exp2-s2-full": ["Exp2-Sub2-Cyc"],
-        "exp2-s2-fs":   ["Exp2-Sub2-FS"],
+        "exp2-s1":          ["Exp2-S5", "Exp2-S3"],
+        "exp2-s1a":         ["Exp2-S5"],
+        "exp2-s1b":         ["Exp2-S3"],
+        "exp2-s2":          ["Exp2-S6", "Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed"],
+        "exp2-s2a":         ["Exp2-S6"],
+        "exp2-s2-clr":      ["Exp2-Sub1-Clr"],
+        "exp2-s2-sed":      ["Exp2-Sub1-Sed"],
+        "exp2-s2-combined": ["Exp2-Sub1"],
+        "exp2-s3":          ["Exp2-S4", "Exp2-Sub2-Cyc", "Exp2-Sub2-FS", "Exp2-S6-FS"],
+        "exp2-s3-full":     ["Exp2-S4"],
+        "exp2-s3-ref":      ["Exp2-Sub2-Cyc"],
+        "exp2-s3-ref-fs":   ["Exp2-Sub2-FS"],
+        "exp2-s3-s6fs":     ["Exp2-S6-FS"],
         "exp3-s1":      ["Exp3-S1"],
         "exp3-s2":      ["Exp3-S2", "Exp3-S2-FS"],
         "exp3-s2-full": ["Exp3-S2"],
@@ -2929,11 +3060,11 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
         # SE1
         r2 = _g(s1, model, tgt); gap = _g(s1, model, tgt, "R2_gap")
         if r2 is not None:
-            out.append((r2, gap, "SE1 (4 feat · inlet only)"))
+            out.append((r2, gap, "SE1 (4 feat · core inlet)"))
         # SE2
         r2 = _g(s2, model, tgt); gap = _g(s2, model, tgt, "R2_gap")
         if r2 is not None:
-            lbl = f"SE2 · {model} (11 feat · cyclic)"
+            lbl = f"SE2 · {model} (11 feat)"
             out.append((r2, gap, lbl))
         # SE3-Full (grab only)
         r2 = _g(s3, model, tgt); gap = _g(s3, model, tgt, "R2_gap")
@@ -3066,7 +3197,17 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
 
 def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
     """Champion box for Experiment 2 with gap-adjusted selection across all sub-experiments."""
-    exp2_keys = ["Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed", "Exp2-Sub2", "Exp2-Sub2-Cyc"]
+    exp2_keys = [
+        "Exp2-S3",          # SE1 - Primary + Inlet + COMMON
+        "Exp2-Sub1-Clr",    # SE2-Clr
+        "Exp2-Sub1-Sed",    # SE2-Sed
+        "Exp2-S6",          # SE2-Only
+        "Exp2-Sub1",        # SE2-Comb
+        "Exp2-Sub2-Cyc",    # CIS reference
+        "Exp2-Sub2-FS",     # CIS-FS
+        "Exp2-S6-FS",       # Sec-Only-FS
+        "Exp2-S4",          # SE3 - full stage set
+    ]
     df = df_all[df_all["exp_key"].isin(exp2_keys)].copy()
 
     if df.empty:
@@ -3828,7 +3969,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         c = "#5BAD6F" if v > 0.005 else ("#E15252" if v < -0.005 else "var(--text-muted)")
         return f"<span style='color:{c};font-weight:bold'>{v:+.3f}</span>"
 
-    # ── Q1 : Sub1 floor ──────────────────────────────────────────────────────
+    # ── Q1 : SE1 floor + SE3 ceiling ─────────────────────────────────────────
     s1_vals = [_r2(s1, m, t) for m in all_m for t in TARGETS_ORDERED]
     s1_vals = [v for v in s1_vals if v is not None]
     s1_pos  = [v for v in s1_vals if v > 0]
@@ -3840,13 +3981,71 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
             if v is not None and (best_r2 is None or v > best_r2):
                 best_r2, best_m, best_t = v, m, TARGET_SHORT.get(t, t)
 
-    q1 = (
-        f"Barely. Only {len(s1_pos)}/{len(s1_vals)} (model × target) evaluations achieved a "
-        f"positive Test R². Best single result: {best_m} on {best_t} (R² = {best_r2:+.3f}). "
-        f"Mean Test R² across all cells: {s1_avg:+.3f}. All composite targets and Grab COD "
-        f"returned universally negative R²  -  inlet concentrations carry no generalisable signal "
-        f"for those targets. This establishes the floor: inlet data is necessary but not sufficient."
+    # SE3: derive train rows and feature count from actual data
+    s3_best_r2, s3_best_m, s3_best_t = None, None, None
+    s3_above04 = 0
+    for m in all_m:
+        for t in GRAB_TARGETS:
+            v = _r2(s3, m, t)
+            if v is None: continue
+            if v > 0.40: s3_above04 += 1
+            if s3_best_r2 is None or v > s3_best_r2:
+                s3_best_r2, s3_best_m, s3_best_t = v, m, TARGET_SHORT.get(t, t)
+    s3_available = s3_best_r2 is not None
+
+    _s3_grab_rows = _s3_comp_rows = _s3_n_feat = None
+    _s3_has_comp = False
+    if not s3.empty:
+        _s3_grab_sub = s3[s3["target"].str.contains("Grab")]
+        _s3_comp_sub = s3[s3["target"].str.contains("Composite")]
+        _s3_has_comp = not _s3_comp_sub.empty
+        if not _s3_grab_sub.empty and "n_train" in s3.columns:
+            _s3_grab_rows = int(_s3_grab_sub["n_train"].iloc[0])
+        if _s3_has_comp and "n_train" in s3.columns:
+            _s3_comp_rows = int(_s3_comp_sub["n_train"].iloc[0])
+        if "n_features" in s3.columns:
+            _s3_n_feat = int(s3["n_features"].iloc[0])
+
+    def _s3_row_str():
+        if _s3_grab_rows is None: return "unknown"
+        s = f"~{_s3_grab_rows} grab"
+        if _s3_comp_rows is not None:
+            s += f" / ~{_s3_comp_rows} composite"
+        return s + " train rows"
+
+    _s1_summary = (
+        f"With only the 4 core inlet concentrations (SE1): barely. "
+        f"Only {len(s1_pos)}/{len(s1_vals)} (model x target) cells achieved positive Test R². "
+        f"Best SE1 result: {best_m} on {best_t} (R² = {best_r2:+.3f}). "
+        f"Mean Test R² across SE1: {s1_avg:+.3f}. "
+        f"All composite targets and Grab COD returned universally negative R², "
+        f"establishing that 4 bare inlet features are not sufficient on their own."
     )
+
+    if s3_available and s3_best_r2 is not None and s3_best_r2 > 0.05 and s3_above04 > 0:
+        _tgt_cover = "grab and composite" if _s3_has_comp else "grab"
+        _feat_str  = f"{_s3_n_feat} features, " if _s3_n_feat else ""
+        _s3_note = (
+            f"<br><strong>SE3 changes the picture:</strong> expanding to all available {_tgt_cover} "
+            f"inlet measurements plus cyclic calendar context ({_feat_str}{_s3_row_str()}) "
+            f"substantially lifts performance for BOD and TSS. "
+            f"{s3_above04} model-target cells exceed R² = 0.40. "
+            f"Best SE3 result: {s3_best_m} on {s3_best_t} (R² = {s3_best_r2:+.3f}). "
+            f"COD and pH remain unpredictable from inlet data alone across all SE variants."
+        )
+    elif s3_available:
+        _tgt_cover = "grab and composite" if _s3_has_comp else "grab"
+        _s3_note = (
+            f"<br><strong>SE3 does not improve on SE1/SE2:</strong> expanding to all available "
+            f"inlet measurements ({_tgt_cover} targets, {_s3_row_str()}) yields "
+            f"near-universal negative Test R² (best = {s3_best_r2:+.3f}). "
+            f"The supplementary inlet columns introduce a non-stationarity problem "
+            f"driven by anomalous 2022 readings. See Q6 for the full diagnosis."
+        )
+    else:
+        _s3_note = ""
+
+    q1 = f"It depends on which inlet features are used. {_s1_summary}{_s3_note}"
 
     # ── Q2 : Context gain (SE1 → SE2) ────────────────────────────────────────
     lin_d12       = _delta_arr(s1, s2, lin_m,  TARGETS_ORDERED)
@@ -3933,12 +4132,16 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     else:
         gap_str = "R²-gap data unavailable."
 
+    _q3_rows_note = (
+        f"SE3 has {_s3_row_str()}. At this dataset size, OOF FS "
+    ) if _s3_grab_rows else "At this SE3 dataset size, OOF FS "
+
     q3 = (
         f"{_fs_verdict} "
         f"<br><strong>Grab targets:</strong> mean delta = {_colored(grab_fs_d)} "
         f"(linear: {_colored(lin_fs_d)}, trees: {_colored(tree_fs_d)}). "
         f"<br><strong>Generalisation:</strong> {gap_str} "
-        f"<br><em>Note:</em> SE3 has only ~228 training rows. At this dataset size, OOF FS "
+        f"<br><em>Note:</em> {_q3_rows_note}"
         f"selects 2-10 features per model/target - the supplementary inlet columns (TKN, O&G, PO4, Coliforms) "
         f"are frequently dropped, suggesting their individual signal is weak relative to the core 4 inlet features."
     )
@@ -3997,6 +4200,9 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     best_raw_var = max(star_counts, key=lambda k: star_counts[k])
     best_gaj_var = max(gaj_counts,  key=lambda k: gaj_counts[k])
 
+    _s3_cov  = "grab and composite" if _s3_has_comp else "grab"
+    _s3_dash = "Dash (-) = composite target with no SE3 result." if not _s3_has_comp else "Dash (-) = no result for that SE."
+
     q4 = (
         f"Raw winner: <strong>{best_raw_var}</strong> "
         f"({star_counts['SE1']} SE1 / {star_counts['SE2']} SE2 / "
@@ -4004,26 +4210,27 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
         f"Gap-adjusted winner: <strong>{best_gaj_var}</strong> "
         f"({gaj_counts['SE1']} SE1 / {gaj_counts['SE2']} SE2 / "
         f"{gaj_counts['SE3-Full']} SE3-Full / {gaj_counts['SE3-FS']} SE3-FS diamonds). "
-        f"SE3/SE3-FS results cover grab targets only (~228 train rows). "
+        f"SE3/SE3-FS cover {_s3_cov} targets ({_s3_row_str()}). "
         f"The table below shows the best raw Test R² per variant per target:"
     )
 
     q4_table = f"""
-<div style='overflow-x:auto;margin-top:0.5rem'>
-<table class='summary-table' style='font-size:0.83em;width:auto;min-width:520px'>
+<div style='margin-top:0.5rem'>
+<div class='tbl-scroll'>
+<table class='summary-table metrics-table' style='width:auto;min-width:520px'>
   <thead><tr>
-    <th>Target</th>
-    <th style='text-align:center'>SE1</th>
-    <th style='text-align:center'>SE2</th>
-    <th style='text-align:center'>SE3-Full</th>
-    <th style='text-align:center'>SE3-FS</th>
+    <th class='tgt-name'>Target</th>
+    <th>SE1</th>
+    <th>SE2</th>
+    <th>SE3-Full</th>
+    <th>SE3-FS</th>
   </tr></thead>
   <tbody>{tgt_winner_rows}</tbody>
-</table>
+</table></div>
 <p class='meta' style='margin-top:0.4rem'>
   <strong>★</strong> = raw R² winner · <strong>✦</strong> = gap-adj winner ·
   green = both · orange = raw only · blue = gap-adj only.
-  Small grey value = gap-adjusted score. Dash (-) = grab-only SE, no composite results.
+  Small grey value = gap-adjusted score. {_s3_dash}
 </p>
 </div>"""
 
@@ -4031,15 +4238,214 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
     grab_d12 = _delta_arr(s1, s2, all_m, GRAB_TARGETS)
     comp_d12 = _delta_arr(s1, s2, all_m, COMP_TARGETS)
 
+    s3_comp = s3[s3["target"].str.contains("Composite")]
+    s3_grab = s3[s3["target"].str.contains("Grab")]
+    _s3_comp_any = not s3_comp.empty
+    _s3_grab_any = not s3_grab.empty
+
+    if _s3_comp_any and _s3_grab_any:
+        best_grab_r2  = s3_grab["R2_test"].max()
+        best_comp_r2  = s3_comp["R2_test"].max()
+        q5_se3_note = (
+            f"SE3 now includes both grab ({s3_grab['n_train'].iloc[0]:.0f} train) and "
+            f"composite ({s3_comp['n_train'].iloc[0]:.0f} train) datasets. "
+            f"Best grab R²_test = {best_grab_r2:+.3f}, best composite R²_test = {best_comp_r2:+.3f}. "
+            f"Both are near-zero or negative; the performance gap between grab and composite "
+            f"is not meaningful when neither generalises."
+        )
+    else:
+        q5_se3_note = (
+            "SE3 now covers both grab and composite targets; see Q6 for why both "
+            "show near-zero or negative test R²."
+        )
+
     q5 = (
         f"Yes, for SE1→SE2. Grab targets respond more positively than composite. "
         f"<br>"
         f"<strong>SE1 → SE2:</strong> Grab {_colored(grab_d12)}, Composite {_colored(comp_d12)}. "
-        f"<strong>SE3 scope:</strong> grab targets only - no composite comparison available for SE3/SE3-FS "
-        f"as the supplementary inlet columns (TKN, O&G, PO4, Coliforms) have no composite equivalents. "
-        f"The structural gap persists: Composite targets have fewer training rows "
-        f"and need secondary treatment data to generalise (Experiment 2 and beyond)."
+        f"<strong>SE3:</strong> {q5_se3_note} "
+        f"The structural gap between grab and composite persists in SE2 and earlier SEs; "
+        f"secondary treatment data is needed for composite targets (Experiment 2 and beyond)."
     )
+
+    # ── Q6 : Grab SE3 retirement - measurement-type correction ───────────────
+    # Compute year-by-year grab-sourced extended feature coverage from master data.
+    _raw_file = os.path.join(os.path.dirname(MODELING_DIR), "raw_data", "All_Years_Full.xlsx")
+    q6_extra  = ""
+    q6        = "Master dataset not available for analysis."
+
+    if os.path.exists(_raw_file):
+        _raw = pd.read_excel(_raw_file, parse_dates=["Date"])
+        _raw["year"] = _raw["Date"].dt.year
+        import numpy as _np
+
+        _grab_ext = {
+            "TKN":    "Inlet TKN (mg/L, Grab)",
+            "O&amp;G":    "Inlet O&amp;G (mg/L, Grab)",
+            "PO4/TP": "Inlet PO4/TP (mg/L, Grab)",
+            "Total Coliform":  "Inlet Total Coliform (CFU/100ml, Grab)",
+            "Fecal Coliform":  "Inlet Fecal Coliform (CFU/100ml, Grab)",
+        }
+        # Use actual column names (unescaped) for pandas lookups
+        _grab_ext_pd = {
+            "TKN":    "Inlet TKN (mg/L, Grab)",
+            "O&G":    "Inlet O&G (mg/L, Grab)",
+            "PO4/TP": "Inlet PO4/TP (mg/L, Grab)",
+            "Total Coliform": "Inlet Total Coliform (CFU/100ml, Grab)",
+            "Fecal Coliform": "Inlet Fecal Coliform (CFU/100ml, Grab)",
+        }
+        _years = [2021, 2022, 2023, 2024, 2025]
+
+        # Build provenance table rows
+        _prov_rows = ""
+        for display_key, display_col in _grab_ext.items():
+            pd_col = _grab_ext_pd[display_key.replace("&amp;", "&")]
+            if pd_col not in _raw.columns:
+                continue
+            yr_counts = _raw.groupby("year")[pd_col].count()
+            total = int(_raw[pd_col].notna().sum())
+            # Determine last grab year
+            last_grab = max((y for y in _years if int(yr_counts.get(y, 0)) > 0), default=None)
+            switch_note = f"grab through {last_grab}" if last_grab else "no grab data"
+            cells = ""
+            for y in _years:
+                n = int(yr_counts.get(y, 0))
+                if n == 0:
+                    cells += f"<td style='color:var(--text-muted)'>-</td>"
+                elif y <= (last_grab or 0):
+                    cells += f"<td style='color:#5BAD6F;font-weight:bold'>{n}</td>"
+                else:
+                    cells += f"<td style='color:#E15252'>{n}</td>"
+            _prov_rows += (
+                f"<tr><td class='tgt-name'>{display_key}</td>{cells}"
+                f"<td style='font-size:0.88em;color:var(--text-muted)'>{switch_note}</td></tr>"
+            )
+
+        # Build training/test row count table (for Grab BOD target as representative)
+        _gc = ["Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
+               "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)"]
+        _cm = ["Flow (MLD)", "Power Total (KW)", "year"]
+        _tgt_col = "Effluent BOD (mg/L, Grab)"
+        _raw["_ms"] = _np.sin(2 * _np.pi * _raw["Date"].dt.month / 12)
+        _raw["_mc"] = _np.cos(2 * _np.pi * _raw["Date"].dt.month / 12)
+        _raw["_ds"] = _np.sin(2 * _np.pi * _raw["Date"].dt.dayofweek / 7)
+        _raw["_dc"] = _np.cos(2 * _np.pi * _raw["Date"].dt.dayofweek / 7)
+        _cyclic = ["_ms", "_mc", "_ds", "_dc"]
+
+        _combos = [
+            ("SE2 baseline (no extended features)",
+             []),
+            ("+ Total Coliform (grab)",
+             ["Inlet Total Coliform (CFU/100ml, Grab)"]),
+            ("+ Fecal Coliform (grab)",
+             ["Inlet Fecal Coliform (CFU/100ml, Grab)"]),
+            ("+ Total + Fecal Coliform (grab)",
+             ["Inlet Total Coliform (CFU/100ml, Grab)",
+              "Inlet Fecal Coliform (CFU/100ml, Grab)"]),
+            ("+ PO4/TP (grab)",
+             ["Inlet PO4/TP (mg/L, Grab)"]),
+            ("+ PO4 + Total + Fecal Coliform (grab)",
+             ["Inlet PO4/TP (mg/L, Grab)",
+              "Inlet Total Coliform (CFU/100ml, Grab)",
+              "Inlet Fecal Coliform (CFU/100ml, Grab)"]),
+            ("+ TKN (grab)",
+             ["Inlet TKN (mg/L, Grab)"]),
+            ("+ O&amp;G (grab) [uses Inlet O&amp;G (mg/L, Grab)]",
+             ["Inlet O&G (mg/L, Grab)"]),
+        ]
+
+        _combo_rows = ""
+        for label, ext_cols in _combos:
+            feats = _gc + ext_cols + _cm + _cyclic
+            avail = [c for c in feats if c in _raw.columns] + [_tgt_col]
+            sub   = _raw[avail].dropna()
+            train_n = int((sub["year"] < 2025).sum())
+            test_n  = int((sub["year"] == 2025).sum())
+            n24     = int((sub["year"] == 2024).sum())
+            t_col   = "color:#E15252;font-weight:bold" if test_n == 0 else "color:#5BAD6F"
+            n24_col = "color:#E15252" if n24 == 0 else ""
+            _combo_rows += (
+                f"<tr><td class='tgt-name'>{label}</td>"
+                f"<td>{train_n}</td>"
+                f"<td style='{n24_col}'>{n24 if n24 else '-'}</td>"
+                f"<td style='{t_col}'>{'0 - no test data' if test_n == 0 else test_n}</td></tr>"
+            )
+
+        # SE2-baseline stats for reference sentence
+        _se2_feats = _gc + _cm + _cyclic
+        _se2_avail = [c for c in _se2_feats if c in _raw.columns] + [_tgt_col]
+        _se2_sub   = _raw[_se2_avail].dropna()
+        _se2_train = int((_se2_sub["year"] < 2025).sum())
+        _se2_test  = int((_se2_sub["year"] == 2025).sum())
+
+        prov_table = f"""
+<div style='margin:0.6rem 0 0.4rem'>
+<div class='tbl-scroll'>
+<table class='summary-table metrics-table' style='width:auto;min-width:560px'>
+  <thead><tr>
+    <th class='tgt-name'>Extended inlet feature</th>
+    {''.join(f'<th>{y}</th>' for y in _years)}
+    <th>Measurement type</th>
+  </tr></thead>
+  <tbody>{_prov_rows}</tbody>
+</table></div>
+<p class='meta' style='margin:0.3rem 0 0'>
+  Green = grab-sourced rows (correct for grab prediction). Red = composite-sourced values
+  stored in grab column (incorrect - would mix measurement types). Dash = no data that year.
+</p></div>"""
+
+        combo_table = f"""
+<div style='margin:0.6rem 0 0.4rem'>
+<div class='tbl-scroll'>
+<table class='summary-table metrics-table' style='width:auto;min-width:540px'>
+  <thead><tr>
+    <th class='tgt-name'>Grab feature set (core inlet + COMMON + ...)</th>
+    <th>n train</th>
+    <th>2024 in train</th>
+    <th>2025 test rows</th>
+  </tr></thead>
+  <tbody>{_combo_rows}</tbody>
+</table></div>
+<p class='meta' style='margin:0.3rem 0 0'>
+  Representative target: Effluent BOD (Grab). Results are identical for TSS, COD, pH.
+  Red test column = model cannot be evaluated (empty holdout set).
+</p></div>"""
+
+        q6_extra = prov_table + combo_table
+
+        q6 = (
+            f"<strong>Grab SE3 was retired due to a measurement-type correction</strong> "
+            f"that eliminated all grab-sourced extended features from the 2025 test set."
+            f"<br><br>"
+            f"<strong>What was discovered.</strong> "
+            f"Frequency analysis of the raw lab reports showed that the extended inlet "
+            f"features switched from grab to composite measurement in two waves: "
+            f"TKN and O&amp;G became composite in January 2022 (~22-24 readings/month vs "
+            f"~8-9/month in 2021); PO4/TP and both Coliform measures became composite in "
+            f"2023 (~29 readings/month vs ~4-8/month in 2021-2022). The extraction script "
+            f"previously scanned grab and composite sub-blocks together, silently placing "
+            f"composite-sourced values into grab-labelled columns. "
+            f"The corrected extraction now maintains separate grab and composite columns "
+            f"for each extended feature (see table below)."
+            f"<br><br>"
+            f"<strong>Why grab SE3 cannot be evaluated.</strong> "
+            f"After applying the correction, every grab-sourced extended feature has "
+            f"<strong>zero rows in 2024 and zero rows in the 2025 test set</strong>. "
+            f"A <code>dropna()</code> on any grab feature set that includes extended "
+            f"features produces an empty 2025 holdout - the model cannot be scored. "
+            f"SE2 (no extended features) gives {_se2_train} train / {_se2_test} test rows "
+            f"with full 2021-2024 coverage; adding any grab-sourced extended feature "
+            f"drops the test set to zero (second table below)."
+            f"<br><br>"
+            f"<strong>What SE3 becomes.</strong> "
+            f"SE3 is restructured as composite-only: 4 composite target datasets "
+            f"using COMP_INLET (4) + NH3-N Composite + O&amp;G Composite + COMMON (7) "
+            f"= 13 features. NH3-N and O&amp;G composite are densely covered from 2022 "
+            f"(~1298 and ~1268 rows respectively); PO4 and Coliform composite are excluded "
+            f"because adding PO4 composite halves training rows (737 to 340) due to its "
+            f"absence before mid-2023. The composite SE3 datasets have ~737-738 train rows "
+            f"and ~213-216 test rows."
+        )
 
     def _qcard(n, question, answer, extra=""):
         return f"""
@@ -4063,18 +4469,43 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
   {_qcard(3, "Does model-specific feature selection improve accuracy or generalisation within SE3?", q3)}
   {_qcard(4, "Which variant achieves the best performance per target?", q4, q4_table)}
   {_qcard(5, "Do Grab and Composite targets respond differently to feature changes?", q5)}
+  {_qcard(6, "Why was Grab SE3 retired, and what does the measurement-type correction reveal?", q6, q6_extra)}
   </div>
 </details>"""
+
+
+def _se3_legend_str(s3_df: "pd.DataFrame") -> str:
+    """Dynamic description of SE3 for use in comparison-panel legend."""
+    if s3_df.empty:
+        return "Extended inlet feature set"
+    has_comp = s3_df["target"].str.contains("Composite").any()
+    tgt_str  = "grab and composite" if has_comp else "grab"
+    feat     = int(s3_df["n_features"].iloc[0]) if "n_features" in s3_df.columns else None
+    feat_str = f"{feat}-feature " if feat else ""
+    rows_grab = None
+    rows_comp = None
+    if "n_train" in s3_df.columns:
+        g = s3_df[s3_df["target"].str.contains("Grab")]
+        c = s3_df[s3_df["target"].str.contains("Composite")]
+        if not g.empty: rows_grab = int(g["n_train"].iloc[0])
+        if not c.empty: rows_comp = int(c["n_train"].iloc[0])
+    row_str = ""
+    if rows_grab:
+        row_str = f", ~{rows_grab} grab"
+        if rows_comp:
+            row_str += f" / ~{rows_comp} composite"
+        row_str += " train rows"
+    return f"{feat_str}extended inlet set ({tgt_str} targets{row_str})"
 
 
 def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     """Sub-experiment comparison: SE1 | SE2 | SE3-Full | SE3-FS
 
     Columns:
-      SE1       -  4 inlet features, no FS
-      SE2       -  11 cyclic features (Inlet + COMMON_CYCLIC)
+      SE1       -  Core Inlet (4 features), no FS
+      SE2       -  Core Inlet + Common (11 features)
       Δ S1→S2   -  value of adding process + cyclic calendar context
-      SE3-Full  -  15 features (all grab inlet + COMMON_CYCLIC), grab targets only
+      SE3-Full  -  All Grab Inlet + Common (16 features, grab and composite targets)
       Δ S2→S3   -  value of adding supplementary inlet measurements
       SE3-FS    -  SE3 with model-specific FS applied
       Δ S3→FS   -  value of feature selection within SE3
@@ -4377,8 +4808,8 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
     <p class='meta'>
       <strong>Reading the table.</strong>
       Net Mean ΔR² is the signed average across all model x target cells.
-      <strong>SE2</strong> = 11-feature cyclic inlet set (grab and composite targets).
-      <strong>SE3-Full</strong> = 15-feature full grab inlet set (grab targets only, ~228 train rows).
+      <strong>SE2</strong> = Core Inlet + COMMON (11 features: 4 inlet + 7 COMMON; grab and composite targets).
+      <strong>SE3-Full</strong> = {_se3_legend_str(s3)}.
       <strong>SE3-FS</strong> = SE3 with model-specific selection applied
       (OLS: LassoCV; Ridge: full set L2; ElNet: full set L1+L2; RF/GB/XGB: OOF perm-imp refit).
       <strong>Gap-Adj - Raw</strong> indicates whether raw gains are inflated by increased overfitting
@@ -4515,10 +4946,10 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 
 def build_exp1_section(df_all: pd.DataFrame) -> str:
     sub_s1 = _exp_subsection(df_all, "Exp1-Sub1", "exp1-sub1",
-                             "SE1  -  Inlet Only",
+                             "SE1  -  Core Inlet Only",
                              open_default=False)
     sub_s2 = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-s2",
-                             "SE2  -  Inlet + COMMON (Cyclic)",
+                             "SE2  -  Inlet + COMMON",
                              open_default=True)
 
     # SE3: nested Full + FS
@@ -4531,7 +4962,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
                              dataset_summary_fn=_dataset_summary_per_model)
     sub_s3 = f"""
 <details class="exp-details" id="exp1-s3">
-  <summary><span class="fold-icon">&#9654;</span> SE3  -  All Grab Inlet + COMMON_CYCLIC (full + FS)</summary>
+  <summary><span class="fold-icon">&#9654;</span> SE3  -  Extended Inlet + COMMON (Full + FS)</summary>
   <div class="exp-body">
     {se3_full}
     {se3_fs}
@@ -4557,15 +4988,19 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
 def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     """Sub-experiment comparison table for Experiment 2.
 
-    Columns: Sub1-Clr | Sub1-Sed | Combined | Δ(Clr→Comb) | Sub2 | Δ(Comb→Sub2) | Sub3-FS | Δ(Sub2→Sub3-FS)
+    Columns: SE2-Clr | SE2-Sed | SE2-Comb | CIS | CIS-FS | Sec-Only-FS | SE3
     """
+    se1b     = df_all[df_all["exp_key"] == "Exp2-S3"].copy()
+    sec_only = df_all[df_all["exp_key"] == "Exp2-S6"].copy()
+    s6fs     = df_all[df_all["exp_key"] == "Exp2-S6-FS"].copy()
     clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
     sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
     comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
     cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
     fs2  = df_all[df_all["exp_key"] == "Exp2-Sub2-FS"].copy()
+    se3  = df_all[df_all["exp_key"] == "Exp2-S4"].copy()
 
-    if clr.empty and sed.empty and comb.empty:
+    if clr.empty and sed.empty and comb.empty and sec_only.empty and se1b.empty:
         return ""
 
     models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
@@ -4586,7 +5021,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
     def _sub2_full(model, tgt):
-        """R² on full feature set (Exp2-Sub2, no FS)."""
+        """R² on CIS full feature set (Exp2-Sub2, no FS)."""
         return _get(cyc, model, tgt, "R2_test")
 
     def _sub2_fs(model, tgt):
@@ -4601,6 +5036,39 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
 
     def _sub2_full_rmse(model, tgt):
         return _get(cyc, model, tgt, "RMSE_test")
+
+    def _se1b_v(model, tgt):
+        return _get(se1b, model, tgt, "R2_test")
+
+    def _se1b_gap(model, tgt):
+        return _gap_v(se1b, model, tgt)
+
+    def _se1b_rmse(model, tgt):
+        return _get(se1b, model, tgt, "RMSE_test")
+
+    def _sec_only(model, tgt):
+        return _get(sec_only, model, tgt, "R2_test")
+
+    def _sec_only_gap(model, tgt):
+        return _gap_v(sec_only, model, tgt)
+
+    def _sec_only_rmse(model, tgt):
+        return _get(sec_only, model, tgt, "RMSE_test")
+
+    def _se3(model, tgt):
+        return _get(se3, model, tgt, "R2_test")
+
+    def _se3_gap(model, tgt):
+        return _gap_v(se3, model, tgt)
+
+    def _s6fs_v(model, tgt):
+        return _get(s6fs, model, tgt, "R2_test")
+
+    def _s6fs_gap(model, tgt):
+        return _gap_v(s6fs, model, tgt)
+
+    def _se3_rmse(model, tgt):
+        return _get(se3, model, tgt, "RMSE_test")
 
     _TD = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
     _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
@@ -4646,6 +5114,8 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
                 f"{dr2:+.3f}{extra}</td>")
 
     # Collect deltas for summary rows
+    d_se1_seconly   = []; gaj_d_se1_seconly   = []
+    d_seconly_comb  = []; gaj_d_seconly_comb  = []
     d_clr_comb      = []; gaj_d_clr_comb      = []
     d_sed_comb      = []; gaj_d_sed_comb      = []
     d_clr_sed       = []; gaj_d_clr_sed       = []
@@ -4654,13 +5124,23 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     d_sed_s2full    = []; gaj_d_sed_s2full    = []
     d_sed_s2fs      = []; gaj_d_sed_s2fs      = []
     d_s2full_s2fs   = []; gaj_d_s2full_s2fs   = []
+    d_ref_se3       = []; gaj_d_ref_se3       = []
+    d_seconly_s6fs  = []; gaj_d_seconly_s6fs  = []
+    d_s2fs_s6fs     = []; gaj_d_s2fs_s6fs     = []
+
+    # Aggregate accumulators for Selection Guide
+    _agg_r2  = {k: [] for k in ("se1b","seconly","clr","sed","comb","s2full","s2fs","se3","s6fs")}
+    _agg_gaj = {k: [] for k in ("se1b","seconly","clr","sed","comb","s2full","s2fs","se3","s6fs")}
+    _agg_gap = {k: [] for k in ("se1b","seconly","clr","sed","comb","s2full","s2fs","se3","s6fs")}
+    _win_raw = {k: 0  for k in ("se1b","seconly","clr","sed","comb","s2full","s2fs","se3","s6fs")}
+    _win_gaj = {k: 0  for k in ("se1b","seconly","clr","sed","comb","s2full","s2fs","se3","s6fs")}
 
     tbody = ""
     for tgt in TARGETS_ORDERED:
         short = TARGET_SHORT.get(tgt, tgt)
         tbody += (
             f"<tr style='background:#e8e8e8'>"
-            f"<td colspan='6' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"<td colspan='10' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
             f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
             f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
         )
@@ -4670,19 +5150,30 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         _all_gaj_e2 = {}
         _all_gap_e2 = {}
         for m_ in models_ord:
+            vb_  = _se1b_v(m_, tgt);    gb__  = _se1b_gap(m_, tgt)
+            vsn_ = _sec_only(m_, tgt); gsn_ = _sec_only_gap(m_, tgt)
             vc_  = _get(clr,  m_, tgt); gc_  = _gap_v(clr,  m_, tgt)
             vs_  = _get(sed,  m_, tgt); gs_  = _gap_v(sed,  m_, tgt)
             vco_ = _get(comb, m_, tgt); gco_ = _gap_v(comb, m_, tgt)
             vf_  = _sub2_full(m_, tgt); gf_  = _sub2_full_gap(m_, tgt)
             vfs_ = _sub2_fs(m_, tgt);   gfs_ = _sub2_fs_gap(m_, tgt)
+            vs3_ = _se3(m_, tgt);       gs3_ = _se3_gap(m_, tgt)
+            vsf_ = _s6fs_v(m_, tgt);    gsf_ = _s6fs_gap(m_, tgt)
+            sb_  = _gaj(vb_,  gb__)
+            ssn_ = _gaj(vsn_, gsn_)
             sc_  = _gaj(vc_, gc_);  ss_  = _gaj(vs_, gs_)
             sco_ = _gaj(vco_, gco_); sf_ = _gaj(vf_, gf_); sfs_ = _gaj(vfs_, gfs_)
+            ss3_ = _gaj(vs3_, gs3_); ssf_ = _gaj(vsf_, gsf_)
             for key_, rv_, gv_, sv_ in [
+                ((m_, "se1b"), vb_, gb__, sb_),
+                ((m_, "seconly"), vsn_, gsn_, ssn_),
                 ((m_, "clr"), vc_, gc_, sc_),
                 ((m_, "sed"), vs_, gs_, ss_),
                 ((m_, "comb"), vco_, gco_, sco_),
                 ((m_, "s2full"), vf_, gf_, sf_),
                 ((m_, "s2fs"), vfs_, gfs_, sfs_),
+                ((m_, "se3"), vs3_, gs3_, ss3_),
+                ((m_, "s6fs"), vsf_, gsf_, ssf_),
             ]:
                 if rv_ is not None:
                     _all_raw_e2[key_] = rv_
@@ -4709,38 +5200,60 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         def _is_gaj(s_): return tgt_show_gaj_e2 and tgt_bg_e2 is not None and s_ is not None and abs(s_ - tgt_bg_e2) < 1e-9
 
         for m in models_ord:
+            vb  = _se1b_v(m, tgt);    gb_ = _se1b_gap(m, tgt)
+            vsn = _sec_only(m, tgt); gsn = _sec_only_gap(m, tgt)
             vc  = _get(clr,  m, tgt); gc  = _gap_v(clr,  m, tgt)
             vs  = _get(sed,  m, tgt); gs  = _gap_v(sed,  m, tgt)
             vco = _get(comb, m, tgt); gco = _gap_v(comb, m, tgt)
             vf  = _sub2_full(m, tgt); gf  = _sub2_full_gap(m, tgt)
             vfs = _sub2_fs(m,   tgt); gfs = _sub2_fs_gap(m,   tgt)
+            vs3 = _se3(m, tgt);       gs3 = _se3_gap(m, tgt)
+            vsf = _s6fs_v(m, tgt);    gsf = _s6fs_gap(m, tgt)
 
+            rb  = _se1b_rmse(m, tgt)
+            rsn = _sec_only_rmse(m, tgt)
             rc  = _get(clr,  m, tgt, "RMSE_test")
             rs  = _get(sed,  m, tgt, "RMSE_test")
             rco = _get(comb, m, tgt, "RMSE_test")
             rf_ = _sub2_full_rmse(m, tgt)
             rfs = _get(fs2,  m, tgt, "RMSE_test")
+            rs3 = _se3_rmse(m, tgt)
 
+            sb  = _gaj(vb,  gb_)
+            ssn = _gaj(vsn, gsn)
             sc  = _gaj(vc,  gc);   ss  = _gaj(vs,  gs)
             sco = _gaj(vco, gco);  sf  = _gaj(vf,  gf); sfs = _gaj(vfs, gfs)
+            ss3 = _gaj(vs3, gs3);  ssf = _gaj(vsf, gsf)
 
-            d_cc  = (vco - vc)  if (vc  is not None and vco is not None) else None
-            d_sc  = (vco - vs)  if (vs  is not None and vco is not None) else None
-            d_cs  = (vs  - vc)  if (vc  is not None and vs  is not None) else None
-            d_cf  = (vf  - vco) if (vco is not None and vf  is not None) else None
-            d_cfs = (vfs - vco) if (vco is not None and vfs is not None) else None
-            d_sf  = (vf  - vs)  if (vs  is not None and vf  is not None) else None
-            d_sfs = (vfs - vs)  if (vs  is not None and vfs is not None) else None
-            d_ff  = (vfs - vf)  if (vf  is not None and vfs is not None) else None
+            d_b_sn  = (vsn - vb)  if (vb  is not None and vsn is not None) else None
+            d_snco  = (vco - vsn) if (vsn is not None and vco is not None) else None
+            d_cc    = (vco - vc)  if (vc  is not None and vco is not None) else None
+            d_sc    = (vco - vs)  if (vs  is not None and vco is not None) else None
+            d_cs    = (vs  - vc)  if (vc  is not None and vs  is not None) else None
+            d_cf    = (vf  - vco) if (vco is not None and vf  is not None) else None
+            d_cfs   = (vfs - vco) if (vco is not None and vfs is not None) else None
+            d_sf    = (vf  - vs)  if (vs  is not None and vf  is not None) else None
+            d_sfs   = (vfs - vs)  if (vs  is not None and vfs is not None) else None
+            d_ff    = (vfs - vf)  if (vf  is not None and vfs is not None) else None
+            d_rs3   = (vs3 - vf)  if (vf  is not None and vs3 is not None) else None
+            d_sn_sf = (vsf - vsn) if (vsn is not None and vsf is not None) else None
+            d_fs_sf = (vsf - vfs) if (vfs is not None and vsf is not None) else None
 
-            d_cc_rmse  = (rco - rc)  if (rc  is not None and rco is not None) else None
-            d_sc_rmse  = (rco - rs)  if (rs  is not None and rco is not None) else None
-            d_cf_rmse  = (rf_ - rco) if (rco is not None and rf_ is not None) else None
-            d_cfs_rmse = (rfs - rco) if (rco is not None and rfs is not None) else None
-            d_sf_rmse  = (rf_ - rs)  if (rs  is not None and rf_ is not None) else None
-            d_sfs_rmse = (rfs - rs)  if (rs  is not None and rfs is not None) else None
-            d_ff_rmse  = (rfs - rf_) if (rf_ is not None and rfs is not None) else None
+            rsf = _get(s6fs, m, tgt, "RMSE_test")
 
+            d_b_sn_rmse  = (rsn - rb)  if (rb  is not None and rsn is not None) else None
+            d_snco_rmse  = (rco - rsn) if (rsn is not None and rco is not None) else None
+            d_cc_rmse   = (rco - rc)  if (rc  is not None and rco is not None) else None
+            d_sc_rmse   = (rco - rs)  if (rs  is not None and rco is not None) else None
+            d_cf_rmse   = (rf_ - rco) if (rco is not None and rf_ is not None) else None
+            d_cfs_rmse  = (rfs - rco) if (rco is not None and rfs is not None) else None
+            d_sf_rmse   = (rf_ - rs)  if (rs  is not None and rf_ is not None) else None
+            d_sfs_rmse  = (rfs - rs)  if (rs  is not None and rfs is not None) else None
+            d_ff_rmse   = (rfs - rf_) if (rf_ is not None and rfs is not None) else None
+            d_rs3_rmse  = (rs3 - rf_) if (rf_ is not None and rs3 is not None) else None
+
+            d_b_sn_gap  = (gsn - gb_) if (gb_ is not None and gsn is not None) else None
+            d_snco_gap  = (gco - gsn) if (gsn is not None and gco is not None) else None
             d_cc_gap  = (gco - gc)  if (gc  is not None and gco is not None) else None
             d_sc_gap  = (gco - gs)  if (gs  is not None and gco is not None) else None
             d_cf_gap  = (gf  - gco) if (gco is not None and gf  is not None) else None
@@ -4748,17 +5261,27 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             d_sf_gap  = (gf  - gs)  if (gs  is not None and gf  is not None) else None
             d_sfs_gap = (gfs - gs)  if (gs  is not None and gfs is not None) else None
             d_ff_gap  = (gfs - gf)  if (gf  is not None and gfs is not None) else None
+            d_rs3_gap  = (gs3 - gf)  if (gf  is not None and gs3 is not None) else None
+            d_sn_sf_gap = (gsf - gsn) if (gsn is not None and gsf is not None) else None
+            d_fs_sf_gap = (gsf - gfs) if (gfs is not None and gsf is not None) else None
 
             # gap-adj deltas
-            gaj_cc  = (sco - sc)  if (sc  is not None and sco is not None) else None
-            gaj_sc  = (sco - ss)  if (ss  is not None and sco is not None) else None
-            gaj_cs  = (ss  - sc)  if (sc  is not None and ss  is not None) else None
-            gaj_cf  = (sf  - sco) if (sco is not None and sf  is not None) else None
-            gaj_cfs = (sfs - sco) if (sco is not None and sfs is not None) else None
-            gaj_sf  = (sf  - ss)  if (ss  is not None and sf  is not None) else None
-            gaj_sfs = (sfs - ss)  if (ss  is not None and sfs is not None) else None
-            gaj_ff  = (sfs - sf)  if (sf  is not None and sfs is not None) else None
+            gaj_b_sn  = (ssn - sb)  if (sb  is not None and ssn is not None) else None
+            gaj_snco  = (sco - ssn) if (ssn is not None and sco is not None) else None
+            gaj_cc   = (sco - sc)  if (sc  is not None and sco is not None) else None
+            gaj_sc   = (sco - ss)  if (ss  is not None and sco is not None) else None
+            gaj_cs   = (ss  - sc)  if (sc  is not None and ss  is not None) else None
+            gaj_cf   = (sf  - sco) if (sco is not None and sf  is not None) else None
+            gaj_cfs  = (sfs - sco) if (sco is not None and sfs is not None) else None
+            gaj_sf   = (sf  - ss)  if (ss  is not None and sf  is not None) else None
+            gaj_sfs  = (sfs - ss)  if (ss  is not None and sfs is not None) else None
+            gaj_ff   = (sfs - sf)  if (sf  is not None and sfs is not None) else None
+            gaj_rs3  = (ss3 - sf)  if (sf  is not None and ss3 is not None) else None
+            gaj_sn_sf = (ssf - ssn) if (ssn is not None and ssf is not None) else None
+            gaj_fs_sf = (ssf - sfs) if (sfs is not None and ssf is not None) else None
 
+            if d_b_sn is not None: d_se1_seconly.append(d_b_sn);  gaj_d_se1_seconly.append(gaj_b_sn)  if gaj_b_sn  is not None else None
+            if d_snco is not None: d_seconly_comb.append(d_snco); gaj_d_seconly_comb.append(gaj_snco) if gaj_snco is not None else None
             if d_cc  is not None: d_clr_comb.append(d_cc);       gaj_d_clr_comb.append(gaj_cc)    if gaj_cc  is not None else None
             if d_sc  is not None: d_sed_comb.append(d_sc);       gaj_d_sed_comb.append(gaj_sc)    if gaj_sc  is not None else None
             if d_cs  is not None: d_clr_sed.append(d_cs);        gaj_d_clr_sed.append(gaj_cs)     if gaj_cs  is not None else None
@@ -4767,16 +5290,52 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
             if d_sf  is not None: d_sed_s2full.append(d_sf);     gaj_d_sed_s2full.append(gaj_sf)  if gaj_sf  is not None else None
             if d_sfs is not None: d_sed_s2fs.append(d_sfs);      gaj_d_sed_s2fs.append(gaj_sfs)   if gaj_sfs is not None else None
             if d_ff  is not None: d_s2full_s2fs.append(d_ff);    gaj_d_s2full_s2fs.append(gaj_ff) if gaj_ff  is not None else None
+            if d_rs3   is not None: d_ref_se3.append(d_rs3);           gaj_d_ref_se3.append(gaj_rs3)      if gaj_rs3   is not None else None
+            if d_sn_sf is not None: d_seconly_s6fs.append(d_sn_sf);   gaj_d_seconly_s6fs.append(gaj_sn_sf) if gaj_sn_sf is not None else None
+            if d_fs_sf is not None: d_s2fs_s6fs.append(d_fs_sf);      gaj_d_s2fs_s6fs.append(gaj_fs_sf)   if gaj_fs_sf is not None else None
+
+            # Accumulate for Selection Guide
+            _combo_sg = [
+                ("se1b",   vb,  sb,  gb_),
+                ("seconly", vsn, ssn, gsn),
+                ("clr",    vc,  sc,  gc),
+                ("sed",    vs,  ss,  gs),
+                ("comb",   vco, sco, gco),
+                ("s2full", vf,  sf,  gf),
+                ("s2fs",   vfs, sfs, gfs),
+                ("se3",    vs3, ss3, gs3),
+                ("s6fs",   vsf, ssf, gsf),
+            ]
+            for _k, _rv, _sv, _gv in _combo_sg:
+                if _rv is not None:
+                    _agg_r2[_k].append(_rv)
+                    _agg_gap[_k].append(_gv if _gv is not None else 0.0)
+                if _sv is not None:
+                    _agg_gaj[_k].append(_sv)
+            _raw_pool_sg = {k: rv for k, rv, sv, gv in _combo_sg if rv is not None}
+            _gaj_pool_sg = {k: sv for k, rv, sv, gv in _combo_sg if sv is not None}
+            if _raw_pool_sg:
+                _br_sg = max(_raw_pool_sg.values())
+                for _k, _v in _raw_pool_sg.items():
+                    if abs(_v - _br_sg) < 1e-9: _win_raw[_k] += 1
+            if _gaj_pool_sg:
+                _bg_sg = max(_gaj_pool_sg.values())
+                for _k, _v in _gaj_pool_sg.items():
+                    if abs(_v - _bg_sg) < 1e-9: _win_gaj[_k] += 1
 
             row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
             tbody += (
                 f"<tr style='background:{row_bg}'>"
                 f"<td style='{_TD}'><strong>{m}</strong></td>"
+                f"{_val_td(vb,  rb,  gb_,  _is_raw(vb),  _is_gaj(sb))}"
                 f"{_val_td(vc,  rc,  gc,  _is_raw(vc),  _is_gaj(sc))}"
                 f"{_val_td(vs,  rs,  gs,  _is_raw(vs),  _is_gaj(ss))}"
+                f"{_val_td(vsn, rsn, gsn, _is_raw(vsn), _is_gaj(ssn))}"
                 f"{_val_td(vco, rco, gco, _is_raw(vco), _is_gaj(sco))}"
                 f"{_val_td(vf,  rf_, gf,  _is_raw(vf),  _is_gaj(sf))}"
                 f"{_val_td(vfs, rfs, gfs, _is_raw(vfs), _is_gaj(sfs))}"
+                f"{_val_td(vsf, rsf, gsf, _is_raw(vsf), _is_gaj(ssf))}"
+                f"{_val_td(vs3, rs3, gs3, _is_raw(vs3), _is_gaj(ss3))}"
                 f"</tr>"
             )
 
@@ -4785,7 +5344,7 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     def _combined_stats_row(raw_deltas, gaj_deltas, from_lbl, to_lbl):
         if not raw_deltas:
             return (f"<tr><td style='{_STD}'><strong>{from_lbl} → {to_lbl}</strong></td>"
-                    f"<td colspan='7' style='{_STD};color:#888888'> - </td></tr>")
+                    f"<td colspan='8' style='{_STD};color:#888888'> - </td></tr>")
         arr = np.array(raw_deltas)
         n   = len(arr)
         net = float(arr.mean())
@@ -4847,14 +5406,19 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
       </tr>
     </thead>
     <tbody>
-      {_combined_stats_row(d_clr_sed,      gaj_d_clr_sed,      "Clarifier", "Sed")}
-      {_combined_stats_row(d_clr_comb,     gaj_d_clr_comb,     "Clarifier", "Combined")}
-      {_combined_stats_row(d_sed_comb,     gaj_d_sed_comb,     "Sed",       "Combined")}
-      {_combined_stats_row(d_comb_s2full,  gaj_d_comb_s2full,  "Combined",  "SE2")}
-      {_combined_stats_row(d_sed_s2full,   gaj_d_sed_s2full,   "Sed",       "SE2")}
-      {_combined_stats_row(d_comb_s2fs,    gaj_d_comb_s2fs,    "Combined",  "SE2-FS")}
-      {_combined_stats_row(d_sed_s2fs,     gaj_d_sed_s2fs,     "Sed",       "SE2-FS")}
-      {_combined_stats_row(d_s2full_s2fs,  gaj_d_s2full_s2fs,  "SE2",       "SE2-FS")}
+      {_combined_stats_row(d_se1_seconly,   gaj_d_se1_seconly,  "SE1",       "SE2-Only")}
+      {_combined_stats_row(d_seconly_comb,  gaj_d_seconly_comb, "SE2-Only",  "SE2-Comb")}
+      {_combined_stats_row(d_clr_sed,      gaj_d_clr_sed,      "SE2-Clr",   "SE2-Sed")}
+      {_combined_stats_row(d_clr_comb,     gaj_d_clr_comb,     "SE2-Clr",   "SE2-Comb")}
+      {_combined_stats_row(d_sed_comb,     gaj_d_sed_comb,     "SE2-Sed",   "SE2-Comb")}
+      {_combined_stats_row(d_comb_s2full,  gaj_d_comb_s2full,  "SE2-Comb",  "CIS")}
+      {_combined_stats_row(d_sed_s2full,   gaj_d_sed_s2full,   "SE2-Sed",   "CIS")}
+      {_combined_stats_row(d_comb_s2fs,    gaj_d_comb_s2fs,    "SE2-Comb",  "CIS-FS")}
+      {_combined_stats_row(d_sed_s2fs,     gaj_d_sed_s2fs,     "SE2-Sed",   "CIS-FS")}
+      {_combined_stats_row(d_s2full_s2fs,  gaj_d_s2full_s2fs,  "CIS",       "CIS-FS")}
+      {_combined_stats_row(d_seconly_s6fs, gaj_d_seconly_s6fs, "SE2-Only",  "Sec-Only-FS")}
+      {_combined_stats_row(d_s2fs_s6fs,   gaj_d_s2fs_s6fs,    "CIS-FS",    "Sec-Only-FS")}
+      {_combined_stats_row(d_ref_se3,      gaj_d_ref_se3,      "CIS",       "SE3")}
     </tbody>
   </table>
   </div>
@@ -4873,20 +5437,129 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
   <thead>
     <tr style='border-bottom:2px solid #cccccc'>
       <th style='{_TH};min-width:60px'>Model</th>
-      <th style='{_THC}'>SE1-Clr<br>
+      <th style='{_THC}'>SE1<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>SE1-Sed<br>
+      <th style='{_THC}'>SE2-Clr<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>Combined<br>
+      <th style='{_THC}'>SE2-Sed<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>SE2<br>
+      <th style='{_THC}'>SE2-Only<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
-      <th style='{_THC}'>SE2-FS<br>
+      <th style='{_THC}'>SE2-Comb<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>CIS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>CIS-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>Sec-Only-FS<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
+      <th style='{_THC}'>SE3<br>
           <span style='color:#888888;font-weight:400;font-size:0.78em'>R² · RMSE · Gap</span></th>
     </tr>
   </thead>
   <tbody>{tbody}</tbody>
 </table>
+</div>"""
+
+    # --- Selection Guide ---
+    _SE_GUIDE_ROWS = [
+        ("se1b",    "SE1",        False),
+        ("clr",     "SE2-Clr",   False),
+        ("sed",     "SE2-Sed",   False),
+        ("seconly", "SE2-Only",  True),
+        ("comb",    "SE2-Comb",  True),
+        ("s2full",  "CIS",        False),
+        ("s2fs",    "CIS-FS",    False),
+        ("s6fs",    "Sec-Only-FS",True),
+        ("se3",     "SE3",       True),
+    ]
+    _focus_keys = {"seconly", "comb", "s6fs", "se3"}
+    _n_combos   = len(models_ord) * len(TARGETS_ORDERED)
+
+    def _safe_mean(lst): return float(np.mean(lst)) if lst else None
+
+    _gd = {}
+    for k, _, _ in _SE_GUIDE_ROWS:
+        r2l  = _agg_r2[k]; gajl = _agg_gaj[k]; gapl = _agg_gap[k]
+        n    = len(r2l)
+        _gd[k] = {
+            "mean_r2":  _safe_mean(r2l),
+            "mean_gaj": _safe_mean(gajl),
+            "mean_gap": _safe_mean(gapl),
+            "win_raw":  _win_raw[k],
+            "win_gaj":  _win_gaj[k],
+            "pos_pct":  100.0 * sum(1 for v in r2l if v > 0) / n if n else 0.0,
+        }
+
+    def _best_among(metric, keys, higher_better=True):
+        vals = {k: _gd[k][metric] for k in keys if _gd[k].get(metric) is not None}
+        if not vals: return None
+        return max(vals, key=vals.get) if higher_better else min(vals, key=vals.get)
+
+    _b_r2  = _best_among("mean_r2",  _focus_keys)
+    _b_gaj = _best_among("mean_gaj", _focus_keys)
+    _b_win = _best_among("win_raw",  _focus_keys)
+    _b_gap = _best_among("mean_gap", _focus_keys, higher_better=False)
+    _b_pos = _best_among("pos_pct",  _focus_keys)
+
+    def _gc(v, fmt, highlight):
+        if v is None:
+            return f"<td style='text-align:center;padding:5px 10px;color:#999'>-</td>"
+        col = "#5BAD6F" if highlight else "#1a1a1a"
+        fw  = "bold"    if highlight else "normal"
+        s   = f"{v:{fmt}}"
+        return f"<td style='text-align:center;padding:5px 10px;color:{col};font-weight:{fw}'>{s}</td>"
+
+    _guide_tbody = ""
+    for k, lbl, is_focus in _SE_GUIDE_ROWS:
+        d  = _gd[k]
+        bg = "#f0f7ff" if is_focus else "#ffffff"
+        fw = "bold"    if is_focus else "normal"
+        _guide_tbody += (
+            f"<tr style='background:{bg};border-bottom:1px solid #e0e0e0'>"
+            f"<td style='padding:5px 10px;font-weight:{fw}'>{lbl}</td>"
+            + _gc(d["mean_r2"],  "+.3f", k == _b_r2)
+            + _gc(d["mean_gaj"], "+.3f", k == _b_gaj)
+            + _gc(d["mean_gap"], "+.4f", k == _b_gap)
+            + _gc(d["win_raw"],  ".0f",  k == _b_win)
+            + _gc(d["win_gaj"],  ".0f",  k == _b_win)
+            + _gc(d["pos_pct"],  ".1f",  k == _b_pos)
+            + "</tr>"
+        )
+
+    sel_guide = f"""
+<div style='margin-top:1.6rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>
+    Aggregated Selection Guide
+    <span style='font-size:0.82em;font-weight:normal;color:#888888'>
+      ({_n_combos} model x target combinations; blue rows = candidates)
+    </span>
+  </p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc;background:#eeeeee'>
+        <th style='{_TH}'>SE</th>
+        <th style='{_THC}'>Mean R²<br><span style='font-weight:400;font-size:0.78em;color:#888'>all combos</span></th>
+        <th style='{_THC}'>Mean GAJ-R²<br><span style='font-weight:400;font-size:0.78em;color:#888'>overfit-penalised</span></th>
+        <th style='{_THC}'>Mean Gap<br><span style='font-weight:400;font-size:0.78em;color:#888'>lower = better</span></th>
+        <th style='{_THC}'>Win (raw)<br><span style='font-weight:400;font-size:0.78em;color:#888'>best R² count</span></th>
+        <th style='{_THC}'>Win (GAJ)<br><span style='font-weight:400;font-size:0.78em;color:#888'>best GAJ count</span></th>
+        <th style='{_THC}'>Positive %<br><span style='font-weight:400;font-size:0.78em;color:#888'>R² &gt; 0</span></th>
+      </tr>
+    </thead>
+    <tbody>{_guide_tbody}</tbody>
+  </table>
+  </div>
+  <div class='obs-card' style='border-left:4px solid #4A90D9;margin-top:0.6rem'>
+    <p class='meta'>
+      <strong>How to read.</strong> Green cells = best among the three candidates (SE2-Only, SE2-Comb, SE3).
+      <strong>Win (raw)</strong>: of the {_n_combos} model x target pairs, how many does this SE win on raw Test R²?
+      <strong>Mean GAJ-R²</strong> is the primary tiebreaker: it equals R²_test minus 50% of any gap above zero,
+      so it penalises overfitting even when raw R² looks similar.
+      If Mean R² and Win (raw) are close between two candidates, use Mean GAJ-R² to pick the less overfit one.
+    </p>
+  </div>
 </div>"""
 
     return f"""
@@ -4904,161 +5577,213 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     </div>
     {main_table}
     {stats_block}
+    {sel_guide}
   </div>
 </details>"""
 
 
 def _exp2_qna(df_all: pd.DataFrame) -> str:
-    """Data-driven Q&A for Experiment 2  -  four key questions."""
-    clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
-    sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
-    comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
-    cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
+    """Data-driven Q&A for Experiment 2 using the current comparison columns."""
+    exp = {
+        "se1a": df_all[df_all["exp_key"] == "Exp2-S5"].copy(),
+        "se1b": df_all[df_all["exp_key"] == "Exp2-S3"].copy(),
+        "se2_only": df_all[df_all["exp_key"] == "Exp2-S6"].copy(),
+        "clr": df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy(),
+        "sed": df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy(),
+        "comb": df_all[df_all["exp_key"] == "Exp2-Sub1"].copy(),
+        "cis": df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy(),
+        "cis_fs": df_all[df_all["exp_key"] == "Exp2-Sub2-FS"].copy(),
+        "sec_fs": df_all[df_all["exp_key"] == "Exp2-S6-FS"].copy(),
+        "se3": df_all[df_all["exp_key"] == "Exp2-S4"].copy(),
+    }
 
-    if clr.empty and comb.empty:
+    if all(d.empty for d in exp.values()):
         return ""
 
-    all_m  = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
+    all_m = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB"]
     MEANINGFUL = 0.005
 
-    def _r2(df, model, tgt, col="R2_test"):
+    def _val(df, model, tgt, col="R2_test"):
         r = df[(df["model"] == model) & (df["target"] == tgt)]
-        if r.empty or col not in r.columns: return None
-        v = r[col].values[0]
-        return None if (v != v or v is None) else float(v)
+        if r.empty or col not in r.columns:
+            return None
+        v = r[col].dropna()
+        if v.empty:
+            return None
+        out = float(v.iloc[-1])
+        return None if out != out else out
 
-    def _delta_arr(from_df, to_df, models, targets):
-        vals = []
-        for m in models:
+    def _vals(df, targets=TARGETS_ORDERED, col="R2_test"):
+        out = []
+        for m in all_m:
             for t in targets:
-                a = _r2(from_df, m, t); b = _r2(to_df, m, t)
+                v = _val(df, m, t, col)
+                if v is not None:
+                    out.append(v)
+        return np.array(out)
+
+    def _delta_arr(from_df, to_df, targets=TARGETS_ORDERED, col="R2_test"):
+        vals = []
+        for m in all_m:
+            for t in targets:
+                a = _val(from_df, m, t, col)
+                b = _val(to_df, m, t, col)
                 if a is not None and b is not None:
                     vals.append(b - a)
-        return np.array(vals) if vals else np.array([])
+        return np.array(vals)
 
-    def _colored(arr):
-        if not len(arr): return "<em> - </em>"
+    def _gaj(r2, gap):
+        if r2 is None:
+            return None
+        return r2 - max(gap or 0.0, 0.0) * 0.50
+
+    def _gaj_vals(df, targets=TARGETS_ORDERED):
+        out = []
+        for m in all_m:
+            for t in targets:
+                s = _gaj(_val(df, m, t, "R2_test"), _val(df, m, t, "R2_gap"))
+                if s is not None:
+                    out.append(s)
+        return np.array(out)
+
+    def _summary(df):
+        arr = _vals(df)
+        gaj = _gaj_vals(df)
+        gaps = _vals(df, col="R2_gap")
+        ntr = df["n_train"].dropna().astype(float) if "n_train" in df.columns else pd.Series(dtype=float)
+        return {
+            "mean": float(arr.mean()) if len(arr) else None,
+            "gaj": float(gaj.mean()) if len(gaj) else None,
+            "gap": float(gaps.mean()) if len(gaps) else None,
+            "pos": int((arr > 0).sum()) if len(arr) else 0,
+            "n": int(len(arr)),
+            "n_train": float(ntr.mean()) if len(ntr) else None,
+        }
+
+    def _fmt(v, strong=True):
+        if v is None:
+            return "<em>-</em>"
+        c = "#5BAD6F" if v > 0.05 else ("#E15252" if v < -0.05 else "var(--text-muted)")
+        fw = "bold" if strong else "normal"
+        return f"<span style='color:{c};font-weight:{fw}'>{v:+.3f}</span>"
+
+    def _fmt_delta(arr):
+        if not len(arr):
+            return "<em>-</em>"
         v = float(arr.mean())
         c = "#5BAD6F" if v > MEANINGFUL else ("#E15252" if v < -MEANINGFUL else "var(--text-muted)")
         return f"<span style='color:{c};font-weight:bold'>{v:+.3f}</span>"
 
-    # ── Q1: Do Clarifier and Sed carry distinct signal? ───────────────────────
-    clr_vals = [_r2(clr, m, t) for m in all_m for t in TARGETS_ORDERED if _r2(clr, m, t) is not None]
-    sed_vals = [_r2(sed, m, t) for m in all_m for t in TARGETS_ORDERED if _r2(sed, m, t) is not None]
-    clr_avg  = float(np.mean(clr_vals)) if clr_vals else None
-    sed_avg  = float(np.mean(sed_vals)) if sed_vals else None
+    def _wins_losses(arr):
+        if not len(arr):
+            return "0/0 improved, 0/0 regressed"
+        wins = int((arr > MEANINGFUL).sum())
+        losses = int((arr < -MEANINGFUL).sum())
+        return f"{wins}/{len(arr)} improved, {losses}/{len(arr)} regressed"
 
-    d_cs = _delta_arr(clr, sed, all_m, TARGETS_ORDERED)
-    d_cs_grab = _delta_arr(clr, sed, all_m, GRAB_TARGETS)
-    d_cs_comp = _delta_arr(clr, sed, all_m, COMP_TARGETS)
+    stats = {k: _summary(v) for k, v in exp.items()}
 
-    if clr_avg is not None and sed_avg is not None:
-        diff = sed_avg - clr_avg
-        if abs(diff) < 0.02:
-            _q1_verdict = ("They carry <strong>similar signal</strong> overall "
-                           f"(Clarifier avg={clr_avg:+.3f}, Sed avg={sed_avg:+.3f}; Δ={diff:+.3f}). "
-                           "The two secondary groups are largely interchangeable at this level.")
-        elif diff > 0:
-            _q1_verdict = (f"<strong>Sedimentation features slightly outperform Clarifier</strong> "
-                           f"(avg Sed={sed_avg:+.3f} vs Clarifier={clr_avg:+.3f}; Δ={diff:+.3f}). "
-                           "The difference is small but consistent across targets.")
-        else:
-            _q1_verdict = (f"<strong>Clarifier features slightly outperform Sedimentation</strong> "
-                           f"(avg Clr={clr_avg:+.3f} vs Sed={sed_avg:+.3f}; Δ={diff:+.3f}). "
-                           "The difference is small but consistent across targets.")
-    else:
-        _q1_verdict = "Insufficient data to compare."
-
+    # Q1: Primary-stage value and inlet add-on value.
+    d_primary_inlet = _delta_arr(exp["se1a"], exp["se1b"])
     q1 = (
-        f"{_q1_verdict} "
-        f"<br><strong>Grab targets:</strong> Sed − Clr mean Δ = {_colored(d_cs_grab)}, "
-        f"<strong>Composite targets:</strong> Sed − Clr mean Δ = {_colored(d_cs_comp)}. "
-        f"Co-occurring missingness means both groups have nearly identical row counts "
-        f" -  row count is not a confound here. The signal overlap is high because "
-        f"Clarifier and Sedimentation units process the same water sequentially."
+        f"<strong>Primary-stage features do not generalise in either scope.</strong> "
+        f"SE1a (Primary + COMMON) averages {_fmt(stats['se1a']['mean'])} "
+        f"with {stats['se1a']['pos']}/{stats['se1a']['n']} positive cells; "
+        f"SE1b (Primary + Inlet + COMMON) averages {_fmt(stats['se1b']['mean'])} "
+        f"with {stats['se1b']['pos']}/{stats['se1b']['n']} positive cells. "
+        f"Adding core inlet to primary changes mean Test R&sup2; by {_fmt_delta(d_primary_inlet)} "
+        f"({_wins_losses(d_primary_inlet)}). "
+        f"The failure is therefore not just missing inlet context: primary measurements are weak "
+        f"predictors for this 2025 holdout."
     )
 
-    # ── Q2: What does combining both groups add? ───────────────────────────────
-    d_clr_comb = _delta_arr(clr,  comb, all_m, TARGETS_ORDERED)
-    d_sed_comb = _delta_arr(sed,  comb, all_m, TARGETS_ORDERED)
-    d_clr_comb_grab = _delta_arr(clr, comb, all_m, GRAB_TARGETS)
-    d_clr_comb_comp = _delta_arr(clr, comb, all_m, COMP_TARGETS)
-
-    n_cc = len(d_clr_comb)
-    wins_cc = int((d_clr_comb > 0.01).sum()) if n_cc else 0
-
+    # Q2: Secondary-only, COMMON, and secondary feature selection.
+    d_se1b_secondary = _delta_arr(exp["se1b"], exp["se2_only"])
+    d_secondary_common = _delta_arr(exp["se2_only"], exp["comb"])
+    d_secondary_fs = _delta_arr(exp["se2_only"], exp["sec_fs"])
+    d_secondary_common_grab = _delta_arr(exp["se2_only"], exp["comb"], GRAB_TARGETS)
+    d_secondary_common_comp = _delta_arr(exp["se2_only"], exp["comb"], COMP_TARGETS)
     q2 = (
-        f"Adding Sedimentation to Clarifier (Clr→Combined): mean Δ = {_colored(d_clr_comb)} "
-        f"({wins_cc}/{n_cc} cells improved). "
-        f"<br>Adding Clarifier to Sedimentation (Sed→Combined): mean Δ = {_colored(d_sed_comb)}. "
-        f"<br><strong>Grab:</strong> {_colored(d_clr_comb_grab)}, "
-        f"<strong>Composite:</strong> {_colored(d_clr_comb_comp)}. "
-        f"The combined group rarely beats the better individual group by more than a small margin  -  "
-        f"confirming the high signal overlap between the two secondary sub-systems. "
-        f"Models using the combined 15-feature set do not consistently outperform either "
-        f"10-feature variant because regularised models (Ridge, ElNet) already handle "
-        f"the redundancy, and tree models are not noticeably improved by the additional 5 features."
+        f"<strong>Secondary measurements are the first useful process signal.</strong> "
+        f"SE1b -> SE2-Only improves mean Test R&sup2; by {_fmt_delta(d_se1b_secondary)} "
+        f"({_wins_losses(d_se1b_secondary)}), and SE2-Only itself averages "
+        f"{_fmt(stats['se2_only']['mean'])} with {stats['se2_only']['pos']}/{stats['se2_only']['n']} "
+        f"positive cells. "
+        f"<br>Adding COMMON to all secondary features (SE2-Only -> SE2-Comb) changes mean Test R&sup2; by "
+        f"{_fmt_delta(d_secondary_common)}; Grab {_fmt_delta(d_secondary_common_grab)}, "
+        f"Composite {_fmt_delta(d_secondary_common_comp)}. "
+        f"The COMMON columns cost rows in this section "
+        f"(SE2-Only avg train n={stats['se2_only']['n_train']:.0f}; "
+        f"SE2-Comb avg train n={stats['comb']['n_train']:.0f}) and do not consistently repay that cost. "
+        f"Secondary-only feature selection is also mixed: SE2-Only -> Sec-Only-FS = "
+        f"{_fmt_delta(d_secondary_fs)} ({_wins_losses(d_secondary_fs)})."
     )
 
-    # ── Q3: What does adding inlet concentrations contribute? ──────────────
-    # Compare Combined (15 feat) to Sub2-FS (21 feat, model-specific FS)
-    def _cyc_fs(m, t): return _r2(cyc, m, t)
-
-    fs_vals = [(m, t, _cyc_fs(m, t)) for m in all_m for t in TARGETS_ORDERED]
-    fs_vals = [(m, t, v) for m, t, v in fs_vals if v is not None]
-
-    comb_vals_aligned = [_r2(comb, m, t) for m, t, _ in fs_vals]
-    d_comb_s2 = np.array([b - a for (_, _, b), a in zip(fs_vals, comb_vals_aligned)
-                           if a is not None])
-    d_comb_s2_grab = _delta_arr(
-        comb, cyc, all_m, GRAB_TARGETS)
-    d_comb_s2_comp = _delta_arr(
-        comb, cyc, all_m, COMP_TARGETS)
-
-    n_cs2 = len(d_comb_s2)
-    wins_cs2  = int((d_comb_s2 > 0.01).sum())  if n_cs2 else 0
-    loss_cs2  = int((d_comb_s2 < -0.01).sum()) if n_cs2 else 0
-
+    # Q3: Clarifier/Sedimentation/Combined relationship.
+    d_clr_sed = _delta_arr(exp["clr"], exp["sed"])
+    d_clr_comb = _delta_arr(exp["clr"], exp["comb"])
+    d_sed_comb = _delta_arr(exp["sed"], exp["comb"])
     q3 = (
-        f"Combined (15) → SE2-FS (21 feat + FS): mean Δ = {_colored(d_comb_s2)} "
-        f"({wins_cs2}/{n_cs2} improved, {loss_cs2}/{n_cs2} regressed). "
-        f"<br><strong>Grab:</strong> {_colored(d_comb_s2_grab)}, "
-        f"<strong>Composite:</strong> {_colored(d_comb_s2_comp)}. "
-        f"OLS uses LassoCV to reduce the 21-feature set; tree models use OOF "
-        f"permutation importance (≥5% threshold) to select the most informative features. "
-        f"Where the delta is positive, the inlet signal and correct calendar encoding "
-        f"add genuine predictive value. Where negative, the added features primarily "
-        f"increase variance (especially on smaller composite datasets, n≈730 - 740 train rows)."
+        f"<strong>Sedimentation is clearly stronger than Clarifier, but combining both is not a clean win.</strong> "
+        f"Clarifier averages {_fmt(stats['clr']['mean'])}; Sedimentation averages "
+        f"{_fmt(stats['sed']['mean'])}; Sed - Clarifier = {_fmt_delta(d_clr_sed)}. "
+        f"<br>Clarifier -> SE2-Comb = {_fmt_delta(d_clr_comb)} "
+        f"({_wins_losses(d_clr_comb)}), while Sedimentation -> SE2-Comb = {_fmt_delta(d_sed_comb)} "
+        f"({_wins_losses(d_sed_comb)}). "
+        f"This says the combined pool adds some Clarifier-side cases over the weak Clarifier baseline, "
+        f"but it can dilute the cleaner Sedimentation-only signal."
     )
 
-    # ── Q4: Grab vs Composite split ───────────────────────────────────────────
-    grab_clr = [_r2(clr, m, t) for m in all_m for t in GRAB_TARGETS if _r2(clr, m, t) is not None]
-    grab_sed = [_r2(sed, m, t) for m in all_m for t in GRAB_TARGETS if _r2(sed, m, t) is not None]
-    comp_clr = [_r2(clr, m, t) for m in all_m for t in COMP_TARGETS if _r2(clr, m, t) is not None]
-    comp_sed = [_r2(sed, m, t) for m in all_m for t in COMP_TARGETS if _r2(sed, m, t) is not None]
+    # Q4: Current comparison-table winner and strategic takeaway.
+    guide = [
+        ("SE1", exp["se1b"]),
+        ("SE2-Only", exp["se2_only"]),
+        ("SE2-Comb", exp["comb"]),
+        ("CIS", exp["cis"]),
+        ("CIS-FS", exp["cis_fs"]),
+        ("Sec-Only-FS", exp["sec_fs"]),
+        ("SE3", exp["se3"]),
+    ]
+    win_raw = {lbl: 0 for lbl, _ in guide}
+    win_gaj = {lbl: 0 for lbl, _ in guide}
+    for m in all_m:
+        for t in TARGETS_ORDERED:
+            raw_pool = {lbl: _val(df, m, t, "R2_test") for lbl, df in guide}
+            raw_pool = {lbl: v for lbl, v in raw_pool.items() if v is not None}
+            if raw_pool:
+                best_raw = max(raw_pool.values())
+                for lbl, v in raw_pool.items():
+                    if abs(v - best_raw) < 1e-9:
+                        win_raw[lbl] += 1
+            gaj_pool = {lbl: _gaj(_val(df, m, t, "R2_test"), _val(df, m, t, "R2_gap")) for lbl, df in guide}
+            gaj_pool = {lbl: v for lbl, v in gaj_pool.items() if v is not None}
+            if gaj_pool:
+                best_gaj = max(gaj_pool.values())
+                for lbl, v in gaj_pool.items():
+                    if abs(v - best_gaj) < 1e-9:
+                        win_gaj[lbl] += 1
 
-    ga_clr = float(np.mean(grab_clr)) if grab_clr else None
-    ga_sed = float(np.mean(grab_sed)) if grab_sed else None
-    co_clr = float(np.mean(comp_clr)) if comp_clr else None
-    co_sed = float(np.mean(comp_sed)) if comp_sed else None
-
-    def _fmt(v):
-        if v is None: return " - "
-        c = "#5BAD6F" if v > 0.05 else ("#E15252" if v < -0.05 else "var(--text-muted)")
-        return f"<span style='color:{c};font-weight:bold'>{v:+.3f}</span>"
+    guide_stats = {lbl: _summary(df) for lbl, df in guide}
+    best_mean = max(guide_stats, key=lambda k: guide_stats[k]["mean"] if guide_stats[k]["mean"] is not None else -999)
+    best_gaj = max(guide_stats, key=lambda k: guide_stats[k]["gaj"] if guide_stats[k]["gaj"] is not None else -999)
+    best_raw_wins = max(win_raw, key=win_raw.get)
+    best_gaj_wins = max(win_gaj, key=win_gaj.get)
+    d_cis_se3 = _delta_arr(exp["cis"], exp["se3"])
+    d_cisfs_se3 = _delta_arr(exp["cis_fs"], exp["se3"])
 
     q4 = (
-        f"Yes  -  consistently. "
-        f"<br><strong>Clarifier-only:</strong> Grab avg = {_fmt(ga_clr)}, Composite avg = {_fmt(co_clr)}. "
-        f"<br><strong>Sed-only:</strong> Grab avg = {_fmt(ga_sed)}, Composite avg = {_fmt(co_sed)}. "
-        f"Grab targets respond better to every secondary-feature configuration. "
-        f"Composite targets show mostly negative or near-zero R² from secondary-only features  -  "
-        f"they need inlet concentrations (SE2) before any linear model generalises. "
-        f"The structural reason: composite samples are collected on fewer days (~730 - 970 rows) "
-        f"and their effluent quality is driven more by inlet load (what goes in) than by "
-        f"instantaneous secondary process readings. "
-        f"Composite COD fails across all Exp2 variants  -  this target requires either "
-        f"additional features or a process-specific explanation."
+        f"<strong>The current comparison table does not crown the largest feature set.</strong> "
+        f"Best mean Test R&sup2; is <strong>{best_mean}</strong> "
+        f"({_fmt(guide_stats[best_mean]['mean'])}); best mean gap-adjusted R&sup2; is "
+        f"<strong>{best_gaj}</strong> ({_fmt(guide_stats[best_gaj]['gaj'])}). "
+        f"Raw win count is led by <strong>{best_raw_wins}</strong> "
+        f"({win_raw[best_raw_wins]}/48 cells), while gap-adjusted wins are led by "
+        f"<strong>{best_gaj_wins}</strong> ({win_gaj[best_gaj_wins]}/48 cells). "
+        f"<br>CIS -> SE3 changes mean Test R&sup2; by {_fmt_delta(d_cis_se3)}; "
+        f"CIS-FS -> SE3 changes it by {_fmt_delta(d_cisfs_se3)}. "
+        f"Strategically, Exp2 says to keep secondary process data and use inlet+secondary "
+        f"references as controls, but do not assume primary-stage features or the 27-feature "
+        f"all-stage set improve generalisation."
     )
 
     def _qcard(n, question, answer, extra=""):
@@ -5078,76 +5803,146 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
 <details class="exp-details" id="exp2-findings" open>
   <summary><span class="fold-icon">▶</span> Findings  -  Experiment 2</summary>
   <div class="exp-body">
-  {_qcard(1, "Do Sec Clarifier and Sec Sedimentation features carry distinct signal, or are they interchangeable?", q1)}
-  {_qcard(2, "What does combining both secondary groups add over either individually?", q2)}
-  {_qcard(3, "What does adding inlet concentrations contribute (Combined → SE2-FS)?", q3)}
-  {_qcard(4, "Do Grab and Composite targets respond differently to the secondary feature transitions?", q4)}
+  {_qcard(1, "Do primary-stage features generalise, and does adding inlet rescue them?", q1)}
+  {_qcard(2, "What does the secondary-only scope add, and does COMMON repay its row cost?", q2)}
+  {_qcard(3, "How do Clarifier, Sedimentation, and All Secondary compare?", q3)}
+  {_qcard(4, "Which current Exp2 comparison scope wins, and what is the strategic takeaway?", q4)}
   </div>
 </details>"""
 
 
 def build_exp2_section(df_all: pd.DataFrame) -> str:
-    # Sub-exp 1: three secondary-only scopes
-    sub1_combined = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s1-combined",
-                                    "Combined Secondary + COMMON (15 features)",
-                                    open_default=True)
-    sub1_clr = _exp_subsection(df_all, "Exp2-Sub1-Clr", "exp2-s1-clr",
-                               "Sec Clarifier + COMMON (10 features)",
-                               open_default=False)
-    sub1_sed = _exp_subsection(df_all, "Exp2-Sub1-Sed", "exp2-s1-sed",
-                               "Sec Sedimentation + COMMON (10 features)",
-                               open_default=False)
+    # SE1a: Primary + COMMON only (isolation check - does primary carry ANY signal without inlet?)
+    se1a_inner = _exp_subsection(df_all, "Exp2-S5", "exp2-s1a",
+                                 "SE1a - Primary + COMMON only (13 features)",
+                                 open_default=True)
+    # SE1b: Primary + Inlet + COMMON (existing; adds inlet to SE1a)
+    se1b_inner = _exp_subsection(df_all, "Exp2-S3", "exp2-s1b",
+                                 "SE1b - Primary + Inlet + COMMON (17 features)",
+                                 open_default=False)
 
-    # Sub-exp 2: Inlet + Secondary - full feature set + FS wrapped together
-    sub2_full = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s2-full",
-                                "Full Feature Set",
-                                open_default=True)
-    sub2_fs   = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s2-fs",
-                                "Feature Selection",
-                                open_default=False,
-                                dataset_summary_fn=_dataset_summary_per_model)
+    # SE2: Secondary-only - four scopes (SE2a = no COMMON baseline)
+    se2a = _exp_subsection(df_all, "Exp2-S6", "exp2-s2a",
+                           "SE2a - All Secondary only (10 features, no COMMON)",
+                           open_default=True)
+    se2_combined = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s2-combined",
+                                   "All Secondary + COMMON (17 features)",
+                                   open_default=False)
+    se2_clr = _exp_subsection(df_all, "Exp2-Sub1-Clr", "exp2-s2-clr",
+                              "Sec Clarifier + COMMON (12 features)",
+                              open_default=False)
+    se2_sed = _exp_subsection(df_all, "Exp2-Sub1-Sed", "exp2-s2-sed",
+                              "Sec Sedimentation + COMMON (12 features)",
+                              open_default=False)
+
+    # SE3: Full combined feature set (all stages)
+    se3_full = _exp_subsection(df_all, "Exp2-S4", "exp2-s3-full",
+                               "Full Feature Set (27 features)",
+                               open_default=True)
+    # SE3 reference baseline (old SE2: Inlet + Secondary, no primary) - kept for delta comparison
+    ref_full = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s3-ref",
+                               "Core Inlet + Secondary + Common (CIS) - 21 features",
+                               open_default=False)
+    ref_fs   = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s3-ref-fs",
+                               "CIS - Feature Selected",
+                               open_default=False,
+                               dataset_summary_fn=_dataset_summary_per_model)
+    se3_s6fs = _exp_subsection(df_all, "Exp2-S6-FS", "exp2-s3-s6fs",
+                               "Secondary Only - Feature Selected (10 feat -> selected)",
+                               open_default=False,
+                               dataset_summary_fn=_dataset_summary_per_model)
 
     cmp_div      = _exp2_comparison_panel(df_all)
     findings_div = _exp2_qna(df_all)
     best         = _exp2_best_model_box(df_all)
 
-    sub1_wrapper = f"""
+    se1_wrapper = f"""
 <details class="exp-details" open id="exp2-s1">
   <summary><span class="fold-icon">▶</span>
-    SE1  -  Secondary + Common (three scopes)
+    SE1  -  Primary Stage Features (two sub-scopes)
+  </summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #E15252">
+      <p class="meta">
+        <strong>Result: primary-stage scopes are strongly negative on average, with only isolated positive cells.</strong>
+        Two scopes are tested to isolate whether the failure is due to primary features themselves
+        or inlet contamination:<br>
+        &bull; <strong>SE1a (Primary + COMMON, 13 feat)</strong> - inlet excluded. If primary carries
+        any standalone signal, it should appear here.<br>
+        &bull; <strong>SE1b (Primary + Inlet + COMMON, 17 feat)</strong> - adds core inlet (4 features).
+        Provides the paired comparison against SE1a.<br>
+        Both sub-scopes produce strongly negative aggregate R², confirming that primary features are genuinely
+        weak predictors - the failure is not caused by inlet collinearity alone.
+        OLS is additionally compromised by extreme collinearity (Primary Clarifier pH VIF ~2743 vs Inlet pH).
+        <strong>Conclusion:</strong> primary-stage measurements carry no standalone predictive signal.
+        Secondary data is needed - see SE2.
+      </p>
+    </div>
+    {se1a_inner}
+    {se1b_inner}
+  </div>
+</details>"""
+
+    se2_wrapper = f"""
+<details class="exp-details" open id="exp2-s2">
+  <summary><span class="fold-icon">▶</span>
+    SE2  -  Secondary Stages
   </summary>
   <div class="exp-body">
     <div class="obs-card" style="border-left:4px solid #4A90D9">
       <p class="meta">
-        Three feature scopes tested side by side within SE1.
-        <strong>Combined</strong> (15 features) is the original baseline  -  both secondary groups
-        together. <strong>Clarifier-only</strong> and <strong>Sed-only</strong> (10 features each)
-        isolate each group to test whether they carry distinct signal or are interchangeable.
-        All variants include COMMON (Flow, Power, year, month_sin/cos, dow_sin/cos).
-        Co-occurring missingness means row counts are nearly identical across the three.
+        Four scopes tested within SE2, progressing from sub-group isolation to full combination.<br>
+        &bull; <strong>Clarifier + COMMON</strong> and <strong>Sed + COMMON</strong>: isolate each
+        secondary sub-group to test whether they carry distinct or interchangeable signal.<br>
+        &bull; <strong>SE2a - All Secondary only</strong> (10 feat, no COMMON): tests the full
+        secondary feature set without operational context, establishing what signal the secondary
+        measurements carry independently. Gains ~50 grab and ~150 comp rows vs SE2-Comb because
+        Flow/Power NaN rows are no longer binding.<br>
+        &bull; <strong>All Secondary + COMMON</strong>: full secondary with operational context (17 feat).
       </p>
     </div>
-    {sub1_clr}
-    {sub1_sed}
-    {sub1_combined}
+    {se2_clr}
+    {se2_sed}
+    {se2a}
+    {se2_combined}
   </div>
 </details>"""
 
-    sub2_wrapper = f"""
-<details class="exp-details" open id="exp2-s2">
-  <summary><span class="fold-icon">▶</span> SE2  -  Inlet + Secondary (full + FS)</summary>
+    se3_wrapper = f"""
+<details class="exp-details" open id="exp2-s3">
+  <summary><span class="fold-icon">▶</span>
+    SE3  -  Inlet + Primary + Secondary + COMMON (27 features)
+  </summary>
   <div class="exp-body">
-    {sub2_full}
-    {sub2_fs}
+    <div class="obs-card" style="border-left:4px solid #4A90D9">
+      <p class="meta">
+        Full stage-based combination: core inlet (4), primary clarifier + grit (6),
+        secondary clarifier + sedimentation (10), and COMMON (7) = 27 features.
+        Grab train ~764 rows / test 197; Composite train ~595 / test 176.
+        Secondary co-occurs almost perfectly with Primary days, so adding it costs only ~14 rows
+        versus SE1 (Primary + Inlet, ~778 train).
+        The <strong>CIS baseline</strong> (Core Inlet + Secondary + Common, 21 features, ~920 train)
+        is the prior Exp2-SE2 result; compare SE3 against it to assess whether primary data
+        adds value in the presence of secondary measurements.
+        The <strong>Secondary Only - Feature Selected</strong> variant (first below) tests whether
+        pruning the pure secondary pool to its most informative features matches or beats the
+        richer CIS feature set.
+      </p>
+    </div>
+    {se3_s6fs}
+    {se3_full}
+    {ref_full}
+    {ref_fs}
   </div>
 </details>"""
 
     return f"""
 <section id="exp2">
-  <h1 class="section-title">Experiment 2 - Secondary & Combined Features</h1>
+  <h1 class="section-title">Experiment 2 - Stage-by-Stage Feature Expansion</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
-  {sub1_wrapper}
-  {sub2_wrapper}
+  {se1_wrapper}
+  {se2_wrapper}
+  {se3_wrapper}
   {cmp_div}
   {findings_div}
   {best}
@@ -8157,10 +8952,10 @@ def _sidebar() -> str:
       Experiment 1 <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp1">
-      <a class="nav-item nav-sub" href="#exp1-sub1">SE1 - Inlet Only</a>
+      <a class="nav-item nav-sub" href="#exp1-sub1">SE1 - Core Inlet Only</a>
       <a class="nav-item nav-sub" href="#exp1-s2">SE2 - Inlet + COMMON</a>
       <div class="nav-subgroup">
-        <a class="nav-item nav-sub" href="#exp1-s3">SE3 - All Grab Inlet</a>
+        <a class="nav-item nav-sub" href="#exp1-s3">SE3 - Extended Inlet + COMMON</a>
         <a class="nav-item nav-subsub" href="#exp1-s3-full">- Full Feature Set</a>
         <a class="nav-item nav-subsub" href="#exp1-s3-fs">- Feature Selection</a>
       </div>
@@ -8176,23 +8971,36 @@ def _sidebar() -> str:
     <div class="nav-group-items" id="nav-exp2">
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp2-s1">SE1 - Secondary + Common</a>
+          <a class="nav-item nav-sub" href="#exp2-s1">SE1 - Primary Stage</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-clr">↳ Clarifier + Common</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-sed">↳ Sedimentation + Common</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1-combined">↳ All Secondary + Common</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1a">↳ Primary + COMMON only</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s1b">↳ Primary + Inlet + COMMON</a>
         </div>
       </div>
       <div class="nav-subgroup">
         <div class="nav-subgroup-header">
-          <a class="nav-item nav-sub" href="#exp2-s2">SE2 - Inlet + Secondary</a>
+          <a class="nav-item nav-sub" href="#exp2-s2">SE2 - Secondary Stages</a>
           <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
         </div>
         <div class="nav-subgroup-items">
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-full">↳ Full Feature Set</a>
-          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-fs">↳ Feature Selection</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-clr">↳ Clarifier + Common</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-sed">↳ Sedimentation + Common</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2a">↳ Secondary Only</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s2-combined">↳ All Secondary + Common</a>
+        </div>
+      </div>
+      <div class="nav-subgroup">
+        <div class="nav-subgroup-header">
+          <a class="nav-item nav-sub" href="#exp2-s3">SE3 - Combined</a>
+          <span class="nav-sub-toggle collapsed"><span class="nav-chevron">▾</span></span>
+        </div>
+        <div class="nav-subgroup-items">
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s3-s6fs">↳ Secondary Only - Feature Selected</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s3-full">↳ Full Feature Set</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s3-ref">↳ CIS (21 feat)</a>
+          <a class="nav-item nav-sub nav-subsub" href="#exp2-s3-ref-fs">↳ CIS - Feature Selected</a>
         </div>
       </div>
       <a class="nav-item nav-sub" href="#exp2-comparison">Comparisons</a>

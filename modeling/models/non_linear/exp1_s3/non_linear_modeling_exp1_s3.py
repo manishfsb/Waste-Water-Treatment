@@ -55,10 +55,14 @@ def infer_features(df: pd.DataFrame, target: str) -> list:
             and not any(c.startswith(p) for p in _EXCLUDE_PREFIXES)]
 
 REGISTRY = [
-    ("Exp1-S3", "grab_BOD", _ds("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp1-S3", "grab_COD", _ds("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp1-S3", "grab_TSS", _ds("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp1-S3", "grab_pH",  _ds("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp1-S3", "grab_BOD",  _ds("grab_BOD"),  "Effluent BOD (mg/L, Grab)"),
+    ("Exp1-S3", "grab_COD",  _ds("grab_COD"),  "Effluent COD (mg/L, Grab)"),
+    ("Exp1-S3", "grab_TSS",  _ds("grab_TSS"),  "Effluent TSS (mg/L, Grab)"),
+    ("Exp1-S3", "grab_pH",   _ds("grab_pH"),   "Effluent pH (Grab)"),
+    ("Exp1-S3", "comp_BOD",  _ds("comp_BOD"),  "Effluent BOD (mg/L, Composite)"),
+    ("Exp1-S3", "comp_COD",  _ds("comp_COD"),  "Effluent COD (mg/L, Composite)"),
+    ("Exp1-S3", "comp_TSS",  _ds("comp_TSS"),  "Effluent TSS (mg/L, Composite)"),
+    ("Exp1-S3", "comp_pH",   _ds("comp_pH"),   "Effluent pH (Composite)"),
 ]
 
 YEAR_COLOURS  = {2020: "#6BAED6", 2021: "#2171B5", 2022: "#74C476",

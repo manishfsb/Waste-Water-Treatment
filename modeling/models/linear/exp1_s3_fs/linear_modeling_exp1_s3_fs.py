@@ -50,10 +50,14 @@ def _ds(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp3", f"{name}.xlsx")
 
 DATASETS = [
-    ("Exp1-S3-FS", "E1S3_Grab_BOD", _ds("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp1-S3-FS", "E1S3_Grab_COD", _ds("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp1-S3-FS", "E1S3_Grab_TSS", _ds("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp1-S3-FS", "E1S3_Grab_pH",  _ds("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp1-S3-FS", "E1S3_Grab_BOD",  _ds("grab_BOD"),  "Effluent BOD (mg/L, Grab)"),
+    ("Exp1-S3-FS", "E1S3_Grab_COD",  _ds("grab_COD"),  "Effluent COD (mg/L, Grab)"),
+    ("Exp1-S3-FS", "E1S3_Grab_TSS",  _ds("grab_TSS"),  "Effluent TSS (mg/L, Grab)"),
+    ("Exp1-S3-FS", "E1S3_Grab_pH",   _ds("grab_pH"),   "Effluent pH (Grab)"),
+    ("Exp1-S3-FS", "E1S3_Comp_BOD",  _ds("comp_BOD"),  "Effluent BOD (mg/L, Composite)"),
+    ("Exp1-S3-FS", "E1S3_Comp_COD",  _ds("comp_COD"),  "Effluent COD (mg/L, Composite)"),
+    ("Exp1-S3-FS", "E1S3_Comp_TSS",  _ds("comp_TSS"),  "Effluent TSS (mg/L, Composite)"),
+    ("Exp1-S3-FS", "E1S3_Comp_pH",   _ds("comp_pH"),   "Effluent pH (Composite)"),
 ]
 
 _EXCLUDE_COLS     = {"Date", "year"}

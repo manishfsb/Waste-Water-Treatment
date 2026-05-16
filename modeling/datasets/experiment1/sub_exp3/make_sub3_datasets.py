@@ -1,28 +1,22 @@
 """
-make_sub3_datasets.py - Experiment 1 Sub-experiment 3: All Grab Inlet + COMMON_CYCLIC.
+make_sub3_datasets.py - Experiment 1 Sub-experiment 3: Extended Composite Inlet + COMMON_CYCLIC.
 
-Extends SE2-Cyclic by adding the five supplementary grab inlet measurements:
-  - Inlet TKN/NH3-N (mg/L, Grab)
-  - Inlet O&G (mg/L, Grab)
-  - Inlet PO4/TP (mg/L, Grab)
-  - Inlet Total Coliform (CFU/100ml, Grab)
-  - Inlet Fecal Coliform (CFU/100ml, Grab)
+Produces 4 composite-target datasets only (grab datasets retired).
 
-Only grab effluent targets are produced (4 files). Composite inlet features have no
-extended equivalents, so composite targets are unchanged from SE2-Cyclic and are omitted
-here to avoid redundant datasets.
+DESIGN CHANGE (2026-05): After correcting the measurement-type mislabelling in
+extraction, the extended inlet features (TKN/NH3-N, O&G, PO4/TP, Coliform) were
+found to be grab-measured only in 2021 (TKN/O&G) or 2021-2022 (PO4/Coliform).
+From 2022 or 2023 onwards they are composite measurements. Correctly using only
+grab-sourced values in grab datasets would leave at most 51 training rows -
+effectively reducing grab SE3 to the same 11 features as SE2. Grab SE3 datasets
+are therefore retired; SE3 is composite-only.
 
-Feature set (9 inlet + 7 COMMON_CYCLIC = 16 features per dataset):
-  GRAB_INLET (4):     Inlet pH, BOD, COD, TSS (Grab)
-  EXTRA_INLET (5):    Inlet TKN/NH3-N, O&G, PO4/TP, Total Coliform, Fecal Coliform (Grab)
-  COMMON (3):         Flow (MLD), Power Total (KW), year
-  Cyclic calendar (4): month_sin, month_cos, dow_sin, dow_cos
-
-Row cost (train, vs SE2-Cyclic baseline of 1175):
-  All 9 inlet cols present: ~393 rows (~33.5% of train)
-
-Note: Inlet O&G and TKN/NH3-N have ~65-68% missingness individually; their inclusion
-drives the joint row count down. This SE is intentionally the "full inlet signal" test.
+Feature set (composite targets):
+  COMP_INLET (4):   Inlet pH, BOD, COD, TSS (Composite)
+  EXTRA_COMP (2):   Inlet NH3-N (Composite), Inlet O&G (Composite)
+                    -- PO4 and Coliform composite excluded (too sparse before 2024)
+  COMMON_CYCLIC (7): Flow, Power, year, month_sin/cos, dow_sin/cos
+  Total: 13 features | ~737 train rows (2022-2024)
 
 Usage (from project root):
     .venv/bin/python3 modeling/datasets/experiment1/sub_exp3/make_sub3_datasets.py
@@ -39,26 +33,23 @@ RAW_FILE     = os.path.join(PROJECT_ROOT, "raw_data", "All_Years_Full.xlsx")
 OUT_DIR      = SCRIPT_DIR
 
 # -- Feature groups ------------------------------------------------------------
-GRAB_INLET = [
-    "Inlet pH (Grab)", "Inlet BOD (mg/L, Grab)",
-    "Inlet COD (mg/L, Grab)", "Inlet TSS (mg/L, Grab)",
+COMP_INLET = [
+    "Inlet pH (Composite)", "Inlet BOD (mg/L, Composite)",
+    "Inlet COD (mg/L, Composite)", "Inlet TSS (mg/L, Composite)",
 ]
-EXTRA_INLET = [
-    "Inlet TKN/NH3-N (mg/L, Grab)",
-    "Inlet O&G (mg/L, Grab)",
-    "Inlet PO4/TP (mg/L, Grab)",
-    "Inlet Total Coliform (CFU/100ml, Grab)",
-    "Inlet Fecal Coliform (CFU/100ml, Grab)",
+# Composite-sourced extended features (consistently available 2022+)
+EXTRA_COMP = [
+    "Inlet NH3-N (mg/L, Composite)",
+    "Inlet O&G (mg/L, Composite)",
 ]
 COMMON_BASE = ["Flow (MLD)", "Power Total (KW)", "year"]
 CYCLIC      = ["month_sin", "month_cos", "dow_sin", "dow_cos"]
 
-# -- Targets (grab only - composite has no extended inlet equivalents) ----------
-DATASETS = [
-    ("grab_BOD", "Effluent BOD (mg/L, Grab)"),
-    ("grab_COD", "Effluent COD (mg/L, Grab)"),
-    ("grab_TSS", "Effluent TSS (mg/L, Grab)"),
-    ("grab_pH",  "Effluent pH (Grab)"),
+COMP_DATASETS = [
+    ("comp_BOD", "Effluent BOD (mg/L, Composite)"),
+    ("comp_COD", "Effluent COD (mg/L, Composite)"),
+    ("comp_TSS", "Effluent TSS (mg/L, Composite)"),
+    ("comp_pH",  "Effluent pH (Composite)"),
 ]
 
 
@@ -72,19 +63,17 @@ def build_datasets():
     df["dow_sin"]   = np.sin(2 * np.pi * df["Date"].dt.dayofweek / 7)
     df["dow_cos"]   = np.cos(2 * np.pi * df["Date"].dt.dayofweek / 7)
 
-    feature_cols = GRAB_INLET + EXTRA_INLET + COMMON_BASE + CYCLIC
-
-    for name, target in DATASETS:
-        cols   = ["Date"] + feature_cols + [target]
+    comp_feat = COMP_INLET + EXTRA_COMP + COMMON_BASE + CYCLIC
+    print(f"\n-- Composite datasets ({len(comp_feat)} features: COMP_INLET + NH3-N + O&G + COMMON_CYCLIC) --")
+    for name, target in COMP_DATASETS:
+        cols   = ["Date"] + comp_feat + [target]
         subset = df[cols].dropna().copy()
-
         train_n = int((subset["year"] < 2025).sum())
         test_n  = int((subset["year"] == 2025).sum())
+        subset.to_excel(os.path.join(OUT_DIR, f"{name}.xlsx"), index=False)
+        print(f"  {name}.xlsx  -  {len(comp_feat)} features  (train={train_n}, test={test_n})")
 
-        out_path = os.path.join(OUT_DIR, f"{name}.xlsx")
-        subset.to_excel(out_path, index=False)
-        print(f"  Saved {name}.xlsx  -  {len(feature_cols)} features  "
-              f"(train={train_n}, test={test_n})")
+    print("\nNote: grab SE3 datasets retired - see module docstring for explanation.")
 
 
 if __name__ == "__main__":

@@ -7,11 +7,18 @@ This script is standalone - it does NOT modify any existing files
 All_Years_Merged.xlsx).
 
 New columns vs All_Years_Merged.xlsx:
-  Inlet   : TKN/NH3-N, O&G, PO4/TP, Total Coliform, Fecal Coliform
+  Inlet grab    : TKN (2021 only), O&G (2021 only), PO4/TP (2021-2022), Total/Fecal Coliform (2021-2022)
+  Inlet composite: NH3-N (2022+), O&G (2022+), PO4/TP (2023+), Total/Fecal Coliform (2023+)
   Grit    : TSS
   Primary : pH, Sludge Totalizer  (TSS/BOD/COD were already present)
-  Aeration: pH, DO, MLSS, MLVSS, SV30, SVI  (×2: existing + new tank)
+  Aeration: pH, DO, MLSS, MLVSS, SV30, SVI  (x2: existing + new tank)
   Effluent: O&G, NH3-N, Total Coliform, Fecal Coliform
+
+Extended inlet feature provenance:
+  TKN/NH3-N and O&G switched from grab to composite measurement in 2022.
+  PO4/TP and Coliforms switched in 2023. Each feature is now stored in TWO
+  columns: grab-sourced (sparse, early years) and composite-sourced (dense,
+  later years). Use the correct column for your target type.
 
 Source priority for overlapping dates: Excel files > 2020 RAW.csv
 2021 Jan-Jun has no lab report Excel files - those rows come from the CSV only
@@ -113,21 +120,28 @@ COLUMNS = [
     ("Power / Flow (KW/ML)",                        "power_per_flow"),
     # Operational
     ("Flow (MLD)",                                  "flow"),
-    # Inlet - grab
-    ("Inlet pH (Grab)",                             "inlet_ph"),
-    ("Inlet BOD (mg/L, Grab)",                      "inlet_bod"),
-    ("Inlet COD (mg/L, Grab)",                      "inlet_cod"),
-    ("Inlet TSS (mg/L, Grab)",                      "inlet_tss"),
-    ("Inlet TKN/NH3-N (mg/L, Grab)",                "inlet_tkn"),
-    ("Inlet O&G (mg/L, Grab)",                      "inlet_og"),
-    ("Inlet PO4/TP (mg/L, Grab)",                   "inlet_po4"),
-    ("Inlet Total Coliform (CFU/100ml, Grab)",      "inlet_total_coliform"),
-    ("Inlet Fecal Coliform (CFU/100ml, Grab)",      "inlet_fecal_coliform"),
-    # Inlet - composite (null for 2021)
-    ("Inlet pH (Composite)",                        "inlet_ph_comp"),
-    ("Inlet BOD (mg/L, Composite)",                 "inlet_bod_comp"),
-    ("Inlet COD (mg/L, Composite)",                 "inlet_cod_comp"),
-    ("Inlet TSS (mg/L, Composite)",                 "inlet_tss_comp"),
+    # Inlet - grab (core 4)
+    ("Inlet pH (Grab)",                                 "inlet_ph"),
+    ("Inlet BOD (mg/L, Grab)",                          "inlet_bod"),
+    ("Inlet COD (mg/L, Grab)",                          "inlet_cod"),
+    ("Inlet TSS (mg/L, Grab)",                          "inlet_tss"),
+    # Inlet - extended grab (grab-sourced; sparse in 2022+)
+    ("Inlet TKN (mg/L, Grab)",                          "inlet_tkn_grab"),
+    ("Inlet O&G (mg/L, Grab)",                          "inlet_og_grab"),
+    ("Inlet PO4/TP (mg/L, Grab)",                       "inlet_po4_grab"),
+    ("Inlet Total Coliform (CFU/100ml, Grab)",          "inlet_total_coliform_grab"),
+    ("Inlet Fecal Coliform (CFU/100ml, Grab)",          "inlet_fecal_coliform_grab"),
+    # Inlet - extended composite (composite-sourced; dense in 2022+)
+    ("Inlet NH3-N (mg/L, Composite)",                   "inlet_nh3_comp"),
+    ("Inlet O&G (mg/L, Composite)",                     "inlet_og_comp"),
+    ("Inlet PO4/TP (mg/L, Composite)",                  "inlet_po4_comp"),
+    ("Inlet Total Coliform (CFU/100ml, Composite)",     "inlet_total_coliform_comp"),
+    ("Inlet Fecal Coliform (CFU/100ml, Composite)",     "inlet_fecal_coliform_comp"),
+    # Inlet - composite core (null for 2021)
+    ("Inlet pH (Composite)",                            "inlet_ph_comp"),
+    ("Inlet BOD (mg/L, Composite)",                     "inlet_bod_comp"),
+    ("Inlet COD (mg/L, Composite)",                     "inlet_cod_comp"),
+    ("Inlet TSS (mg/L, Composite)",                     "inlet_tss_comp"),
     # Grit classifier
     ("Grit Classifier TSS (mg/L)",                  "grit_tss"),
     # Primary clarifier
@@ -306,39 +320,92 @@ def detect_columns(ws, month_label=""):
         inlet_cod_comp = p["inlet_cod_comp"]
         inlet_tss_comp = p["inlet_tss_comp"]
 
-    # ── Extended inlet fields (TKN, O&G, PO4, coliforms) ──────────────────────
-    # These sit between the last inlet column and the grit section.
+    # ── Extended inlet fields: provenance-aware dual scan ─────────────────────
+    # Each extended feature (TKN/NH3-N, O&G, PO4/TP, Coliforms) is stored in
+    # TWO output columns: grab-sourced and composite-sourced.  The grab sub-block
+    # is scanned separately from the composite sub-block so values from
+    # composite measurements are never mixed into grab prediction datasets.
+    #
+    # Measurement type history (from lab report analysis):
+    #   TKN/NH3-N, O&G : grab in 2021,  composite from 2022+
+    #   PO4/TP, Coliform: grab in 2021-2022, composite from 2023+
+    #
+    # Boundary: use Grit Classifier column if present; fall back to Primary
+    # Clarifier so the scan is never skipped due to a missing Grit section.
     grit_col = find_section_col(r4, ("GRIT",))
-    inlet_tkn = inlet_og = inlet_po4 = inlet_total_coliform = inlet_fecal_coliform = None
+    prim_col_early = find_section_col(r4, ("PRIMARY", "CLARIFIER"))
+    inlet_scan_end = grit_col or prim_col_early
 
-    inlet_cols = [x for x in [grab_inlet_col, comp_inlet_col] if x]
-    if inlet_cols and grit_col:
-        # Scan r6 from just past the last inlet pH/BOD/COD/TSS block up to grit
-        scan_start = max(x for x in [inlet_ph, inlet_bod, inlet_cod, inlet_tss,
+    inlet_tkn_grab = inlet_og_grab = inlet_po4_grab = None
+    inlet_total_coliform_grab = inlet_fecal_coliform_grab = None
+    inlet_nh3_comp = inlet_og_comp = inlet_po4_comp = None
+    inlet_total_coliform_comp = inlet_fecal_coliform_comp = None
+
+    if inlet_scan_end:
+        already_basic = {x for x in [inlet_ph, inlet_bod, inlet_cod, inlet_tss,
                                       inlet_ph_comp, inlet_bod_comp,
-                                      inlet_cod_comp, inlet_tss_comp] if x) + 1
-        for i in range(scan_start - 1, min(grit_col - 1, len(r6))):
-            v = r6[i]
-            if v is None:
-                continue
-            s = str(v).upper().strip()
-            if ("TKN" in s or s == "NH3-N" or s == "NH3") and inlet_tkn is None:
-                inlet_tkn = i + 1
-            elif ("O & G" in s or ("OIL" in s and "GREAS" in s)) and inlet_og is None:
-                inlet_og = i + 1
-            elif (s in ("TP", "PO4") or "PHOSPH" in s) and inlet_po4 is None:
-                inlet_po4 = i + 1
-            elif "TOTAL COLIFORM" in s and inlet_total_coliform is None:
-                inlet_total_coliform = i + 1
-            elif "FECAL" in s and inlet_fecal_coliform is None:
-                inlet_fecal_coliform = i + 1
+                                      inlet_cod_comp, inlet_tss_comp] if x}
+
+        def _scan_extended(start_col, end_col, out):
+            for i in range(start_col - 1, min(end_col - 1, len(r6))):
+                if (i + 1) in already_basic:
+                    continue
+                v = r6[i]
+                if v is None:
+                    continue
+                s = str(v).upper().strip()
+                if (("TKN" in s or "NH3" in s or "AMMONI" in s)
+                        and "TOTAL" not in s and "tkn" not in out):
+                    out["tkn"] = i + 1
+                elif ("O & G" in s or ("OIL" in s and "GREAS" in s)) and "og" not in out:
+                    out["og"] = i + 1
+                elif (s in ("TP", "PO4") or "PHOSPH" in s) and "po4" not in out:
+                    out["po4"] = i + 1
+                elif "TOTAL COLIFORM" in s and "total_col" not in out:
+                    out["total_col"] = i + 1
+                elif "FECAL" in s and "fecal_col" not in out:
+                    out["fecal_col"] = i + 1
+
+        # Determine the column extent of each sub-block
+        if grab_inlet_col and comp_inlet_col:
+            if grab_inlet_col < comp_inlet_col:
+                g_start, g_end = grab_inlet_col, comp_inlet_col
+                c_start, c_end = comp_inlet_col, inlet_scan_end
+            else:
+                c_start, c_end = comp_inlet_col, grab_inlet_col
+                g_start, g_end = grab_inlet_col, inlet_scan_end
+        elif grab_inlet_col:
+            g_start, g_end = grab_inlet_col, inlet_scan_end
+            c_start, c_end = None, None
+        else:
+            g_start, g_end = None, None
+            c_start, c_end = (comp_inlet_col, inlet_scan_end) if comp_inlet_col else (None, None)
+
+        if g_start:
+            gd = {}
+            _scan_extended(g_start, g_end, gd)
+            inlet_tkn_grab            = gd.get("tkn")
+            inlet_og_grab             = gd.get("og")
+            inlet_po4_grab            = gd.get("po4")
+            inlet_total_coliform_grab = gd.get("total_col")
+            inlet_fecal_coliform_grab = gd.get("fecal_col")
+
+        if c_start:
+            cd = {}
+            _scan_extended(c_start, c_end, cd)
+            inlet_nh3_comp            = cd.get("tkn")
+            inlet_og_comp             = cd.get("og")
+            inlet_po4_comp            = cd.get("po4")
+            inlet_total_coliform_comp = cd.get("total_col")
+            inlet_fecal_coliform_comp = cd.get("fecal_col")
 
     # ── Grit Classifier TSS ────────────────────────────────────────────────────
     # The section header column in r4 is at the same column as the TSS data.
-    grit_tss = grit_col
+    grit_tss = grit_col  # None if Grit section absent - handled downstream as missing value
 
     # ── Primary Clarifier ──────────────────────────────────────────────────────
-    prim_col = find_section_col(r4, ("PRIMARY", "CLARIFIER"))
+    # prim_col_early was already detected above for the inlet scan fallback boundary.
+    prim_col = prim_col_early
     primary_ph = primary_tss = primary_bod = primary_cod = primary_sludge_totalizer = None
     if prim_col:
         p = scan_params(prim_col, [
@@ -374,7 +441,15 @@ def detect_columns(ws, month_label=""):
         secondary_bod = p["secondary_bod"]
         secondary_cod = p["secondary_cod"]
         if secondary_cod:
-            secondary_ras = secondary_cod + 1   # RAS always immediately after COD
+            # Scan up to 3 cols after COD for an explicit RAS header
+            secondary_ras = None
+            for i in range(secondary_cod, min(secondary_cod + 3, len(r6))):
+                v = r6[i]
+                if v and "RAS" in str(v).upper():
+                    secondary_ras = i + 1
+                    break
+            if secondary_ras is None:
+                secondary_ras = secondary_cod + 1  # fallback: column immediately after COD
 
     # ── Secondary Sedimentation ────────────────────────────────────────────────
     secsed_col = find_section_col(r4, ("SECONDARY", "SEDIMENTATION"))
@@ -391,7 +466,15 @@ def detect_columns(ws, month_label=""):
         sec_sed_bod = p["sec_sed_bod"]
         sec_sed_cod = p["sec_sed_cod"]
         if sec_sed_cod:
-            sec_sed_ras_new = sec_sed_cod + 1
+            # Scan up to 3 cols after COD for an explicit RAS header
+            sec_sed_ras_new = None
+            for i in range(sec_sed_cod, min(sec_sed_cod + 3, len(r6))):
+                v = r6[i]
+                if v and "RAS" in str(v).upper():
+                    sec_sed_ras_new = i + 1
+                    break
+            if sec_sed_ras_new is None:
+                sec_sed_ras_new = sec_sed_cod + 1  # fallback: column immediately after COD
 
     # ── Aeration Tanks ─────────────────────────────────────────────────────────
     # Layout (same for all years):
@@ -515,11 +598,16 @@ def detect_columns(ws, month_label=""):
         "inlet_bod":                 inlet_bod,
         "inlet_cod":                 inlet_cod,
         "inlet_tss":                 inlet_tss,
-        "inlet_tkn":                 inlet_tkn,
-        "inlet_og":                  inlet_og,
-        "inlet_po4":                 inlet_po4,
-        "inlet_total_coliform":      inlet_total_coliform,
-        "inlet_fecal_coliform":      inlet_fecal_coliform,
+        "inlet_tkn_grab":             inlet_tkn_grab,
+        "inlet_og_grab":             inlet_og_grab,
+        "inlet_po4_grab":            inlet_po4_grab,
+        "inlet_total_coliform_grab": inlet_total_coliform_grab,
+        "inlet_fecal_coliform_grab": inlet_fecal_coliform_grab,
+        "inlet_nh3_comp":            inlet_nh3_comp,
+        "inlet_og_comp":             inlet_og_comp,
+        "inlet_po4_comp":            inlet_po4_comp,
+        "inlet_total_coliform_comp": inlet_total_coliform_comp,
+        "inlet_fecal_coliform_comp": inlet_fecal_coliform_comp,
         "inlet_ph_comp":             inlet_ph_comp,
         "inlet_bod_comp":            inlet_bod_comp,
         "inlet_cod_comp":            inlet_cod_comp,
@@ -812,8 +900,9 @@ def write_excel(rows, output_path):
         13,                          # Date
         11, 11, 12, 14, 9,           # Power x4, Flow
         9, 13, 13, 13,               # Inlet grab (pH, BOD, COD, TSS)
-        17, 14, 14, 18, 18,          # Inlet TKN, O&G, PO4, Coliform x2
-        13, 17, 17, 17,              # Inlet composite
+        14, 14, 14, 18, 18,          # Inlet extended grab (TKN, O&G, PO4, Coliform x2)
+        16, 16, 16, 22, 22,          # Inlet extended composite (NH3-N, O&G, PO4, Coliform x2)
+        13, 17, 17, 17,              # Inlet composite core
         14,                          # Grit TSS
         13, 13, 13, 13, 15,          # Primary (pH, TSS, BOD, COD, Sludge)
         13, 15, 15, 15, 13,          # Sec Clarifier

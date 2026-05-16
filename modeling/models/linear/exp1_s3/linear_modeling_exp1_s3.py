@@ -1,11 +1,12 @@
 """
 linear_modeling_exp1_s3.py - OLS, Ridge, ElNet on Experiment 1 SE3.
 
-Feature set: All grab inlet features (9) + COMMON_CYCLIC (7) = 16 features.
-Grab targets only (4 datasets). Composite targets omitted - no extended composite
-inlet equivalents exist, making a composite SE3 identical to SE2-Cyclic.
+Feature set: Extended inlet (9: 4 core + 5 extra) + COMMON_CYCLIC (7) = 16 features.
+8 datasets: 4 grab targets + 4 composite targets.
 
-Train size: ~228 rows (joint missingness of all 5 extra inlet features).
+Train sizes (run 2, post-extraction fix):
+  Grab:      ~295 rows
+  Composite: ~281 rows
 
 Datasets: experiment1/sub_exp3/ (built by make_sub3_datasets.py)
 Exp key:  Exp1-S3
@@ -61,10 +62,14 @@ def _ds(name):
     return os.path.join(MODELING_DIR, "datasets", "experiment1", "sub_exp3", f"{name}.xlsx")
 
 DATASETS = [
-    ("Exp1-S3", "E1S3_Grab_BOD", _ds("grab_BOD"), "Effluent BOD (mg/L, Grab)"),
-    ("Exp1-S3", "E1S3_Grab_COD", _ds("grab_COD"), "Effluent COD (mg/L, Grab)"),
-    ("Exp1-S3", "E1S3_Grab_TSS", _ds("grab_TSS"), "Effluent TSS (mg/L, Grab)"),
-    ("Exp1-S3", "E1S3_Grab_pH",  _ds("grab_pH"),  "Effluent pH (Grab)"),
+    ("Exp1-S3", "E1S3_Grab_BOD",  _ds("grab_BOD"),  "Effluent BOD (mg/L, Grab)"),
+    ("Exp1-S3", "E1S3_Grab_COD",  _ds("grab_COD"),  "Effluent COD (mg/L, Grab)"),
+    ("Exp1-S3", "E1S3_Grab_TSS",  _ds("grab_TSS"),  "Effluent TSS (mg/L, Grab)"),
+    ("Exp1-S3", "E1S3_Grab_pH",   _ds("grab_pH"),   "Effluent pH (Grab)"),
+    ("Exp1-S3", "E1S3_Comp_BOD",  _ds("comp_BOD"),  "Effluent BOD (mg/L, Composite)"),
+    ("Exp1-S3", "E1S3_Comp_COD",  _ds("comp_COD"),  "Effluent COD (mg/L, Composite)"),
+    ("Exp1-S3", "E1S3_Comp_TSS",  _ds("comp_TSS"),  "Effluent TSS (mg/L, Composite)"),
+    ("Exp1-S3", "E1S3_Comp_pH",   _ds("comp_pH"),   "Effluent pH (Composite)"),
 ]
 
 
