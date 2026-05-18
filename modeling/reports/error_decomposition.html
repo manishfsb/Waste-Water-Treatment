@@ -1,0 +1,241 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'>
+<title>2025 Residuals - Regime Decomposition</title>
+<style>
+:root {
+  --bg:           #F5F5F5;
+  --bg-page:      #F0F2F5;
+  --card:         #FFFFFF;
+  --card-shadow:  rgba(0,0,0,0.10);
+  --text:         #222222;
+  --text-muted:   #555555;
+  --text-meta:    #888888;
+  --border:       #DDDDDD;
+  --border-light: #E8E8E8;
+  --table-even:   #F9F9F9;
+  --obs-bg:       #EBF3FB;
+  --interp-bg:    #FFFBF0;
+  --interp-bdr:   #F0D080;
+  --toc-bg:       #E8F0FE;
+  --details-bg:   #FAFBFD;
+  --details-bdr:  #D0D7E3;
+  --summary-hover:#EEF3FA;
+  --input-bg:     #FFFFFF;
+  /* Aliases - keep in sync with canonical names above */
+  --card-bg:      #FFFFFF;
+  --text-primary: #222222;
+  --text-color:   #222222;
+  --border-color: #DDDDDD;
+  --accent:       #4A90D9;
+  --accent-blue:  #4A90D9;
+  /* Themed column-header backgrounds (readable in light mode) */
+  --th-col-blue:  #D0E0F0;
+  --th-col-red:   #F0D0D0;
+  --th-col-green: #D0F0D0;
+  --th-col-blue-text: #1a3a5c;
+  --th-col-red-text:  #5c1a1a;
+  --th-col-green-text:#1a3a1a;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg:           #1A1D23;
+  --bg-page:      #13151A;
+  --card:         #23272F;
+  --card-shadow:  rgba(0,0,0,0.40);
+  --text:         #E2E4E9;
+  --text-muted:   #A0A6B2;
+  --text-meta:    #6B7280;
+  --border:       #383C46;
+  --border-light: #2E3240;
+  --table-even:   #1E2128;
+  --obs-bg:       #1A2535;
+  --interp-bg:    #1F1E14;
+  --interp-bdr:   #5A4800;
+  --toc-bg:       #161C2D;
+  --details-bg:   #1C2030;
+  --details-bdr:  #2E3450;
+  --summary-hover:#1A2238;
+  --input-bg:     #23272F;
+  /* Aliases - keep in sync with canonical names above */
+  --card-bg:      #23272F;
+  --text-primary: #E2E4E9;
+  --text-color:   #E2E4E9;
+  --border-color: #383C46;
+  --accent:       #5BA3EC;
+  --accent-blue:  #5BA3EC;
+  /* Themed column-header backgrounds (readable in dark mode) */
+  --th-col-blue:  #1a3a5c;
+  --th-col-red:   #3a1a1a;
+  --th-col-green: #1a3a1a;
+  --th-col-blue-text: #A8CBE8;
+  --th-col-red-text:  #E8A8A8;
+  --th-col-green-text:#A8E8A8;
+  color-scheme: dark;
+}
+
+#theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 9999;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 8px var(--card-shadow);
+  color: var(--text);
+  transition: background 0.2s, border-color 0.2s;
+  user-select: none;
+  line-height: 1;
+}
+#theme-toggle:hover { border-color: var(--text-muted); }
+
+  body {
+    font-family: Calibri, Arial, sans-serif;
+    margin: 0;
+    background: var(--bg-page);
+    color: var(--text);
+    transition: background 0.25s, color 0.25s;
+  }
+  .card {
+    background: var(--card);
+    box-shadow: 0 2px 8px var(--card-shadow);
+    border-radius: 8px;
+  }
+  .summary-table th, .summary-table td { border-color: var(--border); }
+  .summary-table tbody tr:nth-child(even) { background: var(--table-even); }
+  .table-note  { color: var(--text-muted); }
+  .meta        { color: var(--text-meta); font-size: 13px; }
+  .obs-card    { background: var(--obs-bg); }
+  .interp      { background: var(--interp-bg); border-color: var(--interp-bdr); }
+  .toc         { background: var(--toc-bg); }
+  details      { background: var(--details-bg); border-color: var(--details-bdr); }
+  details > summary:hover { background: var(--summary-hover); }
+  img          { background: var(--card); }
+
+    body { font-family:-apple-system, Segoe UI, sans-serif; padding:24px; }
+    .container { max-width:1400px; margin:0 auto; }
+    table.decomp { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 24px; }
+    table.decomp th, table.decomp td { padding:5px 8px; border-bottom:1px solid var(--border); }
+    table.decomp th { background:var(--bg-soft); font-weight:600; text-align:left; }
+    table.decomp td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .target-header { font-size:16px; font-weight:600; margin:20px 0 6px;
+                     padding:6px 10px; background:var(--bg-soft); border-left:3px solid #4A90D9; }
+    .axis-row td { background:var(--bg-soft); font-weight:600; font-size:11px;
+                   text-transform:uppercase; letter-spacing:.4px; color:#4A90D9; }
+    .note { color:var(--text-muted); font-size:12px; margin:8px 0 16px; }
+    </style></head><body><div class='container'>
+<h1>2025 Residual Decomposition by Operational Regime</h1>
+<p class='note'>Generated 2026-05-18 12:50. Each target is decomposed using its <strong>gap-adjusted winner</strong> (per the Overfit-Aware Selection table). Quartile thresholds fitted on training years (2021-2024) and applied to 2025.</p>
+<div class='rule-card note'>
+<strong>How to read:</strong> The OVERALL row is the baseline. Cells where MAE is &gt; 1.75× baseline are red - error concentrates in that regime. Bias coloured when |bias| &gt; 0.5 × overall MAE (systematic over/under-prediction).</div>
+<div class='target-header'>Effluent pH (Grab) (overall n=115, MAE=0.093, RMSE=0.123, bias=0.036, R²=0.427)</div>
+<table class='decomp'>
+<thead><tr><th>Axis</th><th>Bucket</th><th class='num'>n</th><th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th></tr></thead><tbody>
+<tr class='axis-row'><td colspan='7'>Flow</td></tr>
+<tr><td></td><td>Q1 (train [8.8,16.4])</td><td class='num'>111</td><td class='num' style=''>0.096</td><td class='num'>0.125</td><td class='num' style=''>0.037</td><td class='num'>0.407</td></tr>
+<tr><td></td><td>Q2 (train [16.4,17.8])</td><td class='num'>2</td><td class='num' style='color:#2ecc71'>0.016</td><td class='num'>0.016</td><td class='num' style=''>0.016</td><td class='num'>0.830</td></tr>
+<tr><td></td><td>Q3 (train [17.8,19.6])</td><td class='num'>2</td><td class='num' style='color:#2ecc71'>0.009</td><td class='num'>0.009</td><td class='num' style=''>-0.009</td><td class='num'>0.622</td></tr>
+<tr><td></td><td>Q4 (train [19.6,29.6])</td><td class='num'>0</td><td class='num' style=''>-</td><td class='num'>-</td><td class='num' style=''>-</td><td class='num'>-</td></tr>
+<tr class='axis-row'><td colspan='7'>Day</td></tr>
+<tr><td></td><td>Weekday</td><td class='num'>85</td><td class='num' style=''>0.095</td><td class='num'>0.125</td><td class='num' style=''>0.043</td><td class='num'>0.390</td></tr>
+<tr><td></td><td>Weekend</td><td class='num'>30</td><td class='num' style=''>0.088</td><td class='num'>0.117</td><td class='num' style=''>0.018</td><td class='num'>0.519</td></tr>
+<tr class='axis-row'><td colspan='7'>Season</td></tr>
+<tr><td></td><td>DJF</td><td class='num'>0</td><td class='num' style=''>-</td><td class='num'>-</td><td class='num' style=''>-</td><td class='num'>-</td></tr>
+<tr><td></td><td>MAM</td><td class='num'>65</td><td class='num' style=''>0.090</td><td class='num'>0.121</td><td class='num' style=''>0.024</td><td class='num'>0.417</td></tr>
+<tr><td></td><td>JJA</td><td class='num'>50</td><td class='num' style=''>0.098</td><td class='num'>0.126</td><td class='num' style='color:#e74c3c;font-weight:600'>0.051</td><td class='num'>-0.517</td></tr>
+<tr><td></td><td>SON</td><td class='num'>0</td><td class='num' style=''>-</td><td class='num'>-</td><td class='num' style=''>-</td><td class='num'>-</td></tr>
+<tr class='axis-row'><td colspan='7'>InletLoad</td></tr>
+<tr><td></td><td>Q1 (train [6.4,6.9])</td><td class='num'>67</td><td class='num' style=''>0.100</td><td class='num'>0.133</td><td class='num' style=''>0.029</td><td class='num'>0.354</td></tr>
+<tr><td></td><td>Q2 (train [6.9,7.0])</td><td class='num'>38</td><td class='num' style=''>0.087</td><td class='num'>0.111</td><td class='num' style=''>0.046</td><td class='num'>0.491</td></tr>
+<tr><td></td><td>Q3 (train [7.0,7.3])</td><td class='num'>8</td><td class='num' style=''>0.081</td><td class='num'>0.108</td><td class='num' style=''>0.042</td><td class='num'>0.157</td></tr>
+<tr><td></td><td>Q4 (train [7.3,7.7])</td><td class='num'>2</td><td class='num' style='color:#2ecc71'>0.052</td><td class='num'>0.059</td><td class='num' style='color:#e74c3c;font-weight:600'>0.052</td><td class='num'>-33.330</td></tr>
+</tbody></table>
+<div class='target-header'>Effluent COD (mg/L, Composite) (overall n=223, MAE=17.414, RMSE=20.133, bias=-8.169, R²=0.120)</div>
+<table class='decomp'>
+<thead><tr><th>Axis</th><th>Bucket</th><th class='num'>n</th><th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th></tr></thead><tbody>
+<tr class='axis-row'><td colspan='7'>Flow</td></tr>
+<tr><td></td><td>Q1 (train [7.2,16.4])</td><td class='num'>201</td><td class='num' style=''>18.010</td><td class='num'>20.685</td><td class='num' style='color:#e74c3c;font-weight:600'>-9.410</td><td class='num'>0.045</td></tr>
+<tr><td></td><td>Q2 (train [16.4,17.8])</td><td class='num'>11</td><td class='num' style='color:#2ecc71'>9.946</td><td class='num'>12.154</td><td class='num' style=''>4.014</td><td class='num'>0.398</td></tr>
+<tr><td></td><td>Q3 (train [17.8,19.4])</td><td class='num'>8</td><td class='num' style=''>13.584</td><td class='num'>16.004</td><td class='num' style=''>2.239</td><td class='num'>0.462</td></tr>
+<tr><td></td><td>Q4 (train [19.4,24.3])</td><td class='num'>3</td><td class='num' style=''>15.077</td><td class='num'>15.348</td><td class='num' style=''>2.595</td><td class='num'>0.542</td></tr>
+<tr class='axis-row'><td colspan='7'>Day</td></tr>
+<tr><td></td><td>Weekday</td><td class='num'>160</td><td class='num' style=''>16.769</td><td class='num'>19.614</td><td class='num' style=''>-8.523</td><td class='num'>0.125</td></tr>
+<tr><td></td><td>Weekend</td><td class='num'>63</td><td class='num' style=''>19.053</td><td class='num'>21.394</td><td class='num' style=''>-7.269</td><td class='num'>0.103</td></tr>
+<tr class='axis-row'><td colspan='7'>Season</td></tr>
+<tr><td></td><td>DJF</td><td class='num'>43</td><td class='num' style=''>15.373</td><td class='num'>19.535</td><td class='num' style='color:#e74c3c;font-weight:600'>9.745</td><td class='num'>-0.261</td></tr>
+<tr><td></td><td>MAM</td><td class='num'>79</td><td class='num' style='color:#f1c40f'>22.012</td><td class='num'>24.194</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.989</td><td class='num'>-0.120</td></tr>
+<tr><td></td><td>JJA</td><td class='num'>70</td><td class='num' style=''>15.667</td><td class='num'>17.718</td><td class='num' style='color:#e74c3c;font-weight:600'>-11.893</td><td class='num'>-0.558</td></tr>
+<tr><td></td><td>SON</td><td class='num'>31</td><td class='num' style=''>12.474</td><td class='num'>13.633</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.322</td><td class='num'>-3.503</td></tr>
+<tr class='axis-row'><td colspan='7'>InletLoad</td></tr>
+<tr><td></td><td>Q1 (train [89.4,638.0])</td><td class='num'>21</td><td class='num' style=''>15.261</td><td class='num'>18.103</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.906</td><td class='num'>-0.659</td></tr>
+<tr><td></td><td>Q2 (train [638.0,791.0])</td><td class='num'>42</td><td class='num' style=''>18.172</td><td class='num'>19.623</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.348</td><td class='num'>-0.139</td></tr>
+<tr><td></td><td>Q3 (train [791.0,983.0])</td><td class='num'>96</td><td class='num' style=''>16.236</td><td class='num'>18.831</td><td class='num' style='color:#e74c3c;font-weight:600'>-10.757</td><td class='num'>-0.166</td></tr>
+<tr><td></td><td>Q4 (train [983.0,1882.0])</td><td class='num'>64</td><td class='num' style=''>19.391</td><td class='num'>22.806</td><td class='num' style=''>0.010</td><td class='num'>0.143</td></tr>
+</tbody></table>
+<div class='target-header'>Effluent pH (Composite) (overall n=153, MAE=0.126, RMSE=0.175, bias=-0.010, R²=0.365)</div>
+<table class='decomp'>
+<thead><tr><th>Axis</th><th>Bucket</th><th class='num'>n</th><th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th></tr></thead><tbody>
+<tr class='axis-row'><td colspan='7'>Flow</td></tr>
+<tr><td></td><td>Q1 (train [7.2,16.4])</td><td class='num'>140</td><td class='num' style=''>0.111</td><td class='num'>0.145</td><td class='num' style=''>-0.011</td><td class='num'>0.445</td></tr>
+<tr><td></td><td>Q2 (train [16.4,17.9])</td><td class='num'>5</td><td class='num' style='color:#e74c3c;font-weight:600'>0.335</td><td class='num'>0.456</td><td class='num' style='color:#e74c3c;font-weight:600'>0.335</td><td class='num'>-2.006</td></tr>
+<tr><td></td><td>Q3 (train [17.9,19.3])</td><td class='num'>6</td><td class='num' style='color:#e74c3c;font-weight:600'>0.258</td><td class='num'>0.289</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.178</td><td class='num'>0.111</td></tr>
+<tr><td></td><td>Q4 (train [19.3,24.3])</td><td class='num'>2</td><td class='num' style='color:#e74c3c;font-weight:600'>0.322</td><td class='num'>0.323</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.322</td><td class='num'>-114.956</td></tr>
+<tr class='axis-row'><td colspan='7'>Day</td></tr>
+<tr><td></td><td>Weekday</td><td class='num'>113</td><td class='num' style=''>0.127</td><td class='num'>0.179</td><td class='num' style=''>-0.015</td><td class='num'>0.335</td></tr>
+<tr><td></td><td>Weekend</td><td class='num'>40</td><td class='num' style=''>0.124</td><td class='num'>0.164</td><td class='num' style=''>0.002</td><td class='num'>0.449</td></tr>
+<tr class='axis-row'><td colspan='7'>Season</td></tr>
+<tr><td></td><td>DJF</td><td class='num'>24</td><td class='num' style='color:#e74c3c;font-weight:600'>0.271</td><td class='num'>0.328</td><td class='num' style='color:#e74c3c;font-weight:600'>0.101</td><td class='num'>-0.011</td></tr>
+<tr><td></td><td>MAM</td><td class='num'>70</td><td class='num' style=''>0.099</td><td class='num'>0.134</td><td class='num' style=''>-0.009</td><td class='num'>0.562</td></tr>
+<tr><td></td><td>JJA</td><td class='num'>47</td><td class='num' style=''>0.091</td><td class='num'>0.110</td><td class='num' style=''>-0.049</td><td class='num'>-1.651</td></tr>
+<tr><td></td><td>SON</td><td class='num'>12</td><td class='num' style=''>0.135</td><td class='num'>0.159</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.087</td><td class='num'>-0.649</td></tr>
+<tr class='axis-row'><td colspan='7'>InletLoad</td></tr>
+<tr><td></td><td>Q1 (train [6.1,6.9])</td><td class='num'>90</td><td class='num' style=''>0.122</td><td class='num'>0.158</td><td class='num' style=''>-0.011</td><td class='num'>0.404</td></tr>
+<tr><td></td><td>Q2 (train [6.9,7.0])</td><td class='num'>20</td><td class='num' style=''>0.133</td><td class='num'>0.228</td><td class='num' style=''>-0.008</td><td class='num'>-0.504</td></tr>
+<tr><td></td><td>Q3 (train [7.0,7.1])</td><td class='num'>39</td><td class='num' style=''>0.125</td><td class='num'>0.177</td><td class='num' style=''>-0.026</td><td class='num'>0.447</td></tr>
+<tr><td></td><td>Q4 (train [7.1,7.9])</td><td class='num'>4</td><td class='num' style='color:#f1c40f'>0.209</td><td class='num'>0.219</td><td class='num' style='color:#e74c3c;font-weight:600'>0.131</td><td class='num'>-1.323</td></tr>
+</tbody></table>
+<script>
+<script>
+(function() {
+  var stored = localStorage.getItem('theme');
+  var osDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var active = stored ? stored : (osDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', active);
+
+  // React to OS changes if user has not manually overridden
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    if (!localStorage.getItem('theme')) {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      updateIcon();
+    }
+  });
+
+  function updateIcon() {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.textContent = isDark ? '☀' : '☾';
+    btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    btn.setAttribute('aria-label', 'Toggle dark mode');
+    document.body.appendChild(btn);
+    updateIcon();
+
+    btn.addEventListener('click', function() {
+      var current = document.documentElement.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateIcon();
+    });
+  });
+})();
+</script>
+</script></div></body></html>

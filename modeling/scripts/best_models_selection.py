@@ -47,6 +47,10 @@ GAP_PENALTY    = 0.50   # λ - weight on excess gap
 ONE_SE_MARGIN  = 0.05   # δ - R² margin counted as "equivalent"
                         #     0.03 was too tight: SE(R²) ≈ 0.05-0.07 at n_test≈200,
                         #     so a 0.03 gap is well within measurement noise.
+SCORE_NOISE_BAND = 0.005  # ε - gap-adjusted scores within this band are
+                          # treated as a tie for winner selection. Differences
+                          # below SE(R²) noise floor are not meaningful;
+                          # smaller |gap| breaks the tie.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -78,22 +82,44 @@ def _pareto_front(sub: pd.DataFrame) -> list:
 
 
 def _pick_rules(sub: pd.DataFrame) -> dict:
-    """Apply every rule to one (target, experiment) slice. Returns a row-dict."""
+    """Apply every rule to one (target, experiment) slice. Returns a row-dict.
+
+    Tie-breaking: when the primary criterion (gap-adjusted score for gadj_row,
+    |gap| for onese_row) is equal across candidates, prefer the row with the
+    smaller |gap|; if that also ties, prefer the higher R²_test. This makes
+    the ranking deterministic and aligns with the regularisation intent of
+    the gap-adjusted formula (within the 0.10 dead band, the score collapses
+    to raw R² and the gap signal is otherwise discarded - the tiebreaker
+    restores it).
+    """
     sub = sub.dropna(subset=["R2_test"]).copy()
     if sub.empty:
         return {}
     sub["gap_adj"] = sub.apply(
         lambda r: _gap_adjusted_score(r["R2_test"], r["R2_gap"]), axis=1
     )
+    sub["abs_gap"] = sub["R2_gap"].abs()
+
     # 1. Naive
     naive_row = sub.loc[sub["R2_test"].idxmax()]
-    # 2. Gap-adjusted
-    gadj_row  = sub.loc[sub["gap_adj"].idxmax()] if sub["gap_adj"].notna().any() else naive_row
-    # 3. One-SE
+    # 2. Gap-adjusted (tiebreak: smaller |gap|, then higher R²).
+    # Within SCORE_NOISE_BAND of the top score, treat rows as effectively tied -
+    # score differences below SE(R²) ≈ 0.05 are not meaningful, so a row with
+    # 0.0004 less score but a much smaller |gap| is the more defensible pick.
+    if sub["gap_adj"].notna().any():
+        gadj_max = sub["gap_adj"].max()
+        gadj_cands = sub[sub["gap_adj"] >= gadj_max - SCORE_NOISE_BAND]
+        gadj_cands = gadj_cands.sort_values(
+            ["abs_gap", "R2_test"], ascending=[True, False]
+        )
+        gadj_row = gadj_cands.iloc[0]
+    else:
+        gadj_row = naive_row
+    # 3. One-SE (smallest |gap| within ONE_SE_MARGIN of top R²; tiebreak: higher R²)
     top_r2 = sub["R2_test"].max()
     within = sub[sub["R2_test"] >= top_r2 - ONE_SE_MARGIN].copy()
-    within["abs_gap"] = within["R2_gap"].abs()
-    onese_row = within.loc[within["abs_gap"].idxmin()]
+    onese_cands = within.sort_values(["abs_gap", "R2_test"], ascending=[True, False])
+    onese_row = onese_cands.iloc[0]
     # 4. Pareto
     front = _pareto_front(sub)
 
@@ -131,7 +157,16 @@ def _pick_rules(sub: pd.DataFrame) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def build_per_experiment(df_all: pd.DataFrame) -> pd.DataFrame:
-    """One row per (experiment, target)."""
+    """One row per (experiment, target).
+
+    Only canonical exp_keys (those in EXP_CHART_ORDER) are included.
+    Rows are ordered by EXP_CHART_ORDER position so the table follows the
+    same canonical experiment sequence used throughout the report.
+    """
+    allowed   = set(EXP_CHART_ORDER)
+    exp_rank  = {k: i for i, k in enumerate(EXP_CHART_ORDER)}
+    df_all    = df_all[df_all["exp_key"].isin(allowed)]
+
     recs = []
     for exp, sub_exp in df_all.groupby("exp_key", sort=False):
         for tgt in TARGETS_ORDERED:
@@ -142,15 +177,22 @@ def build_per_experiment(df_all: pd.DataFrame) -> pd.DataFrame:
             if not picks:
                 continue
             recs.append({"exp_key": exp, "target": tgt,
-                         "target_short": TARGET_SHORT.get(tgt, tgt), **picks})
-    return pd.DataFrame(recs)
+                         "target_short": TARGET_SHORT.get(tgt, tgt),
+                         "exp_order": exp_rank.get(exp, 999), **picks})
+    df = pd.DataFrame(recs)
+    if not df.empty:
+        df = df.sort_values(["target", "exp_order"]).reset_index(drop=True)
+    return df
 
 
 def build_global(df_all: pd.DataFrame) -> pd.DataFrame:
     """
-    Global winner per target across ALL experiments/phases - the real
-    'production pick' question.
+    Global winner per target across all canonical experiments/phases.
+    Only exp_keys in EXP_CHART_ORDER are considered.
     """
+    allowed = set(EXP_CHART_ORDER)
+    df_all  = df_all[df_all["exp_key"].isin(allowed)]
+
     recs = []
     for tgt in TARGETS_ORDERED:
         sub = df_all[df_all["target"] == tgt].copy()
@@ -176,7 +218,7 @@ def _cell(val, d=3):
     return f"{val:.{d}f}"
 
 def _r2_color(v):
-    if pd.isna(v): return "var(--text-muted)"
+    if pd.isna(v): return "#888888"
     if v >= 0.6:  return "#2ecc71"
     if v >= 0.4:  return "#52c98a"
     if v >= 0.2:  return "#f1c40f"
@@ -290,17 +332,17 @@ def _popup_btn(info_html):
 _SEL_OVERLAY_HTML = (
     "<div id='sel-popup-overlay' style='"
     "display:none;position:fixed;z-index:1000;"
-    "background:var(--card,#23272F);"
-    "border:1px solid var(--border-color,#3a3f4b);"
+    "background:#ffffff;"
+    "border:1px solid #cccccc;"
     "border-radius:6px;padding:14px 16px 12px;"
     "max-width:420px;min-width:260px;"
     "font-size:12px;line-height:1.7;"
-    "color:var(--text,#e0e0e0);"
-    "box-shadow:0 8px 24px rgba(0,0,0,0.55);"
+    "color:#1a1a1a;"
+    "box-shadow:0 8px 24px rgba(0,0,0,0.18);"
     "white-space:normal'>"
     "<button onclick=\"document.getElementById('sel-popup-overlay').style.display='none'\" "
     "style='float:right;background:none;border:none;cursor:pointer;"
-    "font-size:16px;color:var(--text-muted,#8a8f9a);line-height:1;"
+    "font-size:16px;color:#888888;line-height:1;"
     "margin:-4px -4px 6px 10px'>×</button>"
     "<div id='sel-popup-content'></div>"
     "</div>"
@@ -362,7 +404,7 @@ def _render_global_table(df: pd.DataFrame) -> str:
 
         gadj_R2    = _cell(r["gadj_R2"])
         gadj_gap   = _cell(r["gadj_gap"])
-        gadj_score = _cell(r["gadj_score"])
+        gadj_score = _cell(r["gadj_score"], d=5)
         gadj_RMSE  = _cell(r.get("gadj_RMSE", float("nan")))
         gadj_MAE   = _cell(r.get("gadj_MAE",  float("nan")))
 
@@ -412,11 +454,12 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
       16 Gap-adj Score
       17 Gap-adj RMSE
       18 Gap-adj MAE
-      19 Pareto         (no sort)
+      19 Gap-adj MdAE
+      20 Pareto         (no sort)
 
-    N_DATA_COLS = 20 (+ 1 target col = 21 total)
+    N_DATA_COLS = 21 (+ 1 target col = 22 total)
     """
-    N_DATA_COLS = 20
+    N_DATA_COLS = 21
 
     def _sh(label, col_idx, is_num=False):
         arr = f" <span class='sort-arr' data-col='{col_idx}'>↕</span>"
@@ -434,7 +477,7 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
         + _sh("RMSE", 11, True) + _sh("MAE", 12, True)
         + "<th>Gap-adj winner</th>"
         + _sh("R²",  14, True) + _sh("Gap",  15, True) + _sh("Score", 16, True)
-        + _sh("RMSE", 17, True) + _sh("MAE",  18, True)
+        + _sh("RMSE", 17, True) + _sh("MAE",  18, True) + _sh("MdAE", 19, True)
         + "<th>Pareto</th>"
     )
 
@@ -442,13 +485,42 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
     rows_html = []
 
     for i_tgt, tgt in enumerate(target_order):
-        grp = df[df["target"] == tgt].sort_values("naive_R2", ascending=False)
+        # Sort by gap-adjusted score (descending), but bucket scores by the
+        # SCORE_NOISE_BAND ε so rows within ε share a sort key - within a bucket,
+        # smaller |gap| (then higher R²) wins. The canonical winner therefore
+        # appears at the top of each target group consistently with _pick_rules.
+        grp = df[df["target"] == tgt].copy()
+        grp["_abs_gadj_gap"] = grp["gadj_gap"].abs()
+        grp["_score_bucket"] = (grp["gadj_score"] / SCORE_NOISE_BAND).round().fillna(-1e9)
+        grp = grp.sort_values(
+            ["_score_bucket", "_abs_gadj_gap", "naive_R2"],
+            ascending=[False, True, False],
+        )
         n   = len(grp)
         slug = TARGET_SHORT.get(tgt, tgt).lower().replace(" ", "-")
-        best_gadj_score = grp["gadj_score"].max()
+
+        # Compute best (minimum) value per operational metric within this target
+        # group; the row whose cell equals the group-min gets a green ● prefix.
+        def _group_min(col):
+            vals = grp[col].dropna()
+            return float(vals.min()) if not vals.empty else None
+        best_rmse = _group_min("gadj_RMSE")
+        best_mae  = _group_min("gadj_MAE")
+        best_mdae = _group_min("gadj_MdAE") if "gadj_MdAE" in grp.columns else None
+
+        def _is_best(val, best):
+            """True when val ties the group min within float tolerance."""
+            if val is None or pd.isna(val) or best is None:
+                return False
+            return abs(float(val) - best) < 1e-9
+
+        # CSS for the best-cell highlight is injected via class .best-cell.
+        # Applied to the <td> itself (not an inner span) so it overrides
+        # the green/blue/red agree-state tints of the gap-adj block.
 
         for i_row, (_, r) in enumerate(grp.iterrows()):
             is_first = (i_row == 0)
+            is_winner = is_first  # post-tiebreak winner is row 1 of the group
             state, info_html = _row_state(r)
             btn = _popup_btn(info_html)
             chg = "✓" if r["changed"] else ""
@@ -477,26 +549,40 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
 
             def _fmt_st(val_str, is_same):
                 if is_same and val_str and val_str != "-":
-                    return f"<s style='color:var(--text-muted);opacity:0.6'>{val_str}</s>"
+                    return f"<s style='color:#888888;opacity:0.6'>{val_str}</s>"
                 return val_str
 
             onese_R2   = _fmt_st(_cell(r['onese_R2']), onese_same)
             onese_gap  = _fmt_st(_cell(r['onese_gap']), onese_same)
-            onese_score= _fmt_st(_cell(r['onese_score']), onese_same)
+            onese_score= _fmt_st(_cell(r['onese_score'], d=5), onese_same)
             onese_RMSE = _fmt_st(_cell(r.get('onese_RMSE', float('nan'))), onese_same)
             onese_MAE  = _fmt_st(_cell(r.get('onese_MAE', float('nan'))), onese_same)
             
             gadj_R2    = _fmt_st(_cell(r['gadj_R2']), gadj_same)
             gadj_gap   = _fmt_st(_cell(r['gadj_gap']), gadj_same)
             
-            is_best = pd.notna(r['gadj_score']) and pd.notna(best_gadj_score) and r['gadj_score'] == best_gadj_score
-            raw_score = _cell(r['gadj_score'])
-            if is_best:
-                raw_score = f"★ {raw_score}"
-            gadj_score = _fmt_st(raw_score, gadj_same)
+            gadj_score = _fmt_st(_cell(r['gadj_score'], d=5), gadj_same)
             
-            gadj_RMSE  = _fmt_st(_cell(r.get('gadj_RMSE', float('nan'))), gadj_same)
-            gadj_MAE   = _fmt_st(_cell(r.get('gadj_MAE', float('nan'))), gadj_same)
+            gadj_RMSE_val  = r.get('gadj_RMSE',  float('nan'))
+            gadj_MAE_val   = r.get('gadj_MAE',   float('nan'))
+            gadj_MdAE_val  = r.get('gadj_MdAE',  float('nan'))
+            # If cell is the per-target column-best, override gadj_bg with a bright
+            # yellow inline style (no CSS class needed). The strikethrough on the
+            # value is stripped here because the marker should read as positive.
+            _BEST_BG = ("background:#FFD54F;border:2px solid #E0A800;"
+                        "color:#1A1A1A;font-weight:700;")
+            rmse_best = _is_best(gadj_RMSE_val, best_rmse)
+            mae_best  = _is_best(gadj_MAE_val,  best_mae)
+            mdae_best = _is_best(gadj_MdAE_val, best_mdae)
+            gadj_RMSE  = (_cell(gadj_RMSE_val) if rmse_best
+                          else _fmt_st(_cell(gadj_RMSE_val), gadj_same))
+            gadj_MAE   = (_cell(gadj_MAE_val)  if mae_best
+                          else _fmt_st(_cell(gadj_MAE_val),  gadj_same))
+            gadj_MdAE  = (_cell(gadj_MdAE_val) if mdae_best
+                          else _fmt_st(_cell(gadj_MdAE_val), gadj_same))
+            rmse_bg = _BEST_BG if rmse_best else gadj_bg
+            mae_bg  = _BEST_BG if mae_best  else gadj_bg
+            mdae_bg = _BEST_BG if mdae_best else gadj_bg
             
             onese_R2_color = "" if onese_same else f"color:{_r2_color(r['onese_R2'])}"
             onese_gap_cls  = "" if onese_same else _gap_cls(r['onese_gap'])
@@ -514,7 +600,7 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 f"<td {dv(r['naive_gap'])} class='{_gap_cls(r['naive_gap'])}'>"
                     f"{_cell(r['naive_gap'])}</td>",
                 f"<td {dv(r['naive_score'])}>"
-                    f"{_cell(r['naive_score'])}</td>",
+                    f"{_cell(r['naive_score'], d=5)}</td>",
                 f"<td {dv(r.get('naive_RMSE', float('nan')))}>"
                     f"{_cell(r.get('naive_RMSE', float('nan')))}</td>",
                 f"<td {dv(r.get('naive_MAE', float('nan')))}>"
@@ -526,22 +612,27 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 f"<td {dv(r['onese_score'])}>{onese_score}</td>",
                 f"<td {dv(r.get('onese_RMSE', float('nan')))}>{onese_RMSE}</td>",
                 f"<td {dv(r.get('onese_MAE', float('nan')))}>{onese_MAE}</td>",
-                # Gap-adj block (cols 13-18)
+                # Gap-adj block (cols 13-19)
                 f"<td {dv(r['gadj_model'])} style='{gadj_bg}'>"
                     f"{r['gadj_model']}{btn}</td>",
                 f"<td {dv(r['gadj_R2'])} style='{gadj_bg}{gadj_R2_color}'>{gadj_R2}</td>",
                 f"<td {dv(r['gadj_gap'])} class='{gadj_gap_cls}' style='{gadj_bg}'>{gadj_gap}</td>",
                 f"<td {dv(r['gadj_score'])} style='{gadj_bg}'>{gadj_score}</td>",
-                f"<td {dv(r.get('gadj_RMSE', float('nan')))} style='{gadj_bg}'>{gadj_RMSE}</td>",
-                f"<td {dv(r.get('gadj_MAE', float('nan')))} style='{gadj_bg}'>{gadj_MAE}</td>",
-                # Meta (col 19)
+                f"<td {dv(gadj_RMSE_val)} style='{rmse_bg}'>{gadj_RMSE}</td>",
+                f"<td {dv(gadj_MAE_val)}  style='{mae_bg}'>{gadj_MAE}</td>",
+                f"<td {dv(gadj_MdAE_val)} style='{mdae_bg}'>{gadj_MdAE}</td>",
+                # Meta (col 20)
                 f"<td style='font-size:10px'>{r['pareto']}</td>",
             ]
 
+            cls_parts = []
+            if is_winner:
+                cls_parts.append("winner-row")
+            cls_attr = f" class='{' '.join(cls_parts)}'" if cls_parts else ""
             attrs = f"data-group='{slug}'"
             if is_first:
                 attrs += " data-is-first='true'"
-            rows_html.append(f"<tr {attrs}>{''.join(tds)}</tr>")
+            rows_html.append(f"<tr{cls_attr} {attrs}>{''.join(tds)}</tr>")
 
         if i_tgt < len(target_order) - 1:
             rows_html.append(
@@ -650,24 +741,45 @@ def _perexp_sort_js() -> str:
 
 
 SEL_CSS = """
-    .sel-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0 20px; }
+    .sel-table { width:100%; border-collapse:collapse; font-size:0.81rem; margin:10px 0 20px;
+                 background:#ffffff; color:#1a1a1a; }
     .sel-table th, .sel-table td {
-        padding:5px 8px; border-bottom:1px solid var(--border);
+        padding:5px 10px; border-bottom:1px solid #e0e0e0;
         text-align:left; white-space:nowrap; }
-    .sel-table th { background:var(--bg-soft); font-weight:600; }
+    .sel-table th { background:#eeeeee; font-weight:600; color:#333333;
+                    font-size:0.82rem; }
+    .sel-table thead tr { border-bottom:2px solid #cccccc; }
     .sel-perexp-tbl .target-cell {
-        font-weight:600; background:var(--bg-soft);
-        border-right:2px solid var(--border-color);
+        font-weight:700; background:#eeeeee; color:#555555;
+        border-right:2px solid #cccccc;
         text-align:center; vertical-align:middle;
-        font-size:11px; padding:6px 10px; }
+        font-size:0.75rem; padding:6px 10px;
+        letter-spacing:0.05em; text-transform:uppercase; }
     .sel-perexp-tbl .group-gap td { border:none; }
-    .perexp-sort-th:hover { background:var(--toc-bg); }
-    .sort-arr { font-size:10px; color:var(--text-muted); margin-left:2px; }
-    .rule-card-sel { background:var(--bg-soft); border-left:3px solid #4A90D9;
+    /* Gap-adjusted winner row per target: light-blue highlight matching project
+       accent colour. The target-cell (rowspan column) is explicitly excluded
+       so its uniform group header styling is preserved. */
+    .sel-perexp-tbl .winner-row td:not(.target-cell) {
+        background:#E3F0FB; font-weight:600;
+    }
+    /* Column-best highlight on RMSE/MAE/MdAE cells in the gap-adj block.
+       !important is needed because the cell has an inline rgba tint from
+       the agree/disagree state colouring. */
+    .sel-perexp-tbl td.best-cell {
+        background:#FFD54F !important;
+        font-weight:700;
+        border:2px solid #E0A800 !important;
+        color:#1A1A1A;
+        position:relative;
+    }
+    .sel-perexp-tbl td.best-cell s { color:#1A1A1A !important; opacity:1 !important; text-decoration:none; }
+    .perexp-sort-th:hover { background:#e0e0e0; }
+    .sort-arr { font-size:10px; color:#888888; margin-left:2px; }
+    .rule-card-sel { background:#f5f5f5; border-left:3px solid #4A90D9;
                      padding:12px 16px; margin:12px 0; border-radius:4px; }
     .rule-card-sel h4 { margin:0 0 6px 0; font-size:13px; color:#4A90D9; }
-    .rule-card-sel p  { margin:2px 0; font-size:12px; color:var(--text-muted); }
-    .sel-tbl-wrap { overflow-x:auto; }
+    .rule-card-sel p  { margin:2px 0; font-size:12px; color:#555555; }
+    .sel-tbl-wrap { overflow-x:auto; border:1px solid #cccccc; border-radius:4px; }
     /* ⓘ info button */
     .sel-info-btn {
         cursor:pointer; color:#4A90D9; font-size:12px;
@@ -677,7 +789,7 @@ SEL_CSS = """
     /* State legend */
     .sel-state-legend {
         display:flex; gap:16px; flex-wrap:wrap;
-        margin:8px 0 12px; font-size:11px; color:var(--text-muted);
+        margin:8px 0 12px; font-size:11px; color:#555555;
     }
     .sel-state-legend span { display:flex; align-items:center; gap:5px; }
     .sel-state-swatch {
@@ -732,27 +844,109 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Global best per target (across all experiments)</h3>",
         legend,
-        "<p style='color:var(--text-muted);font-size:11px;margin:0 0 6px'>"
+        "<p style='color:#555555;font-size:11px;margin:0 0 6px'>"
         "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
         "<div class='sel-tbl-wrap'>",
         _render_global_table(global_df),
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Best per (experiment × target)</h3>",
         legend,
-        "<p style='color:var(--text-muted);font-size:12px'>",
-        "Initially sorted within each target group by naive Test R² (descending). "
-        "Click column headers to re-sort within groups - the Experiment column follows "
-        "canonical experiment order (Exp1 → Exp1-FS → Exp2-Sub1 → ... → Phase11). "
+        "<p style='color:#555555;font-size:12px'>",
+        "Initially sorted within each target group by <strong>gap-adjusted score</strong> (descending), "
+        "tie-broken by smaller |gap| then higher R². The per-target winner is highlighted in "
+        "<span style='background:#E3F0FB;padding:1px 4px;border-left:3px solid #4A90D9'>light blue</span>. "
+        "Scores are shown to 5 decimal places so close ties are visible. "
+        "Cells highlighted "
+        "<span style='background:#FFD54F;color:#1A1A1A;padding:2px 6px;"
+        "font-weight:700;border:2px solid #E0A800'>in yellow</span> "
+        "(in the RMSE / MAE / MdAE columns) hold the lowest value in that column for the target group. "
+        "Click column headers to re-sort. "
         "Click ⓘ on any Gap-adj winner cell for selection reasoning.</p>",
         "<div class='sel-tbl-wrap'>",
         _render_perexp_table(per_exp_df),
         "</div>",
-        f"<p style='color:var(--text-muted);font-size:11px;margin-top:20px'>"
+        # Findings / interpretation
+        _findings_section_html(),
+        f"<p style='color:#555555;font-size:11px;margin-top:20px'>"
         f"Source: {len(df_all)} model evaluations across "
         f"{df_all['exp_key'].nunique()} experiments.</p>",
         _SEL_POPUP_JS,
     ]
     return "\n".join(parts)
+
+
+def _findings_section_html() -> str:
+    """Findings panel below the per-experiment table.
+
+    Uses the same <details class='exp-details'> styling as the Findings sections
+    in every experiment block so the look is consistent across the report.
+    """
+    return """
+<details class="exp-details" id="overfit-aware-findings" open>
+  <summary><span class="fold-icon">▶</span> Findings  -  Overfit-Aware Model Selection</summary>
+  <div class="exp-body">
+    <div class="obs-card">
+      <h4>Why the gap-adjusted winner is the production pick</h4>
+      <p class="meta">The score subtracts a penalty equal to 0.5 × (|gap| − 0.10) when |gap| exceeds the 10-point
+      tolerance. The intent is to discount models that fit 2024 well but show a large train-to-test
+      drop - they are likely memorising patterns specific to a single year. A model with R²=0.51 and
+      gap=0.15 is treated as worse than a model with R²=0.49 and gap=0.00, even though the former
+      scored higher in 2025. This bets that the latter generalises better when 2026 data looks
+      different.</p>
+    </div>
+    <div class="obs-card">
+      <h4>Score noise band tiebreaker</h4>
+      <p class="meta">Gap-adjusted scores that fall within 0.005 of the top score are treated as
+      tied for selection. Differences below the standard error of R² (~0.04-0.06 at n_test ≈ 200)
+      are not statistically meaningful, so within that band the row with the smaller |gap| wins.
+      This is why for Grab BOD, Exp8 Ridge (R²=0.656, gap=-0.095) is preferred over Exp7-SE2 Voting
+      (R²=0.674, gap=-0.136) - same score within noise, much lower overfit.</p>
+    </div>
+    <div class="obs-card">
+      <h4>Cross-experiment RMSE / MAE / MdAE comparisons are NOT apples-to-apples</h4>
+      <p class="meta">Each experiment requires a different feature set, so <code>dropna()</code>
+      retains a different population at test time. A 168-row test set and a 223-row test set may
+      simply be measuring different things. Lower RMSE on a different population is not the same as
+      a better-generalising model. Treat the operational-metric highlights as "worth a second look",
+      not as a verdict.</p>
+    </div>
+    <div class="obs-card">
+      <h4>When to consider an alternative to the canonical winner</h4>
+      <p class="meta">Look at a non-winner row when (a) its gap is meaningfully smaller, (b) it
+      ranks well on RMSE / MAE / MdAE within the target group, and (c) its experiment uses a feature
+      set you can realistically maintain in production. A row that wins on RMSE but is built on an
+      experiment with sparse inputs (e.g. coliform measurements that arrive 3 days late) is usually
+      not deployable.</p>
+    </div>
+    <div class="obs-card">
+      <h4>MdAE is the project's primary metric for BOD and TSS</h4>
+      <p class="meta">BOD and TSS have spike-dominated error distributions. RMSE is sensitive to
+      those spikes and can rank models that simply got lucky on a quiet 2025. MdAE (median absolute
+      error) reflects typical-day performance and is more robust. Where MdAE differs from the RMSE
+      ranking for those targets, prefer MdAE.</p>
+    </div>
+    <div class="obs-card">
+      <h4>Why some MdAE cells show "-"</h4>
+      <p class="meta">MdAE is computed from row-level prediction columns stored alongside the raw
+      datasets. Three groups of models do not write row-level predictions to disk, so their MdAE is
+      unavailable: <strong>(1)</strong> all ANN runs, <strong>(2)</strong> Exp 7 (Feature
+      Engineering) and Exp 8 (Temporal Features) which only export summary metrics, and
+      <strong>(3)</strong> several feature-selected variants where the FS dataset directory was not
+      materialised. The summary R² / Gap / Score columns are still reliable for those rows.</p>
+    </div>
+    <div class="obs-card">
+      <h4>The three rule columns (Naive / One-SE / Gap-adj) usually agree</h4>
+      <p class="meta">When they disagree, the row's Gap-adj cells are tinted in
+      <span style='background:rgba(74,144,217,0.20);padding:1px 4px'>blue</span>
+      (a different model is recommended) and the ⓘ button explains why. When all three rules agree
+      but the gap is wide (|gap| ≥ 0.25), the row is tinted
+      <span style='background:rgba(231,76,60,0.20);padding:1px 4px'>red</span>
+      - it means no better-generalising alternative exists, so the model is still picked, but
+      it should be flagged as low-confidence in any operational dashboard.</p>
+    </div>
+  </div>
+</details>
+"""
 
 
 def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
@@ -825,7 +1019,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "</div>",
         "<h2>Global best per target (across all experiments)</h2>",
         legend,
-        "<p style='color:var(--text-muted);font-size:11px;margin:0 0 6px'>"
+        "<p style='color:#555555;font-size:11px;margin:0 0 6px'>"
         "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
         "<div style='overflow-x:auto'>",
         _render_global_table(global_df),
@@ -835,7 +1029,7 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "<p style='color:var(--text-muted); font-size:12px'>"
         "Sorted within each target group by naive Test R² (descending). "
         "Click column headers to re-sort within groups - Experiment column follows "
-        "canonical order (Exp1 → Phase11). "
+        "canonical order (Exp1 → Exp8). "
         "Click ⓘ on any Gap-adj winner for selection reasoning.</p>",
         "<div style='overflow-x:auto'>",
         _render_perexp_table(per_exp_df),

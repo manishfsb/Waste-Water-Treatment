@@ -72,14 +72,14 @@ USEFUL_THRESH = 0.03
 
 # Experiment key → short chart label
 EXP_CHART_LABELS = {
-    "Exp1-Sub1": "E1-SE1",
+    "Exp1-SE1": "E1-SE1",
     "Exp1-Cyclic": "E1-SE2",
     "Exp1-S3": "E1-SE3",       "Exp1-S3-FS": "E1-SE3-FS",
-    "Exp2-Sub1": "E2-SE2-Comb", "Exp2-Sub1-FS": "E2-SE2-Comb-FS",
-    "Exp2-Sub1-Clr": "E2-SE2-Clr",
-    "Exp2-Sub1-Sed": "E2-SE2-Sed",
-    "Exp2-Sub2": "E2-CIS",      "Exp2-Sub2-FS": "E2-CIS-FS",
-    "Exp2-Sub2-Cyc": "E2-CIS",
+    "Exp2-SE2-Comb": "E2-SE2-Comb", "Exp2-SE2-Comb-FS": "E2-SE2-Comb-FS",
+    "Exp2-SE2-Clr": "E2-SE2-Clr",
+    "Exp2-SE2-Sed": "E2-SE2-Sed",
+    "Exp2-Sub2": "E2-CIS",      "Exp2-SE3-Ref-FS": "E2-CIS-FS",
+    "Exp2-SE3-Ref": "E2-CIS",
     "Exp2-S5": "E2-SE1a",
     "Exp2-S3": "E2-SE1b",
     "Exp2-S6":    "E2-SE2-Only",
@@ -93,26 +93,26 @@ EXP_CHART_LABELS = {
     "Exp4-S2": "E4-SE2",
     "Exp5-S1": "E5-SE1",        "Exp5-S1-FS": "E5-SE1-FS",
     "Exp5-S2": "E5-SE2",        "Exp5-S2-FS": "E5-SE2-FS",
-    "Phase9-ANN": "P9-ANN", "Phase9-Voting": "P9-Vote",
-    "Phase9-Stacking": "P9-Stack",
-    "ANN-Exp1": "ANN-E1", "ANN-Exp2-Sub1": "ANN-E2-SE1", "ANN-Exp2-Sub2": "ANN-E2-SE2",
-    "Phase10-FE": "P10-FE", "Phase10b-FE": "P10b-FE",
-    "Phase11": "P11",
+    "Exp6-ANN": "E6-ANN", "Exp6-Voting": "E6-Vote",
+    "Exp6-Stacking": "E6-Stack",
+    "ANN-Exp1": "ANN-E1", "ANN-Exp2-SE2": "ANN-E2-SE1", "ANN-Exp2-SE3-Ref": "ANN-E2-SE2",
+    "Exp7-SE1": "E7-SE1", "Exp7-SE2": "E7-SE2",
+    "Exp8": "E8",
 }
 
 # Longer descriptive labels used only in the "Source" column of best-model tables.
 EXP_SOURCE_LABELS = {
-    "Exp1-Sub1":      "Exp1 SE1  -  Inlet Only (4 features)",
+    "Exp1-SE1":      "Exp1 SE1  -  Inlet Only (4 features)",
     "Exp1-Cyclic":    "Exp1 SE2  -  Inlet + COMMON (11 features)",
     "Exp1-S3":        "Exp1 SE3  -  Extended Inlet + COMMON",
     "Exp1-S3-FS":     "Exp1 SE3-FS  -  Extended Inlet + COMMON (FS)",
-    "Exp2-Sub1-Clr":  "Exp2 SE2-Clr  -  Clarifier + COMMON",
-    "Exp2-Sub1-Sed":  "Exp2 SE2-Sed  -  Sedimentation + COMMON",
-    "Exp2-Sub1":      "Exp2 SE2-Comb  -  All Secondary + COMMON",
-    "Exp2-Sub1-FS":   "Exp2 SE2-Comb-FS  -  All Secondary + COMMON (FS)",
+    "Exp2-SE2-Clr":  "Exp2 SE2-Clr  -  Clarifier + COMMON",
+    "Exp2-SE2-Sed":  "Exp2 SE2-Sed  -  Sedimentation + COMMON",
+    "Exp2-SE2-Comb":      "Exp2 SE2-Comb  -  All Secondary + COMMON",
+    "Exp2-SE2-Comb-FS":   "Exp2 SE2-Comb-FS  -  All Secondary + COMMON (FS)",
     "Exp2-Sub2":      "Exp2 CIS  -  Core Inlet + Secondary + COMMON",
-    "Exp2-Sub2-FS":   "Exp2 CIS-FS  -  Core Inlet + Secondary + COMMON (FS)",
-    "Exp2-Sub2-Cyc":  "Exp2 CIS  -  Core Inlet + Secondary + COMMON",
+    "Exp2-SE3-Ref-FS":   "Exp2 CIS-FS  -  Core Inlet + Secondary + COMMON (FS)",
+    "Exp2-SE3-Ref":  "Exp2 CIS  -  Core Inlet + Secondary + COMMON",
     "Exp2-S5":        "Exp2 SE1a  -  Primary + COMMON",
     "Exp2-S3":        "Exp2 SE1b  -  Primary + Inlet + COMMON",
     "Exp2-S6":        "Exp2 SE2-Only  -  All Secondary (no COMMON)",
@@ -131,12 +131,12 @@ EXP_SOURCE_LABELS = {
     "Exp5-S1-FS":     "Exp5 SE1-FS  -  Composite + Grab Inlet (FS)",
     "Exp5-S2":        "Exp5 SE2  -  Grab + Composite Inlet",
     "Exp5-S2-FS":     "Exp5 SE2-FS  -  Grab + Composite Inlet (FS)",
-    "Phase9-ANN":     "Phase 9  -  ANN",
-    "Phase9-Voting":  "Phase 9  -  Voting",
-    "Phase9-Stacking":"Phase 9  -  Stacking",
-    "Phase10-FE":     "Phase 10  -  FE (all)",
-    "Phase10b-FE":    "Phase 10b  -  FE (Grab)",
-    "Phase11":        "Phase 11  -  Temporal",
+    "Exp6-ANN":     "Exp6  -  ANN",
+    "Exp6-Voting":  "Exp6  -  Voting",
+    "Exp6-Stacking":"Exp6  -  Stacking",
+    "Exp7-SE1":     "Exp7 SE1  -  Full FE",
+    "Exp7-SE2":     "Exp7 SE2  -  Selective FE",
+    "Exp8":         "Exp8  -  Temporal Features",
 }
 EXP_CHART_ORDER = list(EXP_CHART_LABELS.keys())
 
@@ -157,20 +157,27 @@ _DS_EXP_MAP = [
     ("experiment5/sub_exp1",                            "Exp5-S1"),
     ("experiment4/sub_exp2",                            "Exp4-S2"),
     ("experiment4/sub_exp1",                            "Exp4-S1"),
-    ("experiment3/sub_exp4/feature_selected_datasets", "Exp3-S4-FS"),
-    ("experiment3/sub_exp4",                           "Exp3-S4"),
-    ("experiment3/sub_exp3/feature_selected_datasets", "Exp3-S3-FS"),
-    ("experiment3/sub_exp3",                           "Exp3-S3"),
-    ("experiment3/sub_exp2/feature_selected_datasets", "Exp3-S2-FS"),
-    ("experiment3/sub_exp2",                           "Exp3-S2"),
-    ("experiment3/sub_exp1",                           "Exp3-S1"),
-    ("experiment2/sub_exp2/feature_selected_datasets", "Exp2-Sub2-FS"),
-    ("experiment2/sub_exp2",                           "Exp2-Sub2"),
-    ("experiment2/sub_exp1/feature_selected_datasets", "Exp2-Sub1-FS"),
-    ("experiment2/sub_exp1",                           "Exp2-Sub1"),
-    ("experiment1/sub_exp2/feature_selected_datasets", "Exp1-FS"),
-    ("experiment1/sub_exp2",                           "Exp1-Cyclic"),
-    ("experiment1/sub_exp1",                           "Exp1-Sub1"),
+    ("experiment3/sub_exp4/feature_selected_datasets",  "Exp3-S4-FS"),
+    ("experiment3/sub_exp4",                            "Exp3-S4"),
+    ("experiment3/sub_exp3/feature_selected_datasets",  "Exp3-S3-FS"),
+    ("experiment3/sub_exp3",                            "Exp3-S3"),
+    ("experiment3/sub_exp2/feature_selected_datasets",  "Exp3-S2-FS"),
+    ("experiment3/sub_exp2",                            "Exp3-S2"),
+    ("experiment3/sub_exp1",                            "Exp3-S1"),
+    ("experiment2/sub_exp6",                            "Exp2-S6"),
+    ("experiment2/sub_exp5",                            "Exp2-S5"),
+    ("experiment2/sub_exp4",                            "Exp2-S4"),
+    ("experiment2/sub_exp3",                            "Exp2-S3"),
+    ("experiment2/sub_exp2/feature_selected_datasets",  "Exp2-SE3-Ref-FS"),
+    ("experiment2/sub_exp2",                            "Exp2-SE3-Ref"),
+    ("experiment2/sub_exp1/sec_clarifier",              "Exp2-SE2-Clr"),
+    ("experiment2/sub_exp1/sec_sed",                    "Exp2-SE2-Sed"),
+    ("experiment2/sub_exp1/feature_selected_datasets",  "Exp2-SE2-Comb-FS"),
+    ("experiment2/sub_exp1",                            "Exp2-SE2-Comb"),
+    ("experiment1/sub_exp3",                            "Exp1-S3"),
+    ("experiment1/sub_exp2/feature_selected_datasets",  "Exp1-FS"),
+    ("experiment1/sub_exp2",                            "Exp1-Cyclic"),
+    ("experiment1/sub_exp1",                            "Exp1-SE1"),
 ]
 
 # predicted_<TAG>_run_N → canonical model name
@@ -183,11 +190,11 @@ _PRED_MODEL_MAP = {
     "ANN": "ANN", "Voting": "Voting", "Stacking": "Stacking",
 }
 
-# Phase 9 models live inside Exp3-SE2 files but belong to a different exp_key
-_PHASE9_EXP = {"ANN": "Phase9-ANN", "Voting": "Phase9-Voting", "Stacking": "Phase9-Stacking"}
+# Exp 6 models live inside Exp3-SE2 files but belong to a different exp_key
+_PHASE9_EXP = {"ANN": "Exp6-ANN", "Voting": "Exp6-Voting", "Stacking": "Exp6-Stacking"}
 
 FEATURE_DESCRIPTIONS = {
-    "Exp1-Sub1": {
+    "Exp1-SE1": {
         "label": "Core Inlet (4 features)  -  no process or temporal context",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -247,7 +254,7 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Checks whether removing noisy or redundant supplementary inlet features "
                      "from the SE3 set recovers generalisation on the 2025 holdout.",
     },
-    "Exp2-Sub1": {
+    "Exp2-SE2-Comb": {
         "label": "Combined Secondary + COMMON (15 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -260,7 +267,7 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Tests secondary treatment process data only (no inlet). "
                      "Do downstream process indicators predict effluent better than inlet?",
     },
-    "Exp2-Sub1-FS": {
+    "Exp2-SE2-Comb-FS": {
         "label": "Secondary + COMMON - Feature Selected",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -284,7 +291,7 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Full baseline combining both monitoring points. Tests whether "
                      "joining inlet and secondary data outperforms either alone.",
     },
-    "Exp2-Sub2-FS": {
+    "Exp2-SE3-Ref-FS": {
         "label": "CIS - Feature Selected",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -295,7 +302,7 @@ FEATURE_DESCRIPTIONS = {
         ),
         "rationale": "Remove redundant or low-signal features from the full Exp2-S2 set.",
     },
-    "Exp2-Sub1-Clr": {
+    "Exp2-SE2-Clr": {
         "label": "Secondary Clarifier + COMMON (12 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -307,7 +314,7 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Isolate the Clarifier group to test whether Clarifier and Sedimentation "
                      "features carry distinct signal or are interchangeable.",
     },
-    "Exp2-Sub1-Sed": {
+    "Exp2-SE2-Sed": {
         "label": "Secondary Sedimentation + COMMON (12 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -319,7 +326,7 @@ FEATURE_DESCRIPTIONS = {
         "rationale": "Isolate the Sedimentation group  -  paired with Exp2-SE2-Clr to test "
                      "whether one group dominates the other.",
     },
-    "Exp2-Sub2-Cyc": {
+    "Exp2-SE3-Ref": {
         "label": "Core Inlet + Secondary + Common (CIS) - 21 features",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -592,11 +599,11 @@ FEATURE_DESCRIPTIONS = {
             "<li><strong>Row count:</strong> ~1175 Grab / ~800 Composite training rows.</li>"
             "</ul>"
         ),
-        "rationale": "Phase 9 ANN failed with ~470 Grab training samples. Exp1 has 2.5× more "
+        "rationale": "Exp 6 ANN failed with ~470 Grab training samples. Exp1 has 2.5× more "
                      "data with simpler features. Tests whether ANN failure was data-volume "
-                     "limited. Same architecture as Phase 9 ANN; only dataset changed.",
+                     "limited. Same architecture as Exp 6 ANN; only dataset changed.",
     },
-    "ANN-Exp2-Sub1": {
+    "ANN-Exp2-SE2": {
         "label": "Exp2-SE1 Features - ANN (Secondary + COMMON, 15 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -609,7 +616,7 @@ FEATURE_DESCRIPTIONS = {
                      "samples of Exp3-SE2. Tests whether secondary process data adds meaningful "
                      "ANN signal at adequate sample size.",
     },
-    "ANN-Exp2-Sub2": {
+    "ANN-Exp2-SE3-Ref": {
         "label": "Exp2-SE2 Features - ANN (Inlet + Secondary + COMMON, 19 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -623,7 +630,7 @@ FEATURE_DESCRIPTIONS = {
                      "Exp3-SE2 baseline but without the CONSIDER-tier columns that reduced "
                      "training rows via missingness.",
     },
-    "Phase9-ANN": {
+    "Exp6-ANN": {
         "label": "Exp3-SE2 Features - ANN (MLPRegressor, StandardScaler pipeline)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -635,7 +642,7 @@ FEATURE_DESCRIPTIONS = {
                      "and tree models. Key challenge: ~470 training samples may be "
                      "insufficient for a multi-layer perceptron.",
     },
-    "Phase9-Voting": {
+    "Exp6-Voting": {
         "label": "Exp3-SE2 Features - Voting Ensemble (ElNet + RF + XGBoost, equal weights)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -650,7 +657,7 @@ FEATURE_DESCRIPTIONS = {
                      "XGB: boosted trees, captures residual non-linearities. "
                      "Three structurally distinct inductive biases.",
     },
-    "Phase9-Stacking": {
+    "Exp6-Stacking": {
         "label": "Exp3-SE2 Features - Stacking (ElNet + RF + XGB -> Ridge meta, walk-forward OOF)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -665,7 +672,7 @@ FEATURE_DESCRIPTIONS = {
                      "perform when projecting forward in time. "
                      "Approx. 83% OOF coverage across all targets.",
     },
-    "Phase10-FE": {
+    "Exp7-SE1": {
         "label": "Exp3-SE2 + Full Feature Engineering - All Targets (37-52 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -679,7 +686,7 @@ FEATURE_DESCRIPTIONS = {
                      "reduce skewness. Applied uniformly to test if it universally "
                      "helps. Hypothesis: log transforms help BOD/COD/TSS (right-skewed).",
     },
-    "Phase10b-FE": {
+    "Exp7-SE2": {
         "label": "Selective Feature Engineering - Grab: Full FE / Composite: Base Exp3-SE2",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -687,7 +694,7 @@ FEATURE_DESCRIPTIONS = {
             "<li><strong>Composite targets:</strong> Base Exp3-SE2 features only (17-27 features) - no engineering to avoid overfitting (n_train ~290).</li>"
             "</ul>"
         ),
-        "rationale": "Addresses Phase 10 finding: FE caused severe overfitting on "
+        "rationale": "Addresses Exp 7 finding: FE caused severe overfitting on "
                      "composite datasets (n_train ≈ 290). Selective approach preserves "
                      "FE gains on grab targets while stabilising composites.",
     },
@@ -747,7 +754,7 @@ FEATURE_DESCRIPTIONS = {
                      "Exp5-SE2 dataset (grab targets + cross-type composite inlet columns). "
                      "Paired with Exp5-S2 (full feature set) for direct comparison.",
     },
-    "Phase11": {
+    "Exp8": {
         "label": "Exp3-SE2 + Temporal Lags + log1p Target Transform (50-58 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
@@ -855,7 +862,7 @@ EXP_INTRO = {
         "sample type add independent predictive signal beyond the same-type inlet columns?"
     ),
     "ANN-Dataset-Exploration": (
-        "The Phase 9 ANN failed on Exp3-SE2 datasets (avg Test R²=−1.12) due to insufficient "
+        "The Exp 6 ANN failed on Exp3-SE2 datasets (avg Test R²=−1.12) due to insufficient "
         "training samples (~470 Grab, ~290 Composite). These runs test the same ANN architecture "
         "on earlier, <strong>data-richer</strong> experiment datasets to isolate whether the failure "
         "was <em>data-volume limited</em> or reflects a fundamental ANN limitation on this type of data."
@@ -867,9 +874,9 @@ EXP_INTRO = {
         "<strong>Exp2-SE2</strong> (Inlet + Secondary + COMMON, 19 features, "
         "~920 / ~733 rows). "
         "The hyperparameter grid includes larger architectures (256-128, 128-64-32 hidden layers) "
-        "compared to Phase 9 ANN, appropriate for the larger sample counts."
+        "compared to Exp 6 ANN, appropriate for the larger sample counts."
     ),
-    "Phase9": (
+    "Exp6": (
         "This section evaluates two classes of advanced model architectures on the "
         "<strong>Exp3-SE2 feature set</strong> (~25 features per target: Inlet + Secondary "
         "+ ADD+CONSIDER-tier + cyclic calendar), selected as the richest validated set at the "
@@ -886,15 +893,15 @@ EXP_INTRO = {
         "(walk-forward OOF, no look-ahead bias after KFold correction) is "
         "methodologically clean but weaker (avg R²=+0.098)."
     ),
-    "Phase10": (
-        "Phase 10 applies <strong>feature engineering</strong> (log transforms, "
+    "Exp7": (
+        "Exp 7 applies <strong>feature engineering</strong> (log transforms, "
         "interaction terms, outlier flags) on top of the Exp3-SE2 feature set. "
-        "Phase 10 (full) applies this uniformly to all targets. Phase 10b "
+        "Exp 7 (full) applies this uniformly to all targets. Exp 7-SE2 "
         "(selective) applies FE only to grab targets after discovering that "
         "composite datasets overfit severely with the expanded feature count."
     ),
-    "Phase11": (
-        "Phase 11 adds <strong>temporal lag features</strong> (lag 1/3/7-day) and a "
+    "Exp8": (
+        "Exp 8 adds <strong>temporal lag features</strong> (lag 1/3/7-day) and a "
         "<strong>7-day rolling mean</strong> to inlet, Flow, and Power columns, "
         "plus a log1p target transform on BOD/COD/TSS with Duan smearing back-transform. "
         "Feature expansion is restricted to inlet+Flow+Power columns to avoid the "
@@ -914,13 +921,17 @@ EXP_INTRO = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _exp_key(raw: str, is_fs: bool) -> str:
+    # LHS = strings as they appear in source results.xlsx files (legacy names preserved).
+    # RHS = canonical exp_key emitted into df_all.
     mapping = {
-        "Exp1-Sub1": "Exp1-Sub1", "Exp1": "Exp1", "Exp1-Cyclic": "Exp1-Cyclic",
-        "Exp1-S3": "Exp1-S3", "Exp1-S3-FS": "Exp1-S3-FS",
-        "Exp2-Sub1": "Exp2-Sub1", "Exp2-Sub2": "Exp2-Sub2",
-        "Exp2-Sub1-Clr": "Exp2-Sub1-Clr",
-        "Exp2-Sub1-Sed": "Exp2-Sub1-Sed",
-        "Exp2-Sub2-Cyc": "Exp2-Sub2-Cyc",
+        "Exp1-Sub1": "Exp1-SE1",   "Exp1-SE1": "Exp1-SE1",
+        "Exp1": "Exp1",            "Exp1-Cyclic": "Exp1-Cyclic",
+        "Exp1-S3": "Exp1-S3",      "Exp1-S3-FS": "Exp1-S3-FS",
+        "Exp2-Sub1":     "Exp2-SE2-Comb",
+        "Exp2-Sub1-Clr": "Exp2-SE2-Clr",
+        "Exp2-Sub1-Sed": "Exp2-SE2-Sed",
+        "Exp2-Sub2":     "Exp2-Sub2",
+        "Exp2-Sub2-Cyc": "Exp2-SE3-Ref",
         "Exp2-S6":    "Exp2-S6",
         "Exp2-S6-FS": "Exp2-S6-FS",
         "Exp2-S5": "Exp2-S5",
@@ -931,7 +942,7 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp3-S3": "Exp3-S3", "Exp3-S3-FS": "Exp3-S3-FS",
         "Exp3-S4": "Exp3-S4", "Exp3-S4-FS": "Exp3-S4-FS",
         "Experiment 1": "Exp1",
-        "Experiment 2 Sub-1": "Exp2-Sub1",
+        "Experiment 2 Sub-1": "Exp2-SE2-Comb",
         "Experiment 2 Sub-2": "Exp2-Sub2",
         "Experiment 3 Sub-1": "Exp3-S1",
         "Experiment 3 Sub-2": "Exp3-S2-FS",
@@ -944,14 +955,19 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp5-S1-FS": "Exp5-S1-FS",
         "Exp5-S2": "Exp5-S2",
         "Exp5-S2-FS": "Exp5-S2-FS",
-        "Phase9-ANN": "Phase9-ANN",
-        "Phase9-Ensemble": "Phase9-Ensemble",
-        "Phase10-FE": "Phase10-FE",
-        "Phase10b-FE-GrabOnly": "Phase10b-FE",
+        "Exp6-ANN": "Exp6-ANN",
+        "Exp6-Ensemble": "Exp6-Ensemble",
+        "Exp7-SE1": "Exp7-SE1",
+        "Exp7-SE2-GrabOnly": "Exp7-SE2",
     }
     key = mapping.get(raw, raw)
-    if is_fs and key in ("Exp1", "Exp2-Sub1", "Exp2-Sub2"):
-        key += "-FS"
+    if is_fs:
+        # Legacy Sub-2 FS results live in feature_selected_datasets/ under sub_exp2;
+        # they are the FS variant of the cyclic SE3 Ref (canonical Exp2-SE3-Ref-FS).
+        if key == "Exp2-Sub2":
+            return "Exp2-SE3-Ref-FS"
+        if key in ("Exp1", "Exp2-SE2-Comb"):
+            key = key + "-FS"
     return key
 
 
@@ -1023,7 +1039,7 @@ def _norm_nl(df: pd.DataFrame, is_fs: bool) -> pd.DataFrame:
 def _norm_phase9(df: pd.DataFrame) -> pd.DataFrame:
     model_map = {"ANN": "ANN", "Voting": "Voting", "Stacking": "Stacking"}
     out = pd.DataFrame(dict(
-        exp_key=df["model"].map(lambda m: f"Phase9-{model_map.get(m, m)}"),
+        exp_key=df["model"].map(lambda m: f"Exp6-{model_map.get(m, m)}"),
         target=df["target"],
         model=df["model"].map(model_map),
         n_train=df.get("n_train"),
@@ -1041,9 +1057,9 @@ def _norm_phase9(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize Phase 11 results (temporal features + log1p targets)."""
+    """Normalize Exp 8 results (temporal features + log1p targets)."""
     out = pd.DataFrame(dict(
-        exp_key="Phase11",
+        exp_key="Exp8",
         target=df["target"],
         model=df["model"],
         n_train=df.get("n_train"),
@@ -1061,13 +1077,17 @@ def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _norm_ann_extra(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize ANN results for Exp1/Exp2-SE1/Exp2-SE2 dataset runs.
+    """Normalize ANN results for Exp1/Exp2-SE2/Exp2-SE3-Ref dataset runs.
 
-    experiment column in results.xlsx is the exp_key directly
-    (e.g. 'ANN-Exp1', 'ANN-Exp2-SE1', 'ANN-Exp2-SE2').
+    experiment column in results.xlsx may use legacy Sub-N names; translate
+    to current canonical exp_keys.
     """
+    _ann_legacy = {
+        "ANN-Exp2-Sub1": "ANN-Exp2-SE2",
+        "ANN-Exp2-Sub2": "ANN-Exp2-SE3-Ref",
+    }
     out = pd.DataFrame(dict(
-        exp_key=df["experiment"],
+        exp_key=df["experiment"].map(lambda v: _ann_legacy.get(str(v), str(v))),
         target=df["target"],
         model="ANN",
         n_train=df.get("n_train"),
@@ -1085,7 +1105,7 @@ def _norm_ann_extra(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _norm_phase10(df: pd.DataFrame, is_10b: bool) -> pd.DataFrame:
-    exp_key = "Phase10b-FE" if is_10b else "Phase10-FE"
+    exp_key = "Exp7-SE2" if is_10b else "Exp7-SE1"
     out = pd.DataFrame(dict(
         exp_key=exp_key,
         target=df["target"],
@@ -1151,7 +1171,7 @@ def load_all_data() -> pd.DataFrame:
                 df = df[df["run"] == df["run"].max()]
                 frames.append(_norm_nl(df, is_fs))
 
-    # Phase 9
+    # Exp 6
     for p in [os.path.join(m, "phase9", "ann", "results.xlsx"),
               os.path.join(m, "phase9", "ensemble", "results.xlsx")]:
         if os.path.exists(p):
@@ -1167,7 +1187,7 @@ def load_all_data() -> pd.DataFrame:
             df = df[df["run"] == df["run"].max()]
             frames.append(_norm_ann_extra(df))
 
-    # Phase 10
+    # Exp 7
     for path, is_10b in [
         (os.path.join(m, "phase10", "results.xlsx"), False),
         (os.path.join(m, "phase10", "results_10b.xlsx"), True),
@@ -1177,7 +1197,7 @@ def load_all_data() -> pd.DataFrame:
             df = df[df["run"] == df["run"].max()]
             frames.append(_norm_phase10(df, is_10b))
 
-    # Phase 11
+    # Exp 8
     p11 = os.path.join(m, "phase11", "results.xlsx")
     if os.path.exists(p11):
         df = pd.read_excel(p11)
@@ -1199,6 +1219,11 @@ def load_all_data() -> pd.DataFrame:
                 "R2_gap", "RMSE_train", "RMSE_test", "MAE_test", "MAPE_test"]:
         combined[col] = pd.to_numeric(combined[col], errors="coerce")
 
+    # Retired exp_keys: legacy variants superseded by current canonical experiments.
+    # Filtering here propagates the retirement to every section automatically.
+    RETIRED_EXP_KEYS = {"Exp2-Sub2"}
+    combined = combined[~combined["exp_key"].isin(RETIRED_EXP_KEYS)].reset_index(drop=True)
+
     return combined
 
 
@@ -1206,7 +1231,7 @@ def compute_all_mdae() -> pd.DataFrame:
     """Scan every dataset xlsx file, compute MdAE on 2025 rows for BOD/TSS targets only.
 
     Returns a DataFrame with columns: exp_key, model, target, MdAE_test.
-    Phase 10 and Phase 11 do not store row-level predictions so those phases
+    Exp 7 and Exp 8 do not store row-level predictions so those phases
     are absent - MdAE_test will be NaN for them after the merge.
     """
     import glob, re
@@ -1259,7 +1284,7 @@ def compute_all_mdae() -> pd.DataFrame:
             if model is None:
                 continue
 
-            # Phase 9 models stored in Exp3-SE2 files need their own exp_key
+            # Exp 6 models stored in Exp3-SE2 files need their own exp_key
             row_exp_key = exp_key
             if exp_key == "Exp3-S2" and model in _PHASE9_EXP:
                 row_exp_key = _PHASE9_EXP[model]
@@ -1318,8 +1343,8 @@ _FS_IMPORTANCE_CACHE = {}
 _LINEAR_RANKING_CACHE = {}
 FS_BASE_MAP = {
     "Exp1-S3-FS": "Exp1-S3",
-    "Exp2-Sub1-FS": "Exp2-Sub1",
-    "Exp2-Sub2-FS": "Exp2-Sub2",
+    "Exp2-SE2-Comb-FS": "Exp2-SE2-Comb",
+    "Exp2-SE3-Ref-FS": "Exp2-Sub2",
     "Exp3-S3-FS": "Exp3-S3",
     "Exp3-S4-FS": "Exp3-S4",
 }
@@ -1435,8 +1460,8 @@ def _load_fs_importance(exp_key: str) -> pd.DataFrame:
     sel_dir = os.path.join(MODELING_DIR, "feature_analysis", "selection")
     source_map = {
         "Exp1-FS": ("feature_importance.xlsx", "Experiment 1"),
-        "Exp2-Sub1-FS": ("feature_importance.xlsx", "Experiment 2 Sub-1"),
-        "Exp2-Sub2-FS": ("feature_importance.xlsx", "Experiment 2 Sub-2"),
+        "Exp2-SE2-Comb-FS": ("feature_importance.xlsx", "Experiment 2 Sub-1"),
+        "Exp2-SE3-Ref-FS": ("feature_importance.xlsx", "Experiment 2 Sub-2"),
     }
     meta = source_map.get(exp_key)
     if not meta:
@@ -1872,7 +1897,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str, df_all: pd.D
     MdAE (Median Absolute Error) is shown for BOD and TSS targets only - these have
     severe outlier distributions (up to 9.8% severe outliers in training) where RMSE
     is dominated by spikes. MdAE is the primary reliability metric for those targets.
-    Phase 10 and Phase 11 do not store row-level predictions so MdAE is unavailable (-).
+    Exp 7 and Exp 8 do not store row-level predictions so MdAE is unavailable (-).
 
     Best-model highlighting: highest Test R² per target row (★), regardless of sign.
     """
@@ -1979,7 +2004,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str, df_all: pd.D
         'for these targets due to severe outlier distributions (up to 9.8% severe outliers '
         'in training data, TSS train max = 1266 mg/L). '
         'MdAE is the primary reliability metric for BOD/TSS; - indicates predictions not '
-        'stored at row level (Phase 10 / Phase 11).</p>'
+        'stored at row level (Exp 7 / Exp 8).</p>'
     )
     if baseline_key and baseline_lookup:
         legend += (
@@ -2558,7 +2583,7 @@ def _ann_failure_callout() -> str:
     <p class="table-note">
       n/p = training rows ÷ features. <span style="color:#e74c3c">Red</span> = n/p &lt; 20 (underdetermined - high overfitting risk).
       MLPs typically need n/p ≥ 100-200 for stable generalisation on tabular data.
-      Δ vs Voting = ANN Test R² − Phase 9 Voting Test R².
+      Δ vs Voting = ANN Test R² − Exp 6 Voting Test R².
     </p>
 
     <details class="inner-fold">
@@ -2671,7 +2696,7 @@ def _cyclic_encoding_callout(df_all: pd.DataFrame) -> str:
       <p class="meta">
         Cyclic encoding is applied <strong>only in Exp3-SE2 linear models</strong>
         (OLS, Ridge, ElasticNet). All prior experiments (Exp1, Exp2, Exp3 Sub-1) and all
-        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Phase 9-11) use raw
+        tree-based and advanced models (RF, GB, XGB, Voting, Stacking, Exp 6-8) use raw
         integer encoding.
       </p>
       <p class="meta">
@@ -2884,7 +2909,7 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
   <p class="section-intro">
     Effluent COD (Composite) is the only target where <em>no model generalises</em> across any
     experiment or phase (best Test R² = {_fmt(global_max)} across {n_exp} experiment variants).
-    Phase 9 Voting MAE doubled from 8.7 mg/L (2024 in-sample) to 18.1 mg/L (2025 test).
+    Exp 6 Voting MAE doubled from 8.7 mg/L (2024 in-sample) to 18.1 mg/L (2025 test).
     Variance is not collapsed (σ-ratio = 0.78), which rules out the low-variance artefact
     that drives negative R² in Comp pH and Comp TSS. This section documents the distribution
     shift, the performance panorama across every experiment, and the evidence for a
@@ -2924,8 +2949,8 @@ def _build_comp_cod_diagnostic(df_all: pd.DataFrame) -> str:
 
     <p class="meta"><strong style="color:#f1c40f">4. Feature engineering and temporal lags
       do not help.</strong>
-      Phase 10 full FE: best R² = −0.008 (Ridge). Phase 10b selective FE: best = −0.051.
-      Phase 11 temporal lags: best = +0.107 (ElNet, Phase 11) but 2025 MAE remains ~17 mg/L.
+      Exp 7 full FE: best R² = −0.008 (Ridge). Exp 7-SE2 selective FE: best = −0.051.
+      Exp 8 temporal lags: best = +0.107 (ElNet, Exp 8) but 2025 MAE remains ~17 mg/L.
       Every additional feature increases the risk of learning training-specific patterns without
       improving generalisation.
     </p>
@@ -2955,7 +2980,7 @@ def _section_bests_json(df_all: pd.DataFrame):
     with section_exp_keys without a separate hardcoded array.
     """
     section_exp_keys = {
-        "exp1-sub1":   ["Exp1-Sub1"],
+        "exp1-sub1":   ["Exp1-SE1"],
         "exp1-full":   ["Exp1-Cyclic"],
         "exp1-fs":     ["Exp1-FS"],
         "exp1-s3":      ["Exp1-S3", "Exp1-S3-FS"],
@@ -2964,15 +2989,15 @@ def _section_bests_json(df_all: pd.DataFrame):
         "exp2-s1":          ["Exp2-S5", "Exp2-S3"],
         "exp2-s1a":         ["Exp2-S5"],
         "exp2-s1b":         ["Exp2-S3"],
-        "exp2-s2":          ["Exp2-S6", "Exp2-Sub1", "Exp2-Sub1-Clr", "Exp2-Sub1-Sed"],
+        "exp2-s2":          ["Exp2-S6", "Exp2-SE2-Comb", "Exp2-SE2-Clr", "Exp2-SE2-Sed"],
         "exp2-s2a":         ["Exp2-S6"],
-        "exp2-s2-clr":      ["Exp2-Sub1-Clr"],
-        "exp2-s2-sed":      ["Exp2-Sub1-Sed"],
-        "exp2-s2-combined": ["Exp2-Sub1"],
-        "exp2-s3":          ["Exp2-S4", "Exp2-Sub2-Cyc", "Exp2-Sub2-FS", "Exp2-S6-FS"],
+        "exp2-s2-clr":      ["Exp2-SE2-Clr"],
+        "exp2-s2-sed":      ["Exp2-SE2-Sed"],
+        "exp2-s2-combined": ["Exp2-SE2-Comb"],
+        "exp2-s3":          ["Exp2-S4", "Exp2-SE3-Ref", "Exp2-SE3-Ref-FS", "Exp2-S6-FS"],
         "exp2-s3-full":     ["Exp2-S4"],
-        "exp2-s3-ref":      ["Exp2-Sub2-Cyc"],
-        "exp2-s3-ref-fs":   ["Exp2-Sub2-FS"],
+        "exp2-s3-ref":      ["Exp2-SE3-Ref"],
+        "exp2-s3-ref-fs":   ["Exp2-SE3-Ref-FS"],
         "exp2-s3-s6fs":     ["Exp2-S6-FS"],
         "exp3-s1":      ["Exp3-S1"],
         "exp3-s2":      ["Exp3-S2", "Exp3-S2-FS"],
@@ -2984,18 +3009,18 @@ def _section_bests_json(df_all: pd.DataFrame):
         "exp3-s4":      ["Exp3-S4", "Exp3-S4-FS"],
         "exp3-s4-full": ["Exp3-S4"],
         "exp3-s4-fs":   ["Exp3-S4-FS"],
-        "p9-ann":            ["Phase9-ANN"],
-        "p9-voting":         ["Phase9-Voting"],
-        "p9-stacking":       ["Phase9-Stacking"],
-        "adv-comparison":    ["Phase9-ANN", "ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-Voting", "Phase9-Stacking"],
-        "adv-findings":      ["Phase9-Voting"],
-        "p10-full":          ["Phase10-FE"],
-        "p10b":              ["Phase10b-FE"],
-        "fe-comparison":     ["Phase10-FE", "Phase10b-FE"],
-        "fe-findings":         ["Phase10b-FE"],
-        "p11-se1":             ["Phase11"],
-        "temporal-comparison": ["Phase11"],
-        "temporal-findings":   ["Phase11"],
+        "p9-ann":            ["Exp6-ANN"],
+        "p9-voting":         ["Exp6-Voting"],
+        "p9-stacking":       ["Exp6-Stacking"],
+        "adv-comparison":    ["Exp6-ANN", "ANN-Exp1", "ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref", "Exp6-Voting", "Exp6-Stacking"],
+        "adv-findings":      ["Exp6-Voting"],
+        "p10-full":          ["Exp7-SE1"],
+        "p10b":              ["Exp7-SE2"],
+        "fe-comparison":     ["Exp7-SE1", "Exp7-SE2"],
+        "fe-findings":         ["Exp7-SE2"],
+        "p11-se1":             ["Exp8"],
+        "temporal-comparison": ["Exp8"],
+        "temporal-findings":   ["Exp8"],
         "exp4-s1":      ["Exp4-S1"],
         "exp4-s2":      ["Exp4-S2"],
         "exp5-s1":      ["Exp5-S1", "Exp5-S1-FS"],
@@ -3005,6 +3030,29 @@ def _section_bests_json(df_all: pd.DataFrame):
         "exp5-s2-full": ["Exp5-S2"],
         "exp5-s2-fs":   ["Exp5-S2-FS"],
     }
+    # Reuse the canonical winner-selection rule from best_models_selection so
+    # the running-leaders widget shows the SAME row that the Overfit-Aware
+    # Selection table picks as the gap-adjusted winner (with noise-band tiebreaker).
+    # Without this, the widget would highlight the naive (highest R²) row even
+    # when that row has a large gap and the Selection table prefers a
+    # smaller-|gap| alternative.
+    from best_models_selection import (  # noqa: E402
+        _gap_adjusted_score, SCORE_NOISE_BAND,
+    )
+
+    def _pick_winner(sub: pd.DataFrame) -> pd.Series:
+        sub = sub.copy()
+        sub["gap_adj"] = sub.apply(
+            lambda r: _gap_adjusted_score(r["R2_test"], r["R2_gap"]), axis=1
+        )
+        sub["abs_gap"] = sub["R2_gap"].abs()
+        if sub["gap_adj"].notna().any():
+            top = sub["gap_adj"].max()
+            cands = sub[sub["gap_adj"] >= top - SCORE_NOISE_BAND]
+            cands = cands.sort_values(["abs_gap", "R2_test"], ascending=[True, False])
+            return cands.iloc[0]
+        return sub.loc[sub["R2_test"].idxmax()]
+
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
         df_sec = df_all[df_all["exp_key"].isin(exp_keys)].dropna(subset=["R2_test"])
@@ -3013,7 +3061,7 @@ def _section_bests_json(df_all: pd.DataFrame):
             sub = df_sec[df_sec["target"] == tgt]
             if sub.empty:
                 continue
-            row = sub.loc[sub["R2_test"].idxmax()]
+            row = _pick_winner(sub)
             bests[TARGET_SHORT.get(tgt, tgt)] = {
                 "model":  str(row["model"]),
                 "r2":     round(float(row["R2_test"]), 3),
@@ -3030,13 +3078,13 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     """Custom champion box for Experiment 1 with gap-adjusted selection.
 
     Candidates per (model, target):
-      SE1           → Exp1-Sub1 R2_test / R2_gap
+      SE1           → Exp1-SE1 R2_test / R2_gap
       SE2           → Exp1-Cyclic R2_test / R2_gap
       SE3-Full      → Exp1-S3 R2_test (grab only)
       SE3-FS        → Exp1-S3-FS R2_test (grab only; OLS: post-LassoCV)
     Winner per target = highest gap-adj score across all candidates.
     """
-    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-SE1"].copy()
     s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
     s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
     s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
@@ -3138,7 +3186,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
     if not table_rows:
         return ""
 
-    df_exp1 = df_all[df_all["exp_key"].isin(["Exp1-Sub1", "Exp1-Cyclic", "Exp1-S3", "Exp1-S3-FS"])]
+    df_exp1 = df_all[df_all["exp_key"].isin(["Exp1-SE1", "Exp1-Cyclic", "Exp1-S3", "Exp1-S3-FS"])]
     grab_best_vals = [float(df_exp1[df_exp1["target"] == t]["R2_test"].max())
                       for t in GRAB_TARGETS
                       if not df_exp1[df_exp1["target"] == t].dropna(subset=["R2_test"]).empty]
@@ -3179,7 +3227,7 @@ def _exp1_best_model_box(df_all: pd.DataFrame) -> str:
 
     return f"""
 <div class="best-box">
-  <div class="best-box-title">Best Model in Experiment 1
+  <div class="best-box-title">Best Model  -  Inlet-Only Features
     <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
   </div>
   <table class="summary-table best-table">
@@ -3199,12 +3247,12 @@ def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
     """Champion box for Experiment 2 with gap-adjusted selection across all sub-experiments."""
     exp2_keys = [
         "Exp2-S3",          # SE1 - Primary + Inlet + COMMON
-        "Exp2-Sub1-Clr",    # SE2-Clr
-        "Exp2-Sub1-Sed",    # SE2-Sed
+        "Exp2-SE2-Clr",    # SE2-Clr
+        "Exp2-SE2-Sed",    # SE2-Sed
         "Exp2-S6",          # SE2-Only
-        "Exp2-Sub1",        # SE2-Comb
-        "Exp2-Sub2-Cyc",    # CIS reference
-        "Exp2-Sub2-FS",     # CIS-FS
+        "Exp2-SE2-Comb",        # SE2-Comb
+        "Exp2-SE3-Ref",    # CIS reference
+        "Exp2-SE3-Ref-FS",     # CIS-FS
         "Exp2-S6-FS",       # Sec-Only-FS
         "Exp2-S4",          # SE3 - full stage set
     ]
@@ -3316,7 +3364,7 @@ def _exp2_best_model_box(df_all: pd.DataFrame) -> str:
 
     return f"""
 <div class="best-box">
-  <div class="best-box-title">Best Model in Experiment 2
+  <div class="best-box-title">Best Model  -  Process Stage Features
     <span class="best-box-avg">avg best Test R² = {_fmt(avg_r2)}{avg_detail}</span>
   </div>
   <table class="summary-table best-table">
@@ -3917,7 +3965,7 @@ def build_overview(df_all: pd.DataFrame) -> str:
 
 def _exp1_qna(df_all: pd.DataFrame) -> str:
     """Data-driven Q&A for Experiment 1  -  four key questions."""
-    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-SE1"].copy()
     s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
     s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
     s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
@@ -4462,7 +4510,7 @@ def _exp1_qna(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp1-findings" open>
-  <summary><span class="fold-icon">▶</span> Findings  -  Experiment 1</summary>
+  <summary><span class="fold-icon">▶</span> Findings  -  Inlet-Only Features</summary>
   <div class="exp-body">
   {_qcard(1, "Do inlet concentrations alone carry meaningful predictive power?", q1)}
   {_qcard(2, "What does adding process context (Flow, Power, cyclic calendar) contribute?", q2)}
@@ -4511,12 +4559,12 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
       Δ S3→FS   -  value of feature selection within SE3
 
     Data sources:
-      SE1       → exp_key == "Exp1-Sub1"
+      SE1       → exp_key == "Exp1-SE1"
       SE2       → exp_key == "Exp1-Cyclic"
       SE3-Full  → exp_key == "Exp1-S3"  (OLS: R2_test_full for pre-FS baseline)
       SE3-FS    → exp_key == "Exp1-S3-FS"
     """
-    s1   = df_all[df_all["exp_key"] == "Exp1-Sub1"].copy()
+    s1   = df_all[df_all["exp_key"] == "Exp1-SE1"].copy()
     s2   = df_all[df_all["exp_key"] == "Exp1-Cyclic"].copy()
     s3   = df_all[df_all["exp_key"] == "Exp1-S3"].copy()
     s3fs = df_all[df_all["exp_key"] == "Exp1-S3-FS"].copy()
@@ -4945,7 +4993,7 @@ def _exp1_comparison_panel(df_all: pd.DataFrame) -> str:
 
 
 def build_exp1_section(df_all: pd.DataFrame) -> str:
-    sub_s1 = _exp_subsection(df_all, "Exp1-Sub1", "exp1-sub1",
+    sub_s1 = _exp_subsection(df_all, "Exp1-SE1", "exp1-sub1",
                              "SE1  -  Core Inlet Only",
                              open_default=False)
     sub_s2 = _exp_subsection(df_all, "Exp1-Cyclic", "exp1-s2",
@@ -4974,7 +5022,7 @@ def build_exp1_section(df_all: pd.DataFrame) -> str:
     best         = _exp1_best_model_box(df_all)
     return f"""
 <section id="exp1">
-  <h1 class="section-title">Experiment 1 - Inlet Features</h1>
+  <h1 class="section-title">Inlet-Only Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp1"]}</p>
   {sub_s1}
   {sub_s2}
@@ -4993,11 +5041,11 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
     se1b     = df_all[df_all["exp_key"] == "Exp2-S3"].copy()
     sec_only = df_all[df_all["exp_key"] == "Exp2-S6"].copy()
     s6fs     = df_all[df_all["exp_key"] == "Exp2-S6-FS"].copy()
-    clr  = df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy()
-    sed  = df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy()
-    comb = df_all[df_all["exp_key"] == "Exp2-Sub1"].copy()
-    cyc  = df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy()
-    fs2  = df_all[df_all["exp_key"] == "Exp2-Sub2-FS"].copy()
+    clr  = df_all[df_all["exp_key"] == "Exp2-SE2-Clr"].copy()
+    sed  = df_all[df_all["exp_key"] == "Exp2-SE2-Sed"].copy()
+    comb = df_all[df_all["exp_key"] == "Exp2-SE2-Comb"].copy()
+    cyc  = df_all[df_all["exp_key"] == "Exp2-SE3-Ref"].copy()
+    fs2  = df_all[df_all["exp_key"] == "Exp2-SE3-Ref-FS"].copy()
     se3  = df_all[df_all["exp_key"] == "Exp2-S4"].copy()
 
     if clr.empty and sed.empty and comb.empty and sec_only.empty and se1b.empty:
@@ -5021,11 +5069,11 @@ def _exp2_comparison_panel(df_all: pd.DataFrame) -> str:
         return _gap_adj(r2, gap if gap is not None else 0.0)
 
     def _sub2_full(model, tgt):
-        """R² on CIS full feature set (Exp2-Sub2, no FS)."""
+        """R² on CIS full feature set (Exp2-SE3-Ref, no FS)."""
         return _get(cyc, model, tgt, "R2_test")
 
     def _sub2_fs(model, tgt):
-        """Feature-selected R² (Exp2-Sub2-FS)."""
+        """Feature-selected R² (Exp2-SE3-Ref-FS)."""
         return _get(fs2, model, tgt, "R2_test")
 
     def _sub2_full_gap(model, tgt):
@@ -5588,11 +5636,11 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
         "se1a": df_all[df_all["exp_key"] == "Exp2-S5"].copy(),
         "se1b": df_all[df_all["exp_key"] == "Exp2-S3"].copy(),
         "se2_only": df_all[df_all["exp_key"] == "Exp2-S6"].copy(),
-        "clr": df_all[df_all["exp_key"] == "Exp2-Sub1-Clr"].copy(),
-        "sed": df_all[df_all["exp_key"] == "Exp2-Sub1-Sed"].copy(),
-        "comb": df_all[df_all["exp_key"] == "Exp2-Sub1"].copy(),
-        "cis": df_all[df_all["exp_key"] == "Exp2-Sub2-Cyc"].copy(),
-        "cis_fs": df_all[df_all["exp_key"] == "Exp2-Sub2-FS"].copy(),
+        "clr": df_all[df_all["exp_key"] == "Exp2-SE2-Clr"].copy(),
+        "sed": df_all[df_all["exp_key"] == "Exp2-SE2-Sed"].copy(),
+        "comb": df_all[df_all["exp_key"] == "Exp2-SE2-Comb"].copy(),
+        "cis": df_all[df_all["exp_key"] == "Exp2-SE3-Ref"].copy(),
+        "cis_fs": df_all[df_all["exp_key"] == "Exp2-SE3-Ref-FS"].copy(),
         "sec_fs": df_all[df_all["exp_key"] == "Exp2-S6-FS"].copy(),
         "se3": df_all[df_all["exp_key"] == "Exp2-S4"].copy(),
     }
@@ -5801,7 +5849,7 @@ def _exp2_qna(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp2-findings" open>
-  <summary><span class="fold-icon">▶</span> Findings  -  Experiment 2</summary>
+  <summary><span class="fold-icon">▶</span> Findings  -  Process Stage Features</summary>
   <div class="exp-body">
   {_qcard(1, "Do primary-stage features generalise, and does adding inlet rescue them?", q1)}
   {_qcard(2, "What does the secondary-only scope add, and does COMMON repay its row cost?", q2)}
@@ -5825,13 +5873,13 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
     se2a = _exp_subsection(df_all, "Exp2-S6", "exp2-s2a",
                            "SE2a - All Secondary only (10 features, no COMMON)",
                            open_default=True)
-    se2_combined = _exp_subsection(df_all, "Exp2-Sub1", "exp2-s2-combined",
+    se2_combined = _exp_subsection(df_all, "Exp2-SE2-Comb", "exp2-s2-combined",
                                    "All Secondary + COMMON (17 features)",
                                    open_default=False)
-    se2_clr = _exp_subsection(df_all, "Exp2-Sub1-Clr", "exp2-s2-clr",
+    se2_clr = _exp_subsection(df_all, "Exp2-SE2-Clr", "exp2-s2-clr",
                               "Sec Clarifier + COMMON (12 features)",
                               open_default=False)
-    se2_sed = _exp_subsection(df_all, "Exp2-Sub1-Sed", "exp2-s2-sed",
+    se2_sed = _exp_subsection(df_all, "Exp2-SE2-Sed", "exp2-s2-sed",
                               "Sec Sedimentation + COMMON (12 features)",
                               open_default=False)
 
@@ -5840,10 +5888,10 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
                                "Full Feature Set (27 features)",
                                open_default=True)
     # SE3 reference baseline (old SE2: Inlet + Secondary, no primary) - kept for delta comparison
-    ref_full = _exp_subsection(df_all, "Exp2-Sub2-Cyc", "exp2-s3-ref",
+    ref_full = _exp_subsection(df_all, "Exp2-SE3-Ref", "exp2-s3-ref",
                                "Core Inlet + Secondary + Common (CIS) - 21 features",
                                open_default=False)
-    ref_fs   = _exp_subsection(df_all, "Exp2-Sub2-FS", "exp2-s3-ref-fs",
+    ref_fs   = _exp_subsection(df_all, "Exp2-SE3-Ref-FS", "exp2-s3-ref-fs",
                                "CIS - Feature Selected",
                                open_default=False,
                                dataset_summary_fn=_dataset_summary_per_model)
@@ -5938,7 +5986,7 @@ def build_exp2_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="exp2">
-  <h1 class="section-title">Experiment 2 - Stage-by-Stage Feature Expansion</h1>
+  <h1 class="section-title">Process Stage Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp2"]}</p>
   {se1_wrapper}
   {se2_wrapper}
@@ -6586,7 +6634,7 @@ def _exp3_qna(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp3-findings" open>
-  <summary><span class="fold-icon">▶</span> Key Findings  -  Experiment 3</summary>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Extended Operational Features</summary>
   <div class="exp-body">{cards}</div>
 </details>"""
 
@@ -6654,10 +6702,10 @@ def build_exp3_section(df_all: pd.DataFrame) -> str:
         df_all[df_all["exp_key"].isin(["Exp3-S1", "Exp3-S2", "Exp3-S2-FS",
                                         "Exp3-S3", "Exp3-S3-FS",
                                         "Exp3-S4", "Exp3-S4-FS"])],
-        "Experiment 3")
+        "Extended Operational Features")
     return f"""
 <section id="exp3">
-  <h1 class="section-title">Experiment 3  -  Feature Audit Tiers &amp; All Features</h1>
+  <h1 class="section-title">Extended Operational Features</h1>
   <p class="section-intro">{EXP_INTRO["Exp3"]}</p>
   {sub1}
   {sub2_wrapper}
@@ -6700,7 +6748,7 @@ def _phase9_model_subsection(df_all: pd.DataFrame, exp_key: str,
 
 def _variance_diagnosis_callout() -> str:
     """
-    Load raw Phase 9 ensemble results and render a variance-collapse diagnosis
+    Load raw Exp 6 ensemble results and render a variance-collapse diagnosis
     table for targets with negative Test R². Shows σ_train, σ_test, σ-ratio,
     MAE_2024 vs MAE_2025 to distinguish genuine model failure from variance collapse.
     """
@@ -7208,7 +7256,7 @@ def _exp4_qna(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp4-findings" open>
-  <summary><span class="fold-icon">▶</span> Key Findings - Experiment 4</summary>
+  <summary><span class="fold-icon">▶</span> Key Findings - VIF-Pruned Feature Set</summary>
   <div class="exp-body">{cards}</div>
 </details>"""
 
@@ -7243,11 +7291,11 @@ def build_exp4_section(df_all: pd.DataFrame) -> str:
 
     comparison = _exp4_comparison_panel(df_all)
     findings   = _exp4_qna(df_all)
-    best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp4-S1", "Exp4-S2"])], "Experiment 4")
+    best = _best_model_box(df_all[df_all["exp_key"].isin(["Exp4-S1", "Exp4-S2"])], "VIF-Pruned Feature Set")
 
     return f"""
 <section id="exp4">
-  <h1 class="section-title">Experiment 4 - Collinearity Pruning</h1>
+  <h1 class="section-title">VIF-Pruned Feature Set</h1>
   <p class="section-intro">{EXP_INTRO["Exp4"]}</p>
   {sub1}
   {sub2}
@@ -7523,7 +7571,7 @@ def _exp5_qna(df_all: pd.DataFrame) -> str:
 
     return f"""
 <details class="exp-details" id="exp5-findings" open>
-  <summary><span class="fold-icon">▶</span> Key Findings  -  Experiment 5</summary>
+  <summary><span class="fold-icon">▶</span> Key Findings  -  Cross-Type Inlet Hypothesis</summary>
   <div class="exp-body">{cards}</div>
 </details>"""
 
@@ -7567,11 +7615,11 @@ def build_exp5_section(df_all: pd.DataFrame) -> str:
     findings_div = _exp5_qna(df_all)
     best         = _best_model_box(
         df_all[df_all["exp_key"].isin(["Exp5-S1", "Exp5-S1-FS", "Exp5-S2", "Exp5-S2-FS"])],
-        "Experiment 5")
+        "Cross-Type Inlet Hypothesis")
 
     return f"""
 <section id="exp5">
-  <h1 class="section-title">Experiment 5  -  Cross-Type Inlet Features</h1>
+  <h1 class="section-title">Cross-Type Inlet Hypothesis</h1>
   <p class="section-intro">{EXP_INTRO["Exp5"]}</p>
   {sub1_wrapper}
   {sub2_wrapper}
@@ -7587,7 +7635,7 @@ def _ann_dataset_exploration_callout() -> str:
   <h4 style="margin:0 0 0.6rem">ANN Dataset Exploration  -  Key Findings</h4>
   <ul style="margin:0 0 0 1rem;padding:0;font-size:0.9em;line-height:1.7">
     <li><strong>Inlet features alone (Exp1, 9 features) are insufficient for the ANN</strong>  - 
-        avg Test R²=−5.6, worse than Phase 9 (Exp3-SE2, −1.1). More data cannot compensate
+        avg Test R²=−5.6, worse than Exp 6 (Exp3-SE2, −1.1). More data cannot compensate
         for missing secondary process signal.</li>
     <li><strong>Secondary features unlock positive Grab R² for the first time</strong>  - 
         Exp2-SE1 ANN (Secondary + COMMON, 12 features, ~924 rows) achieves Grab BOD +0.20,
@@ -7597,7 +7645,7 @@ def _ann_dataset_exploration_callout() -> str:
         Comp BOD collapses from −0.11 (Exp2-S1) to −1.49 (Exp2-S2). The ANN overfits
         more with 16 features than with 12 on the same 733 composite rows.</li>
     <li><strong>Composite targets fail for the ANN on every dataset tested</strong>  - 
-        all composite test R² are negative across Exp1, Exp2-SE1, Exp2-SE2, and Phase 9
+        all composite test R² are negative across Exp1, Exp2-SE1, Exp2-SE2, and Exp 6
         (Exp3-SE2). The pattern is consistent: composite measurements are temporally noisier
         and the ANN cannot capture the distributional shift from training to 2025.</li>
     <li><strong>Conclusion  -  the ANN failure is not data-volume limited</strong>  - 
@@ -7612,13 +7660,13 @@ def _ann_dataset_exploration_callout() -> str:
 
 
 def _ann_dataset_comparison(df_all: pd.DataFrame) -> str:
-    """Three-way ANN comparison table: Exp1 vs Exp2-SE1 vs Exp2-SE2 vs Phase9 (Exp3-SE2)."""
-    keys = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
+    """Three-way ANN comparison table: Exp1 vs Exp2-SE1 vs Exp2-SE2 vs Exp6 (Exp3-SE2)."""
+    keys = ["ANN-Exp1", "ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref", "Exp6-ANN"]
     labels = {
         "ANN-Exp1":      "Exp1 (9 feat, ~1175/800 rows)",
-        "ANN-Exp2-Sub1": "Exp2-SE1 (15 feat, ~924/740 rows)",
-        "ANN-Exp2-Sub2": "Exp2-SE2 (19 feat, ~920/733 rows)",
-        "Phase9-ANN":    "Exp3-SE2 (25 feat, ~470/290 rows)",
+        "ANN-Exp2-SE2": "Exp2-SE1 (15 feat, ~924/740 rows)",
+        "ANN-Exp2-SE3-Ref": "Exp2-SE2 (19 feat, ~920/733 rows)",
+        "Exp6-ANN":    "Exp3-SE2 (25 feat, ~470/290 rows)",
     }
     available = [k for k in keys if k in df_all["exp_key"].values]
     if len(available) < 2:
@@ -7720,21 +7768,21 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
     """Two focused sub-tables: ANN dataset progression (4 cols) + architecture comparison (3 cols).
     Star/diamond highlighting is computed across all 6 variants so global winners are marked correctly.
     """
-    ANN_KEYS  = ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "Phase9-ANN"]
-    ARCH_KEYS = ["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"]
-    ALL_KEYS  = ANN_KEYS + ["Phase9-Voting", "Phase9-Stacking"]
+    ANN_KEYS  = ["ANN-Exp1", "ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref", "Exp6-ANN"]
+    ARCH_KEYS = ["Exp6-ANN", "Exp6-Voting", "Exp6-Stacking"]
+    ALL_KEYS  = ANN_KEYS + ["Exp6-Voting", "Exp6-Stacking"]
 
     COL_LABELS = {
         "ANN-Exp1":        "ANN - Exp1<br><span style='color:#888888;font-weight:400;font-size:0.78em'>9 feat, ~1175 tr</span>",
-        "ANN-Exp2-Sub1":   "ANN - Exp2-SE1<br><span style='color:#888888;font-weight:400;font-size:0.78em'>15 feat, ~924 tr</span>",
-        "ANN-Exp2-Sub2":   "ANN - Exp2-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>21 feat, ~920 tr</span>",
-        "Phase9-ANN":      "ANN - Exp3-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>31 feat, ~470 tr · R² · RMSE · Gap</span>",
-        "Phase9-Voting":   "Voting<br><span style='color:#888888;font-weight:400;font-size:0.78em'>ElNet+RF+XGB · R² · RMSE · Gap</span>",
-        "Phase9-Stacking": "Stacking<br><span style='color:#888888;font-weight:400;font-size:0.78em'>walk-fwd OOF · R² · RMSE · Gap</span>",
+        "ANN-Exp2-SE2":   "ANN - Exp2-SE1<br><span style='color:#888888;font-weight:400;font-size:0.78em'>15 feat, ~924 tr</span>",
+        "ANN-Exp2-SE3-Ref":   "ANN - Exp2-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>21 feat, ~920 tr</span>",
+        "Exp6-ANN":      "ANN - Exp3-SE2<br><span style='color:#888888;font-weight:400;font-size:0.78em'>31 feat, ~470 tr · R² · RMSE · Gap</span>",
+        "Exp6-Voting":   "Voting<br><span style='color:#888888;font-weight:400;font-size:0.78em'>ElNet+RF+XGB · R² · RMSE · Gap</span>",
+        "Exp6-Stacking": "Stacking<br><span style='color:#888888;font-weight:400;font-size:0.78em'>walk-fwd OOF · R² · RMSE · Gap</span>",
     }
     KEY_MODEL = {
-        "ANN-Exp1": "ANN", "ANN-Exp2-Sub1": "ANN", "ANN-Exp2-Sub2": "ANN",
-        "Phase9-ANN": "ANN", "Phase9-Voting": "Voting", "Phase9-Stacking": "Stacking",
+        "ANN-Exp1": "ANN", "ANN-Exp2-SE2": "ANN", "ANN-Exp2-SE3-Ref": "ANN",
+        "Exp6-ANN": "ANN", "Exp6-Voting": "Voting", "Exp6-Stacking": "Stacking",
     }
 
     avail_all  = [k for k in ALL_KEYS  if k in df_all["exp_key"].values]
@@ -7780,14 +7828,14 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
 
     # Transition delta collectors
     ANN_TRANSITIONS  = [
-        ("ANN-Exp1",      "ANN-Exp2-Sub1", "ANN"),
-        ("ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "ANN"),
-        ("ANN-Exp2-Sub2", "Phase9-ANN",    "ANN"),
+        ("ANN-Exp1",      "ANN-Exp2-SE2", "ANN"),
+        ("ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref", "ANN"),
+        ("ANN-Exp2-SE3-Ref", "Exp6-ANN",    "ANN"),
     ]
     ARCH_TRANSITIONS = [
-        ("Phase9-ANN", "Phase9-Voting",   None),
-        ("Phase9-ANN", "Phase9-Stacking", None),
-        ("Phase9-Voting", "Phase9-Stacking", None),
+        ("Exp6-ANN", "Exp6-Voting",   None),
+        ("Exp6-ANN", "Exp6-Stacking", None),
+        ("Exp6-Voting", "Exp6-Stacking", None),
     ]
     ALL_TRANSITIONS = ANN_TRANSITIONS + ARCH_TRANSITIONS
     trans_deltas = {t: [] for t in ALL_TRANSITIONS}
@@ -7938,14 +7986,14 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
 </div>"""
 
     ANN_TRANS_LABELS = {
-        ("ANN-Exp1",      "ANN-Exp2-Sub1", "ANN"): ("ANN: Exp1",     "Exp2-SE1 (+secondary feat)"),
-        ("ANN-Exp2-Sub1", "ANN-Exp2-Sub2", "ANN"): ("ANN: Exp2-SE1", "Exp2-SE2 (+inlet to secondary)"),
-        ("ANN-Exp2-Sub2", "Phase9-ANN",    "ANN"): ("ANN: Exp2-SE2", "Exp3-SE2 (+more feat, -rows)"),
+        ("ANN-Exp1",      "ANN-Exp2-SE2", "ANN"): ("ANN: Exp1",     "Exp2-SE1 (+secondary feat)"),
+        ("ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref", "ANN"): ("ANN: Exp2-SE1", "Exp2-SE2 (+inlet to secondary)"),
+        ("ANN-Exp2-SE3-Ref", "Exp6-ANN",    "ANN"): ("ANN: Exp2-SE2", "Exp3-SE2 (+more feat, -rows)"),
     }
     ARCH_TRANS_LABELS = {
-        ("Phase9-ANN",    "Phase9-Voting",   None): ("ANN Exp3-SE2", "Voting (architecture change)"),
-        ("Phase9-ANN",    "Phase9-Stacking", None): ("ANN Exp3-SE2", "Stacking (architecture change)"),
-        ("Phase9-Voting", "Phase9-Stacking", None): ("Voting",       "Stacking (ensemble method)"),
+        ("Exp6-ANN",    "Exp6-Voting",   None): ("ANN Exp3-SE2", "Voting (architecture change)"),
+        ("Exp6-ANN",    "Exp6-Stacking", None): ("ANN Exp3-SE2", "Stacking (architecture change)"),
+        ("Exp6-Voting", "Exp6-Stacking", None): ("Voting",       "Stacking (ensemble method)"),
     }
     n_tgts = len(TARGETS_ORDERED)
     ann_summary  = _summary_table(ANN_TRANSITIONS,  ANN_TRANS_LABELS,
@@ -8018,7 +8066,7 @@ def _adv_comparison_panel(df_all: pd.DataFrame) -> str:
 def _adv_methods_qna(df_all: pd.DataFrame) -> str:
     """Key findings Q&A for the Advanced Methods section."""
     p9 = df_all[
-        df_all["exp_key"].isin(["Phase9-ANN", "Phase9-Voting", "Phase9-Stacking"])
+        df_all["exp_key"].isin(["Exp6-ANN", "Exp6-Voting", "Exp6-Stacking"])
     ].dropna(subset=["R2_test"])
 
     def _avg(exp_key):
@@ -8029,9 +8077,9 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
         sub = p9[(p9["exp_key"] == exp_key) & (p9["target"] == tgt)]
         return float(sub["R2_test"].max()) if not sub.empty else float("nan")
 
-    ann_avg   = _avg("Phase9-ANN")
-    vote_avg  = _avg("Phase9-Voting")
-    stack_avg = _avg("Phase9-Stacking")
+    ann_avg   = _avg("Exp6-ANN")
+    vote_avg  = _avg("Exp6-Voting")
+    stack_avg = _avg("Exp6-Stacking")
 
     def _c(v, good_above=0.05):
         if v != v:
@@ -8039,11 +8087,11 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
         col = "#5BAD6F" if v > good_above else "#E15252" if v < 0 else "var(--text-primary)"
         return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
 
-    vote_grab_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Grab)")
-    vote_comp_bod = _best("Phase9-Voting", "Effluent BOD (mg/L, Composite)")
-    stack_comp_bod = _best("Phase9-Stacking", "Effluent BOD (mg/L, Composite)")
-    stack_comp_cod = _best("Phase9-Stacking", "Effluent COD (mg/L, Composite)")
-    stack_comp_tss = _best("Phase9-Stacking", "Effluent TSS (mg/L, Composite)")
+    vote_grab_bod = _best("Exp6-Voting", "Effluent BOD (mg/L, Grab)")
+    vote_comp_bod = _best("Exp6-Voting", "Effluent BOD (mg/L, Composite)")
+    stack_comp_bod = _best("Exp6-Stacking", "Effluent BOD (mg/L, Composite)")
+    stack_comp_cod = _best("Exp6-Stacking", "Effluent COD (mg/L, Composite)")
+    stack_comp_tss = _best("Exp6-Stacking", "Effluent TSS (mg/L, Composite)")
 
     q1 = (
         f"The MLP must learn all structure - feature interactions, non-linearities, and "
@@ -8085,7 +8133,7 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
         f"Comp COD {_c(stack_comp_cod, 0.0)}, and Comp TSS {_c(stack_comp_tss, 0.10)}. "
         f"<br><br>"
         f"For <strong>Grab targets only</strong>, combining Voting with selective feature "
-        f"engineering (Phase 10b - Selective FE) further improves performance "
+        f"engineering (Exp 7-SE2 - Selective FE) further improves performance "
         f"(avg Grab R² ~+0.48 vs Voting base +0.28). For <strong>Composite targets</strong>, "
         f"the base Exp3-SE2 feature set (no FE) is safer - FE causes severe overfitting at "
         f"n_train ~290 rows."
@@ -8113,7 +8161,7 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
 
     # Q4: ANN dataset exploration findings
     ann_e1  = df_all[df_all["exp_key"] == "ANN-Exp1"].dropna(subset=["R2_test"])
-    ann_e2s1 = df_all[df_all["exp_key"] == "ANN-Exp2-Sub1"].dropna(subset=["R2_test"])
+    ann_e2s1 = df_all[df_all["exp_key"] == "ANN-Exp2-SE2"].dropna(subset=["R2_test"])
 
     def _ann_avg(df_):
         return float(df_["R2_test"].mean()) if not df_.empty else float("nan")
@@ -8127,7 +8175,7 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
 
     q4 = (
         f"Tripling the training rows from ~470 (Exp3-SE2) to ~1175 (Exp1) did <em>not</em> rescue ANN "
-        f"performance. Exp1 ANN avg Test R² = {_c(ann_e1_avg, 0)} - worse than Phase 9 (Exp3-SE2) ANN "
+        f"performance. Exp1 ANN avg Test R² = {_c(ann_e1_avg, 0)} - worse than Exp 6 (Exp3-SE2) ANN "
         f"avg R² = {_c(ann_avg, 0)}. More data cannot compensate for missing secondary process signal."
         f"<br><br>"
         f"<strong>Secondary features are the prerequisite for positive ANN generalisation.</strong> "
@@ -8161,20 +8209,20 @@ def _adv_methods_qna(df_all: pd.DataFrame) -> str:
 
 
 def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Side-by-side comparison: Phase 9 Voting baseline vs Full FE vs Selective FE."""
-    keys   = ["Phase9-Voting", "Phase10-FE", "Phase10b-FE"]
+    """Side-by-side comparison: Exp 6 Voting baseline vs Full FE vs Selective FE."""
+    keys   = ["Exp6-Voting", "Exp7-SE1", "Exp7-SE2"]
     labels = {
-        "Phase9-Voting": (
+        "Exp6-Voting": (
             "P9 Baseline<br>"
             "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
             "Voting · R² · RMSE · Gap</span>"
         ),
-        "Phase10-FE": (
+        "Exp7-SE1": (
             "SE1<br>"
             "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
             "Full FE · R² · RMSE · Gap</span>"
         ),
-        "Phase10b-FE": (
+        "Exp7-SE2": (
             "SE2<br>"
             "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
             "Selective FE · R² · RMSE · Gap</span>"
@@ -8187,9 +8235,9 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
     models_show = ["Voting", "Ridge", "ElNet", "RF"]
     MEANINGFUL = 0.01
     transitions = [
-        ("Phase9-Voting", "Phase10-FE"),
-        ("Phase9-Voting", "Phase10b-FE"),
-        ("Phase10-FE", "Phase10b-FE"),
+        ("Exp6-Voting", "Exp7-SE1"),
+        ("Exp6-Voting", "Exp7-SE2"),
+        ("Exp7-SE1", "Exp7-SE2"),
     ]
     trans_deltas = {t: [] for t in transitions}
     trans_gaj = {t: [] for t in transitions}
@@ -8387,9 +8435,9 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
       </tr>
     </thead>
     <tbody>
-      {_stats_row(("Phase9-Voting", "Phase10-FE"), "P9 Baseline", "SE1 Full FE")}
-      {_stats_row(("Phase9-Voting", "Phase10b-FE"), "P9 Baseline", "SE2 Selective FE")}
-      {_stats_row(("Phase10-FE", "Phase10b-FE"), "SE1 Full FE", "SE2 Selective FE")}
+      {_stats_row(("Exp6-Voting", "Exp7-SE1"), "P9 Baseline", "SE1 Full FE")}
+      {_stats_row(("Exp6-Voting", "Exp7-SE2"), "P9 Baseline", "SE2 Selective FE")}
+      {_stats_row(("Exp7-SE1", "Exp7-SE2"), "SE1 Full FE", "SE2 Selective FE")}
     </tbody>
   </table>
   </div>
@@ -8404,7 +8452,7 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
         <strong>★</strong> = best raw Test R² per target ·
         <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
         <span style='color:#E15252'>red Gap</span> &gt; 0.10 = notable overfit.
-        Phase 9 Voting is included as the baseline; SE1 applies FE to all targets; SE2 applies FE to Grab targets only.
+        Exp 6 Voting is included as the baseline; SE1 applies FE to all targets; SE2 applies FE to Grab targets only.
       </p>
     </div>
     {main_table}
@@ -8415,9 +8463,9 @@ def _phase10_comparison_panel(df_all: pd.DataFrame) -> str:
 
 def _phase10_qna(df_all: pd.DataFrame) -> str:
     """Key findings Q&A for the Feature Engineering section."""
-    fe_full  = df_all[df_all["exp_key"] == "Phase10-FE"].dropna(subset=["R2_test"])
-    fe_sel   = df_all[df_all["exp_key"] == "Phase10b-FE"].dropna(subset=["R2_test"])
-    p9_vote  = df_all[df_all["exp_key"] == "Phase9-Voting"].dropna(subset=["R2_test"])
+    fe_full  = df_all[df_all["exp_key"] == "Exp7-SE1"].dropna(subset=["R2_test"])
+    fe_sel   = df_all[df_all["exp_key"] == "Exp7-SE2"].dropna(subset=["R2_test"])
+    p9_vote  = df_all[df_all["exp_key"] == "Exp6-Voting"].dropna(subset=["R2_test"])
 
     def _avg_tgts(df, tgts):
         vals = [float(df[df["target"] == t]["R2_test"].max())
@@ -8454,7 +8502,7 @@ def _phase10_qna(df_all: pd.DataFrame) -> str:
 
     q1 = (
         f"<strong>Full FE (SE1):</strong> Voting avg Grab = {_c(grab_full, 0.20)}, "
-        f"Comp = {_c(comp_full, 0.10)} vs Phase 9 baseline "
+        f"Comp = {_c(comp_full, 0.10)} vs Exp 6 baseline "
         f"Grab = {_c(p9_grab, 0.20)}, Comp = {_c(p9_comp, 0.10)}. "
         f"Composite targets were catastrophically affected: Comp TSS ElNet gap +3.80, "
         f"Ridge gap +3.31. Root cause: ~290 Composite training rows + 50 engineered features "
@@ -8474,7 +8522,7 @@ def _phase10_qna(df_all: pd.DataFrame) -> str:
 
     q3 = (
         f"New records for Grab TSS: Voting SE2 = {_c(tss_sel, 0.30)}, Ridge SE2 = +0.633. "
-        f"Grab BOD: Voting SE2 = {_c(bod_sel, 0.30)} (maintains Phase 10 high). "
+        f"Grab BOD: Voting SE2 = {_c(bod_sel, 0.30)} (maintains Exp 7 high). "
         f"<br><br>"
         f"Comp COD remains unresponsive (best R² = -0.051 across all FE variants). "
         f"Grab pH is the weakest Grab target (Voting SE2 = +0.244) - narrow dynamic "
@@ -8510,23 +8558,23 @@ def _phase10_qna(df_all: pd.DataFrame) -> str:
 
 
 def _phase11_comparison_panel(df_all: pd.DataFrame) -> str:
-    """Contextual comparison: Phase 9 Voting / Phase 10b vs Temporal Features."""
-    keys   = ["Phase9-Voting", "Phase10b-FE", "Phase11"]
+    """Contextual comparison: Exp 6 Voting / Exp 7-SE2 vs Temporal Features."""
+    keys   = ["Exp6-Voting", "Exp7-SE2", "Exp8"]
     labels = {
-        "Phase9-Voting": (
-            "P9 Voting"
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>Baseline</span>"
+        "Exp6-Voting": (
+            "P9 Baseline<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Voting · R² · RMSE · Gap</span>"
         ),
-        "Phase10b-FE": (
-            "P10b Sel-FE"
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>Best prior</span>"
+        "Exp7-SE2": (
+            "P10b Sel-FE<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Best prior · R² · RMSE · Gap</span>"
         ),
-        "Phase11": (
-            "Temporal Feat."
-            "<br><span style='font-size:0.8em;font-weight:normal;"
-            "color:var(--text-muted)'>Lags + log1p</span>"
+        "Exp8": (
+            "Temporal Feat.<br>"
+            "<span style='color:#888888;font-weight:400;font-size:0.78em'>"
+            "Lags + log1p · R² · RMSE · Gap</span>"
         ),
     }
     avail = [k for k in keys if k in df_all["exp_key"].values]
@@ -8534,68 +8582,234 @@ def _phase11_comparison_panel(df_all: pd.DataFrame) -> str:
         return ""
 
     models_show = ["Voting", "Ridge", "ElNet", "RF", "XGB"]
-    rows_html = []
+    MEANINGFUL = 0.01
+    transitions = [
+        ("Exp6-Voting", "Exp7-SE2"),
+        ("Exp6-Voting", "Exp8"),
+        ("Exp7-SE2",   "Exp8"),
+    ]
+    trans_deltas = {t: [] for t in transitions}
+    trans_gaj    = {t: [] for t in transitions}
+
+    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _STD = "padding:6px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
+    def _get(key, model, tgt, col="R2_test"):
+        sub = df_all[
+            (df_all["exp_key"] == key) &
+            (df_all["target"]  == tgt) &
+            (df_all["model"]   == model)
+        ]
+        if sub.empty or col not in sub.columns:
+            return None
+        v = sub[col].iloc[0]
+        return None if (v is None or v != v) else float(v)
+
+    def _gaj(r2, gap):
+        if r2 is None:
+            return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, rmse, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999999'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        marker_html = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:
+            col = "#5BAD6F"; fw = "bold"
+        elif is_gaj:
+            col = "#4A90D9"; fw = "bold"
+        else:
+            col = "#1a1a1a"; fw = "normal"
+        rmse_str = f"{rmse:.2f}" if (rmse is not None and rmse == rmse) else " - "
+        gap_val  = gap if (gap is not None and gap == gap) else None
+        gap_str  = f"{gap_val:+.3f}" if gap_val is not None else " - "
+        gap_col  = ("#E15252" if gap_val is not None and gap_val > 0.10
+                    else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                    else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
+                     f"RMSE {rmse_str} · <span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{marker_html}{secondary}</td>")
+
+    tbody = ""
     for tgt in TARGETS_ORDERED:
         tgt_short = TARGET_SHORT.get(tgt, tgt)
-        rows_html.append(
-            f'<tr><td colspan="{len(avail) * 2 + 1}" style="background:var(--card-bg);'
-            f'font-weight:600;padding:6px 10px;color:var(--accent)">{tgt_short}</td></tr>'
+        tbody += (
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='{len(avail) + 1}' style='padding:6px 10px;font-size:0.75rem;"
+            f"font-weight:700;color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{tgt_short}</td></tr>"
         )
-        for model in models_show:
-            cells = f'<td style="padding-left:20px;color:var(--text-muted)">{model}</td>'
-            for key in avail:
-                sub = df_all[
-                    (df_all["exp_key"] == key) &
-                    (df_all["target"] == tgt) &
-                    (df_all["model"] == model)
-                ]
-                if sub.empty or sub["R2_test"].isna().all():
-                    cells += ('<td style="color:var(--text-muted)"> - </td>'
-                              '<td style="color:var(--text-muted)"> - </td>')
-                    continue
-                r2  = float(sub["R2_test"].iloc[0])
-                gap = float(sub["R2_gap"].iloc[0]) if not pd.isna(sub["R2_gap"].iloc[0]) else float("nan")
-                r2_col  = "#2ecc71" if r2 > 0.30 else "#e74c3c" if r2 < 0 else "var(--text-primary)"
-                gap_col = "#e74c3c" if gap > 0.15 else "var(--text-muted)"
-                gap_str = f"{gap:+.3f}" if not np.isnan(gap) else "-"
-                cells += (f'<td style="color:{r2_col};font-weight:500">{r2:+.3f}</td>'
-                          f'<td style="color:{gap_col};font-size:0.85em">{gap_str}</td>')
-            rows_html.append(f"<tr>{cells}</tr>")
 
-    col_headers = "".join(
-        f'<th colspan="2" style="text-align:center">{labels[k]}</th>' for k in avail
-    )
-    sub_headers = "".join('<th>R² Test</th><th>Gap</th>' for _ in avail)
-    thead = (
-        f'<thead><tr><th>Model</th>{col_headers}</tr>'
-        f'<tr style="font-size:0.82em"><th></th>{sub_headers}</tr></thead>'
-    )
+        all_raw = {}
+        all_gap = {}
+        all_gaj_scores = {}
+        for model in models_show:
+            for key in avail:
+                r2  = _get(key, model, tgt)
+                gap = _get(key, model, tgt, "R2_gap")
+                score = _gaj(r2, gap)
+                if r2 is not None:
+                    all_raw[(key, model)] = r2
+                    all_gap[(key, model)] = gap
+                if score is not None:
+                    all_gaj_scores[(key, model)] = score
+
+        best_raw = max(all_raw.values()) if all_raw else None
+        best_gaj = max(all_gaj_scores.values()) if all_gaj_scores else None
+        raw_win_gap = None
+        if best_raw is not None:
+            for k_, v_ in all_raw.items():
+                if abs(v_ - best_raw) < 1e-9:
+                    raw_win_gap = all_gap.get(k_)
+                    break
+        show_gaj = (
+            best_gaj is not None and best_raw is not None
+            and raw_win_gap is not None and raw_win_gap > 0.10
+        )
+
+        def _is_raw(v):
+            return best_raw is not None and v is not None and abs(v - best_raw) < 1e-9
+
+        def _is_gaj(v):
+            return show_gaj and best_gaj is not None and v is not None and abs(v - best_gaj) < 1e-9
+
+        for model in models_show:
+            row_bg = "#ffffff" if models_show.index(model) % 2 == 0 else "#f7f7f7"
+            cells  = f"<td style='{_TD}'><strong>{model}</strong></td>"
+            values = {}
+            for key in avail:
+                r2   = _get(key, model, tgt)
+                rmse = _get(key, model, tgt, "RMSE_test")
+                gap  = _get(key, model, tgt, "R2_gap")
+                score = _gaj(r2, gap)
+                values[key] = (r2, score)
+                cells += _val_td(r2, rmse, gap, _is_raw(r2), _is_gaj(score))
+            tbody += f"<tr style='background:{row_bg}'>{cells}</tr>"
+
+            for trans in transitions:
+                from_key, to_key = trans
+                if from_key not in avail or to_key not in avail:
+                    continue
+                from_v, from_s = values.get(from_key, (None, None))
+                to_v,   to_s   = values.get(to_key,   (None, None))
+                if from_v is not None and to_v is not None:
+                    trans_deltas[trans].append(to_v - from_v)
+                if from_s is not None and to_s is not None:
+                    trans_gaj[trans].append(to_s - from_s)
+
+    def _stats_row(trans, from_lbl, to_lbl):
+        deltas = trans_deltas[trans]
+        gaj_d  = trans_gaj[trans]
+        if not deltas:
+            return (f"<tr><td style='{_STD}'><strong>{from_lbl} &rarr; {to_lbl}</strong></td>"
+                    f"<td colspan='7' style='{_STD};color:#888888'> - </td></tr>")
+        arr  = np.array(deltas)
+        n    = len(arr)
+        net  = float(arr.mean())
+        wins   = arr[arr > MEANINGFUL]
+        losses = arr[arr < -MEANINGFUL]
+        ties   = arr[(arr >= -MEANINGFUL) & (arr <= MEANINGFUL)]
+        win_mean  = float(wins.mean())   if len(wins)   else None
+        loss_mean = float(losses.mean()) if len(losses) else None
+        net_col = "#5BAD6F" if net > MEANINGFUL else ("#E15252" if net < -MEANINGFUL else "#888888")
+        verdict = "Net improvement" if net > MEANINGFUL else ("Net regression" if net < -MEANINGFUL else "Negligible")
+        win_str  = f"{len(wins)}/{n} (avg {win_mean:+.3f})"   if win_mean  is not None else f"{len(wins)}/{n}"
+        loss_str = f"{len(losses)}/{n} (avg {loss_mean:+.3f})" if loss_mean is not None else f"{len(losses)}/{n}"
+        if gaj_d:
+            gaj_net  = float(np.array(gaj_d).mean())
+            diff     = gaj_net - net
+            gaj_col  = "#5BAD6F" if gaj_net > MEANINGFUL else ("#E15252" if gaj_net < -MEANINGFUL else "#888888")
+            diff_col = "#E15252" if diff < -0.02 else "#5BAD6F" if diff > 0.02 else "#888888"
+            interp   = ("Raw gains partially inflated by overfitting" if diff < -0.02
+                        else "Raw gains understated - overfitting decreased" if diff > 0.02
+                        else "Overfitting largely unchanged")
+            gaj_str  = f"{gaj_net:+.4f}"
+            diff_str = f"{diff:+.4f}"
+        else:
+            gaj_col = diff_col = "#888888"
+            gaj_str = diff_str = " - "
+            interp  = " - "
+        return (
+            f"<tr>"
+            f"<td style='{_STD};white-space:nowrap'><strong>{from_lbl} &rarr; {to_lbl}</strong></td>"
+            f"<td style='{_STD};text-align:center;color:{net_col};font-weight:bold'>{net:+.4f}</td>"
+            f"<td style='{_STD};text-align:center;color:#5BAD6F'>{win_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#E15252'>{loss_str}</td>"
+            f"<td style='{_STD};text-align:center;color:#888888'>{len(ties)}/{n}</td>"
+            f"<td style='{_STD};text-align:center;color:{gaj_col};font-weight:bold'>{gaj_str}</td>"
+            f"<td style='{_STD};text-align:center;color:{diff_col}'>{diff_str}</td>"
+            f"<td style='{_STD}'><strong>{verdict}</strong><br>"
+            f"<span style='font-size:0.82em;color:{diff_col}'>{interp}</span></td>"
+            f"</tr>"
+        )
+
+    col_headers = "".join(f"<th style='{_THC}'>{labels[k]}</th>" for k in avail)
+    main_table  = f"""
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;color:#1a1a1a;min-width:760px'>
+  <thead>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:70px'>Model</th>
+      {col_headers}
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    stats_block = f"""
+<div style='margin-top:1.4rem'>
+  <p style='font-weight:bold;margin-bottom:0.4rem;color:#1a1a1a'>Transition Summary</p>
+  <div style='overflow-x:auto;border:1px solid #cccccc;border-radius:4px'>
+  <table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.83rem;color:#1a1a1a;min-width:960px'>
+    <thead>
+      <tr style='border-bottom:2px solid #cccccc'>
+        <th style='{_TH}'>Transition</th>
+        <th style='{_THC}'>Net Mean ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>raw</span></th>
+        <th style='{_THC}'>Improvements<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &gt; +{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Regressions<br><span style='color:#888888;font-weight:400;font-size:0.82em'>Δ &lt; -{MEANINGFUL}</span></th>
+        <th style='{_THC}'>Negligible<br><span style='color:#888888;font-weight:400;font-size:0.82em'>|Δ| &lt;= {MEANINGFUL}</span></th>
+        <th style='{_THC}'>Gap-Adj Net ΔR²<br><span style='color:#888888;font-weight:400;font-size:0.82em'>R²-0.5·max(0,|gap|-0.10)</span></th>
+        <th style='{_THC}'>Gap-Adj - Raw<br><span style='color:#888888;font-weight:400;font-size:0.82em'>overfitting shift</span></th>
+        <th style='{_TH}'>Verdict / Interpretation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {_stats_row(("Exp6-Voting", "Exp7-SE2"), "P9 Baseline", "P10b Sel-FE")}
+      {_stats_row(("Exp6-Voting", "Exp8"),     "P9 Baseline", "P11 Temporal")}
+      {_stats_row(("Exp7-SE2",   "Exp8"),     "P10b Sel-FE", "P11 Temporal")}
+    </tbody>
+  </table>
+  </div>
+</div>"""
+
     return f"""
 <details class="exp-details" id="temporal-comparison">
   <summary><span class="fold-icon">▶</span> Comparisons</summary>
   <div class="exp-body">
-    <div class="obs-card" style="margin-bottom:1rem">
-      <p style="margin:0;font-size:0.85em;color:var(--text-muted)">
-        Temporal Features vs Phase 9 Voting baseline and Phase 10b Selective FE (best prior method).
-        <span style="color:#2ecc71">Green = R² &gt; 0.30</span>,
-        <span style="color:#e74c3c">Red = R² &lt; 0 or Gap &gt; 0.15</span>.
+    <div class="obs-card" style="border-left:4px solid #9B59B6">
+      <p class="meta">
+        <strong>★</strong> = best raw Test R² per target ·
+        <strong>✦</strong> = best gap-adjusted per target (shown only when raw winner has |gap| &gt; 0.10).
+        <span style='color:#E15252'>Red Gap</span> &gt; 0.10 = notable overfit.
+        P9 Voting is the baseline; P10b Selective FE is the best prior method; P11 adds temporal lags + log1p target transform.
       </p>
     </div>
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:0.87em">
-      {thead}
-      <tbody>{"".join(rows_html)}</tbody>
-    </table>
-    </div>
+    {main_table}
+    {stats_block}
   </div>
 </details>"""
 
 
 def _phase11_qna(df_all: pd.DataFrame) -> str:
     """Key findings Q&A for the Temporal Features section."""
-    p11    = df_all[df_all["exp_key"] == "Phase11"].dropna(subset=["R2_test"])
-    p10b   = df_all[df_all["exp_key"] == "Phase10b-FE"].dropna(subset=["R2_test"])
-    p9_v   = df_all[df_all["exp_key"] == "Phase9-Voting"].dropna(subset=["R2_test"])
+    p11    = df_all[df_all["exp_key"] == "Exp8"].dropna(subset=["R2_test"])
+    p10b   = df_all[df_all["exp_key"] == "Exp7-SE2"].dropna(subset=["R2_test"])
+    p9_v   = df_all[df_all["exp_key"] == "Exp6-Voting"].dropna(subset=["R2_test"])
 
     def _avg_tgts(df, tgts):
         vals = [float(df[df["target"] == t]["R2_test"].max())
@@ -8623,14 +8837,14 @@ def _phase11_qna(df_all: pd.DataFrame) -> str:
 
     q1 = (
         f"<strong>Grab targets benefited:</strong> Grab avg R² = {_c(p11_grab_avg, 0.20)} "
-        f"vs Phase 10b baseline {_c(p10b_grab_avg, 0.20)}. "
+        f"vs Exp 7-SE2 baseline {_c(p10b_grab_avg, 0.20)}. "
         f"Grab BOD Ridge = {_c(p11_grab_bod_r, 0.30)} (gap -0.095 - honest generalisation). "
         f"Grab COD XGB = {_c(p11_grab_cod_xgb, 0.20)} - new Grab COD high with honest gap (+0.057). "
         f"Lag features add genuine signal: yesterday's inlet BOD correlates with today's "
         f"effluent BOD through retention time dynamics."
         f"<br><br>"
         f"<strong>Composite targets deteriorated:</strong> Comp avg R² = {_c(p11_comp_avg, 0.10)} "
-        f"vs Phase 10b {_c(p10b_comp_avg, 0.10)}. "
+        f"vs Exp 7-SE2 {_c(p10b_comp_avg, 0.10)}. "
         f"Comp TSS Ridge = -1.04 (gap +1.82) - catastrophic. With ~290 Composite training "
         f"rows and 50-58 features after lag expansion, overfitting is severe."
     )
@@ -8649,14 +8863,14 @@ def _phase11_qna(df_all: pd.DataFrame) -> str:
 
     q3 = (
         f"<strong>Per-target winners (from Overfit-Aware Selection):</strong><br>"
-        f"Grab BOD: Phase 9 Voting (0.692, gap ~0) - Phase 11 Ridge (0.656) is close but lower.<br>"
-        f"Grab COD: Exp2-SE1 RF (0.489, gap -0.004) - Phase 11 XGB (0.464) is second.<br>"
-        f"Grab TSS: Phase 10b Voting (0.642). Grab pH: Phase 11 ElNet (0.376).<br>"
-        f"Comp BOD: Phase 10b Voting ({_c(p10b_comp_bod, 0.20)}). "
+        f"Grab BOD: Exp 6 Voting (0.692, gap ~0) - Exp 8 Ridge (0.656) is close but lower.<br>"
+        f"Grab COD: Exp2-SE1 RF (0.489, gap -0.004) - Exp 8 XGB (0.464) is second.<br>"
+        f"Grab TSS: Exp 7-SE2 Voting (0.642). Grab pH: Exp 8 ElNet (0.376).<br>"
+        f"Comp BOD: Exp 7-SE2 Voting ({_c(p10b_comp_bod, 0.20)}). "
         f"Comp COD: no model generalises. "
-        f"Comp TSS: Phase 10b ElNet (0.458). Comp pH: Exp3-SE1 Ridge (0.363).<br><br>"
+        f"Comp TSS: Exp 7-SE2 ElNet (0.458). Comp pH: Exp3-SE1 Ridge (0.363).<br><br>"
         f"Temporal features contribute one clear Grab target win (Grab pH) and near-ties "
-        f"on Grab BOD and COD after gap-adjustment. Phase 10b Selective FE remains the "
+        f"on Grab BOD and COD after gap-adjustment. Exp 7-SE2 Selective FE remains the "
         f"overall recommended configuration."
     )
 
@@ -8679,7 +8893,7 @@ def _phase11_qna(df_all: pd.DataFrame) -> str:
     cards = "".join([
         _qcard(1, "Do temporal lag features help Grab and Composite targets equally?", q1),
         _qcard(2, "Why was feature expansion restricted to inlet/Flow/Power columns only?", q2),
-        _qcard(3, "Where does Phase 11 rank per-target, and what is the overall recommendation?", q3),
+        _qcard(3, "Where does Exp 8 rank per-target, and what is the overall recommendation?", q3),
     ])
     return f"""
 <details class="exp-details" id="temporal-findings" open>
@@ -8690,19 +8904,19 @@ def _phase11_qna(df_all: pd.DataFrame) -> str:
 
 def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
     ann_sub     = _phase9_model_subsection(
-        df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
+        df_all, "Exp6-ANN", "p9-ann", "ANN (MLPRegressor)",
         _badge("FAILED avg R²=-1.12", "fail"))
     ann_failure = _ann_failure_callout()
     vote_sub = _phase9_model_subsection(
-        df_all, "Phase9-Voting", "p9-voting",
+        df_all, "Exp6-Voting", "p9-voting",
         "Voting Ensemble (ElNet + RF + XGBoost)",
         _badge("RECOMMENDED", "rec"))
     stack_sub = _phase9_model_subsection(
-        df_all, "Phase9-Stacking", "p9-stacking",
+        df_all, "Exp6-Stacking", "p9-stacking",
         "Stacking Ensemble (ElNet + RF + XGB - Ridge, walk-forward OOF)",
         _badge("CONSISTENT - no leakage", "warn"))
 
-    df_p9 = df_all[df_all["exp_key"].isin(["Phase9-ANN","Phase9-Voting","Phase9-Stacking"])].copy()
+    df_p9 = df_all[df_all["exp_key"].isin(["Exp6-ANN","Exp6-Voting","Exp6-Stacking"])].copy()
     comparison = _adv_comparison_panel(df_all)
     best = _best_model_box(df_p9, "Advanced Methods")
     var_dx = _variance_diagnosis_callout()
@@ -8711,7 +8925,7 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
 
     has_ann_extra = any(
         k in df_all["exp_key"].values
-        for k in ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"]
+        for k in ["ANN-Exp1", "ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref"]
     )
     ann_exploration_block = ""
     if has_ann_extra:
@@ -8719,10 +8933,10 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
             df_all, "ANN-Exp1", "p9-ann-exp1",
             "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
         ann_e2s1_sub = _phase9_model_subsection(
-            df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
+            df_all, "ANN-Exp2-SE2", "p9-ann-exp2s1",
             "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
         ann_e2s2_sub = _phase9_model_subsection(
-            df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
+            df_all, "ANN-Exp2-SE3-Ref", "p9-ann-exp2s2",
             "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 21 features)")
         ann_exploration_block = f"""
   <h3 class="section-title" id="p9-ann-exploration"
@@ -8739,7 +8953,7 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
     return f"""
 <section id="advanced-methods">
   <h1 class="section-title">Advanced Methods</h1>
-  <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
+  <p class="section-intro">{EXP_INTRO["Exp6"]}</p>
 
   <h2 class="section-title" id="adv-nn"
       style="font-size:1.25rem;margin:1.8rem 0 0.6rem;border-top:1px solid var(--border);padding-top:1rem">
@@ -8766,23 +8980,23 @@ def build_advanced_methods_section(df_all: pd.DataFrame) -> str:
 
 def build_phase9_section(df_all: pd.DataFrame) -> str:
     ann_sub     = _phase9_model_subsection(
-        df_all, "Phase9-ANN", "p9-ann", "ANN (MLPRegressor)",
+        df_all, "Exp6-ANN", "p9-ann", "ANN (MLPRegressor)",
         _badge("FAILED avg R²=−1.12", "fail"))
     ann_failure = _ann_failure_callout()
     vote_sub = _phase9_model_subsection(
-        df_all, "Phase9-Voting", "p9-voting",
+        df_all, "Exp6-Voting", "p9-voting",
         "Voting Ensemble (ElNet + RF + XGBoost)",
         _badge("RECOMMENDED", "rec"))
     stack_sub = _phase9_model_subsection(
-        df_all, "Phase9-Stacking", "p9-stacking",
+        df_all, "Exp6-Stacking", "p9-stacking",
         "Stacking Ensemble (ElNet + RF + XGB → Ridge, walk-forward OOF)",
         _badge("CONSISTENT - no leakage", "warn"))
 
     # Combined comparison across all three
-    df_p9 = df_all[df_all["exp_key"].isin(["Phase9-ANN","Phase9-Voting","Phase9-Stacking"])].copy()
+    df_p9 = df_all[df_all["exp_key"].isin(["Exp6-ANN","Exp6-Voting","Exp6-Stacking"])].copy()
     all_m = [m for m in ADV_MODELS if m in df_p9["model"].values]
     comp_tbl = _metrics_table(df_p9, all_m, "p9-comp")
-    best = _best_model_box(df_p9, "Phase 9")
+    best = _best_model_box(df_p9, "Exp 6")
     var_dx = _variance_diagnosis_callout()
 
     # ANN dataset-exploration sub-sections
@@ -8790,10 +9004,10 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
         df_all, "ANN-Exp1", "p9-ann-exp1",
         "ANN  -  Exp1 Datasets (Inlet + COMMON, 9 features)")
     ann_e2s1_sub = _phase9_model_subsection(
-        df_all, "ANN-Exp2-Sub1", "p9-ann-exp2s1",
+        df_all, "ANN-Exp2-SE2", "p9-ann-exp2s1",
         "ANN  -  Exp2-SE1 Datasets (Secondary + COMMON, 15 features)")
     ann_e2s2_sub = _phase9_model_subsection(
-        df_all, "ANN-Exp2-Sub2", "p9-ann-exp2s2",
+        df_all, "ANN-Exp2-SE3-Ref", "p9-ann-exp2s2",
         "ANN  -  Exp2-SE2 Datasets (Inlet + Secondary + COMMON, 19 features)")
     ann_ds_comparison = _ann_dataset_comparison(df_all)
     ann_ds_callout = _ann_dataset_exploration_callout()
@@ -8801,7 +9015,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
     # Only render the exploration block if at least one result file exists
     has_ann_extra = any(
         k in df_all["exp_key"].values
-        for k in ["ANN-Exp1", "ANN-Exp2-Sub1", "ANN-Exp2-Sub2"]
+        for k in ["ANN-Exp1", "ANN-Exp2-SE2", "ANN-Exp2-SE3-Ref"]
     )
     ann_exploration_block = ""
     if has_ann_extra:
@@ -8822,7 +9036,7 @@ def build_phase9_section(df_all: pd.DataFrame) -> str:
     return f"""
 <section id="phase9">
   <h1 class="section-title">Advanced Methods - ANN &amp; Ensembles</h1>
-  <p class="section-intro">{EXP_INTRO["Phase9"]}</p>
+  <p class="section-intro">{EXP_INTRO["Exp6"]}</p>
   {ann_sub}
   {ann_failure}
   {vote_sub}
@@ -8865,22 +9079,22 @@ def _phase10_variant(df_all: pd.DataFrame, exp_key: str,
 
 def build_phase10_section(df_all: pd.DataFrame) -> str:
     full_fe = _phase10_variant(
-        df_all, "Phase10-FE", "p10-full",
+        df_all, "Exp7-SE1", "p10-full",
         "SE1 - Full Feature Engineering (All Targets)",
         _badge("COMPOSITE OVERFIT", "fail"))
     sel_fe = _phase10_variant(
-        df_all, "Phase10b-FE", "p10b",
+        df_all, "Exp7-SE2", "p10b",
         "SE2 - Selective Feature Engineering (Grab FE / Composite Base)",
         _badge("RECOMMENDED", "rec"))
     comparison = _phase10_comparison_panel(df_all)
     findings   = _phase10_qna(df_all)
     best = _best_model_box(
-        df_all[df_all["exp_key"].isin(["Phase10-FE","Phase10b-FE"])],
+        df_all[df_all["exp_key"].isin(["Exp7-SE1","Exp7-SE2"])],
         "Feature Engineering")
     return f"""
 <section id="phase10">
   <h1 class="section-title">Feature Engineering</h1>
-  <p class="section-intro">{EXP_INTRO["Phase10"]}</p>
+  <p class="section-intro">{EXP_INTRO["Exp7"]}</p>
   {full_fe}
   {sel_fe}
   {comparison}
@@ -8890,11 +9104,11 @@ def build_phase10_section(df_all: pd.DataFrame) -> str:
 
 
 def build_phase11_section(df_all: pd.DataFrame) -> str:
-    df = df_all[df_all["exp_key"] == "Phase11"].copy()
+    df = df_all[df_all["exp_key"] == "Exp8"].copy()
     if df.empty:
         return ""
     models = [m for m in ALL_MODELS_ORD if m in df["model"].values]
-    feat_html  = _feature_card("Phase11")
+    feat_html  = _feature_card("Exp8")
     ds_html    = _dataset_summary(df)
     tbl        = _metrics_table(df, models, "p11-detail")
     train_tbl  = _train_metrics_table(df, models)
@@ -8914,8 +9128,8 @@ def build_phase11_section(df_all: pd.DataFrame) -> str:
 
     return f"""
 <section id="phase11">
-  <h1 class="section-title">Temporal Features + log1p Targets</h1>
-  <p class="section-intro">{EXP_INTRO["Phase11"]}</p>
+  <h1 class="section-title">Temporal Features</h1>
+  <p class="section-intro">{EXP_INTRO["Exp8"]}</p>
   <details class="exp-details" open id="p11-se1">
     <summary><span class="fold-icon">▶</span> SE1 - Temporal Lags + log1p (All Models)</summary>
     <div class="exp-body">
@@ -8949,7 +9163,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-exp1">
-      Experiment 1 <span class="nav-chevron">▾</span>
+      1. Inlet-Only Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp1">
       <a class="nav-item nav-sub" href="#exp1-sub1">SE1 - Core Inlet Only</a>
@@ -8966,7 +9180,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-exp2">
-      Experiment 2 <span class="nav-chevron">▾</span>
+      2. Process Stage Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp2">
       <div class="nav-subgroup">
@@ -9010,7 +9224,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-exp3">
-      Experiment 3 <span class="nav-chevron">▾</span>
+      3. Extended Operational Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp3">
       <a class="nav-item nav-sub" href="#exp3-s1">SE1 - ADD-tier</a>
@@ -9051,7 +9265,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-exp4">
-      Experiment 4 <span class="nav-chevron">▾</span>
+      4. VIF-Pruned Feature Set <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp4">
       <a class="nav-item nav-sub" href="#exp4-s1">SE1 - Manual Group Removal</a>
@@ -9063,7 +9277,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-exp5">
-      Experiment 5 <span class="nav-chevron">▾</span>
+      5. Cross-Type Inlet Hypothesis <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-exp5">
       <div class="nav-subgroup">
@@ -9093,7 +9307,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-adv">
-      Advanced Methods <span class="nav-chevron">▾</span>
+      6. Advanced Methods <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-adv">
       <div class="nav-subgroup">
@@ -9124,7 +9338,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p10">
-      Feature Engineering <span class="nav-chevron">▾</span>
+      7. Feature Engineering <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p10">
       <a class="nav-item nav-sub" href="#p10-full">SE1 - Full FE (All Tgts)</a>
@@ -9136,7 +9350,7 @@ def _sidebar() -> str:
 
   <div class="nav-group">
     <div class="nav-group-title nav-collapsible" data-target-group="nav-p11">
-      Temporal Features <span class="nav-chevron">▾</span>
+      8. Temporal Features <span class="nav-chevron">▾</span>
     </div>
     <div class="nav-group-items" id="nav-p11">
       <a class="nav-item nav-sub" href="#p11-se1">SE1 - Temporal + log1p</a>
@@ -9800,29 +10014,29 @@ def _build_model_selection_section(df_all: pd.DataFrame) -> str:
 def _build_error_decomposition_section() -> str:
     """Build the error decomposition section by importing from error_decomposition."""
     from error_decomposition import (   # noqa: E402
-        decompose_target, TARGETS as ED_TARGETS, section_html as ed_section_html,
+        decompose_target, TARGETS as ED_TARGETS,
+        section_html as ed_section_html, resolve_target_winners,
     )
+    winners = resolve_target_winners()
     frames = []
     for name, tgt, inlet in ED_TARGETS:
-        df = decompose_target(name, tgt, inlet)
+        df = decompose_target(name, tgt, inlet, winner_info=winners.get(tgt))
         if not df.empty:
             frames.append(df)
-    if not frames:
-        combined = pd.DataFrame()
-    else:
-        combined = pd.concat(frames, ignore_index=True)
-    inner = ed_section_html(combined)
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    inner = ed_section_html(combined, winners=winners)
     return f"""
 <section id="error-decomposition">
   <h1 class="section-title">2025 Residual Decomposition by Operational Regime</h1>
   <p class="section-intro">
-    Decomposes 2025 residuals for the <strong>Phase 9 Voting</strong> (ElNet+RF+XGB)
-    model across four operational axes: Flow quartile, Weekday vs Weekend, Season
-    (DJF/MAM/JJA/SON), and Inlet Load quartile. Quartile thresholds are fit on the
-    training set (2021-2024) only. Headline finding: error concentrates in
-    <strong>Q4 high-flow</strong> and <strong>DJF winter</strong> regimes (2-3× overall
-    MAE) for every BOD/TSS target - predictions during hydraulic or thermal stress
-    should be flagged as low-confidence.
+    Each target is decomposed using its <strong>gap-adjusted winner</strong> from the
+    Overfit-Aware Selection table - the same model recommended for deployment - rather
+    than a single fixed ensemble. Residuals are split along four operational axes:
+    Flow quartile, Weekday vs Weekend, Season (DJF/MAM/JJA/SON), and Inlet Load quartile.
+    Quartile thresholds are fit on the training set (2021-2024) only.
+    Targets whose winner has no row-level predictions on disk are listed under
+    "Pending re-runs" below and will populate once the relevant training script is
+    re-run with prediction-dump enabled.
   </p>
   {inner}
 </section>"""
