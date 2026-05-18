@@ -45,6 +45,10 @@ from xgboost import XGBRegressor
 
 warnings.filterwarnings("ignore")
 
+# Prediction columns written back to the source Exp3-S2 dataset files use an
+# experiment tag so they do not collide with Exp3-S2 or Exp7 prediction columns.
+PRED_TAG = "exp8"
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
@@ -319,6 +323,11 @@ MODEL_BUILDERS = [
 ]
 
 
+def _env_filter(name: str) -> set[str]:
+    raw = os.environ.get(name, "")
+    return {x.strip() for x in raw.split(",") if x.strip()}
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Plots
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -352,6 +361,21 @@ def _next_run() -> int:
         return 1
     df = pd.read_excel(RESULTS_FILE)
     return int(df["run"].max()) + 1 if len(df) > 0 else 1
+
+
+def append_predictions(source_path: str, scored_df: pd.DataFrame,
+                       pred_values: np.ndarray, model_tag: str, run: int):
+    """Append row-level predictions to the source dataset by Date."""
+    col = f"predicted_{model_tag}_{PRED_TAG}_run_{run}"
+    source = pd.read_excel(source_path)
+    source["Date"] = pd.to_datetime(source["Date"])
+    scored = pd.DataFrame({
+        "Date": pd.to_datetime(scored_df["Date"]),
+        col: np.round(pred_values, 3),
+    })
+    pred_map = scored.drop_duplicates("Date").set_index("Date")[col]
+    source[col] = source["Date"].map(pred_map)
+    source.to_excel(source_path, index=False)
 
 
 def _per_year_mae(model, train_df, feat_cols, target, meta, smear):
@@ -414,7 +438,10 @@ def train_dataset(ds: dict, run: int) -> list:
           f"features: base={n_base}  lag={n_lag}  roll={n_roll}  log_y={log_y}")
 
     records = []
+    only_models = _env_filter("RUN_ONLY_MODELS")
     for model_tag, builder in MODEL_BUILDERS:
+        if only_models and model_tag not in only_models:
+            continue
         print(f"    [{model_tag}] fitting...")
         try:
             model, params = builder(X_train, y_train_t)
@@ -463,6 +490,9 @@ def train_dataset(ds: dict, run: int) -> list:
 
             _scatter_plot(y_train, y_tr_pred, y_test, y_te_pred,
                           r2_tr, r2_te, name, model_tag, run)
+            all_pred_t = model.predict(df_clean[feat_cols].values.astype(float))
+            all_pred = _back_transform(all_pred_t, None, None, meta_use)
+            append_predictions(path, df_clean, all_pred, model_tag, run)
 
             records.append({
                 "experiment":  "Phase11-Temporal-LogY",
@@ -506,7 +536,10 @@ def main():
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}\n")
 
     all_records = []
+    only_targets = _env_filter("RUN_ONLY_TARGETS")
     for ds in DATASETS:
+        if only_targets and ds["name"] not in only_targets and ds["target"] not in only_targets:
+            continue
         print(f"\n[{ds['name']}] target={ds['target']}  log_y={ds['log_y']}")
         try:
             recs = train_dataset(ds, run)

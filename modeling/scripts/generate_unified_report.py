@@ -2595,7 +2595,7 @@ def _ann_failure_callout() -> str:
           Typical guidance: n/p ≥ 100-200 for stable MLP generalisation.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">2. Temporal distribution shift.</strong>
           2025 test data shows different distributional properties than 2021-2024 training data
-          (Q4-Flow and DJF errors 2-3× higher - see Error Regime Decomposition).
+          (Q4-Flow and winter errors 2-3x higher - see Error Regime Decomposition).
           MLPs form highly non-linear decision boundaries that diverge further from shifted data
           than regularised linear models or bagged trees.</p>
         <p class="meta"><strong style="color:var(--accent-blue)">3. Early stopping did not prevent 2025 failure.</strong>
@@ -3030,44 +3030,57 @@ def _section_bests_json(df_all: pd.DataFrame):
         "exp5-s2-full": ["Exp5-S2"],
         "exp5-s2-fs":   ["Exp5-S2-FS"],
     }
-    # Reuse the canonical winner-selection rule from best_models_selection so
-    # the running-leaders widget shows the SAME row that the Overfit-Aware
-    # Selection table picks as the gap-adjusted winner (with noise-band tiebreaker).
-    # Without this, the widget would highlight the naive (highest R²) row even
-    # when that row has a large gap and the Selection table prefers a
-    # smaller-|gap| alternative.
+    # Reuse the same per-experiment winner table that feeds the Overfit-Aware
+    # Selection section. The sidebar should summarize the highlighted
+    # "Best per (experiment × target)" rows, including One-SE winners, not
+    # re-infer leaders from raw R².
     from best_models_selection import (  # noqa: E402
-        _gap_adjusted_score, SCORE_NOISE_BAND,
+        SCORE_NOISE_BAND, build_per_experiment, _sort_per_target_winners,
     )
 
-    def _pick_winner(sub: pd.DataFrame) -> pd.Series:
-        sub = sub.copy()
-        sub["gap_adj"] = sub.apply(
-            lambda r: _gap_adjusted_score(r["R2_test"], r["R2_gap"]), axis=1
+    per_exp_df = build_per_experiment(df_all)
+
+    def _display_winner(row: pd.Series) -> tuple[str, float, float, float, str]:
+        """Return model/r2/gap/score/rule exactly as the global selection table displays it."""
+        use_onese = str(row["onese_model"]) != str(row["naive_model"])
+        prefix = "onese" if use_onese else "gadj"
+        if use_onese:
+            rule = (
+                "One-SE / Gap-adj"
+                if str(row["onese_model"]) == str(row["gadj_model"])
+                else "One-SE"
+            )
+        else:
+            rule = "Gap-adj" if str(row["gadj_model"]) != str(row["naive_model"]) else "All agree"
+        return (
+            str(row[f"{prefix}_model"]),
+            float(row[f"{prefix}_R2"]),
+            float(row[f"{prefix}_gap"]) if not pd.isna(row[f"{prefix}_gap"]) else 0.0,
+            float(row[f"{prefix}_score"]) if not pd.isna(row[f"{prefix}_score"]) else -1e9,
+            rule,
         )
-        sub["abs_gap"] = sub["R2_gap"].abs()
-        if sub["gap_adj"].notna().any():
-            top = sub["gap_adj"].max()
-            cands = sub[sub["gap_adj"] >= top - SCORE_NOISE_BAND]
-            cands = cands.sort_values(["abs_gap", "R2_test"], ascending=[True, False])
-            return cands.iloc[0]
-        return sub.loc[sub["R2_test"].idxmax()]
 
     result = {}
     for sec_id, exp_keys in section_exp_keys.items():
-        df_sec = df_all[df_all["exp_key"].isin(exp_keys)].dropna(subset=["R2_test"])
+        df_sec = per_exp_df[per_exp_df["exp_key"].isin(exp_keys)].copy()
         bests = {}
         for tgt in TARGETS_ORDERED:
-            sub = df_sec[df_sec["target"] == tgt]
-            if sub.empty:
+            grp = _sort_per_target_winners(df_sec, tgt)
+            if grp.empty:
                 continue
-            row = _pick_winner(sub)
+            row = grp.iloc[0]
+            model, r2, gap, score, rule = _display_winner(row)
             bests[TARGET_SHORT.get(tgt, tgt)] = {
-                "model":  str(row["model"]),
-                "r2":     round(float(row["R2_test"]), 3),
-                "gap":    round(float(row["R2_gap"]) if not np.isnan(row["R2_gap"]) else 0, 3),
+                "model":  model,
+                "r2":     round(r2, 3),
+                "gap":    round(gap, 3),
+                "score":  round(score, 5),
+                "absGap": round(abs(gap), 5),
+                "rule":   rule,
+                "noise":  SCORE_NOISE_BAND,
                 "exp":    EXP_CHART_LABELS.get(str(row["exp_key"]), str(row["exp_key"])),
-                "color":  MODEL_COLORS.get(str(row["model"]), "#888"),
+                "expKey": str(row["exp_key"]),
+                "color":  MODEL_COLORS.get(model, "#888"),
             }
         result[sec_id] = bests
     order = list(section_exp_keys.keys())
@@ -9899,6 +9912,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   var runningLeaders = {};
   var lastRendered   = '';
+  var SCORE_NOISE_BAND = 0.005;
 
   function gapClass(g) {
     if (Math.abs(g) < 0.10) return 'gap-good';
@@ -9906,21 +9920,59 @@ document.addEventListener('DOMContentLoaded', function() {
     return 'gap-bad';
   }
 
-  function mergeSection(id) {
+  function isBetterCandidate(b, current) {
+    if (!current) return true;
+    var bs = (typeof b.score === 'number') ? b.score : -Infinity;
+    var cs = (typeof current.score === 'number') ? current.score : -Infinity;
+    if (bs !== cs) return bs > cs;
+    var bg = Math.abs(typeof b.gap === 'number' ? b.gap : 999);
+    var cg = Math.abs(typeof current.gap === 'number' ? current.gap : 999);
+    if (bg !== cg) return bg < cg;
+    return (b.r2 || -Infinity) > (current.r2 || -Infinity);
+  }
+
+  function mergeSection(id, leaders) {
     var bests = window.SECTION_BESTS && window.SECTION_BESTS[id];
     if (!bests) return;
     targetList.forEach(function(tgt) {
       var b = bests[tgt];
       if (!b) return;
-      if (!runningLeaders[tgt] || b.r2 > runningLeaders[tgt].r2) {
-        runningLeaders[tgt] = b;
+      if (isBetterCandidate(b, leaders[tgt])) {
+        leaders[tgt] = b;
       }
     });
   }
 
+  function activeSectionIndex() {
+    var triggerY = window.innerHeight * 0.35;
+    var active = -1;
+    sectionOrder.forEach(function(id, idx) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var rect = el.getBoundingClientRect();
+      if (rect.top <= triggerY) active = idx;
+    });
+    return active;
+  }
+
+  function recomputeLeaders(activeIdx) {
+    var leaders = {};
+    for (var i = 0; i <= activeIdx; i++) {
+      mergeSection(sectionOrder[i], leaders);
+    }
+    runningLeaders = leaders;
+  }
+
   function renderLeaders() {
     var keys = Object.keys(runningLeaders);
-    if (keys.length === 0) return;
+    if (keys.length === 0) {
+      var empty = '<p class="leaders-empty">Scroll past a section to see running leaders.</p>';
+      if (empty !== lastRendered) {
+        document.getElementById('leaders-content').innerHTML = empty;
+        lastRendered = empty;
+      }
+      return;
+    }
     var rows = '';
     targetList.forEach(function(tgt) {
       var b = runningLeaders[tgt];
@@ -9944,13 +9996,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function checkSections() {
-    var mid = window.innerHeight * 0.6;
-    sectionOrder.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      var rect = el.getBoundingClientRect();
-      if (rect.top < mid) mergeSection(id);
-    });
+    recomputeLeaders(activeSectionIndex());
     renderLeaders();
   }
 
@@ -10029,14 +10075,12 @@ def _build_error_decomposition_section() -> str:
 <section id="error-decomposition">
   <h1 class="section-title">2025 Residual Decomposition by Operational Regime</h1>
   <p class="section-intro">
-    Each target is decomposed using its <strong>gap-adjusted winner</strong> from the
-    Overfit-Aware Selection table - the same model recommended for deployment - rather
-    than a single fixed ensemble. Residuals are split along four operational axes:
-    Flow quartile, Weekday vs Weekend, Season (DJF/MAM/JJA/SON), and Inlet Load quartile.
-    Quartile thresholds are fit on the training set (2021-2024) only.
-    Targets whose winner has no row-level predictions on disk are listed under
-    "Pending re-runs" below and will populate once the relevant training script is
-    re-run with prediction-dump enabled.
+    Each target is decomposed using its <strong>global overfit-aware winner</strong> from
+    the Overfit-Aware Selection table - the same model recommended for deployment -
+    rather than a single fixed ensemble. Residuals are split along four operational axes:
+    Flow quartile, Weekday vs Weekend, Kathmandu/Nepal season, and Inlet Load quartile.
+    Quartile thresholds are fit on the training set (2021-2024) only. All current
+    global winners now have row-level predictions, so every target is included.
   </p>
   {inner}
 </section>"""

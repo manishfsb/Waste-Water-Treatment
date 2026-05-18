@@ -47,10 +47,9 @@ GAP_PENALTY    = 0.50   # λ - weight on excess gap
 ONE_SE_MARGIN  = 0.05   # δ - R² margin counted as "equivalent"
                         #     0.03 was too tight: SE(R²) ≈ 0.05-0.07 at n_test≈200,
                         #     so a 0.03 gap is well within measurement noise.
-SCORE_NOISE_BAND = 0.005  # ε - gap-adjusted scores within this band are
-                          # treated as a tie for winner selection. Differences
-                          # below SE(R²) noise floor are not meaningful;
-                          # smaller |gap| breaks the tie.
+SCORE_NOISE_BAND = 0.005  # ε - retained as metadata for historical notes and
+                          # display context. Winner selection is score-first:
+                          # smaller |gap| breaks only true score ties.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -102,15 +101,12 @@ def _pick_rules(sub: pd.DataFrame) -> dict:
 
     # 1. Naive
     naive_row = sub.loc[sub["R2_test"].idxmax()]
-    # 2. Gap-adjusted (tiebreak: smaller |gap|, then higher R²).
-    # Within SCORE_NOISE_BAND of the top score, treat rows as effectively tied -
-    # score differences below SE(R²) ≈ 0.05 are not meaningful, so a row with
-    # 0.0004 less score but a much smaller |gap| is the more defensible pick.
+    # 2. Gap-adjusted (score first; tiebreak: smaller |gap|, then higher R²).
+    # The score already encodes the overfit penalty, so a lower-score row should
+    # not outrank a higher-score row solely because the score gap is small.
     if sub["gap_adj"].notna().any():
-        gadj_max = sub["gap_adj"].max()
-        gadj_cands = sub[sub["gap_adj"] >= gadj_max - SCORE_NOISE_BAND]
-        gadj_cands = gadj_cands.sort_values(
-            ["abs_gap", "R2_test"], ascending=[True, False]
+        gadj_cands = sub.sort_values(
+            ["gap_adj", "abs_gap", "R2_test"], ascending=[False, True, False]
         )
         gadj_row = gadj_cands.iloc[0]
     else:
@@ -381,45 +377,61 @@ _SEL_POPUP_JS = """
 def _render_global_table(df: pd.DataFrame) -> str:
     """8-row global table.
 
-    Columns (no Gap-adj R²):
-      Target | Naive winner R² Gap RMSE MAE |
-      One-SE winner R² Gap RMSE MAE |
-      Gap-adj winner Gap Score RMSE MAE | Pareto | Changed?
+    If ``winner_*`` columns are present, they are used as the displayed global
+    winner. This lets the embedded report align the global summary with the
+    highlighted winner rows in the per-experiment table, including cases where
+    the final pick comes from the One-SE column rather than the naive winner.
     Row background depends on state (agree_ok → green, agree_bad → red, disagree → split).
-    ⓘ button in Gap-adj winner cell links to shared overlay popup.
+    ⓘ button in winner cell links to shared overlay popup.
     """
     head = [
         "Target",
-        "Gap-adj winner", "R²", "Gap", "Score", "RMSE", "MAE",
+        "Overall winner", "Rule", "R²", "Gap", "Score", "RMSE", "MAE",
         "Pareto frontier",
     ]
     rows = []
     for _, r in df.iterrows():
         state, info_html = _row_state(r)
-        btn = _popup_btn(info_html)
 
         def _td(content, extra_style="", cls=""):
             cls_attr = f" class='{cls}'" if cls else ""
             return f"<td{cls_attr} style='{extra_style}'>{content}</td>"
 
-        gadj_R2    = _cell(r["gadj_R2"])
-        gadj_gap   = _cell(r["gadj_gap"])
-        gadj_score = _cell(r["gadj_score"], d=5)
-        gadj_RMSE  = _cell(r.get("gadj_RMSE", float("nan")))
-        gadj_MAE   = _cell(r.get("gadj_MAE",  float("nan")))
+        winner_model = r.get("winner_model", r["gadj_model"])
+        winner_rule  = r.get("winner_rule", "Gap-adj")
+        winner_R2    = r.get("winner_R2", r["gadj_R2"])
+        winner_gap   = r.get("winner_gap", r["gadj_gap"])
+        winner_score = r.get("winner_score", r["gadj_score"])
+        winner_RMSE  = r.get("winner_RMSE", r.get("gadj_RMSE", float("nan")))
+        winner_MAE   = r.get("winner_MAE",  r.get("gadj_MAE",  float("nan")))
+        if "winner_model" in r.index:
+            naive = str(r.get("naive_model", ""))
+            info_html = (
+                f"<strong>Global winner follows the lower table.</strong><br><br>"
+                f"The highlighted per-target row underneath is {r.get('exp_key')}. "
+                f"The selected global model is the <em>{winner_rule}</em> pick: "
+                f"{winner_model} (R² = {_cell(winner_R2)}, "
+                f"gap = {_cell(winner_gap)}).<br><br>"
+                f"The row's naive winner is {naive} "
+                f"(R² = {_cell(r.get('naive_R2'))}, gap = {_cell(r.get('naive_gap'))}). "
+                "When the One-SE rule selects a smaller-gap model inside the competitive "
+                "R² window, that conservative pick is carried into the global summary."
+            )
+        btn = _popup_btn(info_html)
 
-        gadj_R2_color  = f"color:{_r2_color(r['gadj_R2'])}"
-        gadj_gap_cls   = _gap_cls(r["gadj_gap"])
+        winner_R2_color = f"color:{_r2_color(winner_R2)}"
+        winner_gap_cls  = _gap_cls(winner_gap)
 
         tds = [
             f"<td><strong>{r['target_short']}</strong></td>",
-            # Gap-adj block
-            f"<td>{r['gadj_model']}{btn}</td>",
-            _td(gadj_R2,                gadj_R2_color),
-            _td(gadj_gap,               "", gadj_gap_cls),
-            _td(gadj_score,             ""),
-            _td(gadj_RMSE,              ""),
-            _td(gadj_MAE,               ""),
+            # Overall winner block
+            f"<td>{winner_model}{btn}</td>",
+            _td(winner_rule, "font-size:11px;color:#555555"),
+            _td(_cell(winner_R2),                winner_R2_color),
+            _td(_cell(winner_gap),               "", winner_gap_cls),
+            _td(_cell(winner_score, d=5),        ""),
+            _td(_cell(winner_RMSE),              ""),
+            _td(_cell(winner_MAE),               ""),
             # Meta
             f"<td style='font-size:11px'>{r['pareto']}</td>",
         ]
@@ -485,25 +497,30 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
     rows_html = []
 
     for i_tgt, tgt in enumerate(target_order):
-        # Sort by gap-adjusted score (descending), but bucket scores by the
-        # SCORE_NOISE_BAND ε so rows within ε share a sort key - within a bucket,
-        # smaller |gap| (then higher R²) wins. The canonical winner therefore
-        # appears at the top of each target group consistently with _pick_rules.
+        # Sort target groups strictly by the displayed gap-adjusted winner's
+        # score. The score already contains the overfit penalty, so a lower-gap
+        # row should only outrank a higher-score row when the score truly ties.
         grp = df[df["target"] == tgt].copy()
         grp["_abs_gadj_gap"] = grp["gadj_gap"].abs()
-        grp["_score_bucket"] = (grp["gadj_score"] / SCORE_NOISE_BAND).round().fillna(-1e9)
         grp = grp.sort_values(
-            ["_score_bucket", "_abs_gadj_gap", "naive_R2"],
+            ["gadj_score", "_abs_gadj_gap", "naive_R2"],
             ascending=[False, True, False],
         )
         n   = len(grp)
         slug = TARGET_SHORT.get(tgt, tgt).lower().replace(" ", "-")
 
-        # Compute best (minimum) value per operational metric within this target
-        # group; the row whose cell equals the group-min gets a green ● prefix.
+        # Compute best values per metric within this target group. A compact
+        # blue star is appended to the winning cells instead of changing the
+        # cell background, so the table remains readable and stable in width.
+        def _group_max(col):
+            vals = grp[col].dropna()
+            return float(vals.max()) if not vals.empty else None
+
         def _group_min(col):
             vals = grp[col].dropna()
             return float(vals.min()) if not vals.empty else None
+        best_r2   = _group_max("gadj_R2")
+        best_score= _group_max("gadj_score")
         best_rmse = _group_min("gadj_RMSE")
         best_mae  = _group_min("gadj_MAE")
         best_mdae = _group_min("gadj_MdAE") if "gadj_MdAE" in grp.columns else None
@@ -514,9 +531,8 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 return False
             return abs(float(val) - best) < 1e-9
 
-        # CSS for the best-cell highlight is injected via class .best-cell.
-        # Applied to the <td> itself (not an inner span) so it overrides
-        # the green/blue/red agree-state tints of the gap-adj block.
+        def _best_cls(is_best):
+            return " class='metric-best-cell' title='Best value in this target group'" if is_best else ""
 
         for i_row, (_, r) in enumerate(grp.iterrows()):
             is_first = (i_row == 0)
@@ -558,19 +574,21 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
             onese_RMSE = _fmt_st(_cell(r.get('onese_RMSE', float('nan'))), onese_same)
             onese_MAE  = _fmt_st(_cell(r.get('onese_MAE', float('nan'))), onese_same)
             
-            gadj_R2    = _fmt_st(_cell(r['gadj_R2']), gadj_same)
+            gadj_R2_val = r.get('gadj_R2', float('nan'))
+            gadj_score_val = r.get('gadj_score', float('nan'))
+            r2_best = _is_best(gadj_R2_val, best_r2)
+            score_best = _is_best(gadj_score_val, best_score)
+
+            gadj_R2    = (_cell(gadj_R2_val) if r2_best
+                          else _fmt_st(_cell(gadj_R2_val), gadj_same))
             gadj_gap   = _fmt_st(_cell(r['gadj_gap']), gadj_same)
             
-            gadj_score = _fmt_st(_cell(r['gadj_score'], d=5), gadj_same)
+            gadj_score = (_cell(gadj_score_val, d=5) if score_best
+                          else _fmt_st(_cell(gadj_score_val, d=5), gadj_same))
             
             gadj_RMSE_val  = r.get('gadj_RMSE',  float('nan'))
             gadj_MAE_val   = r.get('gadj_MAE',   float('nan'))
             gadj_MdAE_val  = r.get('gadj_MdAE',  float('nan'))
-            # If cell is the per-target column-best, override gadj_bg with a bright
-            # yellow inline style (no CSS class needed). The strikethrough on the
-            # value is stripped here because the marker should read as positive.
-            _BEST_BG = ("background:#FFD54F;border:2px solid #E0A800;"
-                        "color:#1A1A1A;font-weight:700;")
             rmse_best = _is_best(gadj_RMSE_val, best_rmse)
             mae_best  = _is_best(gadj_MAE_val,  best_mae)
             mdae_best = _is_best(gadj_MdAE_val, best_mdae)
@@ -580,10 +598,6 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                           else _fmt_st(_cell(gadj_MAE_val),  gadj_same))
             gadj_MdAE  = (_cell(gadj_MdAE_val) if mdae_best
                           else _fmt_st(_cell(gadj_MdAE_val), gadj_same))
-            rmse_bg = _BEST_BG if rmse_best else gadj_bg
-            mae_bg  = _BEST_BG if mae_best  else gadj_bg
-            mdae_bg = _BEST_BG if mdae_best else gadj_bg
-            
             onese_R2_color = "" if onese_same else f"color:{_r2_color(r['onese_R2'])}"
             onese_gap_cls  = "" if onese_same else _gap_cls(r['onese_gap'])
             gadj_R2_color  = "" if gadj_same else f"color:{_r2_color(r['gadj_R2'])}"
@@ -615,12 +629,12 @@ def _render_perexp_table(df: pd.DataFrame) -> str:
                 # Gap-adj block (cols 13-19)
                 f"<td {dv(r['gadj_model'])} style='{gadj_bg}'>"
                     f"{r['gadj_model']}{btn}</td>",
-                f"<td {dv(r['gadj_R2'])} style='{gadj_bg}{gadj_R2_color}'>{gadj_R2}</td>",
+                f"<td{_best_cls(r2_best)} {dv(r['gadj_R2'])} style='{gadj_bg}{gadj_R2_color}'>{gadj_R2}</td>",
                 f"<td {dv(r['gadj_gap'])} class='{gadj_gap_cls}' style='{gadj_bg}'>{gadj_gap}</td>",
-                f"<td {dv(r['gadj_score'])} style='{gadj_bg}'>{gadj_score}</td>",
-                f"<td {dv(gadj_RMSE_val)} style='{rmse_bg}'>{gadj_RMSE}</td>",
-                f"<td {dv(gadj_MAE_val)}  style='{mae_bg}'>{gadj_MAE}</td>",
-                f"<td {dv(gadj_MdAE_val)} style='{mdae_bg}'>{gadj_MdAE}</td>",
+                f"<td{_best_cls(score_best)} {dv(r['gadj_score'])} style='{gadj_bg}'>{gadj_score}</td>",
+                f"<td{_best_cls(rmse_best)} {dv(gadj_RMSE_val)} style='{gadj_bg}'>{gadj_RMSE}</td>",
+                f"<td{_best_cls(mae_best)} {dv(gadj_MAE_val)}  style='{gadj_bg}'>{gadj_MAE}</td>",
+                f"<td{_best_cls(mdae_best)} {dv(gadj_MdAE_val)} style='{gadj_bg}'>{gadj_MdAE}</td>",
                 # Meta (col 20)
                 f"<td style='font-size:10px'>{r['pareto']}</td>",
             ]
@@ -740,6 +754,62 @@ def _perexp_sort_js() -> str:
 """
 
 
+def _sort_per_target_winners(per_exp_df: pd.DataFrame, tgt: str) -> pd.DataFrame:
+    """Return one target group in the same order used by the per-experiment table."""
+    grp = per_exp_df[per_exp_df["target"] == tgt].copy()
+    if grp.empty:
+        return grp
+    grp["_abs_gadj_gap"] = grp["gadj_gap"].abs()
+    return grp.sort_values(
+        ["gadj_score", "_abs_gadj_gap", "naive_R2"],
+        ascending=[False, True, False],
+    )
+
+
+def build_global_from_per_experiment(per_exp_df: pd.DataFrame) -> pd.DataFrame:
+    """Build global display rows from the highlighted per-target rows below.
+
+    The global table is a synopsis of the per-experiment table. For each target,
+    it takes the row that appears first in the lower table after the canonical
+    score-first sort. The displayed winner then comes from the One-SE column when
+    One-SE differs from the naive winner; otherwise it comes from the gap-adjusted
+    column. That captures the conservative "overall winner" cases where One-SE is
+    the intended pick even though the row's naive model has a slightly higher R².
+    """
+    rows = []
+    for tgt in TARGETS_ORDERED:
+        grp = _sort_per_target_winners(per_exp_df, tgt)
+        if grp.empty:
+            continue
+        r = grp.iloc[0].copy()
+        use_onese = str(r["onese_model"]) != str(r["naive_model"])
+        prefix = "onese" if use_onese else "gadj"
+        if use_onese:
+            rule = (
+                "One-SE / Gap-adj"
+                if str(r["onese_model"]) == str(r["gadj_model"])
+                else "One-SE"
+            )
+        else:
+            rule = "Gap-adj" if str(r["gadj_model"]) != str(r["naive_model"]) else "All agree"
+
+        out = r.to_dict()
+        exp = str(r["exp_key"])
+        out.update({
+            "winner_model": f"{exp} · {r[f'{prefix}_model']}",
+            "winner_rule": rule,
+            "winner_R2": r[f"{prefix}_R2"],
+            "winner_gap": r[f"{prefix}_gap"],
+            "winner_score": r[f"{prefix}_score"],
+            "winner_RMSE": r.get(f"{prefix}_RMSE", float("nan")),
+            "winner_MAE": r.get(f"{prefix}_MAE", float("nan")),
+            "winner_MdAE": r.get(f"{prefix}_MdAE", float("nan")),
+            "changed": str(r[f"{prefix}_model"]) != str(r["naive_model"]),
+        })
+        rows.append(out)
+    return pd.DataFrame(rows)
+
+
 SEL_CSS = """
     .sel-table { width:100%; border-collapse:collapse; font-size:0.81rem; margin:10px 0 20px;
                  background:#ffffff; color:#1a1a1a; }
@@ -762,23 +832,39 @@ SEL_CSS = """
     .sel-perexp-tbl .winner-row td:not(.target-cell) {
         background:#E3F0FB; font-weight:600;
     }
-    /* Column-best highlight on RMSE/MAE/MdAE cells in the gap-adj block.
-       !important is needed because the cell has an inline rgba tint from
-       the agree/disagree state colouring. */
-    .sel-perexp-tbl td.best-cell {
-        background:#FFD54F !important;
-        font-weight:700;
-        border:2px solid #E0A800 !important;
-        color:#1A1A1A;
+    .sel-perexp-tbl td.metric-best-cell {
         position:relative;
+        font-weight:700;
     }
-    .sel-perexp-tbl td.best-cell s { color:#1A1A1A !important; opacity:1 !important; text-decoration:none; }
+    .sel-perexp-tbl td.metric-best-cell::after {
+        content:'★';
+        position:absolute;
+        right:2px;
+        top:50%;
+        transform:translateY(-52%);
+        color:#005FCC;
+        font-size:11px;
+        line-height:1;
+        pointer-events:none;
+        text-shadow:0 0 2px #ffffff, 0 0 2px #ffffff;
+    }
     .perexp-sort-th:hover { background:#e0e0e0; }
     .sort-arr { font-size:10px; color:#888888; margin-left:2px; }
     .rule-card-sel { background:#f5f5f5; border-left:3px solid #4A90D9;
                      padding:12px 16px; margin:12px 0; border-radius:4px; }
     .rule-card-sel h4 { margin:0 0 6px 0; font-size:13px; color:#4A90D9; }
     .rule-card-sel p  { margin:2px 0; font-size:12px; color:#555555; }
+    .sel-qcard { margin-bottom:1.1rem; border:1px solid var(--border);
+                 border-radius:5px; overflow:hidden; background:#ffffff; }
+    .sel-qhead { background:var(--bg-secondary); padding:0.45rem 0.8rem;
+                 border-bottom:1px solid var(--border); display:flex;
+                 align-items:baseline; gap:0.5rem; }
+    .sel-qnum { color:#4A90D9; font-size:0.78em; font-weight:bold;
+                letter-spacing:0.06em; flex-shrink:0; }
+    .sel-qtitle { font-weight:bold; font-size:0.93em; line-height:1.4; color:#1a1a1a; }
+    .sel-qbody { padding:0.6rem 0.8rem 0.55rem; }
+    .sel-qbody p { margin:0; line-height:1.6; border-left:2px solid var(--border);
+                   padding-left:0.6rem; color:#555555; font-size:12px; }
     .sel-tbl-wrap { overflow-x:auto; border:1px solid #cccccc; border-radius:4px; }
     /* ⓘ info button */
     .sel-info-btn {
@@ -802,7 +888,8 @@ SEL_CSS = """
 def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
                  df_all: pd.DataFrame) -> str:
     """Return inner section HTML for embedding in the unified report (no html/head/body)."""
-    n_changed_global  = int(global_df["changed"].sum())
+    global_display_df = build_global_from_per_experiment(per_exp_df)
+    n_changed_global  = int(global_display_df["changed"].sum())
     n_changed_per_exp = int(per_exp_df["changed"].sum())
 
     legend = (
@@ -822,32 +909,36 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
     parts = [
         _SEL_OVERLAY_HTML,
         f"<style>{SEL_CSS}</style>",
-        "<div class='rule-card-sel'>",
-        "  <h4>Why re-rank?</h4>",
-        "  <p>On this dataset (n_test ≈ 160-280 for the held-out 2025 year), "
+        "<div class='sel-qcard'>",
+        "  <div class='sel-qhead'><span class='sel-qnum'>Q1</span>"
+        "  <span class='sel-qtitle'>Why re-rank?</span></div>",
+        "  <div class='sel-qbody'><p>On this dataset (n_test ≈ 160-280 for the held-out 2025 year), "
         "Test R² alone is noisy. A model with R²=0.43 and gap=0.88 is not "
-        "equivalent to one with R²=0.40 and gap=0.02 - the former is memorising.</p>",
-        "  <h4>Rules applied</h4>",
-        f"  <p><strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
-        "Penalises overfit beyond a 10-pt tolerance.</p>",
-        f"  <p><strong>One-SE rule:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|.</p>",
-        "  <p><strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓).</p>",
-        "  <p><strong>RMSE and MAE</strong> are shown alongside R² for each rule's winner - "
-        "they carry the same ranking as R² within a target but are operationally interpretable "
-        "(mg/L for BOD/COD/TSS, pH units for pH).</p>",
+        "equivalent to one with R²=0.40 and gap=0.02 - the former is memorising.</p></div>",
         "</div>",
-        "<div class='rule-card-sel'>",
-        f"  <h4>Headline</h4>",
-        f"  <p>Naive winner differs from gap-adjusted / one-SE winner in "
-        f"<strong>{n_changed_global} / {len(global_df)}</strong> global target rows and "
-        f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
+        "<div class='sel-qcard'>",
+        "  <div class='sel-qhead'><span class='sel-qnum'>Q2</span>"
+        "  <span class='sel-qtitle'>Which rules are applied?</span></div>",
+        "  <div class='sel-qbody'><p>"
+        f"<strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
+        f"<strong>One-SE:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|. "
+        "<strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓). "
+        "<strong>RMSE and MAE</strong> are shown alongside each rule's winner because they carry "
+        "operational units (mg/L for BOD/COD/TSS, pH units for pH).</p></div>",
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Global best per target (across all experiments)</h3>",
+        "<p style='color:#555555;font-size:12px;margin:0 0 10px'>"
+        f"Naive winner differs from the selected overfit-aware winner in "
+        f"<strong>{n_changed_global} / {len(global_display_df)}</strong> global target rows and "
+        f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows. "
+        "The global rows below are taken from the highlighted winners in the Best per "
+        "(experiment × target) table; when the lower-table winner is a One-SE pick, "
+        "the global table now shows that One-SE model instead of the row's naive model.</p>",
         legend,
         "<p style='color:#555555;font-size:11px;margin:0 0 6px'>"
-        "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
+        "Click ⓘ on any overall winner for the reasoning behind that selection.</p>",
         "<div class='sel-tbl-wrap'>",
-        _render_global_table(global_df),
+        _render_global_table(global_display_df),
         "</div>",
         "<h3 style='margin:20px 0 8px;font-size:15px'>Best per (experiment × target)</h3>",
         legend,
@@ -856,10 +947,8 @@ def section_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "tie-broken by smaller |gap| then higher R². The per-target winner is highlighted in "
         "<span style='background:#E3F0FB;padding:1px 4px;border-left:3px solid #4A90D9'>light blue</span>. "
         "Scores are shown to 5 decimal places so close ties are visible. "
-        "Cells highlighted "
-        "<span style='background:#FFD54F;color:#1A1A1A;padding:2px 6px;"
-        "font-weight:700;border:2px solid #E0A800'>in yellow</span> "
-        "(in the RMSE / MAE / MdAE columns) hold the lowest value in that column for the target group. "
+        "A small <span style='color:#1F6FD1;font-size:10px;font-weight:700'>★</span> "
+        "marks the target-group best in the Gap-adj R², Score, RMSE, MAE, and MdAE columns. "
         "Click column headers to re-sort. "
         "Click ⓘ on any Gap-adj winner cell for selection reasoning.</p>",
         "<div class='sel-tbl-wrap'>",
@@ -881,69 +970,58 @@ def _findings_section_html() -> str:
     Uses the same <details class='exp-details'> styling as the Findings sections
     in every experiment block so the look is consistent across the report.
     """
-    return """
+    def _qcard(n, question, answer):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
+  </div>
+</div>"""
+
+    q1 = (
+        "The score subtracts a penalty equal to 0.5 x (|gap| - 0.10) when |gap| "
+        "exceeds the 10-point tolerance. This discounts models that fit the "
+        "training years well but show a large train-to-test drop. A slightly "
+        "lower-R² model with a much smaller gap can therefore be the more "
+        "deployable pick."
+    )
+    q2 = (
+        "Gap-adjusted score is the primary ranking key because it already includes "
+        "the overfit penalty. Smaller |gap| is used only when scores are equal. "
+        "For Grab COD, Exp3-S2-FS XGB wins over Exp2-SE2-Comb-FS RF because its "
+        "penalised score is higher while still remaining in the low-gap zone."
+    )
+    q3 = (
+        "Each experiment keeps a different test population after dropna(), so "
+        "RMSE, MAE, and MdAE across experiments are useful flags, not final "
+        "verdicts. A lower error on a different population is not automatically "
+        "better generalisation."
+    )
+    q4 = (
+        "For BOD and TSS, MdAE is preferred because those targets have spike-heavy "
+        "error distributions and RMSE can be dominated by a few unusual days. "
+        "When RMSE and MdAE disagree for those targets, MdAE is the better typical-day "
+        "reliability signal."
+    )
+    q5 = (
+        "When Naive, One-SE, and Gap-adj disagree, the Gap-adj cells are tinted blue "
+        "and the info button explains the choice. When all rules agree but |gap| is "
+        "at least 0.25, the row is tinted red: it is still the best available row, "
+        "but should be treated as lower-confidence in an operational dashboard."
+    )
+    return f"""
 <details class="exp-details" id="overfit-aware-findings" open>
-  <summary><span class="fold-icon">▶</span> Findings  -  Overfit-Aware Model Selection</summary>
+  <summary><span class="fold-icon">▶</span> Findings</summary>
   <div class="exp-body">
-    <div class="obs-card">
-      <h4>Why the gap-adjusted winner is the production pick</h4>
-      <p class="meta">The score subtracts a penalty equal to 0.5 × (|gap| − 0.10) when |gap| exceeds the 10-point
-      tolerance. The intent is to discount models that fit 2024 well but show a large train-to-test
-      drop - they are likely memorising patterns specific to a single year. A model with R²=0.51 and
-      gap=0.15 is treated as worse than a model with R²=0.49 and gap=0.00, even though the former
-      scored higher in 2025. This bets that the latter generalises better when 2026 data looks
-      different.</p>
-    </div>
-    <div class="obs-card">
-      <h4>Score noise band tiebreaker</h4>
-      <p class="meta">Gap-adjusted scores that fall within 0.005 of the top score are treated as
-      tied for selection. Differences below the standard error of R² (~0.04-0.06 at n_test ≈ 200)
-      are not statistically meaningful, so within that band the row with the smaller |gap| wins.
-      This is why for Grab BOD, Exp8 Ridge (R²=0.656, gap=-0.095) is preferred over Exp7-SE2 Voting
-      (R²=0.674, gap=-0.136) - same score within noise, much lower overfit.</p>
-    </div>
-    <div class="obs-card">
-      <h4>Cross-experiment RMSE / MAE / MdAE comparisons are NOT apples-to-apples</h4>
-      <p class="meta">Each experiment requires a different feature set, so <code>dropna()</code>
-      retains a different population at test time. A 168-row test set and a 223-row test set may
-      simply be measuring different things. Lower RMSE on a different population is not the same as
-      a better-generalising model. Treat the operational-metric highlights as "worth a second look",
-      not as a verdict.</p>
-    </div>
-    <div class="obs-card">
-      <h4>When to consider an alternative to the canonical winner</h4>
-      <p class="meta">Look at a non-winner row when (a) its gap is meaningfully smaller, (b) it
-      ranks well on RMSE / MAE / MdAE within the target group, and (c) its experiment uses a feature
-      set you can realistically maintain in production. A row that wins on RMSE but is built on an
-      experiment with sparse inputs (e.g. coliform measurements that arrive 3 days late) is usually
-      not deployable.</p>
-    </div>
-    <div class="obs-card">
-      <h4>MdAE is the project's primary metric for BOD and TSS</h4>
-      <p class="meta">BOD and TSS have spike-dominated error distributions. RMSE is sensitive to
-      those spikes and can rank models that simply got lucky on a quiet 2025. MdAE (median absolute
-      error) reflects typical-day performance and is more robust. Where MdAE differs from the RMSE
-      ranking for those targets, prefer MdAE.</p>
-    </div>
-    <div class="obs-card">
-      <h4>Why some MdAE cells show "-"</h4>
-      <p class="meta">MdAE is computed from row-level prediction columns stored alongside the raw
-      datasets. Three groups of models do not write row-level predictions to disk, so their MdAE is
-      unavailable: <strong>(1)</strong> all ANN runs, <strong>(2)</strong> Exp 7 (Feature
-      Engineering) and Exp 8 (Temporal Features) which only export summary metrics, and
-      <strong>(3)</strong> several feature-selected variants where the FS dataset directory was not
-      materialised. The summary R² / Gap / Score columns are still reliable for those rows.</p>
-    </div>
-    <div class="obs-card">
-      <h4>The three rule columns (Naive / One-SE / Gap-adj) usually agree</h4>
-      <p class="meta">When they disagree, the row's Gap-adj cells are tinted in
-      <span style='background:rgba(74,144,217,0.20);padding:1px 4px'>blue</span>
-      (a different model is recommended) and the ⓘ button explains why. When all three rules agree
-      but the gap is wide (|gap| ≥ 0.25), the row is tinted
-      <span style='background:rgba(231,76,60,0.20);padding:1px 4px'>red</span>
-      - it means no better-generalising alternative exists, so the model is still picked, but
-      it should be flagged as low-confidence in any operational dashboard.</p>
-    </div>
+    {_qcard(1, "Why is the gap-adjusted winner the production pick?", q1)}
+    {_qcard(2, "How are close score ties handled?", q2)}
+    {_qcard(3, "How should RMSE / MAE / MdAE highlights be interpreted?", q3)}
+    {_qcard(4, "Why does MdAE matter for BOD and TSS?", q4)}
+    {_qcard(5, "What do blue and red row states mean?", q5)}
   </div>
 </details>
 """
@@ -975,7 +1053,8 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
     .container { max-width:1400px; margin:0 auto; }
     """)
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-    n_changed_global  = int(global_df["changed"].sum())
+    global_display_df = build_global_from_per_experiment(per_exp_df)
+    n_changed_global  = int(global_display_df["changed"].sum())
     n_changed_per_exp = int(per_exp_df["changed"].sum())
 
     legend = (
@@ -1000,29 +1079,26 @@ def render_html(global_df: pd.DataFrame, per_exp_df: pd.DataFrame,
         "<div class='container'>",
         f"<h1>Overfitting-Aware Best-Model Selection</h1>",
         f"<p style='color:var(--text-muted)'>Generated {ts}</p>",
-        "<div class='rule-card'>",
-        "  <h4>Why re-rank?</h4>",
-        "  <p>On this dataset (n_test ≈ 160-280 for one held-out year), "
+        "<div class='rule-card'><h4>Q1 Why re-rank?</h4>"
+        "<p>On this dataset (n_test ≈ 160-280 for one held-out year), "
         "Test R² alone is noisy and treats a 0.43 / 0.88 model as equivalent "
-        "to a 0.40 / 0.42 model. The former is memorising.</p>",
-        "  <h4>Rules applied</h4>",
-        f"  <p><strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
-        "Penalises overfit beyond a 10-pt tolerance.</p>",
-        f"  <p><strong>One-SE rule:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|.</p>",
-        "  <p><strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓). All listed are defensible.</p>",
-        "</div>",
-        "<div class='rule-card'>",
-        f"  <h4>Headline</h4>",
-        f"  <p>Naive winner differs from gap-adjusted / one-SE winner in "
-        f"<strong>{n_changed_global} / {len(global_df)}</strong> global target rows and "
-        f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows.</p>",
-        "</div>",
+        "to a 0.40 / 0.42 model. The former is memorising.</p></div>",
+        "<div class='rule-card'><h4>Q2 Which rules are applied?</h4>"
+        f"<p><strong>Gap-adjusted:</strong> score = R²_test − {GAP_PENALTY} · max(0, |gap| − {GAP_TOLERANCE}). "
+        f"<strong>One-SE:</strong> among models within {ONE_SE_MARGIN} R² of the top, pick the smallest |gap|. "
+        "<strong>Pareto frontier:</strong> models not dominated on (R²_test ↑, |gap| ↓).</p></div>",
         "<h2>Global best per target (across all experiments)</h2>",
+        "<p style='color:var(--text-muted);font-size:12px'>"
+        f"Naive winner differs from the selected overfit-aware winner in "
+        f"<strong>{n_changed_global} / {len(global_display_df)}</strong> global target rows and "
+        f"<strong>{n_changed_per_exp} / {len(per_exp_df)}</strong> per-experiment rows. "
+        "The global rows are taken from the highlighted winners in the Best per "
+        "(experiment × target) table.</p>",
         legend,
         "<p style='color:#555555;font-size:11px;margin:0 0 6px'>"
-        "Click ⓘ on any Gap-adj winner for the reasoning behind that selection.</p>",
+        "Click ⓘ on any overall winner for the reasoning behind that selection.</p>",
         "<div style='overflow-x:auto'>",
-        _render_global_table(global_df),
+        _render_global_table(global_display_df),
         "</div>",
         "<h2>Best per (experiment × target)</h2>",
         legend,

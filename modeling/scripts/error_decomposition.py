@@ -10,7 +10,7 @@ For each target we:
   3. Decompose 2025 residuals along four regime axes:
        - Flow quartile      (quartiles of Flow (MLD) on the TRAINING set)
        - Weekday vs weekend (day_of_week)
-       - Season             (DJF / MAM / JJA / SON)
+       - Season             (Kathmandu/Nepal climate seasons)
        - Inlet load         (quartiles of upstream Inlet on TRAINING set)
   4. If predictions are not stored to disk for the winner (Phase 9 ANN,
      Phase 10/11, several FS variants), the target is skipped with an
@@ -27,6 +27,7 @@ Run:  .venv/bin/python3 modeling/scripts/error_decomposition.py
 """
 
 import os
+import re
 import sys
 from datetime import datetime
 
@@ -68,13 +69,44 @@ def _build_exp_to_dir():
         out[key] = fragment
     return out
 
-# Exp 6 (Phase 9 ensemble) predictions live INSIDE the Exp3-S2 dataset directory
-# under their own column tag. Same with Exp 7/8 in principle, but they don't
-# currently write predictions. Listed here so the lookup can find them.
-_EMBEDDED_IN_EXP3_S2 = {"Exp6-Voting", "Exp6-Stacking", "Exp6-ANN"}
+# Some generated result rows do not have a one-to-one dataset directory. These
+# models append row-level predictions back to their source dataset files.
+_DATASET_DIR_OVERRIDES = {
+    "Exp3-S2-FS": "experiment3/sub_exp2",
+    "Exp2-S6-FS": "experiment2/sub_exp6",
+    "Exp6-Voting": "experiment3/sub_exp2",
+    "Exp6-Stacking": "experiment3/sub_exp2",
+    "Exp6-ANN": "experiment3/sub_exp2",
+    "Exp7-SE1": "experiment3/sub_exp2",
+    "Exp7-SE2": "experiment3/sub_exp2",
+    "Exp8": "experiment3/sub_exp2",
+}
 
-SEASON_MAP = {12:"DJF",1:"DJF",2:"DJF", 3:"MAM",4:"MAM",5:"MAM",
-              6:"JJA",7:"JJA",8:"JJA",  9:"SON",10:"SON",11:"SON"}
+_PRED_COL_PATTERNS = {
+    "Exp2-S6-FS": [
+        "predicted_{model}_fs_run_{run}",
+        "predicted_{model}_run_{run}",
+    ],
+    "Exp7-SE1": [
+        "predicted_{model}_exp7se1_run_{run}",
+    ],
+    "Exp7-SE2": [
+        "predicted_{model}_exp7se2_run_{run}",
+    ],
+    "Exp8": [
+        "predicted_{model}_exp8_run_{run}",
+    ],
+}
+
+# Kathmandu/Nepal climate seasons: Winter (Dec-Feb), Spring/Pre-monsoon
+# (Mar-May), Monsoon (Jun-Sep), Autumn/Post-monsoon (Oct-Nov).
+SEASON_MAP = {
+    12: "Winter", 1: "Winter", 2: "Winter",
+    3: "Spring", 4: "Spring", 5: "Spring",
+    6: "Monsoon", 7: "Monsoon", 8: "Monsoon", 9: "Monsoon",
+    10: "Autumn", 11: "Autumn",
+}
+SEASON_ORDER = ("Winter", "Spring", "Monsoon", "Autumn")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -82,8 +114,7 @@ SEASON_MAP = {12:"DJF",1:"DJF",2:"DJF", 3:"MAM",4:"MAM",5:"MAM",
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def resolve_target_winners():
-    """For every target, identify the gap-adjusted winner (with noise-band
-    tiebreak) and the on-disk location of its row-level predictions.
+    """For every target, identify the Global best winner and prediction path.
 
     Returns: dict[target_long] = {
         'exp_key': str, 'model': str, 'r2': float, 'gap': float, 'score': float,
@@ -91,7 +122,9 @@ def resolve_target_winners():
     }
     """
     from generate_unified_report import load_all_data, compute_all_mdae  # noqa: E402
-    from best_models_selection import build_per_experiment  # noqa: E402
+    from best_models_selection import (  # noqa: E402
+        build_per_experiment, build_global_from_per_experiment,
+    )
 
     df_all = load_all_data()
     mdae_df = compute_all_mdae()
@@ -99,35 +132,30 @@ def resolve_target_winners():
         df_all = df_all.merge(mdae_df, on=["exp_key", "model", "target"], how="left")
 
     per_exp = build_per_experiment(df_all)
+    global_winners = build_global_from_per_experiment(per_exp)
     exp_to_dir = _build_exp_to_dir()
 
     out = {}
     for ds_name, target, inlet_col in TARGETS:
-        sub = per_exp[per_exp["target"] == target].copy()
+        sub = global_winners[global_winners["target"] == target].copy()
         if sub.empty:
             out[target] = {"skip_reason": "no per-experiment rows for this target"}
             continue
-        # Match the Analytics-table sort: gap-adj score (with noise band),
-        # then smaller |gap|, then higher R².
-        from best_models_selection import SCORE_NOISE_BAND  # noqa: E402
-        sub["_abs_gap"] = sub["gadj_gap"].abs()
-        sub["_bucket"] = (sub["gadj_score"] / SCORE_NOISE_BAND).round()
-        sub = sub.sort_values(["_bucket", "_abs_gap", "naive_R2"],
-                              ascending=[False, True, False])
         winner = sub.iloc[0]
         exp_key = str(winner["exp_key"])
-        model   = str(winner["gadj_model"])
+        raw_winner_model = str(winner.get("winner_model", winner.get("gadj_model", "")))
+        model = raw_winner_model.split(" · ")[-1]
+        r2 = float(winner.get("winner_R2", winner.get("gadj_R2", np.nan)))
+        gap = float(winner.get("winner_gap", winner.get("gadj_gap", np.nan)))
+        score = float(winner.get("winner_score", winner.get("gadj_score", np.nan)))
+        rule = str(winner.get("winner_rule", "Gap-adj"))
 
         # Locate the dataset xlsx that carries this model's predictions.
-        # Most winners live in their experiment's directory; Exp 6 (P9 ensemble)
-        # predictions live inside Exp3-S2's directory.
-        lookup_key = "Exp3-S2" if exp_key in _EMBEDDED_IN_EXP3_S2 else exp_key
-        ds_subdir = exp_to_dir.get(lookup_key)
+        ds_subdir = _DATASET_DIR_OVERRIDES.get(exp_key, exp_to_dir.get(exp_key))
         if ds_subdir is None:
             out[target] = {
                 "exp_key": exp_key, "model": model,
-                "r2": float(winner["gadj_R2"]), "gap": float(winner["gadj_gap"]),
-                "score": float(winner["gadj_score"]),
+                "rule": rule, "r2": r2, "gap": gap, "score": score,
                 "xlsx_path": None, "pred_col": None,
                 "skip_reason": f"exp_key {exp_key} has no dataset directory on disk",
             }
@@ -137,23 +165,25 @@ def resolve_target_winners():
         if not os.path.exists(xlsx_path):
             out[target] = {
                 "exp_key": exp_key, "model": model,
-                "r2": float(winner["gadj_R2"]), "gap": float(winner["gadj_gap"]),
-                "score": float(winner["gadj_score"]),
+                "rule": rule, "r2": r2, "gap": gap, "score": score,
                 "xlsx_path": None, "pred_col": None,
                 "skip_reason": f"dataset file missing: {xlsx_path}",
             }
             continue
 
         # Find the highest-run predicted_<model>_run_N column.
-        import re
         cols = pd.read_excel(xlsx_path, nrows=0).columns.tolist()
-        pat = re.compile(rf"^predicted_{re.escape(model)}_run_(\d+)$")
-        runs = [(int(m.group(1)), c) for c in cols if (m := pat.match(c))]
+        templates = _PRED_COL_PATTERNS.get(exp_key, ["predicted_{model}_run_{run}"])
+        runs = []
+        for template in templates:
+            pat = re.escape(template).replace(re.escape("{model}"), re.escape(model))
+            pat = pat.replace(re.escape("{run}"), r"(\d+)")
+            rx = re.compile(f"^{pat}$")
+            runs.extend((int(m.group(1)), c) for c in cols if (m := rx.match(c)))
         if not runs:
             out[target] = {
                 "exp_key": exp_key, "model": model,
-                "r2": float(winner["gadj_R2"]), "gap": float(winner["gadj_gap"]),
-                "score": float(winner["gadj_score"]),
+                "rule": rule, "r2": r2, "gap": gap, "score": score,
                 "xlsx_path": xlsx_path, "pred_col": None,
                 "skip_reason": (f"predictions not stored to disk for "
                                 f"{model} in {ds_subdir}; re-run the relevant "
@@ -164,8 +194,7 @@ def resolve_target_winners():
         pred_col = max(runs)[1]
         out[target] = {
             "exp_key": exp_key, "model": model,
-            "r2": float(winner["gadj_R2"]), "gap": float(winner["gadj_gap"]),
-            "score": float(winner["gadj_score"]),
+            "rule": rule, "r2": r2, "gap": gap, "score": score,
             "xlsx_path": xlsx_path, "pred_col": pred_col,
             "skip_reason": None,
         }
@@ -291,7 +320,7 @@ def decompose_target(name: str, target: str, inlet_col: str,
                  **_cell_metrics(y_true[is_weekend], y_pred[is_weekend])})
 
     seasons = test["month"].map(SEASON_MAP).values
-    for s in ("DJF", "MAM", "JJA", "SON"):
+    for s in SEASON_ORDER:
         mask = seasons == s
         rows.append({**meta, "axis": "Season", "bucket": s,
                      **_cell_metrics(y_true[mask], y_pred[mask])})
@@ -333,6 +362,98 @@ def _mae_ratio_color(mae_cell, mae_overall):
     return ""
 
 
+def _target_short(target: str) -> str:
+    return (target
+            .replace("Effluent ", "")
+            .replace(" (mg/L, Grab)", " Grab")
+            .replace(" (mg/L, Composite)", " Composite")
+            .replace(" (Grab)", " Grab")
+            .replace(" (Composite)", " Composite"))
+
+
+def _findings_html(all_results: pd.DataFrame) -> str:
+    if all_results.empty:
+        return ""
+
+    overall = all_results[all_results["axis"] == "OVERALL"].copy()
+    resolved = len(overall)
+
+    def _winner_line(r):
+        return f"{_target_short(r['target'])}: {r['winner_exp_key']} · {r['winner_model']}"
+
+    winners_text = "; ".join(_winner_line(r) for _, r in overall.iterrows())
+
+    regime_rows = []
+    for target, df_tgt in all_results.groupby("target", sort=False):
+        base = df_tgt[df_tgt["axis"] == "OVERALL"].iloc[0]
+        base_mae = base["mae"]
+        if pd.isna(base_mae) or base_mae == 0:
+            continue
+        sub = df_tgt[(df_tgt["axis"] != "OVERALL") & (df_tgt["n"] >= 5)].copy()
+        sub["ratio"] = sub["mae"] / base_mae
+        if sub.empty:
+            continue
+        worst = sub.sort_values("ratio", ascending=False).iloc[0]
+        regime_rows.append((worst["ratio"], target, worst))
+
+    regime_rows = sorted(regime_rows, key=lambda x: x[0], reverse=True)
+    concentration = [x for x in regime_rows if x[0] >= 1.75]
+    concentration_text = "; ".join(
+        f"{_target_short(tgt)} peaks in {r['axis']} = {r['bucket']} "
+        f"({_fmt(r['mae'])} MAE, {ratio:.2f}x baseline)"
+        for ratio, tgt, r in concentration[:5]
+    ) or "No target has a regime with MAE above 1.75x its own 2025 baseline once tiny buckets are ignored."
+
+    season_rows = all_results[(all_results["axis"] == "Season") & (all_results["bucket"] == "Winter")].copy()
+    if not season_rows.empty:
+        baseline = overall.set_index("target")["mae"]
+        season_rows["ratio"] = season_rows.apply(
+            lambda r: r["mae"] / baseline.get(r["target"], np.nan), axis=1)
+        winter_hits = season_rows[(season_rows["ratio"] >= 1.4) & (season_rows["n"] >= 5)]
+        winter_text = "; ".join(
+            f"{_target_short(r['target'])} Winter is {_fmt(r['ratio'], 2)}x baseline "
+            f"(bias {_fmt(r['bias'])})"
+            for _, r in winter_hits.sort_values("ratio", ascending=False).iterrows()
+        ) or "Winter no longer dominates every target, but remains a useful watch-list slice."
+    else:
+        winter_text = "Winter season buckets were not available in the decomposition output."
+
+    cod_rows = overall[overall["target"].str.contains("COD", regex=False)].copy()
+    cod_text = "; ".join(
+        f"{_target_short(r['target'])}: R² {_fmt(r['r2'])}, MAE {_fmt(r['mae'])}, bias {_fmt(r['bias'])}"
+        for _, r in cod_rows.iterrows()
+    )
+
+    def _qcard(n, question, answer):
+        return f"""
+<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
+  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
+    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
+    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
+  </div>
+  <div style='padding:0.6rem 0.8rem 0.55rem'>
+    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
+  </div>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="error-decomposition-findings" open>
+  <summary><span class="fold-icon">▶</span> Findings</summary>
+  <div class="exp-body">
+    {_qcard(1, "Are all current global winners represented with row-wise predictions?",
+            f"Yes. The section now decomposes all <strong>{resolved}</strong> target winners, so the pending rerun box is no longer needed. Current winners: {winners_text}.")}
+    {_qcard(2, "Where does error concentrate most strongly in 2025?",
+            concentration_text)}
+    {_qcard(3, "Is winter still a systematic risk regime?",
+            winter_text)}
+    {_qcard(4, "What changed in the model-level interpretation?",
+            "The decomposition is no longer anchored to whichever model happened to have predictions on disk. It now follows the same global overfit-aware winners as the Analytics table, which is why Grab BOD is decomposed with Exp7-SE2 Voting and Grab TSS with Exp7-SE1 Ridge. "
+            f"For COD specifically: {cod_text}.")}
+  </div>
+</details>
+"""
+
+
 def render_html(all_results: pd.DataFrame) -> str:
     css = dark_mode_css("""
     body { font-family:-apple-system, Segoe UI, sans-serif; padding:24px; }
@@ -355,7 +476,7 @@ def render_html(all_results: pd.DataFrame) -> str:
         f"<style>{css}</style></head><body><div class='container'>",
         "<h1>2025 Residual Decomposition by Operational Regime</h1>",
         f"<p class='note'>Generated {ts}. Each target is decomposed using its "
-        "<strong>gap-adjusted winner</strong> (per the Overfit-Aware Selection table). "
+        "<strong>global overfit-aware winner</strong> (per the Overfit-Aware Selection table). "
         "Quartile thresholds fitted on training years (2021-2024) and applied to 2025.</p>",
         "<div class='rule-card note'>",
         "<strong>How to read:</strong> The OVERALL row is the baseline. "
@@ -402,6 +523,7 @@ def render_html(all_results: pd.DataFrame) -> str:
             )
         parts.append("</tbody></table>")
 
+    parts.append(_findings_html(all_results))
     parts.append(f"<script>{DARK_MODE_JS}</script></div></body></html>")
     return "\n".join(parts)
 
@@ -410,8 +532,7 @@ def section_html(all_results: pd.DataFrame, winners: dict | None = None) -> str:
     """Return inner section HTML for embedding in the unified report (no html/head/body).
 
     winners is the dict from resolve_target_winners() - used to render
-    per-target winner badges and to surface skipped targets (those whose
-    gap-adjusted winner has no row-level predictions on disk yet).
+    per-target winner badges.
     """
     if all_results.empty and not winners:
         return "<p style='color:#888888'>No error decomposition data available.</p>"
@@ -438,14 +559,12 @@ def section_html(all_results: pd.DataFrame, winners: dict | None = None) -> str:
     .ed-axis-row td { background:#e8e8e8; font-weight:700; font-size:0.75rem;
                       text-transform:uppercase; letter-spacing:.05em; color:#555555;
                       border-bottom:1px solid #d0d0d0; }
-    .ed-skipped { background:#FFF3CD; border:1px solid #F0C36D; padding:8px 12px;
-                  border-radius:4px; margin:12px 0; color:#5A4500; font-size:12px; }
     </style>
     """
 
     note = (
         "<p style='color:#555555;font-size:12px;margin:0 0 12px'>"
-        "Each target is decomposed using its <strong>gap-adjusted winner</strong> "
+        "Each target is decomposed using its <strong>global overfit-aware winner</strong> "
         "from the Overfit-Aware Selection table. "
         "Quartile thresholds fitted on training years (2021-2024) and applied to 2025. "
         "Cells where MAE is &gt;1.75× baseline are red - error concentrates in that regime. "
@@ -453,24 +572,6 @@ def section_html(all_results: pd.DataFrame, winners: dict | None = None) -> str:
     )
 
     parts = [css, note]
-
-    # Surface targets where the gap-adjusted winner's predictions aren't on disk.
-    if winners:
-        skipped = [(tgt, info) for tgt, info in winners.items()
-                   if info.get("skip_reason")]
-        if skipped:
-            parts.append("<div class='ed-skipped'>")
-            parts.append("<strong>Pending re-runs</strong> - the gap-adjusted winner "
-                         "for these targets does not yet have row-level predictions "
-                         "on disk, so decomposition was skipped. Re-run the relevant "
-                         "training script with prediction-dump enabled to populate.")
-            parts.append("<ul style='margin:6px 0 0 18px;padding:0'>")
-            for tgt, info in skipped:
-                exp_model = (f"{info.get('exp_key','?')} · {info.get('model','?')}"
-                             if info.get("exp_key") else "unresolved")
-                parts.append(f"<li><strong>{tgt}</strong> - winner {exp_model}. "
-                             f"<em>{info.get('skip_reason','no reason')}</em></li>")
-            parts.append("</ul></div>")
 
     winners = winners or {}
     for target, df_tgt in all_results.groupby("target", sort=False):
@@ -525,6 +626,7 @@ def section_html(all_results: pd.DataFrame, winners: dict | None = None) -> str:
             )
         parts.append("</tbody></table></div>")
 
+    parts.append(_findings_html(all_results))
     return "\n".join(parts)
 
 

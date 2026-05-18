@@ -39,6 +39,10 @@ from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore")
 
+# Prediction columns written back to the source Exp3-S2 dataset files use an
+# experiment tag so they do not collide with Exp3-S2, Exp6, or Exp7-SE1 columns.
+PRED_TAG = "exp7se2"
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
@@ -173,6 +177,21 @@ def _next_run(results_file: str) -> int:
     return int(df["run"].max()) + 1 if len(df) > 0 else 1
 
 
+def append_predictions(source_path: str, scored_df: pd.DataFrame,
+                       pred_values: np.ndarray, model_tag: str, run: int):
+    """Append row-level predictions to the source dataset by Date."""
+    col = f"predicted_{model_tag}_{PRED_TAG}_run_{run}"
+    source = pd.read_excel(source_path)
+    source["Date"] = pd.to_datetime(source["Date"])
+    scored = pd.DataFrame({
+        "Date": pd.to_datetime(scored_df["Date"]),
+        col: np.round(pred_values, 3),
+    })
+    pred_map = scored.drop_duplicates("Date").set_index("Date")[col]
+    source[col] = source["Date"].map(pred_map)
+    source.to_excel(source_path, index=False)
+
+
 # ── Plotting ───────────────────────────────────────────────────────────────────
 
 def _scatter_plot(y_train, y_train_pred, y_test, y_test_pred,
@@ -260,7 +279,7 @@ def _fit_elnet(X_tr, y_tr):
     tscv = TimeSeriesSplit(n_splits=3)
     Xs   = StandardScaler().fit_transform(X_tr)
     gs   = GridSearchCV(ElasticNet(max_iter=5000), ELNET_GRID,
-                        cv=tscv, scoring="neg_root_mean_squared_error", n_jobs=-1)
+                        cv=tscv, scoring="neg_root_mean_squared_error", n_jobs=1)
     gs.fit(Xs, y_tr)
     bp   = gs.best_params_
     model = Pipeline([("sc", StandardScaler()),
@@ -286,7 +305,7 @@ def _build_voting(X_tr, y_tr):
         if np.mean(scores) > best_sc:
             best_sc, best_alpha = np.mean(scores), a
     gs_en = GridSearchCV(ElasticNet(max_iter=5000), ELNET_GRID,
-                         cv=tscv, scoring="neg_root_mean_squared_error", n_jobs=-1)
+                         cv=tscv, scoring="neg_root_mean_squared_error", n_jobs=1)
     gs_en.fit(Xs, y_tr)
     bp = gs_en.best_params_
     voting = Pipeline([
@@ -308,6 +327,11 @@ MODEL_SUITE = [
     ("RF",     _fit_rf),
     ("Voting", _build_voting),
 ]
+
+
+def _env_filter(name: str) -> set[str]:
+    raw = os.environ.get(name, "")
+    return {x.strip() for x in raw.split(",") if x.strip()}
 
 # ── Per-dataset training ───────────────────────────────────────────────────────
 
@@ -346,7 +370,10 @@ def train_dataset(ds: dict, run: int) -> list:
           f"  | train={len(train)} test={len(test)}")
 
     records = []
+    only_models = _env_filter("RUN_ONLY_MODELS")
     for model_tag, builder_fn in MODEL_SUITE:
+        if only_models and model_tag not in only_models:
+            continue
         print(f"    [{model_tag}] fitting...", end=" ", flush=True)
         try:
             model, params = builder_fn(X_train, y_train)
@@ -368,6 +395,10 @@ def train_dataset(ds: dict, run: int) -> list:
                              model.predict(df_eng[feat_cols].values),
                              name, model_tag, run)
             _learning_curve_plot(model, X_train, y_train, name, model_tag, run)
+            append_predictions(
+                ds["file"], df_eng, model.predict(df_eng[feat_cols].values),
+                model_tag, run,
+            )
 
             parts = name.split("_")
             records.append({
@@ -410,7 +441,10 @@ def main():
     print(f"Start: {datetime.now().strftime('%H:%M:%S')}")
 
     all_records = []
+    only_targets = _env_filter("RUN_ONLY_TARGETS")
     for ds in DATASETS:
+        if only_targets and ds["name"] not in only_targets and ds["target"] not in only_targets:
+            continue
         print(f"\n[{ds['name']}]  target: {ds['target']}")
         try:
             recs = train_dataset(ds, run)
