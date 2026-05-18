@@ -119,10 +119,11 @@
   details > summary:hover { background: var(--summary-hover); }
   img          { background: var(--card); }
 
-  /* ── Layout ────────────────────────────────────────────────────── */
+  /* -- Layout ---------------------------------------------------------- */
   #sidenav {
     position: fixed; top: 0; left: 0;
-    width: 240px; height: 100vh; overflow-y: auto;
+    width: max-content; min-width: 220px; max-width: 340px;
+    height: 100vh; overflow-y: auto; overflow-x: hidden;
     background: var(--card); border-right: 1px solid var(--border);
     padding: 0 0 24px; z-index: 200;
     font-size: 13px;
@@ -131,7 +132,7 @@
   #sidenav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   #main-content {
-    margin-left: 240px; padding: 24px 36px 60px;
+    margin-left: 260px; padding: 24px 36px 60px;
     max-width: 1280px;
   }
 
@@ -148,7 +149,7 @@
     font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
     color: var(--text-muted); cursor: pointer;
     display: flex; justify-content: space-between; align-items: center;
-    user-select: none;
+    user-select: none; white-space: nowrap;
   }
   .nav-group-title:hover { color: var(--text); }
   .nav-chevron { font-size: 10px; transition: transform .2s; }
@@ -159,6 +160,7 @@
     display: block; padding: 5px 16px; color: var(--text-muted);
     text-decoration: none; border-left: 2px solid transparent;
     transition: color .15s, border-color .15s, background .15s;
+    white-space: nowrap;
   }
   .nav-item:hover { color: var(--text); background: var(--summary-hover); }
   .nav-item.active {
@@ -756,7 +758,7 @@ window.SECTION_ORDER = ["exp1-sub1", "exp1-full", "exp1-fs", "exp1-s3", "exp1-s3
 <div id="main-content">
   <div class="page-header">
     <h1>Wastewater Treatment - Unified Modeling Report</h1>
-    <p class="meta">Generated 2026-05-18 15:35 &nbsp;·&nbsp;
+    <p class="meta">Generated 2026-05-18 16:30 &nbsp;·&nbsp;
       Experiments 1-5 &nbsp;·&nbsp; Neural Networks &amp; Ensembles &nbsp;·&nbsp;
       Feature Engineering &nbsp;·&nbsp; Temporal Features &nbsp;·&nbsp;
       9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp; Train 2021-2024 · Test 2025
@@ -6286,8 +6288,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.9,19.6])</td><td class='num'>7</td><td class='num' style=''>1.666</td><td class='num'>2.441</td><td class='num' style='color:#e74c3c;font-weight:600'>1.645</td><td class='num'>0.767</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.6,29.6])</td><td class='num'>1</td><td class='num' style='color:#2ecc71'>0.888</td><td class='num'>0.888</td><td class='num' style='color:#e74c3c;font-weight:600'>0.888</td><td class='num'>-</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>124</td><td class='num' style=''>1.737</td><td class='num'>2.451</td><td class='num' style=''>0.015</td><td class='num'>0.653</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>44</td><td class='num' style=''>1.495</td><td class='num'>1.951</td><td class='num' style=''>-0.713</td><td class='num'>0.667</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>145</td><td class='num' style=''>1.739</td><td class='num'>2.420</td><td class='num' style=''>-0.126</td><td class='num'>0.650</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>23</td><td class='num' style=''>1.263</td><td class='num'>1.660</td><td class='num' style=''>-0.490</td><td class='num'>0.726</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>27</td><td class='num' style='color:#e74c3c;font-weight:600'>3.421</td><td class='num'>4.042</td><td class='num' style='color:#e74c3c;font-weight:600'>2.871</td><td class='num'>-2.270</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>75</td><td class='num' style=''>1.788</td><td class='num'>2.287</td><td class='num' style='color:#e74c3c;font-weight:600'>-1.119</td><td class='num'>0.218</td></tr>
@@ -6308,8 +6310,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.9,19.6])</td><td class='num'>7</td><td class='num' style='color:#2ecc71'>6.495</td><td class='num'>7.308</td><td class='num' style=''>1.998</td><td class='num'>0.916</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.6,29.6])</td><td class='num'>1</td><td class='num' style=''>7.538</td><td class='num'>7.538</td><td class='num' style='color:#e74c3c;font-weight:600'>-7.538</td><td class='num'>-</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>125</td><td class='num' style=''>11.586</td><td class='num'>15.870</td><td class='num' style=''>-3.562</td><td class='num'>0.532</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>44</td><td class='num' style=''>13.299</td><td class='num'>17.402</td><td class='num' style='color:#e74c3c;font-weight:600'>-8.106</td><td class='num'>0.365</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>146</td><td class='num' style=''>11.839</td><td class='num'>16.138</td><td class='num' style=''>-3.525</td><td class='num'>0.530</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>23</td><td class='num' style=''>13.261</td><td class='num'>17.170</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.492</td><td class='num'>0.078</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>28</td><td class='num' style=''>11.493</td><td class='num'>16.444</td><td class='num' style=''>4.371</td><td class='num'>0.294</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>75</td><td class='num' style='color:#f1c40f'>16.688</td><td class='num'>20.300</td><td class='num' style='color:#e74c3c;font-weight:600'>-8.823</td><td class='num'>0.235</td></tr>
@@ -6330,8 +6332,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.9,19.6])</td><td class='num'>7</td><td class='num' style='color:#e74c3c;font-weight:600'>9.777</td><td class='num'>13.066</td><td class='num' style='color:#e74c3c;font-weight:600'>8.389</td><td class='num'>0.343</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.6,29.6])</td><td class='num'>1</td><td class='num' style='color:#f1c40f'>5.886</td><td class='num'>5.886</td><td class='num' style='color:#e74c3c;font-weight:600'>5.886</td><td class='num'>-</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>125</td><td class='num' style=''>4.597</td><td class='num'>6.529</td><td class='num' style=''>-0.221</td><td class='num'>0.600</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>44</td><td class='num' style=''>4.298</td><td class='num'>5.270</td><td class='num' style=''>-1.842</td><td class='num'>0.672</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>146</td><td class='num' style=''>4.584</td><td class='num'>6.377</td><td class='num' style=''>-0.295</td><td class='num'>0.621</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>23</td><td class='num' style=''>4.108</td><td class='num'>5.168</td><td class='num' style='color:#e74c3c;font-weight:600'>-2.851</td><td class='num'>0.542</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>28</td><td class='num' style='color:#e74c3c;font-weight:600'>8.272</td><td class='num'>10.369</td><td class='num' style='color:#e74c3c;font-weight:600'>7.052</td><td class='num'>-0.038</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>75</td><td class='num' style=''>5.290</td><td class='num'>6.432</td><td class='num' style='color:#e74c3c;font-weight:600'>-3.978</td><td class='num'>0.112</td></tr>
@@ -6352,8 +6354,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.8,19.6])</td><td class='num'>2</td><td class='num' style='color:#2ecc71'>0.009</td><td class='num'>0.009</td><td class='num' style=''>-0.009</td><td class='num'>0.622</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.6,29.6])</td><td class='num'>0</td><td class='num' style=''>-</td><td class='num'>-</td><td class='num' style=''>-</td><td class='num'>-</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>85</td><td class='num' style=''>0.095</td><td class='num'>0.125</td><td class='num' style=''>0.043</td><td class='num'>0.390</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>30</td><td class='num' style=''>0.088</td><td class='num'>0.117</td><td class='num' style=''>0.018</td><td class='num'>0.519</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>99</td><td class='num' style=''>0.092</td><td class='num'>0.122</td><td class='num' style=''>0.041</td><td class='num'>0.432</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>16</td><td class='num' style=''>0.105</td><td class='num'>0.132</td><td class='num' style=''>0.004</td><td class='num'>0.387</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>0</td><td class='num' style=''>-</td><td class='num'>-</td><td class='num' style=''>-</td><td class='num'>-</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>65</td><td class='num' style=''>0.090</td><td class='num'>0.121</td><td class='num' style=''>0.024</td><td class='num'>0.417</td></tr>
@@ -6374,8 +6376,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.9,19.3])</td><td class='num'>6</td><td class='num' style=''>1.806</td><td class='num'>2.226</td><td class='num' style='color:#e74c3c;font-weight:600'>1.400</td><td class='num'>0.737</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.3,24.3])</td><td class='num'>2</td><td class='num' style='color:#e74c3c;font-weight:600'>4.035</td><td class='num'>5.462</td><td class='num' style='color:#e74c3c;font-weight:600'>3.681</td><td class='num'>-0.322</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>113</td><td class='num' style=''>1.767</td><td class='num'>2.332</td><td class='num' style=''>-0.050</td><td class='num'>0.513</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>39</td><td class='num' style=''>1.922</td><td class='num'>2.672</td><td class='num' style='color:#e74c3c;font-weight:600'>-1.104</td><td class='num'>0.288</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>132</td><td class='num' style=''>1.771</td><td class='num'>2.357</td><td class='num' style=''>-0.229</td><td class='num'>0.481</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>20</td><td class='num' style=''>2.047</td><td class='num'>2.828</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.926</td><td class='num'>0.347</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>23</td><td class='num' style='color:#f1c40f'>2.966</td><td class='num'>3.798</td><td class='num' style='color:#e74c3c;font-weight:600'>2.888</td><td class='num'>-0.802</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>70</td><td class='num' style=''>2.038</td><td class='num'>2.547</td><td class='num' style='color:#e74c3c;font-weight:600'>-1.729</td><td class='num'>-0.369</td></tr>
@@ -6396,8 +6398,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.8,19.4])</td><td class='num'>8</td><td class='num' style=''>13.584</td><td class='num'>16.004</td><td class='num' style=''>2.239</td><td class='num'>0.462</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.4,24.3])</td><td class='num'>3</td><td class='num' style=''>15.077</td><td class='num'>15.348</td><td class='num' style=''>2.595</td><td class='num'>0.542</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>160</td><td class='num' style=''>16.769</td><td class='num'>19.614</td><td class='num' style=''>-8.523</td><td class='num'>0.125</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>63</td><td class='num' style=''>19.053</td><td class='num'>21.394</td><td class='num' style=''>-7.269</td><td class='num'>0.103</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>193</td><td class='num' style=''>17.018</td><td class='num'>19.758</td><td class='num' style=''>-7.792</td><td class='num'>0.158</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>30</td><td class='num' style=''>19.963</td><td class='num'>22.393</td><td class='num' style='color:#e74c3c;font-weight:600'>-10.590</td><td class='num'>-0.148</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>43</td><td class='num' style=''>15.373</td><td class='num'>19.535</td><td class='num' style='color:#e74c3c;font-weight:600'>9.745</td><td class='num'>-0.261</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>79</td><td class='num' style='color:#f1c40f'>22.012</td><td class='num'>24.194</td><td class='num' style='color:#e74c3c;font-weight:600'>-12.989</td><td class='num'>-0.120</td></tr>
@@ -6418,8 +6420,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.7,19.2])</td><td class='num'>10</td><td class='num' style=''>2.867</td><td class='num'>3.612</td><td class='num' style='color:#e74c3c;font-weight:600'>1.379</td><td class='num'>0.716</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.2,24.3])</td><td class='num'>3</td><td class='num' style='color:#f1c40f'>4.067</td><td class='num'>4.835</td><td class='num' style='color:#e74c3c;font-weight:600'>4.067</td><td class='num'>0.428</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>151</td><td class='num' style=''>2.767</td><td class='num'>4.126</td><td class='num' style=''>1.024</td><td class='num'>0.522</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>55</td><td class='num' style=''>2.512</td><td class='num'>3.459</td><td class='num' style=''>0.254</td><td class='num'>0.561</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>181</td><td class='num' style=''>2.750</td><td class='num'>4.062</td><td class='num' style=''>0.926</td><td class='num'>0.530</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>25</td><td class='num' style=''>2.329</td><td class='num'>3.109</td><td class='num' style=''>0.034</td><td class='num'>0.532</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>60</td><td class='num' style='color:#f1c40f'>3.834</td><td class='num'>5.658</td><td class='num' style='color:#e74c3c;font-weight:600'>3.411</td><td class='num'>0.432</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>72</td><td class='num' style=''>3.050</td><td class='num'>3.678</td><td class='num' style=''>-0.599</td><td class='num'>0.222</td></tr>
@@ -6440,8 +6442,8 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [17.9,19.3])</td><td class='num'>6</td><td class='num' style='color:#e74c3c;font-weight:600'>0.258</td><td class='num'>0.289</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.178</td><td class='num'>0.111</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [19.3,24.3])</td><td class='num'>2</td><td class='num' style='color:#e74c3c;font-weight:600'>0.322</td><td class='num'>0.323</td><td class='num' style='color:#e74c3c;font-weight:600'>-0.322</td><td class='num'>-114.956</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Day</td></tr>
-<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>113</td><td class='num' style=''>0.127</td><td class='num'>0.179</td><td class='num' style=''>-0.015</td><td class='num'>0.335</td></tr>
-<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>40</td><td class='num' style=''>0.124</td><td class='num'>0.164</td><td class='num' style=''>0.002</td><td class='num'>0.449</td></tr>
+<tr style='background:#f7f7f7'><td></td><td>Weekday</td><td class='num'>133</td><td class='num' style=''>0.126</td><td class='num'>0.175</td><td class='num' style=''>-0.009</td><td class='num'>0.344</td></tr>
+<tr style='background:#ffffff'><td></td><td>Weekend</td><td class='num'>20</td><td class='num' style=''>0.132</td><td class='num'>0.176</td><td class='num' style=''>-0.019</td><td class='num'>0.459</td></tr>
 <tr class='ed-axis-row'><td colspan='7'>Season</td></tr>
 <tr style='background:#f7f7f7'><td></td><td>Winter</td><td class='num'>24</td><td class='num' style='color:#e74c3c;font-weight:600'>0.271</td><td class='num'>0.328</td><td class='num' style='color:#e74c3c;font-weight:600'>0.101</td><td class='num'>-0.011</td></tr>
 <tr style='background:#ffffff'><td></td><td>Spring</td><td class='num'>70</td><td class='num' style=''>0.099</td><td class='num'>0.134</td><td class='num' style=''>-0.009</td><td class='num'>0.562</td></tr>
@@ -6453,53 +6455,7 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 <tr style='background:#f7f7f7'><td></td><td>Q3 (train [7.0,7.1])</td><td class='num'>39</td><td class='num' style=''>0.125</td><td class='num'>0.177</td><td class='num' style=''>-0.026</td><td class='num'>0.447</td></tr>
 <tr style='background:#ffffff'><td></td><td>Q4 (train [7.1,7.9])</td><td class='num'>4</td><td class='num' style='color:#f1c40f'>0.209</td><td class='num'>0.219</td><td class='num' style='color:#e74c3c;font-weight:600'>0.131</td><td class='num'>-1.323</td></tr>
 </tbody></table></div>
-
-<details class="exp-details" id="error-decomposition-findings" open>
-  <summary><span class="fold-icon">▶</span> Findings</summary>
-  <div class="exp-body">
-    
-<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
-  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
-    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q1</span>
-    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Are all current global winners represented with row-wise predictions?</span>
-  </div>
-  <div style='padding:0.6rem 0.8rem 0.55rem'>
-    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>Yes. The section now decomposes all <strong>8</strong> target winners, so the pending rerun box is no longer needed. Current winners: BOD Grab: Exp7-SE2 · Voting; COD Grab: Exp3-S2-FS · XGB; TSS Grab: Exp7-SE1 · Ridge; pH Grab: Exp3-S4 · RF; BOD Composite: Exp3-S2 · Ridge; COD Composite: Exp4-S2 · ElNet; TSS Composite: Exp2-S6-FS · GB; pH Composite: Exp3-S2 · ElNet.</p>
-  </div>
-</div>
-    
-<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
-  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
-    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q2</span>
-    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Where does error concentrate most strongly in 2025?</span>
-  </div>
-  <div style='padding:0.6rem 0.8rem 0.55rem'>
-    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>pH Composite peaks in Flow = Q2 (train [16.4,17.9]) (0.335 MAE, 2.65x baseline); TSS Grab peaks in Flow = Q3 (train [17.9,19.6]) (9.777 MAE, 2.16x baseline); BOD Grab peaks in Season = Winter (3.421 MAE, 2.04x baseline)</p>
-  </div>
-</div>
-    
-<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
-  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
-    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q3</span>
-    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Is winter still a systematic risk regime?</span>
-  </div>
-  <div style='padding:0.6rem 0.8rem 0.55rem'>
-    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>pH Composite Winter is 2.14x baseline (bias 0.101); BOD Grab Winter is 2.04x baseline (bias 2.871); TSS Grab Winter is 1.83x baseline (bias 7.052); BOD Composite Winter is 1.64x baseline (bias 2.888); TSS Composite Winter is 1.42x baseline (bias 3.411)</p>
-  </div>
-</div>
-    
-<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
-  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
-    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q4</span>
-    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>What changed in the model-level interpretation?</span>
-  </div>
-  <div style='padding:0.6rem 0.8rem 0.55rem'>
-    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>The decomposition is no longer anchored to whichever model happened to have predictions on disk. It now follows the same global overfit-aware winners as the Analytics table, which is why Grab BOD is decomposed with Exp7-SE2 Voting and Grab TSS with Exp7-SE1 Ridge. For COD specifically: COD Grab: R² 0.493, MAE 12.032, bias -4.745; COD Composite: R² 0.120, MAE 17.414, bias -8.169.</p>
-  </div>
-</div>
-  </div>
-</details>
-
+<details class="exp-details" id="error-decomposition-findings" open><summary><span class="fold-icon">▶</span> Findings</summary><div class="exp-body"><div style='margin-bottom:1.1rem;border:1px solid #e74c3c;border-radius:5px;overflow:hidden'><div style='background:rgba(231,76,60,0.08);padding:0.45rem 0.8rem;border-bottom:1px solid #e74c3c;display:flex;align-items:baseline;gap:0.5rem'><span style='color:#e74c3c;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q1</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Winter crisis: does the model collapse in cold months?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid #e74c3c;padding-left:0.6rem'><span style='color:#e74c3c;font-weight:700'>[!] R2 < 0 in Winter</span> - the model performs <em>worse than predicting the training mean</em> for: <strong>BOD Grab</strong> (R2 = -2.270, MAE 2.04x baseline); <strong>TSS Grab</strong> (R2 = -0.038, MAE 1.83x baseline); <strong>BOD Composite</strong> (R2 = -0.802, MAE 1.64x baseline); <strong>COD Composite</strong> (R2 = -0.261, MAE 0.88x baseline); <strong>pH Composite</strong> (R2 = -0.011, MAE 2.14x baseline). Additional targets with elevated Winter MAE (>= 1.4x baseline): <strong>TSS Composite</strong> (MAE 1.42x baseline, bias 3.411). Winter (Dec-Feb) in Kathmandu brings low temperatures that depress biological activity in the activated-sludge process, making effluent quality less predictable. <strong>Human review of winter predictions is strongly recommended.</strong></div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q2</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Are the model's errors directionally biased by season?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'>The model's directional errors follow a structured seasonal pattern. <strong>Winter</strong>: model <em>under-predicts</em> BOD Grab, TSS Grab, BOD Composite, COD Composite, TSS Composite, pH Composite; <strong>Spring</strong>: model <em>over-predicts</em> BOD Grab, COD Grab, TSS Grab, BOD Composite, COD Composite; <strong>Monsoon</strong>: model <em>under-predicts</em> pH Grab and <em>over-predicts</em> COD Composite; <strong>Autumn</strong>: model <em>over-predicts</em> COD Composite, pH Composite. This signature suggests a missing seasonal mean-shift: consider adding season dummies or a per-season additive offset at inference time.</div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q3</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Is 2025 operating in an unusual regime relative to training?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'>2025 is operating in an atypical regime relative to training (2021–2024). Flow is concentrated in the <strong>lowest quartile</strong>: <strong>BOD Grab</strong>: 91% of samples in Flow Q1; only 1% in Q4; <strong>COD Grab</strong>: 91% of samples in Flow Q1; only 1% in Q4. Most Q2/Q3/Q4 flow cells have n < 10 - treat those MAEs as directional signals only. Simultaneously, inlet loads skew toward the <strong>highest quartile</strong>: <strong>BOD Grab</strong>: 61% in Inlet Load Q4; <strong>BOD Composite</strong>: 68% in Inlet Load Q4. Low flow + high load = elevated organic concentration - a combination underrepresented in training data.</div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q4</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Where does error concentrate most strongly across all axes?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'>Regimes where MAE exceeds 1.75x the overall 2025 baseline (n >= 5):<ul style='margin:0.4rem 0 0 1rem;padding:0;font-size:inherit;line-height:1.6'><li><strong>pH Composite</strong> - worst in <em>Flow = Q2 (train [16.4,17.9])</em>: MAE 0.335 (2.65x baseline), bias 0.335, R2 -2.006</li><li><strong>TSS Grab</strong> - worst in <em>Flow = Q3 (train [17.9,19.6])</em>: MAE 9.777 (2.16x baseline), bias 8.389, R2 0.343</li><li><strong>BOD Grab</strong> - worst in <em>Season = Winter</em>: MAE 3.421 (2.04x baseline), bias 2.871, R2 -2.270</li></ul></div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q5</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Does Saturday (Nepal weekend) behave differently from weekdays?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'>Weekend bucket now correctly reflects <strong>Saturdays only</strong> (Nepal calendar - Sunday is a workday). <strong>Saturday easier to predict</strong>: BOD Grab (0.73x), TSS Composite (0.85x); <strong>Saturday harder to predict</strong>: BOD Composite (1.16x), COD Composite (1.17x); No meaningful difference: COD Grab, TSS Grab, pH Grab, pH Composite. Saturday sample size is small (~52/year) - treat as directional signal only.</div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q6</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Which targets are reliable vs. which need caution?</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'><strong>Use with caution (R2 < 0.30)</strong>: <strong>COD Composite</strong> (R2 0.120, MAE 17.414, winner: Exp4-S2 / ElNet). <strong>Reliable (R2 >= 0.50)</strong>: <strong>TSS Composite</strong> (R2 0.531, winner: Exp2-S6-FS / GB); <strong>TSS Grab</strong> (R2 0.616, winner: Exp7-SE1 / Ridge); <strong>BOD Grab</strong> (R2 0.656, winner: Exp7-SE2 / Voting).</div></div></div><div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'><div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'><span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q7</span><span style='font-weight:bold;font-size:0.93em;line-height:1.4'>Operational recommendations</span></div><div style='padding:0.6rem 0.8rem 0.55rem'><div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid var(--border);padding-left:0.6rem'><ul style='margin:0.4rem 0 0 1rem;padding:0;font-size:inherit;line-height:1.6'><li><strong>Winter (Dec-Feb) - mandatory human review.</strong> R2 < 0 means model outputs can be more misleading than a flat estimate. Flag all winter predictions for operator verification before compliance reporting.</li><li><strong>Apply a seasonal bias correction.</strong> The directional error pattern is consistent enough to warrant a per-season additive offset derived from training residuals.</li><li><strong>Heighten monitoring on high-load days (Inlet Q4).</strong> These now dominate 2025 but were only the top 25% of training - model confidence is lowest when plant stress is highest.</li><li><strong>Do not use low-R2 targets for automated compliance decisions.</strong> Composite COD (R2 ~12%) should not serve as the sole basis for regulatory reporting without lab confirmation.</li><li><strong>Retrain with 2025 data before next season.</strong> The Q1-flow + Q4-load operating regime of 2025 is systematically different from training; incorporating 2025 observations will materially improve generalization.</li></ul></div></div></div></div></details>
 </section>
 <section id="comp-cod-diagnostic">
   <h1 class="section-title">Comp COD - Persistent Failure Diagnostic</h1>
@@ -6647,7 +6603,22 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 </div>
 
 <script>
-// ── No-alt popup: close on outside click ───────────────────────────────────
+// -- Sidebar width sync: match main-content margin to sidenav's rendered width --
+(function() {
+  function syncNavWidth() {
+    var nav  = document.getElementById('sidenav');
+    var main = document.getElementById('main-content');
+    if (!nav || !main) return;
+    main.style.marginLeft = nav.offsetWidth + 'px';
+  }
+  document.addEventListener('DOMContentLoaded', syncNavWidth);
+  // Re-sync if fonts load late (avoids flash of wrong margin)
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncNavWidth);
+  }
+})();
+
+// -- No-alt popup: close on outside click ------------------------------------
 document.addEventListener('click', function(e) {
   if (!e.target.classList.contains('noalt-info-btn')) {
     document.querySelectorAll('.noalt-popup').forEach(function(p) {

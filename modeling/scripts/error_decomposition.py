@@ -44,7 +44,7 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, SCRIPT_DIR)
-from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
+
 
 TARGETS = [
     ("grab_BOD", "Effluent BOD (mg/L, Grab)",      "Inlet BOD (mg/L, Grab)"),
@@ -313,7 +313,7 @@ def decompose_target(name: str, target: str, inlet_col: str,
                      "bucket": f"{b} (train [{flow_edges[int(b[1])-1]:.1f},{flow_edges[int(b[1])]:.1f}])",
                      **_cell_metrics(y_true[mask], y_pred[mask])})
 
-    is_weekend = test["day_of_week"].isin([5, 6]).values
+    is_weekend = test["day_of_week"].isin([5]).values   # Nepal: Saturday only; Sunday is a workday
     rows.append({**meta, "axis": "Day", "bucket": "Weekday",
                  **_cell_metrics(y_true[~is_weekend], y_pred[~is_weekend])})
     rows.append({**meta, "axis": "Day", "bucket": "Weekend",
@@ -375,157 +375,270 @@ def _findings_html(all_results: pd.DataFrame) -> str:
     if all_results.empty:
         return ""
 
-    overall = all_results[all_results["axis"] == "OVERALL"].copy()
-    resolved = len(overall)
+    overall      = all_results[all_results["axis"] == "OVERALL"].copy()
+    baseline_mae = overall.set_index("target")["mae"]
+    baseline_r2  = overall.set_index("target")["r2"]  # noqa: F841
 
-    def _winner_line(r):
-        return f"{_target_short(r['target'])}: {r['winner_exp_key']} · {r['winner_model']}"
+    # ── Q1: Winter R² collapse ────────────────────────────────────────────────
+    winter_rows = all_results[
+        (all_results["axis"] == "Season") & (all_results["bucket"] == "Winter")
+    ].copy()
+    negative_r2, elevated_winter = [], []
+    for _, r in winter_rows.iterrows():
+        if r["n"] < 5:
+            continue
+        ratio = r["mae"] / baseline_mae.get(r["target"], np.nan)
+        if not pd.isna(r["r2"]) and r["r2"] < 0:
+            negative_r2.append(
+                f"<strong>{_target_short(r['target'])}</strong> "
+                f"(R2 = {_fmt(r['r2'])}, MAE {_fmt(ratio, 2)}x baseline)"
+            )
+        elif not pd.isna(ratio) and ratio >= 1.4:
+            elevated_winter.append(
+                f"<strong>{_target_short(r['target'])}</strong> "
+                f"(MAE {_fmt(ratio, 2)}x baseline, bias {_fmt(r['bias'])})"
+            )
+    if negative_r2:
+        winter_alarm = (
+            "<span style='color:#e74c3c;font-weight:700'>[!] R2 < 0 in Winter</span> - "
+            "the model performs <em>worse than predicting the training mean</em> for: "
+            + "; ".join(negative_r2) + ". "
+        )
+    else:
+        winter_alarm = ""
+    if elevated_winter:
+        winter_alarm += (
+            "Additional targets with elevated Winter MAE (>= 1.4x baseline): "
+            + "; ".join(elevated_winter) + ". "
+        )
+    winter_alarm += (
+        "Winter (Dec-Feb) in Kathmandu brings low temperatures that depress biological "
+        "activity in the activated-sludge process, making effluent quality less predictable. "
+        "<strong>Human review of winter predictions is strongly recommended.</strong>"
+    ) if (negative_r2 or elevated_winter) else "Winter season shows no severe deterioration for any target."
 
-    winners_text = "; ".join(_winner_line(r) for _, r in overall.iterrows())
+    # ── Q2: Seasonal directional bias signatures ──────────────────────────────
+    season_rows = all_results[all_results["axis"] == "Season"].copy()
+    bias_lines  = []
+    for season in ("Winter", "Spring", "Monsoon", "Autumn"):
+        sb    = season_rows[season_rows["bucket"] == season]
+        under = [_target_short(r["target"]) for _, r in sb.iterrows()
+                 if r["n"] >= 5 and not pd.isna(r["bias"])
+                 and r["bias"] > 0.5 * baseline_mae.get(r["target"], np.inf)]
+        over  = [_target_short(r["target"]) for _, r in sb.iterrows()
+                 if r["n"] >= 5 and not pd.isna(r["bias"])
+                 and r["bias"] < -0.5 * baseline_mae.get(r["target"], np.inf)]
+        parts = []
+        if under:
+            parts.append(f"<em>under-predicts</em> {', '.join(under)}")
+        if over:
+            parts.append(f"<em>over-predicts</em> {', '.join(over)}")
+        if parts:
+            bias_lines.append(f"<strong>{season}</strong>: model " + " and ".join(parts))
+    bias_text = (
+        "The model's directional errors follow a structured seasonal pattern. "
+        + "; ".join(bias_lines)
+        + ". This signature suggests a missing seasonal mean-shift: consider adding "
+        "season dummies or a per-season additive offset at inference time."
+    ) if bias_lines else "No systematic directional bias (|bias| > 0.5x MAE) found in any season."
 
-    regime_rows = []
+    # ── Q3: 2025 regime shift ─────────────────────────────────────────────────
+    flow_rows  = all_results[all_results["axis"] == "Flow"].copy()
+    inlet_rows = all_results[all_results["axis"] == "InletLoad"].copy()
+    q1_lines, inlet_q4_lines = [], []
+    for target, df_tgt in flow_rows.groupby("target", sort=False):
+        total_n = df_tgt["n"].sum()
+        if total_n == 0:
+            continue
+        q1 = df_tgt[df_tgt["bucket"].str.startswith("Q1")]
+        q4 = df_tgt[df_tgt["bucket"].str.startswith("Q4")]
+        if q1.empty or q4.empty:
+            continue
+        q1_pct = 100 * q1.iloc[0]["n"] / total_n
+        q4_pct = 100 * q4.iloc[0]["n"] / total_n
+        if q1_pct >= 70:
+            q1_lines.append(
+                f"<strong>{_target_short(target)}</strong>: "
+                f"{q1_pct:.0f}% of samples in Flow Q1; only {q4_pct:.0f}% in Q4"
+            )
+    for target, df_tgt in inlet_rows.groupby("target", sort=False):
+        total_n = df_tgt["n"].sum()
+        if total_n == 0:
+            continue
+        q4 = df_tgt[df_tgt["bucket"].str.startswith("Q4")]
+        if q4.empty:
+            continue
+        q4_pct = 100 * q4.iloc[0]["n"] / total_n
+        if q4_pct >= 50:
+            inlet_q4_lines.append(
+                f"<strong>{_target_short(target)}</strong>: {q4_pct:.0f}% in Inlet Load Q4"
+            )
+    if q1_lines or inlet_q4_lines:
+        regime_text = "2025 is operating in an atypical regime relative to training (2021\u20132024). "
+        if q1_lines:
+            regime_text += (
+                "Flow is concentrated in the <strong>lowest quartile</strong>: "
+                + "; ".join(q1_lines[:2])
+                + ". Most Q2/Q3/Q4 flow cells have n < 10 - "
+                "treat those MAEs as directional signals only. "
+            )
+        if inlet_q4_lines:
+            regime_text += (
+                "Simultaneously, inlet loads skew toward the <strong>highest quartile</strong>: "
+                + "; ".join(inlet_q4_lines[:3])
+                + ". Low flow + high load = elevated organic concentration - "
+                "a combination underrepresented in training data."
+            )
+    else:
+        regime_text = "2025 flow and load distributions appear consistent with training-era quartile boundaries."
+
+
+    # ── Q4: Error concentration hotspots ─────────────────────────────────────
+    hotspot_rows = []
     for target, df_tgt in all_results.groupby("target", sort=False):
-        base = df_tgt[df_tgt["axis"] == "OVERALL"].iloc[0]
-        base_mae = base["mae"]
-        if pd.isna(base_mae) or base_mae == 0:
+        bm = baseline_mae.get(target, np.nan)
+        if pd.isna(bm) or bm == 0:
             continue
         sub = df_tgt[(df_tgt["axis"] != "OVERALL") & (df_tgt["n"] >= 5)].copy()
-        sub["ratio"] = sub["mae"] / base_mae
+        sub["ratio"] = sub["mae"] / bm
         if sub.empty:
             continue
         worst = sub.sort_values("ratio", ascending=False).iloc[0]
-        regime_rows.append((worst["ratio"], target, worst))
-
-    regime_rows = sorted(regime_rows, key=lambda x: x[0], reverse=True)
-    concentration = [x for x in regime_rows if x[0] >= 1.75]
-    concentration_text = "; ".join(
-        f"{_target_short(tgt)} peaks in {r['axis']} = {r['bucket']} "
-        f"({_fmt(r['mae'])} MAE, {ratio:.2f}x baseline)"
-        for ratio, tgt, r in concentration[:5]
-    ) or "No target has a regime with MAE above 1.75x its own 2025 baseline once tiny buckets are ignored."
-
-    season_rows = all_results[(all_results["axis"] == "Season") & (all_results["bucket"] == "Winter")].copy()
-    if not season_rows.empty:
-        baseline = overall.set_index("target")["mae"]
-        season_rows["ratio"] = season_rows.apply(
-            lambda r: r["mae"] / baseline.get(r["target"], np.nan), axis=1)
-        winter_hits = season_rows[(season_rows["ratio"] >= 1.4) & (season_rows["n"] >= 5)]
-        winter_text = "; ".join(
-            f"{_target_short(r['target'])} Winter is {_fmt(r['ratio'], 2)}x baseline "
-            f"(bias {_fmt(r['bias'])})"
-            for _, r in winter_hits.sort_values("ratio", ascending=False).iterrows()
-        ) or "Winter no longer dominates every target, but remains a useful watch-list slice."
+        if worst["ratio"] >= 1.75:
+            hotspot_rows.append((worst["ratio"], target, worst))
+    hotspot_rows.sort(key=lambda x: x[0], reverse=True)
+    if hotspot_rows:
+        items = "".join(
+            f"<li><strong>{_target_short(tgt)}</strong> - worst in "
+            f"<em>{r['axis']} = {r['bucket']}</em>: "
+            f"MAE {_fmt(r['mae'])} ({ratio:.2f}x baseline), "
+            f"bias {_fmt(r['bias'])}, R2 {_fmt(r['r2'])}</li>"
+            for ratio, tgt, r in hotspot_rows
+        )
+        hotspot_text = (
+            "Regimes where MAE exceeds 1.75x the overall 2025 baseline (n >= 5):"
+            f"<ul style='margin:0.4rem 0 0 1rem;padding:0;font-size:inherit;line-height:1.6'>{items}</ul>"
+        )
     else:
-        winter_text = "Winter season buckets were not available in the decomposition output."
+        hotspot_text = "No target has a regime with MAE above 1.75x its own 2025 baseline."
 
-    cod_rows = overall[overall["target"].str.contains("COD", regex=False)].copy()
-    cod_text = "; ".join(
-        f"{_target_short(r['target'])}: R² {_fmt(r['r2'])}, MAE {_fmt(r['mae'])}, bias {_fmt(r['bias'])}"
-        for _, r in cod_rows.iterrows()
+    # ── Q5: Saturday vs Weekday ────────────────────────────────────────────────
+    day_rows = all_results[all_results["axis"] == "Day"].copy()
+    sat_better, sat_worse, sat_neutral = [], [], []
+    for target, df_tgt in day_rows.groupby("target", sort=False):
+        wd = df_tgt[df_tgt["bucket"] == "Weekday"]
+        we = df_tgt[df_tgt["bucket"] == "Weekend"]
+        if wd.empty or we.empty:
+            continue
+        wd_mae, we_mae, we_n = wd.iloc[0]["mae"], we.iloc[0]["mae"], we.iloc[0]["n"]
+        if pd.isna(wd_mae) or pd.isna(we_mae) or we_n < 5 or wd_mae == 0:
+            continue
+        ratio = we_mae / wd_mae
+        short = _target_short(target)
+        if ratio < 0.85:
+            sat_better.append(f"{short} ({ratio:.2f}x)")
+        elif ratio > 1.15:
+            sat_worse.append(f"{short} ({ratio:.2f}x)")
+        else:
+            sat_neutral.append(short)
+    day_parts = []
+    if sat_better:
+        day_parts.append(f"<strong>Saturday easier to predict</strong>: {', '.join(sat_better)}")
+    if sat_worse:
+        day_parts.append(f"<strong>Saturday harder to predict</strong>: {', '.join(sat_worse)}")
+    if sat_neutral:
+        day_parts.append(f"No meaningful difference: {', '.join(sat_neutral)}")
+    day_text = (
+        "Weekend bucket now correctly reflects <strong>Saturdays only</strong> (Nepal calendar - Sunday is a workday). "
+        + "; ".join(day_parts)
+        + ". Saturday sample size is small (~52/year) - treat as directional signal only."
+    ) if day_parts else "Insufficient Saturday samples (< 5) to draw conclusions for any target."
+
+    # ── Q6: Target reliability ranking ────────────────────────────────────────
+    overall_sorted = overall.sort_values("r2", ascending=True)
+    hard  = overall_sorted[overall_sorted["r2"] < 0.30]
+    solid = overall_sorted[overall_sorted["r2"] >= 0.50]
+    hard_lines = "; ".join(
+        f"<strong>{_target_short(r['target'])}</strong> "
+        f"(R2 {_fmt(r['r2'])}, MAE {_fmt(r['mae'])}, "
+        f"winner: {r['winner_exp_key']} / {r['winner_model']})"
+        for _, r in hard.iterrows()
+    )
+    solid_lines = "; ".join(
+        f"<strong>{_target_short(r['target'])}</strong> "
+        f"(R2 {_fmt(r['r2'])}, winner: {r['winner_exp_key']} / {r['winner_model']})"
+        for _, r in solid.iterrows()
+    )
+    difficulty_text = ""
+    if hard_lines:
+        difficulty_text += f"<strong>Use with caution (R2 < 0.30)</strong>: {hard_lines}. "
+    if solid_lines:
+        difficulty_text += f"<strong>Reliable (R2 >= 0.50)</strong>: {solid_lines}."
+    difficulty_text = difficulty_text or "All targets fall in the 0.30-0.50 R2 range."
+
+    # ── Q7: Operational recommendations ──────────────────────────────────────
+    rec = []
+    if negative_r2:
+        rec.append(
+            "<li><strong>Winter (Dec-Feb) - mandatory human review.</strong> "
+            "R2 < 0 means model outputs can be more misleading than a flat estimate. "
+            "Flag all winter predictions for operator verification before compliance reporting.</li>"
+        )
+    if bias_lines:
+        rec.append(
+            "<li><strong>Apply a seasonal bias correction.</strong> The directional error pattern "
+            "is consistent enough to warrant a per-season additive offset derived from training residuals.</li>"
+        )
+    if inlet_q4_lines:
+        rec.append(
+            "<li><strong>Heighten monitoring on high-load days (Inlet Q4).</strong> "
+            "These now dominate 2025 but were only the top 25% of training - "
+            "model confidence is lowest when plant stress is highest.</li>"
+        )
+    if hard_lines:
+        rec.append(
+            "<li><strong>Do not use low-R2 targets for automated compliance decisions.</strong> "
+            "Composite COD (R2 ~12%) should not serve as the sole basis for "
+            "regulatory reporting without lab confirmation.</li>"
+        )
+    rec.append(
+        "<li><strong>Retrain with 2025 data before next season.</strong> "
+        "The Q1-flow + Q4-load operating regime of 2025 is systematically different from training; "
+        "incorporating 2025 observations will materially improve generalization.</li>"
+    )
+    reco_text = "<ul style='margin:0.4rem 0 0 1rem;padding:0;font-size:inherit;line-height:1.6'>" + "".join(rec) + "</ul>"
+
+    # ── Card renderer ──────────────────────────────────────────────────────────
+    def _qcard(n, question, answer, alert=False):
+        bc = "#e74c3c" if alert else "var(--border)"
+        hb = "rgba(231,76,60,0.08)" if alert else "var(--bg-secondary)"
+        lc = "#e74c3c" if alert else "#4A90D9"
+        return (
+            f"<div style='margin-bottom:1.1rem;border:1px solid {bc};border-radius:5px;overflow:hidden'>"
+            f"<div style='background:{hb};padding:0.45rem 0.8rem;border-bottom:1px solid {bc};"
+            f"display:flex;align-items:baseline;gap:0.5rem'>"
+            f"<span style='color:{lc};font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>"
+            f"<span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span></div>"
+            f"<div style='padding:0.6rem 0.8rem 0.55rem'>"
+            f"<div class='meta' style='margin:0;line-height:1.6;font-size:12px;border-left:2px solid {bc};"
+            f"padding-left:0.6rem'>{answer}</div></div></div>"
+        )
+
+    return (
+        "<details class=\"exp-details\" id=\"error-decomposition-findings\" open>"
+        "<summary><span class=\"fold-icon\">\u25b6</span> Findings</summary>"
+        "<div class=\"exp-body\">"
+        + _qcard(1, "Winter crisis: does the model collapse in cold months?", winter_alarm, alert=bool(negative_r2))
+        + _qcard(2, "Are the model's errors directionally biased by season?", bias_text)
+        + _qcard(3, "Is 2025 operating in an unusual regime relative to training?", regime_text)
+        + _qcard(4, "Where does error concentrate most strongly across all axes?", hotspot_text)
+        + _qcard(5, "Does Saturday (Nepal weekend) behave differently from weekdays?", day_text)
+        + _qcard(6, "Which targets are reliable vs. which need caution?", difficulty_text)
+        + _qcard(7, "Operational recommendations", reco_text)
+        + "</div></details>"
     )
 
-    def _qcard(n, question, answer):
-        return f"""
-<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>
-  <div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:0.5rem'>
-    <span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>
-    <span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span>
-  </div>
-  <div style='padding:0.6rem 0.8rem 0.55rem'>
-    <p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>
-  </div>
-</div>"""
 
-    return f"""
-<details class="exp-details" id="error-decomposition-findings" open>
-  <summary><span class="fold-icon">▶</span> Findings</summary>
-  <div class="exp-body">
-    {_qcard(1, "Are all current global winners represented with row-wise predictions?",
-            f"Yes. The section now decomposes all <strong>{resolved}</strong> target winners, so the pending rerun box is no longer needed. Current winners: {winners_text}.")}
-    {_qcard(2, "Where does error concentrate most strongly in 2025?",
-            concentration_text)}
-    {_qcard(3, "Is winter still a systematic risk regime?",
-            winter_text)}
-    {_qcard(4, "What changed in the model-level interpretation?",
-            "The decomposition is no longer anchored to whichever model happened to have predictions on disk. It now follows the same global overfit-aware winners as the Analytics table, which is why Grab BOD is decomposed with Exp7-SE2 Voting and Grab TSS with Exp7-SE1 Ridge. "
-            f"For COD specifically: {cod_text}.")}
-  </div>
-</details>
-"""
-
-
-def render_html(all_results: pd.DataFrame) -> str:
-    css = dark_mode_css("""
-    body { font-family:-apple-system, Segoe UI, sans-serif; padding:24px; }
-    .container { max-width:1400px; margin:0 auto; }
-    table.decomp { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 24px; }
-    table.decomp th, table.decomp td { padding:5px 8px; border-bottom:1px solid var(--border); }
-    table.decomp th { background:var(--bg-soft); font-weight:600; text-align:left; }
-    table.decomp td.num { text-align:right; font-variant-numeric:tabular-nums; }
-    .target-header { font-size:16px; font-weight:600; margin:20px 0 6px;
-                     padding:6px 10px; background:var(--bg-soft); border-left:3px solid #4A90D9; }
-    .axis-row td { background:var(--bg-soft); font-weight:600; font-size:11px;
-                   text-transform:uppercase; letter-spacing:.4px; color:#4A90D9; }
-    .note { color:var(--text-muted); font-size:12px; margin:8px 0 16px; }
-    """)
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-    parts = [
-        "<!DOCTYPE html><html><head><meta charset='utf-8'>",
-        "<title>2025 Residuals - Regime Decomposition</title>",
-        f"<style>{css}</style></head><body><div class='container'>",
-        "<h1>2025 Residual Decomposition by Operational Regime</h1>",
-        f"<p class='note'>Generated {ts}. Each target is decomposed using its "
-        "<strong>global overfit-aware winner</strong> (per the Overfit-Aware Selection table). "
-        "Quartile thresholds fitted on training years (2021-2024) and applied to 2025.</p>",
-        "<div class='rule-card note'>",
-        "<strong>How to read:</strong> The OVERALL row is the baseline. "
-        "Cells where MAE is &gt; 1.75× baseline are red - error concentrates "
-        "in that regime. Bias coloured when |bias| &gt; 0.5 × overall MAE "
-        "(systematic over/under-prediction).</div>",
-    ]
-
-    for target, df_tgt in all_results.groupby("target", sort=False):
-        overall = df_tgt[df_tgt["axis"] == "OVERALL"].iloc[0]
-        mae_overall = overall["mae"]
-
-        parts.append(f"<div class='target-header'>{target} "
-                     f"(overall n={int(overall['n'])}, MAE={_fmt(overall['mae'])}, "
-                     f"RMSE={_fmt(overall['rmse'])}, bias={_fmt(overall['bias'])}, "
-                     f"R²={_fmt(overall['r2'])})</div>")
-        parts.append("<table class='decomp'>")
-        parts.append(
-            "<thead><tr>"
-            "<th>Axis</th><th>Bucket</th><th class='num'>n</th>"
-            "<th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>Bias</th><th class='num'>R²</th>"
-            "</tr></thead><tbody>"
-        )
-        current_axis = None
-        for _, r in df_tgt.iterrows():
-            if r["axis"] == "OVERALL":
-                continue
-            if r["axis"] != current_axis:
-                parts.append(
-                    f"<tr class='axis-row'><td colspan='7'>{r['axis']}</td></tr>"
-                )
-                current_axis = r["axis"]
-            mae_style  = _mae_ratio_color(r["mae"], mae_overall)
-            bias_style = _bias_color(r["bias"], mae_overall)
-            parts.append(
-                "<tr>"
-                f"<td></td><td>{r['bucket']}</td>"
-                f"<td class='num'>{_fmt(r['n'])}</td>"
-                f"<td class='num' style='{mae_style}'>{_fmt(r['mae'])}</td>"
-                f"<td class='num'>{_fmt(r['rmse'])}</td>"
-                f"<td class='num' style='{bias_style}'>{_fmt(r['bias'])}</td>"
-                f"<td class='num'>{_fmt(r['r2'])}</td>"
-                "</tr>"
-            )
-        parts.append("</tbody></table>")
-
-    parts.append(_findings_html(all_results))
-    parts.append(f"<script>{DARK_MODE_JS}</script></div></body></html>")
-    return "\n".join(parts)
 
 
 def section_html(all_results: pd.DataFrame, winners: dict | None = None) -> str:
@@ -671,12 +784,7 @@ def main():
         pd.DataFrame([{"target": k, **v} for k, v in winners.items()]).to_excel(
             xw, sheet_name="winners", index=False)
     print(f"\nxlsx → {xlsx_path}")
-
-    html = render_html(combined)
-    html_path = os.path.join(REPORTS_DIR, "error_decomposition.html")
-    with open(html_path, "w") as f:
-        f.write(html)
-    print(f"html → {html_path}")
+    print("(Standalone HTML not written — output is embedded in the Unified Report.)")
 
     # CLI summary: flag axes where worst cell is much worse than overall
     print("\n=== Regime concentration (axes where worst MAE > 1.75 × overall MAE) ===")

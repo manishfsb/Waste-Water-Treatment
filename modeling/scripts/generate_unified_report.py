@@ -9408,10 +9408,11 @@ def _sidebar() -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 CUSTOM_CSS = """
-  /* ── Layout ────────────────────────────────────────────────────── */
+  /* -- Layout ---------------------------------------------------------- */
   #sidenav {
     position: fixed; top: 0; left: 0;
-    width: 240px; height: 100vh; overflow-y: auto;
+    width: max-content; min-width: 220px; max-width: 340px;
+    height: 100vh; overflow-y: auto; overflow-x: hidden;
     background: var(--card); border-right: 1px solid var(--border);
     padding: 0 0 24px; z-index: 200;
     font-size: 13px;
@@ -9420,7 +9421,7 @@ CUSTOM_CSS = """
   #sidenav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   #main-content {
-    margin-left: 240px; padding: 24px 36px 60px;
+    margin-left: 260px; padding: 24px 36px 60px;
     max-width: 1280px;
   }
 
@@ -9437,7 +9438,7 @@ CUSTOM_CSS = """
     font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
     color: var(--text-muted); cursor: pointer;
     display: flex; justify-content: space-between; align-items: center;
-    user-select: none;
+    user-select: none; white-space: nowrap;
   }
   .nav-group-title:hover { color: var(--text); }
   .nav-chevron { font-size: 10px; transition: transform .2s; }
@@ -9448,6 +9449,7 @@ CUSTOM_CSS = """
     display: block; padding: 5px 16px; color: var(--text-muted);
     text-decoration: none; border-left: 2px solid transparent;
     transition: color .15s, border-color .15s, background .15s;
+    white-space: nowrap;
   }
   .nav-item:hover { color: var(--text); background: var(--summary-hover); }
   .nav-item.active {
@@ -9766,7 +9768,22 @@ CUSTOM_CSS = """
 
 FILTER_JS = """
 <script>
-// ── No-alt popup: close on outside click ───────────────────────────────────
+// -- Sidebar width sync: match main-content margin to sidenav's rendered width --
+(function() {
+  function syncNavWidth() {
+    var nav  = document.getElementById('sidenav');
+    var main = document.getElementById('main-content');
+    if (!nav || !main) return;
+    main.style.marginLeft = nav.offsetWidth + 'px';
+  }
+  document.addEventListener('DOMContentLoaded', syncNavWidth);
+  // Re-sync if fonts load late (avoids flash of wrong margin)
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncNavWidth);
+  }
+})();
+
+// -- No-alt popup: close on outside click ------------------------------------
 document.addEventListener('click', function(e) {
   if (!e.target.classList.contains('noalt-info-btn')) {
     document.querySelectorAll('.noalt-popup').forEach(function(p) {
