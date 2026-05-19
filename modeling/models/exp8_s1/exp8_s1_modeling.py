@@ -1,5 +1,5 @@
 """
-phase11_modeling.py - Lag / rolling features + log-transformed targets.
+exp8_s1_modeling.py - Lag / rolling features + log-transformed targets.
 
 Two modeling changes layered on Exp3-S2 datasets:
 
@@ -22,7 +22,7 @@ Results and diagnostics include CV-R² so that the downstream selection
 script can use Gap_generalisation = CV_R² − Test_R²  as a distribution-shift
 indicator instead of Train R² − Test R² which blends two failure modes.
 
-Run:  .venv/bin/python3 21-25/modeling/models/phase11/phase11_modeling.py
+Run:  .venv/bin/python3 modeling/models/exp8_s1/exp8_s1_modeling.py
 """
 
 import os
@@ -47,7 +47,7 @@ warnings.filterwarnings("ignore")
 
 # Prediction columns written back to the source Exp3-S2 dataset files use an
 # experiment tag so they do not collide with Exp3-S2 or Exp7 prediction columns.
-PRED_TAG = "exp8"
+PRED_TAG = "exp8se1"
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -496,7 +496,7 @@ def train_dataset(ds: dict, run: int) -> list:
 
             records.append({
                 "experiment":  "Phase11-Temporal-LogY",
-                "model_name":  f"p11_{model_tag.lower()}_"
+                "model_name":  f"Exp8SE1_{model_tag}_"
                                f"{name.split('_')[-2]}_{name.split('_')[-1]}",
                 "run":         run,
                 "model":       model_tag,

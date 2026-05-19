@@ -98,11 +98,14 @@ EXP_CHART_LABELS = {
     "Exp9-SE3": "E9-SE3-LogY",
     "Exp9-SE4": "E9-SE4-LogF",
     "Exp9-SE5": "E9-SE5-LogLog",
+    "Exp8-SE1": "E8-SE1",
+    "Exp8-SE2": "E8-SE2",
+    "Exp8-SE3": "E8-SE3",
+    "Exp8-SE4": "E8-SE4",
     "Exp6-ANN": "E6-ANN", "Exp6-Voting": "E6-Vote",
     "Exp6-Stacking": "E6-Stack",
     "ANN-Exp1": "ANN-E1", "ANN-Exp2-SE2": "ANN-E2-SE1", "ANN-Exp2-SE3-Ref": "ANN-E2-SE2",
     "Exp7-SE1": "E7-SE1", "Exp7-SE2": "E7-SE2",
-    "Exp8": "E8",
 }
 
 # Longer descriptive labels used only in the "Source" column of best-model tables.
@@ -137,6 +140,10 @@ EXP_SOURCE_LABELS = {
     "Exp9-SE3":       "Exp9 SE3  -  W1+LogY (2024-only + log1p target transform)",
     "Exp9-SE4":       "Exp9 SE4  -  W1+LogF (2024-only + log1p feature transform)",
     "Exp9-SE5":       "Exp9 SE5  -  W1+LogLog (2024-only + log1p features + log1p targets)",
+    "Exp8-SE1":       "Exp8 SE1  -  General Temporal Enrichment (lag-1/3/7 + rolling)",
+    "Exp8-SE2":       "Exp8 SE2  -  Same-Day Features Only (22 features)",
+    "Exp8-SE3":       "Exp8 SE3  -  Same-Day + Lag-5 BOD/COD (28 features)",
+    "Exp8-SE4":       "Exp8 SE4  -  Full Features + Availability-Aware Lags (31 features)",
     "Exp5-S1":        "Exp5 SE1  -  Composite + Grab Inlet",
     "Exp5-S1-FS":     "Exp5 SE1-FS  -  Composite + Grab Inlet (FS)",
     "Exp5-S2":        "Exp5 SE2  -  Grab + Composite Inlet",
@@ -146,7 +153,6 @@ EXP_SOURCE_LABELS = {
     "Exp6-Stacking":"Exp6  -  Stacking",
     "Exp7-SE1":     "Exp7 SE1  -  Full FE",
     "Exp7-SE2":     "Exp7 SE2  -  Selective FE",
-    "Exp8":         "Exp8  -  Temporal Features",
 }
 EXP_CHART_ORDER = list(EXP_CHART_LABELS.keys())
 
@@ -193,6 +199,9 @@ _DS_EXP_MAP = [
     ("experiment9/sub_exp1",                            "Exp9-SE3"),
     ("experiment9/sub_exp1",                            "Exp9-SE4"),
     ("experiment9/sub_exp1",                            "Exp9-SE5"),
+    ("experiment8/sub_exp2",                            "Exp8-SE2"),
+    ("experiment8/sub_exp3",                            "Exp8-SE3"),
+    ("experiment8/sub_exp4",                            "Exp8-SE4"),
 ]
 
 # predicted_<TAG>_run_N → canonical model name
@@ -769,21 +778,72 @@ FEATURE_DESCRIPTIONS = {
                      "Exp5-SE2 dataset (grab targets + cross-type composite inlet columns). "
                      "Paired with Exp5-S2 (full feature set) for direct comparison.",
     },
-    "Exp8": {
-        "label": "Exp3-SE2 + Temporal Lags + log1p Target Transform (50-58 features)",
+    "Exp8-SE1": {
+        "label": "General Temporal Enrichment - Exp3-SE2 + lag-1/3/7 + 7d rolling on inlet/Flow/Power (~50-58 features)",
         "features": (
             "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
-            "<li><strong>Base:</strong> Exp3-SE2 features per target.</li>"
-            "<li><strong>Added temporal:</strong> Lag 1/3/7-day + 7-day calendar rolling mean on inlet + Flow + Power columns only (~50-58 total features).</li>"
+            "<li><strong>Base:</strong> Exp3-SE2 features (31) per target - no availability constraints.</li>"
+            "<li><strong>Added temporal:</strong> lag-1, lag-3, lag-7, 7-day calendar rolling mean on "
+            "inlet + Flow + Power columns only. Total ~50-58 features depending on target.</li>"
             "<li><strong>Target transform:</strong> log1p on BOD/COD/TSS; pH untransformed. Back-transform via Duan smearing.</li>"
-            "<li><strong>Restriction:</strong> Temporal features limited to inlet+Flow+Power to avoid catastrophic overfitting on Composite (n~290).</li>"
+            "<li><strong>Motivation:</strong> Pure temporal enrichment hypothesis - does any past "
+            "inlet information improve predictions, regardless of lab-delay constraints?</li>"
             "</ul>"
         ),
-        "rationale": "Daily wastewater quality has temporal autocorrelation - yesterday's "
-                     "influent predicts today's effluent better than cross-sectional features "
-                     "alone. Lag expansion restricted to inlet+Flow+Power columns to avoid "
-                     "catastrophic overfitting on composite datasets (n≈290 rows). "
-                     "log1p targets reduce right-skew in BOD/COD/TSS distributions.",
+        "rationale": "Tests whether temporal autocorrelation in influent conditions improves "
+                     "effluent prediction. Lags applied indiscriminately to inlet+Flow+Power "
+                     "without distinguishing same-day vs. lab-delayed columns. "
+                     "Contrast with SE4 which applies lags only where physically justified.",
+    },
+    "Exp8-SE2": {
+        "label": "Same-Day Operational Baseline (22 features) - BOD and COD input columns removed",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Removed (6 features):</strong> Inlet BOD, Inlet COD, Sec Clarifier BOD, "
+            "Sec Clarifier COD, Sec Sed BOD, Sec Sed COD. All require 5-day lab incubation (BOD5); "
+            "COD treated as 5-day pending confirmation.</li>"
+            "<li><strong>Inlet (2 same-day):</strong> Inlet pH, Inlet TSS - probe/gravimetric, same-day.</li>"
+            "<li><strong>Secondary (6 same-day):</strong> Sec Clarifier pH, TSS, RAS; Sec Sed pH, TSS, RAS.</li>"
+            "<li><strong>ADD-tier Aeration (7):</strong> DO, MLSS, SV30, SVI, pH (Existing) + DO, SV30 (New).</li>"
+            "<li><strong>COMMON (7):</strong> Flow, Power, year, month_sin/cos, dow_sin/cos.</li>"
+            "</ul>"
+        ),
+        "rationale": "Establishes the accuracy floor achievable with only features that are "
+                     "genuinely available on the day of sampling. Directly quantifies how much "
+                     "predictive power depends on 5-day BOD/COD lab results.",
+    },
+    "Exp8-SE3": {
+        "label": "Same-Day + Lag-5 BOD/COD (28 features) - most recent lab result available",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Same-day base (22):</strong> SE2 feature set - no BOD/COD inputs on the current day.</li>"
+            "<li><strong>Added lag-5 (6):</strong> Inlet BOD, Inlet COD, Sec Clarifier BOD, "
+            "Sec Clarifier COD, Sec Sed BOD, Sec Sed COD - each shifted 5 rows. "
+            "On day X, the value from day X-5 is the most recent BOD/COD lab result available "
+            "(collected 5 days ago; BOD5 result returned today).</li>"
+            "</ul>"
+        ),
+        "rationale": "Models the most realistic operational scenario: same-day sensor readings "
+                     "plus the most recently returned BOD/COD lab report (5-day turnaround). "
+                     "~15-20% row loss vs. SE2 from lag-induced missingness propagation.",
+    },
+    "Exp8-SE4": {
+        "label": "Full Features + Availability-Aware Lags (31 features) - lags only where lab-justified",
+        "features": (
+            "<ul style='margin:0.3rem 0 0 1rem;padding:0;line-height:1.8'>"
+            "<li><strong>Same-day (24):</strong> Inlet pH/TSS, Sec pH/TSS/RAS (x2), "
+            "all Aeration (8), Flow, Power, Primary Sludge Totalizer, COMMON_CYCLIC.</li>"
+            "<li><strong>Lag-5 (6):</strong> Inlet BOD, Inlet COD, Sec Clarifier BOD, "
+            "Sec Clarifier COD, Sec Sed BOD, Sec Sed COD - 5-day BOD5 turnaround.</li>"
+            "<li><strong>Lag-1 (1):</strong> Inlet Total Coliform (Composite) - 24-hour culture plate count.</li>"
+            "<li><strong>Note:</strong> Uses composite coliform column (2023-2025 coverage) for both "
+            "grab and composite datasets; grab coliform absent from 2024-2025.</li>"
+            "</ul>"
+        ),
+        "rationale": "Principled bridge between SE1 (indiscriminate lags) and SE3 (reduced same-day base). "
+                     "Keeps full Exp3-SE2 feature richness but applies lags only where the lab "
+                     "turnaround physically justifies it. Tests whether SE1's gains survive "
+                     "when coliform and BOD/COD are shifted to their correct availability windows.",
     },
 }
 
@@ -937,18 +997,26 @@ EXP_INTRO = {
         "composite datasets overfit severely with the expanded feature count."
     ),
     "Exp8": (
-        "Exp 8 adds <strong>temporal lag features</strong> (lag 1/3/7-day) and a "
-        "<strong>7-day rolling mean</strong> to inlet, Flow, and Power columns, "
-        "plus a log1p target transform on BOD/COD/TSS with Duan smearing back-transform. "
-        "Feature expansion is restricted to inlet+Flow+Power columns to avoid the "
-        "catastrophic overfitting seen when applying temporal features to all columns "
-        "(which would produce ~128 features on ~290 composite rows)."
+        "Experiment 8 investigates <strong>temporal feature availability</strong>: which process "
+        "measurements are genuinely available on the day of prediction, which require multi-day "
+        "lab incubation, and whether encoding these constraints - or exploiting past observations "
+        "via lags - improves effluent quality prediction."
         "<br><br>"
-        "Key wins: <strong>Grab BOD</strong> (Ridge 0.656, gap −0.095) and "
-        "<strong>Grab COD</strong> (XGB 0.464, gap +0.057 - new Grab COD high with an honest gap). "
-        "Key losses: all composite targets deteriorate, especially Comp TSS (Ridge −1.04, gap +1.82). "
-        "Conclusion: temporal features help Grab targets; composites lack the sample size to benefit. "
-        "CV_R² and Gap_gen = CV_R² − Test_R² are recorded per model for distribution-shift diagnosis."
+        "<strong>SE1</strong> (general temporal enrichment): adds lag-1/3/7 + 7-day rolling mean "
+        "to all inlet, Flow, and Power columns on the full Exp3-SE2 feature set. No availability "
+        "constraints - tests whether any past inlet information helps, regardless of lab delays."
+        "<br><br>"
+        "<strong>SE2</strong> (same-day operational baseline): removes all 6 BOD/COD input columns "
+        "(Inlet + Sec Clarifier + Sec Sed), leaving 22 same-day features. Establishes the accuracy "
+        "floor when operating without any 5-day lab results."
+        "<br><br>"
+        "<strong>SE3</strong> (same-day + lab-constrained lags): extends SE2 by adding lag-5 "
+        "versions of the 6 BOD/COD columns - representing the most recent lab report available "
+        "on day X (collected day X-5, BOD5 result returned today). 28 features total."
+        "<br><br>"
+        "<strong>SE4</strong> (full features + availability-aware lags): keeps the complete "
+        "Exp3-SE2 feature set (31 features) but shifts each lab-delayed column to its correct "
+        "availability window: BOD/COD at lag-5, Coliform at lag-1, all other columns same-day."
     ),
 }
 
@@ -996,6 +1064,9 @@ def _exp_key(raw: str, is_fs: bool) -> str:
         "Exp9-SE3": "Exp9-SE3",
         "Exp9-SE4": "Exp9-SE4",
         "Exp9-SE5": "Exp9-SE5",
+        "Exp8-SE2": "Exp8-SE2",
+        "Exp8-SE3": "Exp8-SE3",
+        "Exp8-SE4": "Exp8-SE4",
         "Exp6-ANN": "Exp6-ANN",
         "Exp6-Ensemble": "Exp6-Ensemble",
         "Exp7-SE1": "Exp7-SE1",
@@ -1098,9 +1169,9 @@ def _norm_phase9(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _norm_phase11(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize Exp 8 results (temporal features + log1p targets)."""
+    """Normalize Exp8-SE1 results (general temporal enrichment + log1p targets)."""
     out = pd.DataFrame(dict(
-        exp_key="Exp8",
+        exp_key="Exp8-SE1",
         target=df["target"],
         model=df["model"],
         n_train=df.get("n_train"),
@@ -1188,6 +1259,9 @@ def load_all_data() -> pd.DataFrame:
         ("exp9_s3", False),
         ("exp9_s4", False),
         ("exp9_s5", False),
+        ("exp8_s2", False),
+        ("exp8_s3", False),
+        ("exp8_s4", False),
     ]:
         p = os.path.join(m, "linear", variant, "results.xlsx")
         if os.path.exists(p):
@@ -1214,6 +1288,9 @@ def load_all_data() -> pd.DataFrame:
         ("exp9_s3", False),
         ("exp9_s4", False),
         ("exp9_s5", False),
+        ("exp8_s2", False),
+        ("exp8_s3", False),
+        ("exp8_s4", False),
     ]:
         for mdl in ["rf", "gb", "xgb"]:
             p = os.path.join(m, "non_linear", variant, mdl, "results.xlsx")
@@ -1248,10 +1325,10 @@ def load_all_data() -> pd.DataFrame:
             df = df[df["run"] == df["run"].max()]
             frames.append(_norm_phase10(df, is_10b))
 
-    # Exp 8
-    p11 = os.path.join(m, "phase11", "results.xlsx")
-    if os.path.exists(p11):
-        df = pd.read_excel(p11)
+    # Exp 8 SE1 (combined linear+non-linear script)
+    p_e8s1 = os.path.join(m, "exp8_s1", "results.xlsx")
+    if os.path.exists(p_e8s1):
+        df = pd.read_excel(p_e8s1)
         df = df[df["run"] == df["run"].max()]
         frames.append(_norm_phase11(df))
 
@@ -1282,8 +1359,9 @@ def compute_all_mdae() -> pd.DataFrame:
     """Scan every dataset xlsx file, compute MdAE on 2025 rows for BOD/TSS targets only.
 
     Returns a DataFrame with columns: exp_key, model, target, MdAE_test.
-    Exp 7 and Exp 8 do not store row-level predictions so those phases
-    are absent - MdAE_test will be NaN for them after the merge.
+    Exp 7 (SE1/SE2) and Exp 8-SE1 do not store standard predicted_* columns
+    so those sub-experiments are absent. Exp 8-SE2/SE3/SE4 DO store predictions
+    and will have MdAE_test populated. MdAE_test will be NaN for absent experiments.
     """
     import glob, re
     ds_base = os.path.join(MODELING_DIR, "datasets")
@@ -1948,7 +2026,7 @@ def _metrics_table(df: pd.DataFrame, models: list, section_id: str, df_all: pd.D
     MdAE (Median Absolute Error) is shown for BOD and TSS targets only - these have
     severe outlier distributions (up to 9.8% severe outliers in training) where RMSE
     is dominated by spikes. MdAE is the primary reliability metric for those targets.
-    Exp 7 and Exp 8 do not store row-level predictions so MdAE is unavailable (-).
+    Exp 7 and Exp 8-SE1 do not store row-level predictions so MdAE is unavailable (-) for those sub-experiments. Exp 8-SE2/SE3/SE4 DO store predictions and will show MdAE.
 
     Best-model highlighting: highest Test R² per target row (★), regardless of sign.
     """
@@ -3150,9 +3228,12 @@ def _section_bests_json(df_all: pd.DataFrame):
         "p10b":              ["Exp7-SE2"],
         "fe-comparison":     ["Exp7-SE1", "Exp7-SE2"],
         "fe-findings":         ["Exp7-SE2"],
-        "p11-se1":             ["Exp8"],
-        "temporal-comparison": ["Exp8"],
-        "temporal-findings":   ["Exp8"],
+        "exp8-s1":          ["Exp8-SE1"],
+        "exp8-s2":          ["Exp8-SE2"],
+        "exp8-s3":          ["Exp8-SE3"],
+        "exp8-s4":          ["Exp8-SE4"],
+        "exp8-comparison":  ["Exp8-SE1", "Exp8-SE2", "Exp8-SE3", "Exp8-SE4", "Exp3-S1"],
+        "exp8-findings":    ["Exp8-SE1", "Exp8-SE2", "Exp8-SE3", "Exp8-SE4"],
         "exp4-s1":      ["Exp4-S1"],
         "exp4-s2":      ["Exp4-S2"],
         "exp5-s1":      ["Exp5-S1", "Exp5-S1-FS"],
@@ -3901,8 +3982,8 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
   </div>
   <p class="meta" style="margin-top:8px;font-size:11px;color:var(--text-muted)">
     MdAE % Limit is computed from row-level predictions stored in dataset files.
-    Feature Engineering and Temporal Features phases do not store row-level predictions,
-    so MdAE shows <em>-</em> when their models are the recommended choice.
+    Exp 7 (Feature Engineering) and Exp 8-SE1 (General Temporal Enrichment) do not store row-level predictions,
+    so MdAE shows <em>-</em> when those models are the recommended choice. Exp 8-SE2/SE3/SE4 do store predictions.
     BOD/TSS targets only  -  MdAE is not shown for pH (narrow range) or COD (no discharge limit).
   </p>
 </div>"""
@@ -8241,6 +8322,321 @@ def _exp9_qna(df_all: pd.DataFrame) -> str:
 </details>"""
 
 
+def _exp8_comparison_panel(df_all: pd.DataFrame) -> str:
+    """Comparison of Exp8 SE1/SE2/SE3/SE4 vs Exp3-SE1 baseline."""
+    se1  = df_all[df_all["exp_key"] == "Exp8-SE1"].copy()
+    se2  = df_all[df_all["exp_key"] == "Exp8-SE2"].copy()
+    se3  = df_all[df_all["exp_key"] == "Exp8-SE3"].copy()
+    se4  = df_all[df_all["exp_key"] == "Exp8-SE4"].copy()
+    base = df_all[df_all["exp_key"] == "Exp3-S1"].copy()
+
+    if se1.empty and se2.empty and se3.empty and se4.empty:
+        return ""
+
+    models_ord = ["OLS", "Ridge", "ElNet", "RF", "GB", "XGB", "Voting"]
+    MEANINGFUL = 0.01
+    _TD  = "padding:5px 10px;font-size:0.81rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a"
+    _TH  = "padding:7px 10px;text-align:left;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+    _THC = "padding:7px 10px;text-align:center;color:#333;font-weight:600;font-size:0.82rem;background:#eeeeee"
+
+    def _get(df, model, tgt, col="R2_test"):
+        r = df[(df["model"] == model) & (df["target"] == tgt)]
+        if r.empty or col not in r.columns: return None
+        v = r[col].values[0]
+        return None if (v != v or v is None) else float(v)
+
+    def _gap_v(df, model, tgt):
+        return _get(df, model, tgt, "R2_gap")
+
+    def _gaj(r2, gap):
+        if r2 is None: return None
+        return _gap_adj(r2, gap if gap is not None else 0.0)
+
+    def _val_td(r2, gap, is_raw=False, is_gaj=False):
+        if r2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        marker = ("★" if is_raw else "") + ("✦" if is_gaj else "")
+        mhtml  = f"<sup style='font-size:0.7em'>{marker}</sup>" if marker else ""
+        if is_raw:   col = "#5BAD6F"; fw = "bold"
+        elif is_gaj: col = "#4A90D9"; fw = "bold"
+        else:        col = "#1a1a1a"; fw = "normal"
+        gap_val = gap if (gap is not None and gap == gap) else None
+        gap_str = f"{gap_val:+.3f}" if gap_val is not None else " - "
+        gap_col = ("#E15252" if gap_val is not None and gap_val > 0.10
+                   else "#5BAD6F" if gap_val is not None and gap_val < -0.10
+                   else "#888888")
+        secondary = (f"<br><span style='font-size:0.72em;color:#888888;font-weight:normal'>"
+                     f"<span style='color:{gap_col}'>Gap {gap_str}</span></span>")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:{fw}'>"
+                f"{r2:+.3f}{mhtml}{secondary}</td>")
+
+    def _delta_td(dr2):
+        if dr2 is None:
+            return f"<td style='{_TD};text-align:center;color:#999'> - </td>"
+        col = ("#5BAD6F" if dr2 >= MEANINGFUL else "#E15252" if dr2 <= -MEANINGFUL else "#888888")
+        return (f"<td style='{_TD};text-align:center;color:{col};font-weight:bold'>"
+                f"{dr2:+.3f}</td>")
+
+    # All sources for winner detection
+    all_dfs = [("b", base), ("s1", se1), ("s2", se2), ("s3", se3), ("s4", se4)]
+
+    tbody = ""
+    for tgt in GRAB_TARGETS + COMP_TARGETS:
+        short = TARGET_SHORT.get(tgt, tgt)
+        tbody += (
+            f"<tr style='background:#e8e8e8'>"
+            f"<td colspan='10' style='padding:6px 10px;font-size:0.75rem;font-weight:700;"
+            f"color:#555555;letter-spacing:0.06em;text-transform:uppercase;"
+            f"border-bottom:1px solid #d0d0d0'>{short}</td></tr>"
+        )
+
+        all_raw, all_gaj, all_gap = {}, {}, {}
+        for m_ in models_ord:
+            for src_key, src_df in all_dfs:
+                rv_ = _get(src_df, m_, tgt); gv_ = _gap_v(src_df, m_, tgt)
+                sv_ = _gaj(rv_, gv_)
+                if rv_ is not None: all_raw[(m_, src_key)] = rv_; all_gap[(m_, src_key)] = gv_
+                if sv_ is not None: all_gaj[(m_, src_key)] = sv_
+
+        tgt_br = max(all_raw.values()) if all_raw else None
+        tgt_bg = max(all_gaj.values()) if all_gaj else None
+        raw_win_gap = None
+        if tgt_br is not None:
+            for k_, v_ in all_raw.items():
+                if abs(v_ - tgt_br) < 1e-9:
+                    raw_win_gap = all_gap.get(k_); break
+        show_gaj = (tgt_bg is not None and tgt_br is not None
+                    and raw_win_gap is not None and raw_win_gap > 0.10)
+
+        def _ir(v_): return tgt_br is not None and v_ is not None and abs(v_ - tgt_br) < 1e-9
+        def _ig(s_): return show_gaj and tgt_bg is not None and s_ is not None and abs(s_ - tgt_bg) < 1e-9
+
+        for m in models_ord:
+            vb  = _get(base, m, tgt); gb  = _gap_v(base, m, tgt)
+            vs1 = _get(se1,  m, tgt); gs1 = _gap_v(se1,  m, tgt)
+            vs2 = _get(se2,  m, tgt); gs2 = _gap_v(se2,  m, tgt)
+            vs3 = _get(se3,  m, tgt); gs3 = _gap_v(se3,  m, tgt)
+            vs4 = _get(se4,  m, tgt); gs4 = _gap_v(se4,  m, tgt)
+            d_s2_base = (vs2 - vb)  if (vb  is not None and vs2 is not None) else None
+            d_s3_s2   = (vs3 - vs2) if (vs2 is not None and vs3 is not None) else None
+            d_s4_base = (vs4 - vb)  if (vb  is not None and vs4 is not None) else None
+            d_s1_base = (vs1 - vb)  if (vb  is not None and vs1 is not None) else None
+            sb  = _gaj(vb, gb); ss1 = _gaj(vs1, gs1); ss2 = _gaj(vs2, gs2)
+            ss3 = _gaj(vs3, gs3); ss4 = _gaj(vs4, gs4)
+            row_bg = "#ffffff" if models_ord.index(m) % 2 == 0 else "#f7f7f7"
+            tbody += (
+                f"<tr style='background:{row_bg}'>"
+                f"<td style='{_TD}'><strong>{m}</strong></td>"
+                f"{_val_td(vb,  gb,  _ir(vb),  _ig(sb))}"
+                f"{_val_td(vs2, gs2, _ir(vs2), _ig(ss2))}"
+                f"{_delta_td(d_s2_base)}"
+                f"{_val_td(vs3, gs3, _ir(vs3), _ig(ss3))}"
+                f"{_delta_td(d_s3_s2)}"
+                f"{_val_td(vs4, gs4, _ir(vs4), _ig(ss4))}"
+                f"{_delta_td(d_s4_base)}"
+                f"{_val_td(vs1, gs1, _ir(vs1), _ig(ss1))}"
+                f"{_delta_td(d_s1_base)}"
+                f"</tr>"
+            )
+
+    main_table = f"""
+<div style='overflow-x:auto;margin-top:0.8rem;border:1px solid #cccccc;border-radius:4px'>
+<table style='border-collapse:collapse;width:100%;background:#ffffff;font-size:0.82rem;
+              color:#1a1a1a;min-width:1100px'>
+  <thead>
+    <tr style='border-bottom:2px solid #cccccc'>
+      <th style='{_TH};min-width:60px'>Model</th>
+      <th style='{_THC}'>Baseline (Exp3-SE1)<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>28 feat, all inputs - R2, Gap</span></th>
+      <th style='{_THC}'>SE2: Same-Day Only<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>22 feat, no BOD/COD - R2, Gap</span></th>
+      <th style='{_THC}'>SE2 - Base<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>Delta R2</span></th>
+      <th style='{_THC}'>SE3: Same-Day + Lag-5<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>28 feat, lag-5 BOD/COD - R2, Gap</span></th>
+      <th style='{_THC}'>SE3 - SE2<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>Delta R2</span></th>
+      <th style='{_THC}'>SE4: Full + Aware Lags<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>31 feat, lag-justified - R2, Gap</span></th>
+      <th style='{_THC}'>SE4 - Base<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>Delta R2</span></th>
+      <th style='{_THC}'>SE1: General Temporal<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>~52 feat, lag-1/3/7 - R2, Gap</span></th>
+      <th style='{_THC}'>SE1 - Base<br>
+          <span style='color:#888888;font-weight:400;font-size:0.78em'>Delta R2</span></th>
+    </tr>
+  </thead>
+  <tbody>{tbody}</tbody>
+</table>
+</div>"""
+
+    return f"""
+<details class="exp-details" id="exp8-comparison">
+  <summary><span class="fold-icon">&#9654;</span> Comparisons</summary>
+  <div class="exp-body">
+    <div class="obs-card" style="border-left:4px solid #E67E22">
+      <p class="meta">
+        Baseline = Exp3-SE1 (28 features, full 2021-2024 window, all BOD/COD inputs included, no lags).
+        SE2 = same-day only (22 features, BOD/COD inputs removed).
+        SE3 = SE2 + lag-5 BOD/COD (28 features, most recent lab result available).
+        SE4 = full Exp3-SE2 feature set with availability-aware lags: BOD/COD at lag-5, Coliform at lag-1 (31 features).
+        SE1 = general temporal enrichment: lag-1/3/7 + 7d rolling on all inlet/Flow/Power (~52 features, log1p targets).
+        Deltas: SE2-Base shows cost of removing BOD/COD; SE3-SE2 shows recovery from lag-5; SE4-Base and SE1-Base show net gain vs full baseline.
+        <strong>★</strong> = best raw R2 per target across all columns.
+        <strong>✦</strong> = best gap-adjusted (shown when raw winner gap &gt; 0.10).
+      </p>
+    </div>
+    {main_table}
+  </div>
+</details>"""
+
+
+def _exp8_findings(df_all: pd.DataFrame) -> str:
+    se1  = df_all[df_all["exp_key"] == "Exp8-SE1"].dropna(subset=["R2_test"])
+    se2  = df_all[df_all["exp_key"] == "Exp8-SE2"].dropna(subset=["R2_test"])
+    se3  = df_all[df_all["exp_key"] == "Exp8-SE3"].dropna(subset=["R2_test"])
+    se4  = df_all[df_all["exp_key"] == "Exp8-SE4"].dropna(subset=["R2_test"])
+    base = df_all[df_all["exp_key"] == "Exp3-S1"].dropna(subset=["R2_test"])
+
+    def _best(df, tgt, models=None):
+        sub = df[df["target"] == tgt]
+        if models is not None:
+            sub = sub[sub["model"].isin(models)]
+        return float(sub["R2_test"].max()) if not sub.empty else float("nan")
+
+    def _best_model_name(df, tgt):
+        sub = df[df["target"] == tgt]
+        if sub.empty: return " - "
+        return sub.loc[sub["R2_test"].idxmax(), "model"]
+
+    def _c(v, threshold=0.0):
+        if v != v: return " - "
+        col = "#5BAD6F" if v > threshold else "#E15252" if v < -0.05 else "var(--text-muted)"
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    def _dc(v):
+        if v != v: return " - "
+        col = "#5BAD6F" if v >= 0.01 else "#E15252" if v <= -0.01 else "var(--text-muted)"
+        return f"<span style='color:{col};font-weight:bold'>{v:+.3f}</span>"
+
+    def _qcard(n, question, answer):
+        return (
+            f"<div style='margin-bottom:1.1rem;border:1px solid var(--border);border-radius:5px;overflow:hidden'>"
+            f"<div style='background:var(--bg-secondary);padding:0.45rem 0.8rem;border-bottom:1px solid var(--border);"
+            f"display:flex;align-items:baseline;gap:0.5rem'>"
+            f"<span style='color:#4A90D9;font-size:0.78em;font-weight:bold;letter-spacing:0.06em;flex-shrink:0'>Q{n}</span>"
+            f"<span style='font-weight:bold;font-size:0.93em;line-height:1.4'>{question}</span></div>"
+            f"<div style='padding:0.6rem 0.8rem 0.55rem'>"
+            f"<p class='meta' style='margin:0;line-height:1.6;border-left:2px solid var(--border);padding-left:0.6rem'>{answer}</p>"
+            f"</div></div>"
+        )
+
+    lin = ["OLS", "Ridge", "ElNet"]
+    tre = ["RF", "GB", "XGB"]
+
+    # Key R² values across SEs
+    b_grab_tss        = _best(base, "Effluent TSS (mg/L, Grab)")
+    s2_grab_tss_elnet = _best(se2[se2["model"] == "ElNet"], "Effluent TSS (mg/L, Grab)")
+    s3_grab_tss_elnet = _best(se3[se3["model"] == "ElNet"], "Effluent TSS (mg/L, Grab)")
+    s1_grab_tss       = _best(se1, "Effluent TSS (mg/L, Grab)")
+
+    s2_grab_ph_elnet  = _best(se2[se2["model"] == "ElNet"], "Effluent pH (Grab)")
+    s3_grab_ph_elnet  = _best(se3[se3["model"] == "ElNet"], "Effluent pH (Grab)")
+
+    s2_grab_bod_elnet = _best(se2[se2["model"] == "ElNet"], "Effluent BOD (mg/L, Grab)")
+    s3_grab_bod_elnet = _best(se3[se3["model"] == "ElNet"], "Effluent BOD (mg/L, Grab)")
+    s4_grab_bod_ridge = _best(se4[se4["model"] == "Ridge"], "Effluent BOD (mg/L, Grab)")
+    s1_grab_bod_ridge = _best(se1[se1["model"] == "Ridge"], "Effluent BOD (mg/L, Grab)")
+
+    s2_comp_bod_elnet = _best(se2[se2["model"] == "ElNet"], "Effluent BOD (mg/L, Composite)")
+    s3_comp_bod_elnet = _best(se3[se3["model"] == "ElNet"], "Effluent BOD (mg/L, Composite)")
+    s4_comp_bod_elnet = _best(se4[se4["model"] == "ElNet"], "Effluent BOD (mg/L, Composite)")
+
+    s2_grab_cod = _best(se2, "Effluent COD (mg/L, Grab)")
+    s3_grab_cod = _best(se3, "Effluent COD (mg/L, Grab)")
+    s4_grab_cod = _best(se4, "Effluent COD (mg/L, Grab)", ["ElNet"])
+    s1_grab_cod_xgb = _best(se1[se1["model"] == "XGB"], "Effluent COD (mg/L, Grab)")
+
+    s4_grab_tss_ols   = _best(se4[se4["model"] == "OLS"], "Effluent TSS (mg/L, Grab)")
+    s4_comp_tss       = _best(se4, "Effluent TSS (mg/L, Composite)")
+
+    q1 = (
+        f"<strong>TSS and pH are self-sufficient from same-day features (SE2).</strong> "
+        f"Grab TSS ElNet reaches {_c(s2_grab_tss_elnet)} with SE2 alone - comparable to the full "
+        f"Exp3-SE1 baseline of {_c(b_grab_tss)}. Aeration MLSS and SV30 directly capture the "
+        f"suspended solids state in the tank; no BOD or COD reading is needed. "
+        f"Grab pH ElNet reaches {_c(s2_grab_ph_elnet)} with same-day features. "
+        f"Adding lag-5 BOD/COD (SE3) leaves TSS ({_c(s3_grab_tss_elnet)}) and pH "
+        f"({_c(s3_grab_ph_elnet)}) essentially unchanged - the extra lag features add noise "
+        f"for parameters that are already well-determined by same-day process readings."
+    )
+
+    q2 = (
+        f"<strong>Yes, substantially for linear BOD models.</strong> "
+        f"Grab BOD ElNet goes from {_c(s2_grab_bod_elnet)} (SE2, no BOD inputs) to "
+        f"{_c(s3_grab_bod_elnet)} (SE3, with lag-5 BOD). The 5-day-old inlet BOD reading "
+        f"anchors the model's baseline organic load estimate. Comp BOD ElNet recovers from "
+        f"{_c(s2_comp_bod_elnet)} (SE2) to {_c(s3_comp_bod_elnet)} (SE3). "
+        f"Tree models show minimal response - they already exploit the same-day pH/TSS/aeration "
+        f"signal fully; the lag-5 BOD column adds little additional split diversity."
+        f"<br><br>"
+        f"<strong>SE4</strong> (full feature set + availability-aware lags) reaches Grab BOD "
+        f"Ridge {_c(s4_grab_bod_ridge)} and Comp BOD ElNet {_c(s4_comp_bod_elnet)}, "
+        f"while SE1 (general temporal enrichment with log1p) achieves Grab BOD Ridge "
+        f"{_c(s1_grab_bod_ridge)}."
+    )
+
+    q3 = (
+        f"<strong>COD remains largely unpredictable across all four sub-experiments.</strong> "
+        f"SE2 best Grab COD: {_c(s2_grab_cod, -0.05)}. SE3 (lag-5 COD added): {_c(s3_grab_cod)}. "
+        f"SE4 (full features + lag-5 COD): ElNet {_c(s4_grab_cod)}. SE1 (temporal lags): XGB {_c(s1_grab_cod_xgb)}. "
+        f"Effluent COD is driven by irregular industrial discharge events that change day-to-day. "
+        f"A 5-day-old COD reading is too stale to capture these transients; even same-day inlet "
+        f"COD did not produce reliable predictions in earlier experiments. "
+        f"COD should be excluded from operational deployment unless rapid same-day testing "
+        f"(2-hour dichromate method) is confirmed available at the plant."
+    )
+
+    q4 = (
+        f"<strong>SE4 adds meaningful signal over SE2/SE3 only for specific targets.</strong> "
+        f"The coliform lag-1 feature restricts SE4 training to 2023-2025 rows (~200-225 grab, "
+        f"~190-210 comp) - roughly half the SE2/SE3 training size. For BOD, SE4 is competitive "
+        f"with SE3. For TSS, SE4 OLS reaches {_c(s4_grab_tss_ols)} on grab but trees deteriorate. "
+        f"Comp TSS best SE4: {_c(s4_comp_tss)}. The coliform lag-1 feature does not consistently "
+        f"improve over SE3 - the row-cost of requiring 2023+ composite coliform data largely "
+        f"offsets any signal gain. SE4 is useful as a research benchmark but SE3 is more "
+        f"robust for deployment due to its larger training window."
+    )
+
+    q5 = (
+        f"<strong>Target-specific operational deployment recommendations:</strong>"
+        f"<br><br>"
+        f"TSS: deploy SE2/ElNet - same-day features sufficient, lag-5 adds noise.<br>"
+        f"pH: deploy SE2/ElNet - same-day features sufficient.<br>"
+        f"BOD: deploy SE3/ElNet - lag-5 BOD/COD substantially improves linear models "
+        f"(Grab BOD {_c(s3_grab_bod_elnet)}) with a feasible daily workflow: "
+        f"enter yesterday's returned BOD5 result before running the prediction.<br>"
+        f"COD: do not deploy operationally until same-day COD results are confirmed. "
+        f"If the plant adopts rapid 2-hour dichromate testing, re-run SE2 with COD added back."
+        f"<br><br>"
+        f"<strong>SE1 (general temporal enrichment)</strong> is useful as a research benchmark "
+        f"but requires storing and querying 1/3/7-day-old inlet readings at inference time, "
+        f"making it operationally heavier than SE2/SE3 for marginal gain."
+    )
+
+    return f"""
+<details class="exp-details" id="exp8-findings" open>
+  <summary><span class="fold-icon">&#9654;</span> Findings  -  Temporal and Availability Features (SE1-SE4)</summary>
+  <div class="exp-body">
+    {_qcard(1, "Which effluent targets are predictable from same-day features alone (SE2)?", q1)}
+    {_qcard(2, "Does adding lag-5 BOD/COD (SE3) or availability-aware lags (SE4) recover accuracy for BOD?", q2)}
+    {_qcard(3, "Why does COD remain unpredictable across all four sub-experiments?", q3)}
+    {_qcard(4, "Does SE4 (full features + availability-aware lags) justify the row-cost of coliform inclusion?", q4)}
+    {_qcard(5, "What is the recommended operational deployment strategy?", q5)}
+  </div>
+</details>"""
+
+
 def build_exp9_section(df_all: pd.DataFrame) -> str:
     sub1 = _exp_subsection(df_all, "Exp9-SE1", "exp9-s1",
                            "SE1  -  W1: 2024-Only Training Window (27 features)",
@@ -9207,9 +9603,42 @@ def _phase10_qna(df_all: pd.DataFrame) -> str:
 </details>"""
 
 
-def _phase11_comparison_panel(df_all: pd.DataFrame) -> str:
+def build_exp8_section(df_all: pd.DataFrame) -> str:
+    exp8_keys = ["Exp8-SE1", "Exp8-SE2", "Exp8-SE3", "Exp8-SE4"]
+    sub1 = _exp_subsection(df_all, "Exp8-SE1", "exp8-s1",
+                           "SE1  -  General Temporal Enrichment (lag-1/3/7 + rolling, ~52 features)",
+                           open_default=True)
+    sub2 = _exp_subsection(df_all, "Exp8-SE2", "exp8-s2",
+                           "SE2  -  Same-Day Operational Baseline (22 features, no BOD/COD inputs)",
+                           open_default=False)
+    sub3 = _exp_subsection(df_all, "Exp8-SE3", "exp8-s3",
+                           "SE3  -  Same-Day + Lag-5 BOD/COD (28 features)",
+                           open_default=False)
+    sub4 = _exp_subsection(df_all, "Exp8-SE4", "exp8-s4",
+                           "SE4  -  Full Features + Availability-Aware Lags (31 features)",
+                           open_default=False)
+    comparison = _exp8_comparison_panel(df_all)
+    findings   = _exp8_findings(df_all)
+    best       = _best_model_box(
+                     df_all[df_all["exp_key"].isin(exp8_keys)],
+                     "Temporal and Availability Features  -  Best across SE1-SE4")
+    return f"""
+<section id="exp8">
+  <h1 class="section-title">Temporal and Availability Features</h1>
+  <p class="section-intro">{EXP_INTRO["Exp8"]}</p>
+  {sub1}
+  {sub2}
+  {sub3}
+  {sub4}
+  {comparison}
+  {findings}
+  {best}
+</section>"""
+
+
+def _phase11_comparison_panel_RETIRED(df_all: pd.DataFrame) -> str:
     """Contextual comparison: Exp 6 Voting / Exp 7-SE2 vs Temporal Features."""
-    keys   = ["Exp6-Voting", "Exp7-SE2", "Exp8"]
+    keys   = ["Exp6-Voting", "Exp7-SE2", "Exp8-SE1"]
     labels = {
         "Exp6-Voting": (
             "P9 Baseline<br>"
@@ -9754,46 +10183,8 @@ def build_phase10_section(df_all: pd.DataFrame) -> str:
 
 
 def build_phase11_section(df_all: pd.DataFrame) -> str:
-    df = df_all[df_all["exp_key"] == "Exp8"].copy()
-    if df.empty:
-        return ""
-    models = [m for m in ALL_MODELS_ORD if m in df["model"].values]
-    feat_html  = _feature_card("Exp8")
-    ds_html    = _dataset_summary(df)
-    tbl        = _metrics_table(df, models, "p11-detail")
-    train_tbl  = _train_metrics_table(df, models)
-    comparison = _phase11_comparison_panel(df_all)
-    findings   = _phase11_qna(df_all)
-    best       = _best_model_box(df, "Temporal Features")
-
-    cv_note = """
-<div class="info-note">
-  <strong>CV note:</strong> <code>CV_R²</code> and <code>Gap_gen = CV_R² - Test_R²</code>
-  are stored in results.xlsx but not shown in the table (unified schema). Available in
-  <code>models/phase11/results.xlsx</code>. First TimeSeriesSplit fold trains on ~80 rows
-  with ~55 features - CV_R² is very noisy for Ridge/ElNet; interpret per-fold rather than
-  as a mean. Key: Grab COD RF has CV_R²=0.291, Gap_gen=-0.014 - most consistent Grab COD
-  model by cross-validation.
-</div>"""
-
-    return f"""
-<section id="phase11">
-  <h1 class="section-title">Temporal Features</h1>
-  <p class="section-intro">{EXP_INTRO["Exp8"]}</p>
-  <details class="exp-details" open id="p11-se1">
-    <summary><span class="fold-icon">▶</span> SE1 - Temporal Lags + log1p (All Models)</summary>
-    <div class="exp-body">
-      {feat_html}
-      {ds_html}
-      {tbl}
-      {train_tbl}
-    </div>
-  </details>
-  {cv_note}
-  {comparison}
-  {findings}
-  {best}
-</section>"""
+    # Deprecated: merged into build_exp8_section.
+    return ""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -9999,13 +10390,16 @@ def _sidebar() -> str:
   </div>
 
   <div class="nav-group">
-    <div class="nav-group-title nav-collapsible" data-target-group="nav-p11">
-      8. Temporal Features <span class="nav-chevron">▾</span>
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-exp8">
+      8. Temporal and Availability Features <span class="nav-chevron">▾</span>
     </div>
-    <div class="nav-group-items" id="nav-p11">
-      <a class="nav-item nav-sub" href="#p11-se1">SE1 - Temporal + log1p</a>
-      <a class="nav-item nav-sub" href="#temporal-comparison">Comparisons</a>
-      <a class="nav-item nav-sub" href="#temporal-findings">Findings</a>
+    <div class="nav-group-items" id="nav-exp8">
+      <a class="nav-item nav-sub" href="#exp8-s1">SE1 - General Temporal Enrichment</a>
+      <a class="nav-item nav-sub" href="#exp8-s2">SE2 - Same-Day Baseline</a>
+      <a class="nav-item nav-sub" href="#exp8-s3">SE3 - Same-Day + Lag-5 BOD/COD</a>
+      <a class="nav-item nav-sub" href="#exp8-s4">SE4 - Full + Availability-Aware Lags</a>
+      <a class="nav-item nav-sub" href="#exp8-comparison">Comparisons</a>
+      <a class="nav-item nav-sub" href="#exp8-findings">Findings</a>
     </div>
   </div>
 
@@ -10021,6 +10415,14 @@ def _sidebar() -> str:
       <a class="nav-item nav-sub" href="#exp9-s5">SE5 - W1+LogLog: Log Features+Target</a>
       <a class="nav-item nav-sub" href="#exp9-comparison">Comparisons</a>
       <a class="nav-item nav-sub" href="#exp9-findings">Findings</a>
+    </div>
+  </div>
+
+  <div class="nav-group" style="display:none">
+    <div class="nav-group-title nav-collapsible" data-target-group="nav-exp10-retired">
+      Exp10 (retired)
+    </div>
+    <div class="nav-group-items" id="nav-exp10-retired">
     </div>
   </div>
 
@@ -10784,7 +11186,7 @@ def main():
         build_exp5_section(df_all),
         build_advanced_methods_section(df_all),
         build_phase10_section(df_all),
-        build_phase11_section(df_all),
+        build_exp8_section(df_all),
         build_exp9_section(df_all),
     ]
 
