@@ -3827,38 +3827,38 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
         sub = df_all[df_all["target"] == tgt].dropna(subset=["R2_test"])
         if sub.empty:
             continue
-        best = sub.loc[sub["R2_test"].idxmax()]
         slug = TARGET_SLUG.get(tgt, "all")
 
-        # ── Naive champion ─────────────────────────────────────────────────────
-        naive_r2   = best["R2_test"]
-        naive_gap  = best["R2_gap"]
-        naive_rmse = best.get("RMSE_test", float("nan"))
-        naive_mdl  = best["model"]
-        exp_label  = EXP_SOURCE_LABELS.get(best["exp_key"],
-                 EXP_CHART_LABELS.get(best["exp_key"], best["exp_key"]))
-        mdl_col    = MODEL_COLORS.get(naive_mdl, "#888")
+        # ── Naive champion - sourced from build_global so it uses the same
+        #    EXP_CHART_ORDER filter as the Analytics section (avoids picking
+        #    retired/invalid exp_keys that may have a spuriously higher R²).
+        gpick = gadj_by_target.get(tgt)
+        if gpick is None:
+            continue
+        naive_compound = str(gpick.get("naive_model", ""))
+        naive_r2   = float(gpick.get("naive_R2",   float("nan")))
+        naive_gap  = float(gpick.get("naive_gap",  float("nan")))
+        naive_rmse = float(gpick.get("naive_RMSE", float("nan")))
+        # Compound label is "exp_key · model" - split for display and colour lookup
+        if " · " in naive_compound:
+            naive_exp_key, naive_mdl = naive_compound.rsplit(" · ", 1)
+        else:
+            naive_exp_key, naive_mdl = "", naive_compound
+        exp_label = EXP_SOURCE_LABELS.get(naive_exp_key,
+                    EXP_CHART_LABELS.get(naive_exp_key, naive_exp_key))
+        mdl_col   = MODEL_COLORS.get(naive_mdl, "#888")
 
         # ── Gap-adjusted recommendation (across all experiments) ───────────────
-        # build_global stores "exp_key · model" as the composite label so that
-        # the rule can distinguish the same model type from different experiments.
-        naive_compound = f"{best['exp_key']} · {naive_mdl}"
-
-        gpick = gadj_by_target.get(tgt)
-        if gpick is not None:
-            gadj_lbl  = str(gpick.get("gadj_model", "-"))
-            gadj_r2   = float(gpick.get("gadj_R2",  float("nan")))
-            gadj_gap  = float(gpick.get("gadj_gap", float("nan")))
-            gadj_rmse = float(gpick.get("gadj_RMSE", float("nan")))
-        else:
-            gadj_lbl = naive_compound; gadj_r2 = naive_r2
-            gadj_gap = naive_gap; gadj_rmse = naive_rmse
+        gadj_lbl  = str(gpick.get("gadj_model", "-"))
+        gadj_r2   = float(gpick.get("gadj_R2",  float("nan")))
+        gadj_gap  = float(gpick.get("gadj_gap", float("nan")))
+        gadj_rmse = float(gpick.get("gadj_RMSE", float("nan")))
 
         # Classify this row into three display states:
         #   • gap_ok       - naive gap is acceptable (< 0.10); no concern, blank right side
         #   • has_alt      - gap is concerning AND gap-adj picks a DIFFERENT model
         #   • no_alt       - gap is concerning but gap-adj picks the SAME model (no better option)
-        gap_ok   = naive_gap < 0.10          # positive direction is the concerning one
+        gap_ok   = abs(naive_gap) < 0.10      # either direction above 0.10 is concerning
         has_alt  = (not gap_ok) and (gadj_lbl != naive_compound)
         no_alt   = (not gap_ok) and (gadj_lbl == naive_compound)
 
@@ -3917,7 +3917,7 @@ def _global_leaderboard(df_all: pd.DataFrame) -> str:
         limit = TARGET_LIMITS.get(tgt)
         
         gadj_rmse_val = gadj_rmse if not pd.isna(gadj_rmse) else float("nan")
-        gadj_mdae_val = float(gpick.get("gadj_MdAE", best.get("MdAE_test", float("nan")))) if gpick is not None else float(best.get("MdAE_test", float("nan")))
+        gadj_mdae_val = float(gpick.get("gadj_MdAE", float("nan")))
 
         if limit is not None:
             limit_str = f"{limit:g} mg/L"
@@ -4170,23 +4170,119 @@ def _progression_chart(df_all: pd.DataFrame) -> str:
 def _abstract_section() -> str:
     return """
 <div class="card section-card" id="overview-abstract" style="border-left:4px solid #4A90D9; margin-bottom: 24px;">
-  <h2 style="margin-top:0">Abstract</h2>
-  <ul style="line-height:1.5;margin-bottom:0;font-size:13px;color:var(--text-color)">
-    <li><strong>Baseline (Exp1 & 2):</strong> Established that inlet water quality alone is insufficient for prediction. Secondary clarifier data is essential to achieve meaningful accuracy.</li>
-    <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-SE2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
-    <li><strong>Feature Pruning (Exp4):</strong> Removing collinear features (via VIF or manually) degraded generalisation across the board. The collinear features carry structural signal necessary for decision tree models, while regularised linear models already suppress collinearity automatically.</li>
-    <li><strong>Advanced Methods (Ensembles & Temporal):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
-    <li><strong>Practical significance  -  R² alone is insufficient:</strong> A high Test R² does not guarantee compliance-grade accuracy. Discharge limits for BOD and TSS are 10 mg/L.
-      <strong>Grab BOD</strong> (best R²≈0.69): RMSE ≈ 2 mg/L  -  roughly 20% of the limit, operationally useful.
-      <strong>Grab TSS</strong> (best R²≈0.64): RMSE ≈ 6 mg/L  -  roughly 60% of the limit; the model explains variance well but its absolute prediction error is large relative to the compliance threshold. Predictions should be treated as trend indicators rather than compliance certifications for TSS.</li>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:12px;">
+    This study applies machine learning to predict effluent water quality at a wastewater treatment plant
+    using approximately 1,900 daily process measurements spanning 2021-2024 (training) and 2025 (held-out test).
+    Eight target variables were modelled - four grab-sample and four composite-sample concentrations
+    (BOD, COD, TSS, pH) - across nine systematic experiments covering feature scope, model complexity,
+    feature engineering, training window design, and temporal feature construction.
+    Six model classes were evaluated throughout: OLS, Ridge, ElasticNet, Random Forest, Gradient Boosting, and XGBoost.
+  </p>
+  <ul style="line-height:1.6;margin-bottom:0;font-size:13px;color:var(--text-color)">
+    <li style="margin-bottom:8px;"><strong>Feature hierarchy (Exp1-2):</strong>
+      Inlet water quality alone is not predictive of effluent quality (all models near or below zero R² on test).
+      Secondary clarifier data is necessary for positive generalisation. Primary-stage features
+      (clarifier + grit chamber) add no independent signal beyond inlet parameters.
+      The ordering inlet &lt; primary &lt; secondary was confirmed consistently across grab and composite targets.</li>
+    <li style="margin-bottom:8px;"><strong>Feature expansion and pruning (Exp3-4):</strong>
+      Adding aeration basin features to the secondary + inlet base (Exp3-SE2, 31 features) yielded the best
+      regularised linear models in the full-window experiments, with grab BOD/COD/TSS R² in the 0.42-0.58 range.
+      Deliberate collinearity removal via VIF pruning (Exp4) degraded generalisation across all models:
+      the collinear features carry process signal that tree models exploit directly and that regularised
+      linear models suppress automatically - removing them is counterproductive.</li>
+    <li style="margin-bottom:8px;"><strong>Cross-type inlet hypothesis (Exp5):</strong>
+      Adding grab-sourced inlet features to composite targets (and vice versa) recovered some rows but
+      yielded no systematic R² improvement. Cross-type mixing did not compensate for the measurement-type
+      mismatch, and the approach was not pursued further.</li>
+    <li style="margin-bottom:8px;"><strong>Advanced methods (Exp6):</strong>
+      Voting ensembles provided modest, consistent improvements over individual tree models on grab targets.
+      Stacking and ANN struggled to generalise on composite datasets (n &approx; 290-630 train rows),
+      frequently overfitting. These methods offer diminishing returns given the dataset size.</li>
+    <li style="margin-bottom:8px;"><strong>Feature engineering (Exp7):</strong>
+      Log1p transforms on concentration inputs (Exp7-SE2 selective variant) produced modest improvements
+      on BOD and COD targets. The benefit was target-specific and did not generalise uniformly,
+      consistent with the skewness audit showing that BOD and COD inputs are the most right-skewed features.</li>
+    <li style="margin-bottom:8px;"><strong>Temporal features (Exp8):</strong>
+      Introducing lag-5 BOD/COD inputs (most recent available lab result) improved linear grab BOD R²
+      from near-zero to +0.261 (SE3) without the heavy row cost of full lag-feature sets.
+      The same-day operational baseline (SE2, no BOD/COD inputs) achieved Grab TSS ElNet R²=+0.623,
+      confirming that TSS is predictable from process parameters alone. Full temporal enrichment with
+      lag-1/3/7 + rolling means (SE1) improved Grab BOD XGB to +0.423 but caused composite targets to
+      deteriorate due to overfitting at ~52 features on ~376 training rows.</li>
+    <li style="margin-bottom:8px;"><strong>Recency window hypothesis (Exp9):</strong>
+      Restricting training to 2024 only (n=187/179) produced the single largest performance jump in the study.
+      Grab BOD OLS improved from -0.209 (full-window) to +0.616 (SE1), and the first-ever positive
+      Comp COD R² (+0.123) was achieved. This strongly suggests the plant's operating regime shifted
+      over the study period, making older data counterproductive for linear models.
+      Combining the 2024-only window with log-log transforms (SE5: log1p features + log1p targets with
+      Duan smearing) pushed Grab BOD OLS to +0.654 and Grab COD Ridge to +0.540.
+      A log-Y-only variant (SE3) achieved the best Grab TSS OLS of +0.676 across all experiments.</li>
+    <li style="margin-bottom:8px;"><strong>Practical significance - R² alone is insufficient:</strong>
+      Discharge limits for BOD and TSS are 10 mg/L.
+      <strong>Grab BOD</strong> (best R²=0.654, Exp9-SE5): RMSE &approx; 2 mg/L - roughly 20% of the limit;
+      predictions are operationally useful for trend monitoring.
+      <strong>Grab TSS</strong> (best R²=0.676, Exp9-SE3): RMSE &approx; 6 mg/L - roughly 60% of the limit;
+      the model explains variance well but absolute error is large relative to the compliance threshold,
+      so TSS predictions should be treated as directional indicators rather than compliance certifications.
+      Composite targets remain significantly harder to predict (best Comp COD R²=0.197),
+      likely due to composite sampling averaging out the short-term variation that drives model signal.</li>
   </ul>
 </div>"""
+
+def _limitations_section() -> str:
+    return """
+<div class="card section-card" id="overview-limitations" style="border-left:4px solid #E8A838; margin-bottom: 24px;">
+  <h2 style="margin-top:0;font-size:16px">Limitations</h2>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:10px;">
+    Despite the encouraging R² values reported above, several open questions would need to be
+    resolved before these models could be considered for operational deployment. The points below
+    are not definitive conclusions - they are areas where additional knowledge of the plant's
+    measurement and sampling practices is required.
+  </p>
+  <ul style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:10px;">
+    <li style="margin-bottom:8px;"><strong>Concurrent design, not forecast:</strong>
+      Every model maps same-day (or near-same-day) input measurements to same-day effluent quality.
+      They do not predict what tomorrow's or next week's effluent will look like - they describe
+      what today's effluent looks like, given today's process readings.</li>
+    <li style="margin-bottom:8px;"><strong>Sample collection and measurement timing - requires clarification:</strong>
+      Several BOD and COD columns in the dataset carry a lag-5 offset, suggesting that these
+      measurements may not be available on the same day they are recorded. The exact sample collection
+      workflow - whether samples are collected on-site and sent to an external laboratory, processed
+      in-house, or read from online analysers - was not documented as part of this study.
+      Understanding this workflow is essential before assessing whether the models can be applied
+      in any real-time or near-real-time setting: if the most predictive inputs (BOD/COD) share
+      a similar delay with the effluent measurement itself, the model may provide little or no
+      operational lead time.</li>
+    <li style="margin-bottom:8px;"><strong>Feature availability in operation - requires investigation:</strong>
+      It is unclear which of the input features are continuously monitored via online sensors and
+      which require periodic grab sampling or laboratory analysis. Parameters such as pH, flow rate,
+      and RAS are commonly available from online instruments, but the availability of TSS, aeration
+      basin readings, and secondary clarifier parameters at this specific plant is unknown.
+      A feature-by-feature availability audit, conducted with plant operators, would be necessary
+      to determine the practically deployable feature subset and the realistic prediction horizon.</li>
+    <li style="margin-bottom:8px;"><strong>Non-stationarity:</strong>
+      The Exp9 recency finding - where restricting training to 2024 alone improved Grab BOD OLS from
+      R²=-0.209 to +0.616 - indicates that the plant's operating regime has shifted materially over
+      the study period. A static model trained on the full historical window would underperform
+      relative to a periodically retrained one. Any deployment would require a retraining schedule
+      aligned with operational change cycles.</li>
+  </ul>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:0;">
+    At this stage, the models are best interpreted as <em>retrospective process diagnostics</em> and
+    <em>research benchmarks</em>. Translating them into an operational tool would first require
+    a structured discussion with plant operators to understand sample collection workflows,
+    instrument availability, and measurement turnaround times - information that falls outside
+    the scope of this modelling study.
+  </p>
+</div>"""
+
 
 def build_overview(df_all: pd.DataFrame) -> str:
     return f"""
 <section id="overview">
-  <h1 class="section-title">Overview</h1>
+  <h1 class="section-title">Abstract</h1>
   {_abstract_section()}
+  {_limitations_section()}
   {_global_leaderboard(df_all)}
   {_progression_chart(df_all)}
 </section>"""
@@ -10197,7 +10293,8 @@ def _sidebar() -> str:
   <div class="nav-logo">Unified Report</div>
 
   <div class="nav-group">
-    <div class="nav-group-title">Overview</div>
+    <a class="nav-group-title nav-section-link" href="#overview">Abstract</a>
+    <a class="nav-item" href="#overview-limitations">Limitations</a>
     <a class="nav-item" href="#overview-leaderboard">Global Leaderboard</a>
     <a class="nav-item" href="#overview-progression">R² Progression</a>
   </div>
@@ -10495,6 +10592,10 @@ CUSTOM_CSS = """
     user-select: none; white-space: nowrap;
   }
   .nav-group-title:hover { color: var(--text); }
+  a.nav-section-link {
+    text-transform: none; letter-spacing: 0; font-size: 12px;
+    text-decoration: none; cursor: pointer;
+  }
   .nav-chevron { font-size: 10px; transition: transform .2s; }
   .nav-group-title.collapsed .nav-chevron { transform: rotate(-90deg); }
   .nav-group-items { overflow: hidden; transition: max-height .25s ease; }
@@ -10526,12 +10627,26 @@ CUSTOM_CSS = """
 
   /* ── Page header ───────────────────────────────────────────────── */
   .page-header {
-    border-bottom: 1px solid var(--border); margin-bottom: 28px; padding-bottom: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 28px; padding: 14px 20px;
+  }
+  .page-header .header-inner {
+    display: flex; align-items: center; gap: 0;
   }
   .page-header h1 {
-    margin: 0 0 4px; font-size: 22px; color: var(--text);
+    margin: 0; font-size: 22px; color: var(--text);
   }
-  .page-header .meta { margin: 0; }
+  .header-logo {
+    max-height: 56px; width: auto; object-fit: contain; flex-shrink: 0;
+  }
+  .header-logo:first-child {
+    padding-right: 18px; margin-right: 18px;
+    border-right: 1px solid var(--border);
+  }
+  .header-logo:last-child {
+    padding-left: 18px; margin-left: 18px;
+    border-left: 1px solid var(--border);
+  }
 
   /* ── Target filter bar ─────────────────────────────────────────── */
   .filter-bar {
@@ -10562,6 +10677,7 @@ CUSTOM_CSS = """
     color: var(--text);
   }
   section:first-of-type .section-title { margin-top: 0; }
+  #overview .section-title { font-size: 16px; }
   .section-intro { color: var(--text-muted); margin: 0 0 20px; line-height: 1.6; }
 
   /* ── Cards ─────────────────────────────────────────────────────── */
@@ -10822,6 +10938,10 @@ CUSTOM_CSS = """
 
 FILTER_JS = """
 <script>
+// -- Disable browser scroll restoration so reload always starts at top ----------
+if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+window.addEventListener('load', function() { window.scrollTo(0, 0); });
+
 // -- Sidebar width sync: match main-content margin to sidenav's rendered width --
 (function() {
   function syncNavWidth() {
@@ -11214,7 +11334,7 @@ def main():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unified Modeling Report - Wastewater Treatment</title>
+  <title>Unified Modeling Report - Guheshwori Waste Water Treatment Plant</title>
   <style>{css}</style>
   {DARK_MODE_JS}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -11224,14 +11344,15 @@ def main():
 {_sidebar()}
 <div id="main-content">
   <div class="page-header">
-    <h1>Wastewater Treatment - Unified Modeling Report</h1>
-    <p class="meta">Generated {ts} &nbsp;·&nbsp;
-      Experiments 1-5 &nbsp;·&nbsp; Neural Networks &amp; Ensembles &nbsp;·&nbsp;
-      Feature Engineering &nbsp;·&nbsp; Temporal Features &nbsp;·&nbsp;
-      9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp; Train 2021-2024 · Test 2025
-    </p>
+    <div class="header-inner">
+      <img src="../../dashboard/KUKL.png" class="header-logo" alt="KUKL">
+      <div style="flex:1;text-align:center">
+        <h1 style="margin:0 0 3px;font-size:22px;color:var(--text)">Unified Modeling Report</h1>
+        <p style="margin:0;font-size:12px;color:var(--text-muted);letter-spacing:0.02em">Guheshwori Waste Water Treatment Plant</p>
+      </div>
+      <img src="../../dashboard/WABAC.png" class="header-logo" alt="WABAC">
+    </div>
   </div>
-  {_filter_bar()}
   {"".join(sections)}
 </div>
 {FILTER_JS}

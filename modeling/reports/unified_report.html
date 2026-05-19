@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unified Modeling Report - Wastewater Treatment</title>
+  <title>Unified Modeling Report - Guheshwori Waste Water Treatment Plant</title>
   <style>
 :root {
   --bg:           #F5F5F5;
@@ -152,6 +152,10 @@
     user-select: none; white-space: nowrap;
   }
   .nav-group-title:hover { color: var(--text); }
+  a.nav-section-link {
+    text-transform: none; letter-spacing: 0; font-size: 12px;
+    text-decoration: none; cursor: pointer;
+  }
   .nav-chevron { font-size: 10px; transition: transform .2s; }
   .nav-group-title.collapsed .nav-chevron { transform: rotate(-90deg); }
   .nav-group-items { overflow: hidden; transition: max-height .25s ease; }
@@ -183,12 +187,26 @@
 
   /* ── Page header ───────────────────────────────────────────────── */
   .page-header {
-    border-bottom: 1px solid var(--border); margin-bottom: 28px; padding-bottom: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 28px; padding: 14px 20px;
+  }
+  .page-header .header-inner {
+    display: flex; align-items: center; gap: 0;
   }
   .page-header h1 {
-    margin: 0 0 4px; font-size: 22px; color: var(--text);
+    margin: 0; font-size: 22px; color: var(--text);
   }
-  .page-header .meta { margin: 0; }
+  .header-logo {
+    max-height: 56px; width: auto; object-fit: contain; flex-shrink: 0;
+  }
+  .header-logo:first-child {
+    padding-right: 18px; margin-right: 18px;
+    border-right: 1px solid var(--border);
+  }
+  .header-logo:last-child {
+    padding-left: 18px; margin-left: 18px;
+    border-left: 1px solid var(--border);
+  }
 
   /* ── Target filter bar ─────────────────────────────────────────── */
   .filter-bar {
@@ -219,6 +237,7 @@
     color: var(--text);
   }
   section:first-of-type .section-title { margin-top: 0; }
+  #overview .section-title { font-size: 16px; }
   .section-intro { color: var(--text-muted); margin: 0 0 20px; line-height: 1.6; }
 
   /* ── Cards ─────────────────────────────────────────────────────── */
@@ -523,7 +542,8 @@ window.SECTION_ORDER = ["exp1-sub1", "exp1-full", "exp1-fs", "exp1-s3", "exp1-s3
   <div class="nav-logo">Unified Report</div>
 
   <div class="nav-group">
-    <div class="nav-group-title">Overview</div>
+    <a class="nav-group-title nav-section-link" href="#overview">Abstract</a>
+    <a class="nav-item" href="#overview-limitations">Limitations</a>
     <a class="nav-item" href="#overview-leaderboard">Global Leaderboard</a>
     <a class="nav-item" href="#overview-progression">R² Progression</a>
   </div>
@@ -783,29 +803,122 @@ window.SECTION_ORDER = ["exp1-sub1", "exp1-full", "exp1-fs", "exp1-s3", "exp1-s3
 </nav>
 <div id="main-content">
   <div class="page-header">
-    <h1>Wastewater Treatment - Unified Modeling Report</h1>
-    <p class="meta">Generated 2026-05-19 12:43 &nbsp;·&nbsp;
-      Experiments 1-5 &nbsp;·&nbsp; Neural Networks &amp; Ensembles &nbsp;·&nbsp;
-      Feature Engineering &nbsp;·&nbsp; Temporal Features &nbsp;·&nbsp;
-      9 models &nbsp;·&nbsp; 8 effluent targets &nbsp;·&nbsp; Train 2021-2024 · Test 2025
-    </p>
+    <div class="header-inner">
+      <img src="../../dashboard/KUKL.png" class="header-logo" alt="KUKL">
+      <div style="flex:1;text-align:center">
+        <h1 style="margin:0 0 3px;font-size:22px;color:var(--text)">Unified Modeling Report</h1>
+        <p style="margin:0;font-size:12px;color:var(--text-muted);letter-spacing:0.02em">Guheshwori Waste Water Treatment Plant</p>
+      </div>
+      <img src="../../dashboard/WABAC.png" class="header-logo" alt="WABAC">
+    </div>
   </div>
-  <div class="filter-bar" id="global-filter"><label>Filter by target:</label><button class="filter-btn active" data-slug="all">All</button><button class="filter-btn" data-slug="grab-bod">Grab BOD</button><button class="filter-btn" data-slug="grab-cod">Grab COD</button><button class="filter-btn" data-slug="grab-tss">Grab TSS</button><button class="filter-btn" data-slug="grab-ph">Grab pH</button><button class="filter-btn" data-slug="comp-bod">Comp BOD</button><button class="filter-btn" data-slug="comp-cod">Comp COD</button><button class="filter-btn" data-slug="comp-tss">Comp TSS</button><button class="filter-btn" data-slug="comp-ph">Comp pH</button></div>
   
 <section id="overview">
-  <h1 class="section-title">Overview</h1>
+  <h1 class="section-title">Abstract</h1>
   
 <div class="card section-card" id="overview-abstract" style="border-left:4px solid #4A90D9; margin-bottom: 24px;">
-  <h2 style="margin-top:0">Abstract</h2>
-  <ul style="line-height:1.5;margin-bottom:0;font-size:13px;color:var(--text-color)">
-    <li><strong>Baseline (Exp1 & 2):</strong> Established that inlet water quality alone is insufficient for prediction. Secondary clarifier data is essential to achieve meaningful accuracy.</li>
-    <li><strong>Feature Expansion (Exp3):</strong> Aeration basin data (Exp3-SE2) produced the best linearly-regularised models (ElasticNet/Ridge), providing the most robust baseline predicting 2025 holdout data.</li>
-    <li><strong>Feature Pruning (Exp4):</strong> Removing collinear features (via VIF or manually) degraded generalisation across the board. The collinear features carry structural signal necessary for decision tree models, while regularised linear models already suppress collinearity automatically.</li>
-    <li><strong>Advanced Methods (Ensembles & Temporal):</strong> Stacking and Neural Networks (ANN) struggled to generalise on the extremely small Composite datasets (n≈290). Conversely, temporal lag features successfully improved R² on Grab targets, demonstrating that recent flow history strongly influences spot samples.</li>
-    <li><strong>Practical significance  -  R² alone is insufficient:</strong> A high Test R² does not guarantee compliance-grade accuracy. Discharge limits for BOD and TSS are 10 mg/L.
-      <strong>Grab BOD</strong> (best R²≈0.69): RMSE ≈ 2 mg/L  -  roughly 20% of the limit, operationally useful.
-      <strong>Grab TSS</strong> (best R²≈0.64): RMSE ≈ 6 mg/L  -  roughly 60% of the limit; the model explains variance well but its absolute prediction error is large relative to the compliance threshold. Predictions should be treated as trend indicators rather than compliance certifications for TSS.</li>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:12px;">
+    This study applies machine learning to predict effluent water quality at a wastewater treatment plant
+    using approximately 1,900 daily process measurements spanning 2021-2024 (training) and 2025 (held-out test).
+    Eight target variables were modelled - four grab-sample and four composite-sample concentrations
+    (BOD, COD, TSS, pH) - across nine systematic experiments covering feature scope, model complexity,
+    feature engineering, training window design, and temporal feature construction.
+    Six model classes were evaluated throughout: OLS, Ridge, ElasticNet, Random Forest, Gradient Boosting, and XGBoost.
+  </p>
+  <ul style="line-height:1.6;margin-bottom:0;font-size:13px;color:var(--text-color)">
+    <li style="margin-bottom:8px;"><strong>Feature hierarchy (Exp1-2):</strong>
+      Inlet water quality alone is not predictive of effluent quality (all models near or below zero R² on test).
+      Secondary clarifier data is necessary for positive generalisation. Primary-stage features
+      (clarifier + grit chamber) add no independent signal beyond inlet parameters.
+      The ordering inlet &lt; primary &lt; secondary was confirmed consistently across grab and composite targets.</li>
+    <li style="margin-bottom:8px;"><strong>Feature expansion and pruning (Exp3-4):</strong>
+      Adding aeration basin features to the secondary + inlet base (Exp3-SE2, 31 features) yielded the best
+      regularised linear models in the full-window experiments, with grab BOD/COD/TSS R² in the 0.42-0.58 range.
+      Deliberate collinearity removal via VIF pruning (Exp4) degraded generalisation across all models:
+      the collinear features carry process signal that tree models exploit directly and that regularised
+      linear models suppress automatically - removing them is counterproductive.</li>
+    <li style="margin-bottom:8px;"><strong>Cross-type inlet hypothesis (Exp5):</strong>
+      Adding grab-sourced inlet features to composite targets (and vice versa) recovered some rows but
+      yielded no systematic R² improvement. Cross-type mixing did not compensate for the measurement-type
+      mismatch, and the approach was not pursued further.</li>
+    <li style="margin-bottom:8px;"><strong>Advanced methods (Exp6):</strong>
+      Voting ensembles provided modest, consistent improvements over individual tree models on grab targets.
+      Stacking and ANN struggled to generalise on composite datasets (n &approx; 290-630 train rows),
+      frequently overfitting. These methods offer diminishing returns given the dataset size.</li>
+    <li style="margin-bottom:8px;"><strong>Feature engineering (Exp7):</strong>
+      Log1p transforms on concentration inputs (Exp7-SE2 selective variant) produced modest improvements
+      on BOD and COD targets. The benefit was target-specific and did not generalise uniformly,
+      consistent with the skewness audit showing that BOD and COD inputs are the most right-skewed features.</li>
+    <li style="margin-bottom:8px;"><strong>Temporal features (Exp8):</strong>
+      Introducing lag-5 BOD/COD inputs (most recent available lab result) improved linear grab BOD R²
+      from near-zero to +0.261 (SE3) without the heavy row cost of full lag-feature sets.
+      The same-day operational baseline (SE2, no BOD/COD inputs) achieved Grab TSS ElNet R²=+0.623,
+      confirming that TSS is predictable from process parameters alone. Full temporal enrichment with
+      lag-1/3/7 + rolling means (SE1) improved Grab BOD XGB to +0.423 but caused composite targets to
+      deteriorate due to overfitting at ~52 features on ~376 training rows.</li>
+    <li style="margin-bottom:8px;"><strong>Recency window hypothesis (Exp9):</strong>
+      Restricting training to 2024 only (n=187/179) produced the single largest performance jump in the study.
+      Grab BOD OLS improved from -0.209 (full-window) to +0.616 (SE1), and the first-ever positive
+      Comp COD R² (+0.123) was achieved. This strongly suggests the plant's operating regime shifted
+      over the study period, making older data counterproductive for linear models.
+      Combining the 2024-only window with log-log transforms (SE5: log1p features + log1p targets with
+      Duan smearing) pushed Grab BOD OLS to +0.654 and Grab COD Ridge to +0.540.
+      A log-Y-only variant (SE3) achieved the best Grab TSS OLS of +0.676 across all experiments.</li>
+    <li style="margin-bottom:8px;"><strong>Practical significance - R² alone is insufficient:</strong>
+      Discharge limits for BOD and TSS are 10 mg/L.
+      <strong>Grab BOD</strong> (best R²=0.654, Exp9-SE5): RMSE &approx; 2 mg/L - roughly 20% of the limit;
+      predictions are operationally useful for trend monitoring.
+      <strong>Grab TSS</strong> (best R²=0.676, Exp9-SE3): RMSE &approx; 6 mg/L - roughly 60% of the limit;
+      the model explains variance well but absolute error is large relative to the compliance threshold,
+      so TSS predictions should be treated as directional indicators rather than compliance certifications.
+      Composite targets remain significantly harder to predict (best Comp COD R²=0.197),
+      likely due to composite sampling averaging out the short-term variation that drives model signal.</li>
   </ul>
+</div>
+  
+<div class="card section-card" id="overview-limitations" style="border-left:4px solid #E8A838; margin-bottom: 24px;">
+  <h2 style="margin-top:0;font-size:16px">Limitations</h2>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:10px;">
+    Despite the encouraging R² values reported above, several open questions would need to be
+    resolved before these models could be considered for operational deployment. The points below
+    are not definitive conclusions - they are areas where additional knowledge of the plant's
+    measurement and sampling practices is required.
+  </p>
+  <ul style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:10px;">
+    <li style="margin-bottom:8px;"><strong>Concurrent design, not forecast:</strong>
+      Every model maps same-day (or near-same-day) input measurements to same-day effluent quality.
+      They do not predict what tomorrow's or next week's effluent will look like - they describe
+      what today's effluent looks like, given today's process readings.</li>
+    <li style="margin-bottom:8px;"><strong>Sample collection and measurement timing - requires clarification:</strong>
+      Several BOD and COD columns in the dataset carry a lag-5 offset, suggesting that these
+      measurements may not be available on the same day they are recorded. The exact sample collection
+      workflow - whether samples are collected on-site and sent to an external laboratory, processed
+      in-house, or read from online analysers - was not documented as part of this study.
+      Understanding this workflow is essential before assessing whether the models can be applied
+      in any real-time or near-real-time setting: if the most predictive inputs (BOD/COD) share
+      a similar delay with the effluent measurement itself, the model may provide little or no
+      operational lead time.</li>
+    <li style="margin-bottom:8px;"><strong>Feature availability in operation - requires investigation:</strong>
+      It is unclear which of the input features are continuously monitored via online sensors and
+      which require periodic grab sampling or laboratory analysis. Parameters such as pH, flow rate,
+      and RAS are commonly available from online instruments, but the availability of TSS, aeration
+      basin readings, and secondary clarifier parameters at this specific plant is unknown.
+      A feature-by-feature availability audit, conducted with plant operators, would be necessary
+      to determine the practically deployable feature subset and the realistic prediction horizon.</li>
+    <li style="margin-bottom:8px;"><strong>Non-stationarity:</strong>
+      The Exp9 recency finding - where restricting training to 2024 alone improved Grab BOD OLS from
+      R²=-0.209 to +0.616 - indicates that the plant's operating regime has shifted materially over
+      the study period. A static model trained on the full historical window would underperform
+      relative to a periodically retrained one. Any deployment would require a retraining schedule
+      aligned with operational change cycles.</li>
+  </ul>
+  <p style="font-size:13px;line-height:1.6;color:var(--text-color);margin-bottom:0;">
+    At this stage, the models are best interpreted as <em>retrospective process diagnostics</em> and
+    <em>research benchmarks</em>. Translating them into an operational tool would first require
+    a structured discussion with plant operators to understand sample collection workflows,
+    instrument availability, and measurement turnaround times - information that falls outside
+    the scope of this modelling study.
+  </p>
 </div>
   
 <div class="card section-card" id="overview-leaderboard">
@@ -836,7 +949,7 @@ window.SECTION_ORDER = ["exp1-sub1", "exp1-full", "exp1-fs", "exp1-s3", "exp1-s3
         <th>Limit</th><th>RMSE % Limit</th><th>MdAE % Limit</th>
       </tr>
     </thead>
-    <tbody><tr data-target="grab-bod"><td><strong>Grab BOD</strong></td><td><strong style="color:#E67E22">Voting</strong></td><td style="color:#2ecc71;font-weight:bold">0.656</td><td class="gap-warn">-0.111</td><td class="meta">2.330</td><td class="meta" style="font-size:11px">Exp7 SE2  -  Selective FE</td><td></td><td></td><td></td><td></td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>22.2%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-cod"><td><strong>Grab COD</strong></td><td><strong style="color:#D94801">XGB</strong></td><td style="color:#52c98a;font-weight:bold">0.546 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.374</td><td class="meta">14.436</td><td class="meta" style="font-size:11px">Exp5 SE2-FS  -  Grab + Composite Inlet (FS)</td><td style='font-size:11px;color:var(--text-muted)'>Exp3-S2-FS · XGB</td><td style='color:#52c98a'>0.493</td><td class='gap-good'>-0.051</td><td class='meta'>16.282</td><td class='meta'>250 mg/L</td><td class='meta' style='color:var(--text-primary)'>6.5%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-tss"><td><strong>Grab TSS</strong></td><td><strong style="color:#E15252">OLS</strong></td><td style="color:#2ecc71;font-weight:bold">0.676</td><td class="gap-good">0.027</td><td class="meta">5.527</td><td class="meta" style="font-size:11px">Exp9 SE3  -  W1+LogY (2024-only + log1p target transform)</td><td></td><td></td><td></td><td></td><td class='meta'>10 mg/L</td><td class='meta' style='color:#e74c3c'>55.3%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-ph"><td><strong>Grab pH</strong></td><td><strong style="color:#2171B5">RF</strong></td><td style="color:#52c98a;font-weight:bold">0.484 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.282</td><td class="meta">0.117</td><td class="meta" style="font-size:11px">Exp3 SE4 - All Features</td><td colspan='4' style='color:var(--text-muted);font-size:11px;font-style:italic;position:relative'>no better alternative found<span class='noalt-info-btn' onclick="document.getElementById('noalt-popup-1').style.display=document.getElementById('noalt-popup-1').style.display==='none'?'block':'none';event.stopPropagation()" title='Click for details'>ⓘ</span><div id='noalt-popup-1' class='noalt-popup' style='display:none'><button class='noalt-popup-close' onclick="this.parentElement.style.display='none'">×</button><p>1 model fall within the ±0.05 R² competitive window: Exp3-S4 · RF (R²=0.484, gap=+0.282). The smallest |gap| among them is +0.282 - every competitive model carries a substantial overfit gap. The gap-adjusted score (max 0.393) still peaks at the naive champion (Exp3-S4 · RF), so no less-overfit alternative achieves comparable accuracy on this target. This target needs more training data, better features, or a regime-specific model rather than a different model from the current pool.</p></div></td><td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td></tr><tr data-target="comp-bod"><td><strong>Comp BOD</strong></td><td><strong style="color:#2171B5">RF</strong></td><td style="color:#52c98a;font-weight:bold">0.503 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.378</td><td class="meta">2.369</td><td class="meta" style="font-size:11px">Exp2 SE2-Only  -  All Secondary (no COMMON)</td><td style='font-size:11px;color:var(--text-muted)'>Exp3-S2-FS · Ridge</td><td style='color:#52c98a'>0.461</td><td class='gap-good'>0.076</td><td class='meta'>2.424</td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>24.2%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-cod"><td><strong>Comp COD</strong></td><td><strong style="color:#4A90D9">Ridge</strong></td><td style="color:#f1c40f;font-weight:bold">0.219 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.310</td><td class="meta">16.973</td><td class="meta" style="font-size:11px">Exp9 SE5  -  W1+LogLog (2024-only + log1p features + log1p targets)</td><td colspan='4' style='color:var(--text-muted);font-size:11px;font-style:italic;position:relative'>no better alternative found<span class='noalt-info-btn' onclick="document.getElementById('noalt-popup-2').style.display=document.getElementById('noalt-popup-2').style.display==='none'?'block':'none';event.stopPropagation()" title='Click for details'>ⓘ</span><div id='noalt-popup-2' class='noalt-popup' style='display:none'><button class='noalt-popup-close' onclick="this.parentElement.style.display='none'">×</button><p>3 models fall within the ±0.05 R² competitive window: Exp9-SE4 · ElNet (R²=0.192, gap=+0.268); Exp9-SE5 · Ridge (R²=0.219, gap=+0.310); Exp9-SE4 · Ridge (R²=0.197, gap=+0.332). The smallest |gap| among them is +0.268 - every competitive model carries a substantial overfit gap. The gap-adjusted score (max 0.114) still peaks at the naive champion (Exp9-SE5 · Ridge), so no less-overfit alternative achieves comparable accuracy on this target. This target needs more training data, better features, or a regime-specific model rather than a different model from the current pool.</p></div></td><td class='meta'>250 mg/L</td><td class='meta' style='color:var(--text-primary)'>6.8%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-tss"><td><strong>Comp TSS</strong></td><td><strong style="color:#238B45">GB</strong></td><td style="color:#52c98a;font-weight:bold">0.531</td><td class="gap-good">-0.033</td><td class="meta">3.959</td><td class="meta" style="font-size:11px">Exp2 Sec-Only-FS  -  All Secondary (FS)</td><td></td><td></td><td></td><td></td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>39.6%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-ph"><td><strong>Comp pH</strong></td><td><strong style="color:#5BAD6F">ElNet</strong></td><td style="color:#f1c40f;font-weight:bold">0.365</td><td class="gap-good">0.005</td><td class="meta">0.175</td><td class="meta" style="font-size:11px">Exp3 SE2  -  ADD+CONSIDER (FS)</td><td></td><td></td><td></td><td></td><td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td></tr></tbody>
+    <tbody><tr data-target="grab-bod"><td><strong>Grab BOD</strong></td><td><strong style="color:#E67E22">Voting</strong></td><td style="color:#2ecc71;font-weight:bold">0.656 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-warn">-0.111</td><td class="meta">2.330</td><td class="meta" style="font-size:11px">Exp7 SE2  -  Selective FE</td><td style='font-size:11px;color:var(--text-muted)'>Exp9-SE5 · OLS</td><td style='color:#2ecc71'>0.654</td><td class='gap-good'>0.067</td><td class='meta'>2.216</td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>22.2%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-cod"><td><strong>Grab COD</strong></td><td><strong style="color:#D94801">XGB</strong></td><td style="color:#52c98a;font-weight:bold">0.546 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.374</td><td class="meta">14.436</td><td class="meta" style="font-size:11px">Exp5 SE2-FS  -  Grab + Composite Inlet (FS)</td><td style='font-size:11px;color:var(--text-muted)'>Exp3-S2-FS · XGB</td><td style='color:#52c98a'>0.493</td><td class='gap-good'>-0.051</td><td class='meta'>16.282</td><td class='meta'>250 mg/L</td><td class='meta' style='color:var(--text-primary)'>6.5%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-tss"><td><strong>Grab TSS</strong></td><td><strong style="color:#E15252">OLS</strong></td><td style="color:#2ecc71;font-weight:bold">0.676</td><td class="gap-good">0.027</td><td class="meta">5.527</td><td class="meta" style="font-size:11px">Exp9 SE3  -  W1+LogY (2024-only + log1p target transform)</td><td></td><td></td><td></td><td></td><td class='meta'>10 mg/L</td><td class='meta' style='color:#e74c3c'>55.3%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="grab-ph"><td><strong>Grab pH</strong></td><td><strong style="color:#2171B5">RF</strong></td><td style="color:#52c98a;font-weight:bold">0.484 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.282</td><td class="meta">0.117</td><td class="meta" style="font-size:11px">Exp3 SE4 - All Features</td><td colspan='4' style='color:var(--text-muted);font-size:11px;font-style:italic;position:relative'>no better alternative found<span class='noalt-info-btn' onclick="document.getElementById('noalt-popup-1').style.display=document.getElementById('noalt-popup-1').style.display==='none'?'block':'none';event.stopPropagation()" title='Click for details'>ⓘ</span><div id='noalt-popup-1' class='noalt-popup' style='display:none'><button class='noalt-popup-close' onclick="this.parentElement.style.display='none'">×</button><p>1 model fall within the ±0.05 R² competitive window: Exp3-S4 · RF (R²=0.484, gap=+0.282). The smallest |gap| among them is +0.282 - every competitive model carries a substantial overfit gap. The gap-adjusted score (max 0.393) still peaks at the naive champion (Exp3-S4 · RF), so no less-overfit alternative achieves comparable accuracy on this target. This target needs more training data, better features, or a regime-specific model rather than a different model from the current pool.</p></div></td><td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td></tr><tr data-target="comp-bod"><td><strong>Comp BOD</strong></td><td><strong style="color:#2171B5">RF</strong></td><td style="color:#52c98a;font-weight:bold">0.503 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.378</td><td class="meta">2.369</td><td class="meta" style="font-size:11px">Exp2 SE2-Only  -  All Secondary (no COMMON)</td><td style='font-size:11px;color:var(--text-muted)'>Exp3-S2-FS · Ridge</td><td style='color:#52c98a'>0.461</td><td class='gap-good'>0.076</td><td class='meta'>2.424</td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>24.2%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-cod"><td><strong>Comp COD</strong></td><td><strong style="color:#4A90D9">Ridge</strong></td><td style="color:#f1c40f;font-weight:bold">0.219 <span style="color:#E67E22;font-size:11px;vertical-align:super" title="Naive model is overfit (gap ≥ 0.10) - see Recommended column">⚠</span></td><td class="gap-bad">0.310</td><td class="meta">16.973</td><td class="meta" style="font-size:11px">Exp9 SE5  -  W1+LogLog (2024-only + log1p features + log1p targets)</td><td colspan='4' style='color:var(--text-muted);font-size:11px;font-style:italic;position:relative'>no better alternative found<span class='noalt-info-btn' onclick="document.getElementById('noalt-popup-2').style.display=document.getElementById('noalt-popup-2').style.display==='none'?'block':'none';event.stopPropagation()" title='Click for details'>ⓘ</span><div id='noalt-popup-2' class='noalt-popup' style='display:none'><button class='noalt-popup-close' onclick="this.parentElement.style.display='none'">×</button><p>3 models fall within the ±0.05 R² competitive window: Exp9-SE4 · ElNet (R²=0.192, gap=+0.268); Exp9-SE5 · Ridge (R²=0.219, gap=+0.310); Exp9-SE4 · Ridge (R²=0.197, gap=+0.332). The smallest |gap| among them is +0.268 - every competitive model carries a substantial overfit gap. The gap-adjusted score (max 0.114) still peaks at the naive champion (Exp9-SE5 · Ridge), so no less-overfit alternative achieves comparable accuracy on this target. This target needs more training data, better features, or a regime-specific model rather than a different model from the current pool.</p></div></td><td class='meta'>250 mg/L</td><td class='meta' style='color:var(--text-primary)'>6.8%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-tss"><td><strong>Comp TSS</strong></td><td><strong style="color:#238B45">GB</strong></td><td style="color:#52c98a;font-weight:bold">0.531</td><td class="gap-good">-0.033</td><td class="meta">3.959</td><td class="meta" style="font-size:11px">Exp2 Sec-Only-FS  -  All Secondary (FS)</td><td></td><td></td><td></td><td></td><td class='meta'>10 mg/L</td><td class='meta' style='color:var(--text-primary)'>39.6%</td><td class='meta' style='color:var(--text-primary)'>-</td></tr><tr data-target="comp-ph"><td><strong>Comp pH</strong></td><td><strong style="color:#5BAD6F">ElNet</strong></td><td style="color:#f1c40f;font-weight:bold">0.365</td><td class="gap-good">0.005</td><td class="meta">0.175</td><td class="meta" style="font-size:11px">Exp3 SE2  -  ADD+CONSIDER (FS)</td><td></td><td></td><td></td><td></td><td class='meta'>-</td><td class='meta'>-</td><td class='meta'>-</td></tr></tbody>
   </table>
   </div>
   <p class="meta" style="margin-top:8px;font-size:11px;color:var(--text-muted)">
@@ -7636,6 +7749,10 @@ Initially sorted within each target group by <strong>gap-adjusted score</strong>
 </div>
 
 <script>
+// -- Disable browser scroll restoration so reload always starts at top ----------
+if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+window.addEventListener('load', function() { window.scrollTo(0, 0); });
+
 // -- Sidebar width sync: match main-content margin to sidenav's rendered width --
 (function() {
   function syncNavWidth() {
