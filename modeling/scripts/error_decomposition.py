@@ -96,6 +96,16 @@ _PRED_COL_PATTERNS = {
     "Exp8": [
         "predicted_{model}_exp8_run_{run}",
     ],
+    # Exp9 SE3/SE4/SE5 use non-standard column suffixes; SE1/SE2 use the default.
+    "Exp9-SE3": [
+        "predicted_{model}_log_run_{run}",
+    ],
+    "Exp9-SE4": [
+        "predicted_{model}_logf_run_{run}",
+    ],
+    "Exp9-SE5": [
+        "predicted_{model}_loglogf_run_{run}",
+    ],
 }
 
 # Kathmandu/Nepal climate seasons: Winter (Dec-Feb), Spring/Pre-monsoon
