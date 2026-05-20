@@ -77,6 +77,9 @@ dashboard/              Interactive dashboard (separate from main report)
 # output: modeling/reports/unified_report.html
 ```
 
+## View the report here on GitHub
+https://manishfsb.github.io/Waste-Water-Treatment/
+
 ## Environment
 
 Python 3 via `.venv/`. All scripts must be invoked with `.venv/bin/python3`.
