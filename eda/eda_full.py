@@ -30,7 +30,7 @@ import sys as _sys
 import warnings
 
 _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modeling"))
+_sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modeling", "scripts"))
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 import matplotlib

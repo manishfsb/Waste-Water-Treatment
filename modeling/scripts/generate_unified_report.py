@@ -30,7 +30,7 @@ MODELING_DIR = os.path.dirname(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(MODELING_DIR)
 REPORTS_DIR  = os.path.join(MODELING_DIR, "reports")
 
-sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, SCRIPT_DIR)
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 os.makedirs(REPORTS_DIR, exist_ok=True)

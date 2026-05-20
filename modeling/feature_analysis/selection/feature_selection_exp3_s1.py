@@ -39,7 +39,7 @@ PROJECT_ROOT  = os.path.dirname(MODELING_DIR)
 RF_MODELS_DIR = os.path.join(MODELING_DIR, "models", "non_linear", "exp3_s1", "rf", "models")
 PLOTS_DIR     = os.path.join(SCRIPT_DIR, "plots_exp3_s1")
 
-sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, os.path.join(MODELING_DIR, "scripts"))
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 os.makedirs(PLOTS_DIR, exist_ok=True)

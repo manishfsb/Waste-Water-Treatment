@@ -52,7 +52,7 @@ AUDIT_XLSX   = os.path.join(SCRIPT_DIR, "feature_audit.xlsx")
 
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
-sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, os.path.join(MODELING_DIR, "scripts"))
 from report_theme import dark_mode_css, DARK_MODE_JS  # noqa: E402
 
 # ── Baseline feature sets (Experiment 2 Sub-2) ──────────────────────────────────
